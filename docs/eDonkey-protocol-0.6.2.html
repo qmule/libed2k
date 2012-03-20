@@ -1,0 +1,648 @@
+<html>
+ <head>
+  <title>eDonkey Protocol</title>
+  <meta name="author" content="Alexey Klimkin">
+  <meta name="description" content="This page keeps all public information about protocol of eDonkey peer2peer network.">
+  <meta name="keywords" content="edonkey protocol, edonkey protocol specification, emule protocol, mldonkey protocol, pdonkey, edonkey, edonkey2000, emule, cdonkey, mldonkey, peer2peer, protocol, specification, alexey klimkin">
+  <meta name="robots" content="all">
+ </head>
+<body>
+<style>
+span.bnf_symb {
+    color: green
+}
+span.hexnum {
+    font-weight:  bold;
+}
+span.comment {
+    color: gray
+}
+a.sec_ref {
+}
+span.sec_name {
+    font-weight:  bold;
+}
+a.bnf_ref {
+    text-decoration: none;
+}
+a.bnf_def {
+}
+span.unknown {
+    color: red;
+}
+</style>
+<pre>
+          *Unofficial* eDonkey Protocol Specification v0.6.2
+
+      Copyright (c) 2003-2004 Alexey Klimkin "klimkin at cpan.org"
+              <a href="http://sourceforge.net/projects/pdonkey/">http://sourceforge.net/projects/pdonkey/</a>
+
+======================================================================
+            
+
+Used the following sources in time order:
+
+    <a href="http://hitech.dk/donkeyprotocol.html">http://hitech.dk/donkeyprotocol.html</a>
+    <a href="http://www.schrevel.com/edonkey/">http://www.schrevel.com/edonkey/</a> (dead since 21.04.2003)
+    eMule: <a href="http://www.emule-project.net/">http://www.emule-project.net/</a>
+    MLDonkey: <a href="http://www.nongnu.org/mldonkey/">http://www.nongnu.org/mldonkey/</a>
+    <a href="http://sourceforge.net/projects/ed2k-gtk-gui/">http://sourceforge.net/projects/ed2k-gtk-gui/</a>
+
+Thanks for updates to:
+
+    1. Thomas Lussnig (<a href="http://cDonkey.suche.org/">http://cDonkey.suche.org/</a>)
+    2. Qi-Hong Chen
+    3. Stéphane Loeuillet
+    3. eKwak Team "unmap at hotmail.com"
+       (<a href="http://savannah.nongnu.org/projects/ekwak/">http://savannah.nongnu.org/projects/ekwak/</a>)
+    4. Kornilov Matvei aka ArgentumBrom
+
+
+<b>Table of Content</b>
+======================================================================
+
+1. <a href="#section_1_" class=sec_ref>Network protocol</a>
+  1.1. <a href="#section_1_1_" class=sec_ref>Client &lt;-&gt; Server</a>
+  1.2. <a href="#section_1_2_" class=sec_ref>Client &lt;-&gt; Client</a>
+2. <a href="#section_2_" class=sec_ref>Packet format</a>
+  2.1. <a href="#section_2_1_" class=sec_ref>Client &lt;-&gt; Server</a>
+  2.2. <a href="#section_2_2_" class=sec_ref>Client &lt;-&gt; Client</a>
+  2.3. <a href="#section_2_3_" class=sec_ref>UDP</a>
+  2.4. <a href="#section_2_4_" class=sec_ref>GUI &lt;-&gt; CORE</a>
+  2.5. <a href="#section_2_5_" class=sec_ref>eMule extensions</a>
+3. <a href="#section_3_" class=sec_ref>Met files format</a>
+  3.1. <a href="#section_3_1_" class=sec_ref>server.met</a>
+  3.2. <a href="#section_3_2_" class=sec_ref>part.met</a>
+  3.3. <a href="#section_3_3_" class=sec_ref>known.met</a>
+  3.4. <a href="#section_3_4_" class=sec_ref>pref.met</a>
+  3.5. <a href="#section_3_5_" class=sec_ref>formats for old versions</a>
+4. <a href="#section_4_" class=sec_ref>Basic data format</a>
+5. <a href="#section_5_" class=sec_ref>Semantics</a>
+  5.1. <a href="#section_5_1_" class=sec_ref>HighID and LowID</a>
+  5.2. <a href="#section_5_2_" class=sec_ref>UDP port</a>
+6. <a href="#section_6_" class=sec_ref>Changes</a>
+
+
+<span class=sec_name>1. <a name="section_1_">Network protocol</a></span>
+======================================================================
+
+<span class=sec_name>1.1. <a name="section_1_1_">Client &lt;-&gt; Server</a></span>
+-------------------------
+  Login
+<span class=hexnum>0x01</span>         <a href="#Hello server" class=bnf_ref>&lt;Hello server&gt;</a>  -&gt;
+<span class=hexnum>0x40</span>                        &lt;-  <a href="#ID change" class=bnf_ref>&lt;ID change&gt;</a>
+<span class=hexnum>0x15</span>          <a href="#Offer files" class=bnf_ref>&lt;Offer files&gt;</a>  -&gt;
+<span class=hexnum>0x38</span>                        &lt;-  <a href="#Server message" class=bnf_ref>&lt;Server message&gt;</a>
+<span class=hexnum>0x14</span>      <a href="#Get server list" class=bnf_ref>&lt;Get server list&gt;</a>  -&gt;
+<span class=hexnum>0x32</span>                        &lt;-  <a href="#Server list" class=bnf_ref>&lt;Server list&gt;</a>
+<span class=hexnum>0x41</span>                        &lt;-  <a href="#Server info data" class=bnf_ref>&lt;Server info data&gt;</a>
+<span class=hexnum>0x34</span>                        &lt;-  <a href="#Server status" class=bnf_ref>&lt;Server status&gt;</a>
+  Search file
+<span class=hexnum>0x16</span>          <a href="#Search file" class=bnf_ref>&lt;Search file&gt;</a>  -&gt;
+<span class=hexnum>0x33</span>                        &lt;-  <a href="#Search file results" class=bnf_ref>&lt;Search file results&gt;</a>
+<span class=hexnum>0x21</span>         <a href="#More results" class=bnf_ref>&lt;More results&gt;</a>  -&gt;
+  Search user
+<span class=hexnum>0x1a</span>          <a href="#Search user" class=bnf_ref>&lt;Search user&gt;</a>  -&gt;
+<span class=hexnum>0x43</span>                        &lt;-  <a href="#Search user results" class=bnf_ref>&lt;Search user results&gt;</a>
+  Get sources
+<span class=hexnum>0x19</span>          <a href="#Get sources" class=bnf_ref>&lt;Get sources&gt;</a>  -&gt;
+<span class=hexnum>0x42</span>                        &lt;-  <a href="#Found sources" class=bnf_ref>&lt;Found sources&gt;</a>
+  Callback
+<span class=hexnum>0x1c</span>     <a href="#Client cb request" class=bnf_ref>&lt;Client cb request&gt;</a> -&gt;
+<span class=hexnum>0x35</span>                        &lt;-  <a href="#Server cb request" class=bnf_ref>&lt;Server cb request&gt;</a>
+<span class=hexnum>0x36</span>                        &lt;-  <a href="#Callback fail" class=bnf_ref>&lt;Callback fail&gt;</a>
+  ID change
+<span class=hexnum>0x4d</span>                        &lt;-  <a href="#New client ID" class=bnf_ref>&lt;New client ID&gt;</a>
+
+<span class=sec_name>1.2. <a name="section_1_2_">Client &lt;-&gt; Client</a></span>
+-------------------------
+  Login
+<span class=hexnum>0x01</span>         <a href="#Hello client" class=bnf_ref>&lt;Hello client&gt;</a>  -&gt;
+<span class=hexnum>0x4c</span>                        &lt;-  <a href="#Hello answer" class=bnf_ref>&lt;Hello answer&gt;</a>
+  File request
+<span class=hexnum>0x58</span>         <a href="#File request" class=bnf_ref>&lt;File request&gt;</a>  -&gt;
+<span class=hexnum>0x59</span>                        &lt;-  <a href="#File request answer" class=bnf_ref>&lt;File request answer&gt;</a>
+<span class=hexnum>0x48</span>                        &lt;-  <a href="#No such file" class=bnf_ref>&lt;No such file&gt;</a>
+  File status
+<span class=hexnum>0x4f</span>  <a href="#File status request" class=bnf_ref>&lt;File status request&gt;</a>  -&gt;
+<span class=hexnum>0x50</span>                        &lt;-  <a href="#File status" class=bnf_ref>&lt;File status&gt;</a>
+<span class=hexnum>0x51</span>      <a href="#Hashset request" class=bnf_ref>&lt;Hashset request&gt;</a>  -&gt;
+<span class=hexnum>0x52</span>                        &lt;-  <a href="#Hashset answer" class=bnf_ref>&lt;Hashset answer&gt;</a>
+  Slot operation
+<span class=hexnum>0x54</span>         <a href="#Slot request" class=bnf_ref>&lt;Slot request&gt;</a>  -&gt;
+<span class=hexnum>0x55</span>                        &lt;-  <a href="#Slot given" class=bnf_ref>&lt;Slot given&gt;</a>
+<span class=hexnum>0x57</span>                        &lt;-  <a href="#Slot taken" class=bnf_ref>&lt;Slot taken&gt;</a>
+<span class=hexnum>0x56</span>         <a href="#Slot release" class=bnf_ref>&lt;Slot release&gt;</a>  -&gt;
+  Data operation
+<span class=hexnum>0x47</span>        <a href="#Request parts" class=bnf_ref>&lt;Request parts&gt;</a>  -&gt;
+<span class=hexnum>0x46</span>                        &lt;-  <a href="#Sending part" class=bnf_ref>&lt;Sending part&gt;</a>
+<span class=hexnum>0x49</span>      <a href="#End of download" class=bnf_ref>&lt;End of download&gt;</a>  -&gt;
+  Utility
+<span class=hexnum>0x4a</span>           <a href="#View files" class=bnf_ref>&lt;View files&gt;</a>  -&gt;
+<span class=hexnum>0x4b</span>                        &lt;-  <a href="#View files answer" class=bnf_ref>&lt;View files answer&gt;</a>
+<span class=hexnum>0x4e</span>              <a href="#Message" class=bnf_ref>&lt;Message&gt;</a>  -&gt;
+<span class=hexnum>0x4e</span>                        &lt;-  <a href="#Message" class=bnf_ref>&lt;Message&gt;</a>
+
+
+  This is how chat could be (mldonkey)
+  
+The chat was part of the eDonkey protocol, but not longer 
+supported by the official server or client, also eMule do
+not support it. The chat currently used is IRC based.
+
+      -------------------------------------------
+<span class=hexnum>0x1d</span>       <a href="#Get chat rooms" class=bnf_ref>&lt;Get chat rooms&gt;</a>  -&gt;
+<span class=hexnum>0x39</span>                        &lt;-  <a href="#Chat rooms" class=bnf_ref>&lt;Chat rooms&gt;</a>
+<span class=hexnum>0x1f</span>            <a href="#Join room" class=bnf_ref>&lt;Join room&gt;</a>  -&gt;
+<span class=hexnum>0x1e</span>         <a href="#Chat message" class=bnf_ref>&lt;Chat message&gt;</a>  -&gt;
+<span class=hexnum>0x3a</span>                        &lt;-  <a href="#Chat broadcast" class=bnf_ref>&lt;Chat broadcast&gt;</a>
+<span class=hexnum>0x3b</span>                        &lt;-  <a href="#Chat join" class=bnf_ref>&lt;Chat join&gt;</a>
+<span class=hexnum>0x3c</span>                        &lt;-  <a href="#Chat leave" class=bnf_ref>&lt;Chat leave&gt;</a>
+<span class=hexnum>0x3d</span>                        &lt;-  <a href="#Chat users" class=bnf_ref>&lt;Chat users&gt;</a>
+      -------------------------------------------
+<a name="Get chat rooms" class=bnf_def>&lt;Get chat rooms&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0x1d</span> ?
+<a name="Chat message" class=bnf_def>&lt;Chat message&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x1e</span> ?
+<a name="Join room" class=bnf_def>&lt;Join room&gt;</a>             <span class=bnf_symb>::=</span> <span class=hexnum>0x1f</span> ?
+<a name="Chat rooms" class=bnf_def>&lt;Chat rooms&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x39</span> <a href="#BYTE" class=bnf_ref>BYTE</a> (<a href="#String" class=bnf_ref>&lt;String&gt;</a> <a href="#DWORD" class=bnf_ref>DWORD</a>)*
+<a name="Chat broadcast" class=bnf_def>&lt;Chat broadcast&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0x3a</span> ?
+<a name="Chat join" class=bnf_def>&lt;Chat join&gt;</a>             <span class=bnf_symb>::=</span> <span class=hexnum>0x3b</span> ?
+<a name="Chat leave" class=bnf_def>&lt;Chat leave&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x3c</span> ?
+<a name="Chat users" class=bnf_def>&lt;Chat users&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x3d</span> ?
+
+
+<span class=sec_name>2. <a name="section_2_">Packet format</a></span>
+======================================================================
+
+Every packet comes in form: Header Data
+
+<a name="eDonkey header" class=bnf_def>&lt;eDonkey header&gt;</a>        <span class=bnf_symb>::=</span> <a href="#Protocol" class=bnf_ref>&lt;Protocol&gt;</a> <a href="#Packet data length" class=bnf_ref>&lt;Packet data length&gt;</a>
+<a name="Protocol" class=bnf_def>&lt;Protocol&gt;</a>              <span class=bnf_symb>::=</span> <span class=hexnum>0xe3</span>        <span class=comment>// eDonkey</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0xc5</span>        <span class=comment>// eMule extensions</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0xd4</span>        <span class=comment>// eMule compessed (data is zlib compressed)</span>
+<a name="Packet data length" class=bnf_def>&lt;Packet data length&gt;</a>    <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+
+<span class=sec_name>2.1. <a name="section_2_1_">Client &lt;-&gt; Server</a></span>
+-------------------------
+<a name="Hello server" class=bnf_def>&lt;Hello server&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x01</span> <a href="#Client info" class=bnf_ref>&lt;Client info&gt;</a>
+<a name="Bad protocol" class=bnf_def>&lt;Bad protocol&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x05</span>    <span class=comment>// wrong packet, too heavy load, wrong client version</span>
+<a name="Get server list" class=bnf_def>&lt;Get server list&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x14</span>
+<a name="Offer files" class=bnf_def>&lt;Offer files&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x15</span> <a href="#File info list" class=bnf_ref>&lt;File info list&gt;</a>
+<a name="Search file" class=bnf_def>&lt;Search file&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x16</span> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a> 
+<a name="Disconnect" class=bnf_def>&lt;Disconnect&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x18</span>
+<a name="Get sources" class=bnf_def>&lt;Get sources&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x19</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Search user" class=bnf_def>&lt;Search user&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x1a</span> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a>
+&lt;?&gt;                     <span class=bnf_symb>::=</span> <span class=hexnum>0x1b</span> ?
+<a name="Client cb request" class=bnf_def>&lt;Client cb request&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0x1c</span> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a>
+&lt;?&gt;                     <span class=bnf_symb>::=</span> <span class=hexnum>0x20</span> ?  <span class=comment>// # Exception in Connection::doTask 25  for 16.39</span>
+<a name="More results" class=bnf_def>&lt;More results&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x21</span>
+<a name="Server list" class=bnf_def>&lt;Server list&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x32</span> <a href="#Address list" class=bnf_ref>&lt;Address list&gt;</a>
+<a name="Search file results" class=bnf_def>&lt;Search file results&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0x33</span> <a href="#File info list" class=bnf_ref>&lt;File info list&gt;</a> <a href="#More" class=bnf_ref>&lt;More&gt;</a>
+<a name="Server status" class=bnf_def>&lt;Server status&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x34</span> <a href="#Nusers" class=bnf_ref>&lt;Nusers&gt;</a> <a href="#Nfiles" class=bnf_ref>&lt;Nfiles&gt;</a>
+<a name="Server cb request" class=bnf_def>&lt;Server cb request&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0x35</span> <a href="#Client address" class=bnf_ref>&lt;Client address&gt;</a>
+<a name="Callback fail" class=bnf_def>&lt;Callback fail&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x36</span> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a>
+<a name="Server message" class=bnf_def>&lt;Server message&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0x38</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="ID change" class=bnf_def>&lt;ID change&gt;</a>             <span class=bnf_symb>::=</span> <span class=hexnum>0x40</span> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a>
+<a name="Server info data" class=bnf_def>&lt;Server info data&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0x41</span> <a href="#Server info" class=bnf_ref>&lt;Server info&gt;</a>
+<a name="Found sources" class=bnf_def>&lt;Found sources&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x42</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Address list" class=bnf_ref>&lt;Address list&gt;</a> <span class=comment>// ID list actually</span>
+<a name="Search user results" class=bnf_def>&lt;Search user results&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0x43</span> <a href="#Client info list" class=bnf_ref>&lt;Client info list&gt;</a>
+
+<span class=sec_name>2.2. <a name="section_2_2_">Client &lt;-&gt; Client</a></span>
+-------------------------
+<a name="Hello client" class=bnf_def>&lt;Hello client&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x01</span> <span class=hexnum>0x10</span> <a href="#Client info" class=bnf_ref>&lt;Client info&gt;</a> <a href="#Server address" class=bnf_ref>&lt;Server address&gt;</a>
+<a name="Sending part" class=bnf_def>&lt;Sending part&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x46</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Data range" class=bnf_ref>&lt;Data range&gt;</a> <a href="#DATA" class=bnf_ref>DATA</a>
+<a name="Request parts" class=bnf_def>&lt;Request parts&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x47</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> 
+                                 <a href="#Start offset" class=bnf_ref>&lt;Start offset&gt;</a> <a href="#Start offset" class=bnf_ref>&lt;Start offset&gt;</a> <a href="#Start offset" class=bnf_ref>&lt;Start offset&gt;</a>
+                                 <a href="#End offset" class=bnf_ref>&lt;End offset&gt;</a>   <a href="#End offset" class=bnf_ref>&lt;End offset&gt;</a>   <a href="#End offset" class=bnf_ref>&lt;End offset&gt;</a>
+<a name="No such file" class=bnf_def>&lt;No such file&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x48</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="End of download" class=bnf_def>&lt;End of download&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x49</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="View files" class=bnf_def>&lt;View files&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x4a</span>
+<a name="View files answer" class=bnf_def>&lt;View files answer&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0x4b</span> <a href="#File info list" class=bnf_ref>&lt;File info list&gt;</a>
+<a name="Hello answer" class=bnf_def>&lt;Hello answer&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x4c</span> <a href="#Client info" class=bnf_ref>&lt;Client info&gt;</a> <a href="#Server address" class=bnf_ref>&lt;Server address&gt;</a>
+<a name="New client ID" class=bnf_def>&lt;New client ID&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x4d</span> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a>    <span class=comment>// change low id to high</span>
+<a name="Message" class=bnf_def>&lt;Message&gt;</a>               <span class=bnf_symb>::=</span> <span class=hexnum>0x4e</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="File status request" class=bnf_def>&lt;File status request&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0x4f</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="File status" class=bnf_def>&lt;File status&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x50</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Part status list" class=bnf_ref>&lt;Part status list&gt;</a>
+<a name="Hashset request" class=bnf_def>&lt;Hashset request&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x51</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>                <span class=comment>// select file for download by offical core</span>
+<a name="Hashset answer" class=bnf_def>&lt;Hashset answer&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0x52</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Part hash list" class=bnf_ref>&lt;Part hash list&gt;</a>
+&lt;?&gt;                     <span class=bnf_symb>::=</span> <span class=hexnum>0x53</span> ?
+<a name="Slot request" class=bnf_def>&lt;Slot request&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x54</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>    <span class=comment>// Request to start upload</span>
+<a name="Slot given" class=bnf_def>&lt;Slot given&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x55</span>                <span class=comment>// Accept upload request</span>
+<a name="Slot release" class=bnf_def>&lt;Slot release&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x56</span>                <span class=comment>// Cancel transfer</span>
+<a name="Slot taken" class=bnf_def>&lt;Slot taken&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x57</span>                <span class=comment>// Out of parts</span>
+<a name="File request" class=bnf_def>&lt;File request&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x58</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>                <span class=comment>// File name Requrest (select file for download by eMule)</span>
+<a name="File request answer" class=bnf_def>&lt;File request answer&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0x59</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#File name" class=bnf_ref>&lt;File name&gt;</a>    <span class=comment>// File name Answer</span>
+&lt;?&gt;                     <span class=bnf_symb>::=</span> <span class=hexnum>0x5b</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Queue rank" class=bnf_def>&lt;Queue rank&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x5c</span> <a href="#DWORD" class=bnf_ref>DWORD</a>          <span class=comment>// <span class=unknown>??</span></span>
+<a name="Get shared dirs" class=bnf_def>&lt;Get shared dirs&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x5d</span>                <span class=comment>// Request shared directories</span>
+<a name="Get shared files" class=bnf_def>&lt;Get shared files&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0x5e</span> <a href="#Directory" class=bnf_ref>&lt;Directory&gt;</a>    <span class=comment>// Request shared files from directory</span>
+<a name="Shared dirs" class=bnf_def>&lt;Shared dirs&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x5f</span> <a href="#Directory list" class=bnf_ref>&lt;Directory list&gt;</a>
+<a name="Shared files" class=bnf_def>&lt;Shared files&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x60</span> <a href="#Directory" class=bnf_ref>&lt;Directory&gt;</a> <a href="#File info list" class=bnf_ref>&lt;File info list&gt;</a>
+<a name="Shared denied" class=bnf_def>&lt;Shared denied&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x61</span>
+
+<span class=sec_name>2.3. <a name="section_2_3_">UDP</a></span>
+-------------------------
+<a name="UDP Server status request" class=bnf_def>&lt;UDP Server status request&gt;</a> <span class=bnf_symb>::=</span> <span class=hexnum>0x96</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+                            <span class=bnf_symb>||=</span> <span class=hexnum>0x96</span> <a href="#BYTE" class=bnf_ref>BYTE</a> <a href="#BYTE" class=bnf_ref>BYTE</a> <span class=hexnum>0xaa</span> <span class=hexnum>0x5a</span>        <span class=comment>// extension</span>
+<a name="UDP Server status" class=bnf_def>&lt;UDP Server status&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x97</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Nusers" class=bnf_ref>&lt;Nusers&gt;</a> <a href="#Nfiles" class=bnf_ref>&lt;Nfiles&gt;</a>    <span class=comment>// <a href="#DWORD" class=bnf_ref>DWORD</a> is the same value as passed in request</span>
+                            <span class=bnf_symb>||=</span> <span class=hexnum>0x97</span> <a href="#BYTE" class=bnf_ref>BYTE</a> <a href="#BYTE" class=bnf_ref>BYTE</a> <span class=hexnum>0xaa</span> <span class=hexnum>0x5a</span> <a href="#Nusers" class=bnf_ref>&lt;Nusers&gt;</a> <a href="#Nfiles" class=bnf_ref>&lt;Nfiles&gt;</a> <a href="#Nusersmax" class=bnf_ref>&lt;Nusersmax&gt;</a>
+<a name="UDP Search file" class=bnf_def>&lt;UDP Search file&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x98</span> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a>
+<a name="UDP Search file result" class=bnf_def>&lt;UDP Search file result&gt;</a>    <span class=bnf_symb>::=</span> <span class=hexnum>0x99</span> <a href="#File info" class=bnf_ref>&lt;File info&gt;</a>
+<a name="UDP Get sources" class=bnf_def>&lt;UDP Get sources&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x9a</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="UDP Found sources" class=bnf_def>&lt;UDP Found sources&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x9b</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Address list" class=bnf_ref>&lt;Address list&gt;</a>
+<a name="UDP Callback request" class=bnf_def>&lt;UDP Callback request&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0x9c</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a>
+<a name="UDP Callback fail" class=bnf_def>&lt;UDP Callback fail&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x9e</span> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a>
+&lt;?&gt;                         <span class=bnf_symb>::=</span> <span class=hexnum>0xa0</span> ?
+<a name="UDP Server list" class=bnf_def>&lt;UDP Server list&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0xa1</span> <a href="#Address list" class=bnf_ref>&lt;Address list&gt;</a>
+<a name="UDP Get server info" class=bnf_def>&lt;UDP Get server info&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xa2</span>
+<a name="UDP Server info" class=bnf_def>&lt;UDP Server info&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0xa3</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a> <a href="#String" class=bnf_ref>&lt;String&gt;</a>      <span class=comment>// name description</span>
+<a name="UDP Get server list" class=bnf_def>&lt;UDP Get server list&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xa4</span>
+
+<span class=sec_name>2.4. <a name="section_2_4_">GUI &lt;-&gt; CORE</a></span>
+-------------------------
+<a name="Adm Login" class=bnf_def>&lt;Adm Login&gt;</a>             <span class=bnf_symb>::=</span> <span class=hexnum>0x64</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a> <a href="#String" class=bnf_ref>&lt;String&gt;</a>          <span class=comment>// user pass</span>
+<a name="Adm Stop" class=bnf_def>&lt;Adm Stop&gt;</a>              <span class=bnf_symb>::=</span> <span class=hexnum>0x65</span>
+<a name="Adm Command" class=bnf_def>&lt;Adm Command&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x66</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Adm Server list" class=bnf_def>&lt;Adm Server list&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xaa</span> <a href="#Server info list" class=bnf_ref>&lt;Server info list&gt;</a>
+<a name="Adm Friend list" class=bnf_def>&lt;Adm Friend list&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xab</span> <a href="#Client info list" class=bnf_ref>&lt;Client info list&gt;</a>
+<a name="Adm Shared dirs" class=bnf_def>&lt;Adm Shared dirs&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xac</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#String" class=bnf_ref>&lt;String&gt;</a>*
+<a name="Adm Shared files" class=bnf_def>&lt;Adm Shared files&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0xad</span> <a href="#File info list" class=bnf_ref>&lt;File info list&gt;</a>
+<a name="Adm Gap details" class=bnf_def>&lt;Adm Gap details&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xae</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Gap info list" class=bnf_ref>&lt;Gap info list&gt;</a>
+<a name="Adm Core status" class=bnf_def>&lt;Adm Core status&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xaf</span> <a href="#SpaceTemp" class=bnf_ref>&lt;SpaceTemp&gt;</a> <a href="#SpaceIncoming" class=bnf_ref>&lt;SpaceIncoming&gt;</a> <a href="#SpaceNeeded" class=bnf_ref>&lt;SpaceNeeded&gt;</a> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a> <a href="#Nconnections" class=bnf_ref>&lt;Nconnections&gt;</a> <a href="#Nqueue" class=bnf_ref>&lt;Nqueue&gt;</a>
+<a name="Adm Message" class=bnf_def>&lt;Adm Message&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0xb4</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Adm Error message" class=bnf_def>&lt;Adm Error message&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0xb5</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Adm Connected" class=bnf_def>&lt;Adm Connected&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0xb6</span> <a href="#Server name" class=bnf_ref>&lt;Server name&gt;</a>
+<a name="Adm Disconnected" class=bnf_def>&lt;Adm Disconnected&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0xb7</span>
+<a name="Adm Server status" class=bnf_def>&lt;Adm Server status&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0xb8</span> <a href="#Nusers" class=bnf_ref>&lt;Nusers&gt;</a> <a href="#Nfiles" class=bnf_ref>&lt;Nfiles&gt;</a>
+<a name="Adm Extending search" class=bnf_def>&lt;Adm Extending search&gt;</a>  <span class=bnf_symb>::=</span> <span class=hexnum>0xb9</span> <a href="#Server name" class=bnf_ref>&lt;Server name&gt;</a>
+<a name="Adm File info" class=bnf_def>&lt;Adm File info&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0xba</span> <a href="#File info" class=bnf_ref>&lt;File info&gt;</a>
+<a name="Adm Search file res" class=bnf_def>&lt;Adm Search file res&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xbb</span> <a href="#File info list" class=bnf_ref>&lt;File info list&gt;</a> <a href="#More" class=bnf_ref>&lt;More&gt;</a>
+<a name="Adm New download" class=bnf_def>&lt;Adm New download&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0xbc</span> <a href="#File info" class=bnf_ref>&lt;File info&gt;</a> <a href="#File priority" class=bnf_ref>&lt;File priority&gt;</a> <a href="#File name" class=bnf_ref>&lt;File name&gt;</a>
+<a name="Adm Remove download" class=bnf_def>&lt;Adm Remove download&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xbd</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Adm New upload" class=bnf_def>&lt;Adm New upload&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0xbe</span> <a href="#File name" class=bnf_ref>&lt;File name&gt;</a> <a href="#Client info" class=bnf_ref>&lt;Client info&gt;</a>
+<a name="Adm Remove upload" class=bnf_def>&lt;Adm Remove upload&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0xbf</span> <a href="#Client hash" class=bnf_ref>&lt;Client hash&gt;</a>
+<a name="Adm New upload slot" class=bnf_def>&lt;Adm New upload slot&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xc0</span> <a href="#DWORD" class=bnf_ref>DWORD</a>? <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Adm Remove upload slot" class=bnf_def>&lt;Adm Remove upload slot&gt;</a><span class=bnf_symb>::=</span> <span class=hexnum>0xc1</span> <a href="#DWORD" class=bnf_ref>DWORD</a>?
+<a name="Adm Friend files" class=bnf_def>&lt;Adm Friend files&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0xc2</span> ?
+<a name="Adm Hashing" class=bnf_def>&lt;Adm Hashing&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0xc3</span> <a href="#File name" class=bnf_ref>&lt;File name&gt;</a>
+<a name="Adm Friend list update" class=bnf_def>&lt;Adm Friend list update&gt;</a><span class=bnf_symb>::=</span> <span class=hexnum>0xc4</span> ?
+<a name="Adm Download status" class=bnf_def>&lt;Adm Download status&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xc5</span> <a href="#Download status list" class=bnf_ref>&lt;Download status list&gt;</a>
+<a name="Adm Upload status" class=bnf_def>&lt;Adm Upload status&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0xc6</span> <a href="#Upload status list" class=bnf_ref>&lt;Upload status list&gt;</a>
+<a name="Adm Options" class=bnf_def>&lt;Adm Options&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0xc7</span> <a href="#Option values" class=bnf_ref>&lt;Option values&gt;</a>
+<a name="Adm Connect" class=bnf_def>&lt;Adm Connect&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0xc8</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>  <span class=comment>// 0 for any server</span>
+<a name="Adm Disconnect" class=bnf_def>&lt;Adm Disconnect&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0xc9</span>
+<a name="Adm Search file" class=bnf_def>&lt;Adm Search file&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xca</span> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a> 
+<a name="Adm Extend search file" class=bnf_def>&lt;Adm Extend search file&gt;</a><span class=bnf_symb>::=</span> <span class=hexnum>0xcb</span>
+<a name="Adm More results" class=bnf_def>&lt;Adm More results&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0xcc</span>
+<a name="Adm Search user" class=bnf_def>&lt;Adm Search user&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xcd</span> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a> 
+<a name="Adm Extend search user" class=bnf_def>&lt;Adm Extend search user&gt;</a><span class=bnf_symb>::=</span> <span class=hexnum>0xce</span>
+<a name="Adm Download" class=bnf_def>&lt;Adm Download&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0xcf</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Adm Pause download" class=bnf_def>&lt;Adm Pause download&gt;</a>    <span class=bnf_symb>::=</span> <span class=hexnum>0xd0</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Adm Resume download" class=bnf_def>&lt;Adm Resume download&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd1</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Adm Cancel download" class=bnf_def>&lt;Adm Cancel download&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd2</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="Adm Set file pri" class=bnf_def>&lt;Adm Set file pri&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0xd3</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#File priority" class=bnf_ref>&lt;File priority&gt;</a>
+<a name="Adm View friend files" class=bnf_def>&lt;Adm View friend files&gt;</a> <span class=bnf_symb>::=</span> <span class=hexnum>0xd4</span> ?
+<a name="Adm Get server list" class=bnf_def>&lt;Adm Get server list&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd5</span>
+<a name="Adm Get client list" class=bnf_def>&lt;Adm Get client list&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd6</span>
+<a name="Adm Get shared dirs" class=bnf_def>&lt;Adm Get shared dirs&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd7</span>
+<a name="Adm Set shared dirs" class=bnf_def>&lt;Adm Set shared dirs&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd8</span> ?
+<a name="Adm Start dl status" class=bnf_def>&lt;Adm Start dl status&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xd9</span>
+<a name="Adm Stop dl status" class=bnf_def>&lt;Adm Stop dl status&gt;</a>    <span class=bnf_symb>::=</span> <span class=hexnum>0xda</span>
+<a name="Adm Start ul status" class=bnf_def>&lt;Adm Start ul status&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xdb</span>
+<a name="Adm Stop ul status" class=bnf_def>&lt;Adm Stop ul status&gt;</a>    <span class=bnf_symb>::=</span> <span class=hexnum>0xdc</span>
+<a name="Adm Delete server" class=bnf_def>&lt;Adm Delete server&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0xdd</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>
+<a name="Adm Add server" class=bnf_def>&lt;Adm Add server&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0xde</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>
+<a name="Adm Set server pri" class=bnf_def>&lt;Adm Set server pri&gt;</a>    <span class=bnf_symb>::=</span> <span class=hexnum>0xdf</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a> <a href="#Server priority" class=bnf_ref>&lt;Server priority&gt;</a>
+<a name="Adm Get shared files" class=bnf_def>&lt;Adm Get shared files&gt;</a>  <span class=bnf_symb>::=</span> <span class=hexnum>0xe0</span>
+<a name="Adm Get options" class=bnf_def>&lt;Adm Get options&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0xe1</span>
+<a name="Adm Download file" class=bnf_def>&lt;Adm Download file&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0xe2</span> <a href="#File info" class=bnf_ref>&lt;File info&gt;</a>
+<a name="Adm Get gap details" class=bnf_def>&lt;Adm Get gap details&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xe3</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#BYTE" class=bnf_ref>BYTE</a>   <span class=comment>// <a href="#BYTE" class=bnf_ref>BYTE</a> reserved for future use</span>
+<a name="Adm Get core status" class=bnf_def>&lt;Adm Get core status&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0xe4</span>
+
+<a name="Option values" class=bnf_def>&lt;Option values&gt;</a>         <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>        <span class=comment>//                  core version</span>
+                            <a href="#FLOAT" class=bnf_ref>FLOAT</a>       <span class=comment>// userMaxDownF:    max download speed</span>
+                            <a href="#FLOAT" class=bnf_ref>FLOAT</a>       <span class=comment>// userMaxUpF:      max upload speed</span>
+                            <a href="#WORD" class=bnf_ref>WORD</a>        <span class=comment>//                  incoming port</span>
+                            <a href="#WORD" class=bnf_ref>WORD</a>        <span class=comment>// maxCon:          max connections</span>
+                            <a href="#String" class=bnf_ref>&lt;String&gt;</a>    <span class=comment>//                  nickname</span>
+                            <a href="#String" class=bnf_ref>&lt;String&gt;</a>    <span class=comment>// temp:            temp dir</span>
+                            <a href="#String" class=bnf_ref>&lt;String&gt;</a>    <span class=comment>// incoming:        incoming dir</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>        <span class=comment>// auto:            auto reconnect</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>        <span class=comment>// servRemove:      remove dead servers</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>        <span class=comment>// pmAllow:         allow private messages</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>        <span class=comment>// saveCor:         save corrupted files</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>        <span class=comment>// verifyCancel:    verify cancels</span>
+                            <a href="#WORD" class=bnf_ref>WORD</a>        <span class=comment>// adminDoorPort:   admin port</span>
+                            <a href="#DWORD" class=bnf_ref>DWORD</a>       <span class=comment>// maxCon:          max connections</span>
+                            <a href="#DWORD" class=bnf_ref>DWORD</a>       <span class=comment>//                  core build date</span>
+                            <a href="#FLOAT" class=bnf_ref>FLOAT</a>       <span class=comment>// lineDown?:        line speed</span>
+                            <a href="#DWORD" class=bnf_ref>DWORD</a>       <span class=comment>//                  core PID</span>
+
+<a name="Download status list" class=bnf_def>&lt;Download status list&gt;</a>  <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#Download status" class=bnf_ref>&lt;Download status&gt;</a>*
+<a name="Download status" class=bnf_def>&lt;Download status&gt;</a>       <span class=bnf_symb>::=</span> <a href="#Slot ID" class=bnf_ref>&lt;Slot ID&gt;</a> <a href="#Download status byte" class=bnf_ref>&lt;Download status byte&gt;</a> <a href="#Speed" class=bnf_ref>&lt;Speed&gt;</a>
+                            <a href="#DWORD" class=bnf_ref>DWORD</a>   <span class=comment>// transferred</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>    <span class=comment>// availability</span>
+                            <a href="#BYTE" class=bnf_ref>BYTE</a>    <span class=comment>// sources</span>
+<a name="Download status byte" class=bnf_def>&lt;Download status byte&gt;</a>  <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span>    <span class=comment>// hashing</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span>    <span class=comment>// queued</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span>    <span class=comment>// looking</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x03</span>    <span class=comment>// downloading</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x04</span>    <span class=comment>// paused</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x05</span>    <span class=comment>// ids</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x06</span>    <span class=comment>// nosrcs</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x07</span>    <span class=comment>// done</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x08</span>    <span class=comment>// hashing2</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x09</span>    <span class=comment>// errloading</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x0a</span>    <span class=comment>// completing</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x0b</span>    <span class=comment>// complete</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x0c</span>    <span class=comment>// corrupted</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x0d</span>    <span class=comment>// errhashing</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x0e</span>    <span class=comment>// transferring</span>
+<a name="Upload status list" class=bnf_def>&lt;Upload status list&gt;</a>    <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#Upload status" class=bnf_ref>&lt;Upload status&gt;</a>*
+<a name="Upload status" class=bnf_def>&lt;Upload status&gt;</a>         <span class=bnf_symb>::=</span> <a href="#Slot ID" class=bnf_ref>&lt;Slot ID&gt;</a> <a href="#Speed" class=bnf_ref>&lt;Speed&gt;</a>
+
+<a name="File priority" class=bnf_def>&lt;File priority&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span>    <span class=comment>// low</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span>    <span class=comment>// normal</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span>    <span class=comment>// high</span>
+<a name="Server priority" class=bnf_def>&lt;Server priority&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span>    <span class=comment>// normal</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span>    <span class=comment>// high</span>
+                        <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span>    <span class=comment>// low</span>
+
+<a name="Gap info list" class=bnf_def>&lt;Gap info list&gt;</a>         <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#Gap info" class=bnf_ref>&lt;Gap info&gt;</a>*
+<a name="Gap info" class=bnf_def>&lt;Gap info&gt;</a>              <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Gap status" class=bnf_ref>&lt;Gap status&gt;</a>    <span class=comment>// gap start, gap end, status</span>
+<a name="Gap status" class=bnf_def>&lt;Gap status&gt;</a>
+
+<a name="SpaceTemp" class=bnf_def>&lt;SpaceTemp&gt;</a>             <span class=bnf_symb>::=</span> <a href="#FLOAT" class=bnf_ref>FLOAT</a>   <span class=comment>// MB, free space in 'temp' directory</span>
+<a name="SpaceIncoming" class=bnf_def>&lt;SpaceIncoming&gt;</a>         <span class=bnf_symb>::=</span> <a href="#FLOAT" class=bnf_ref>FLOAT</a>   <span class=comment>// MB, free space in 'incoming' directory</span>
+<a name="SpaceNeeded" class=bnf_def>&lt;SpaceNeeded&gt;</a>           <span class=bnf_symb>::=</span> <a href="#FLOAT" class=bnf_ref>FLOAT</a>   <span class=comment>// MB, space needed for downloads</span>
+<a name="Nconnections" class=bnf_def>&lt;Nconnections&gt;</a>          <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>    <span class=comment>// number of currently used connections</span>
+<a name="Nqueue" class=bnf_def>&lt;Nqueue&gt;</a>                <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>    <span class=comment>// number of peoples on queue</span>
+<a name="Speed" class=bnf_def>&lt;Speed&gt;</a>                 <span class=bnf_symb>::=</span> <a href="#FLOAT" class=bnf_ref>FLOAT</a>   <span class=comment>// KB/sec</span>
+<a name="Slot ID" class=bnf_def>&lt;Slot ID&gt;</a>               <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>
+
+<span class=sec_name>2.5. <a name="section_2_5_">eMule extensions</a></span>
+-------------------------
+<a name="eMule Hello" class=bnf_def>&lt;eMule Hello&gt;</a>           <span class=bnf_symb>::=</span> <span class=hexnum>0x01</span> <a href="#eMule Version" class=bnf_ref>&lt;eMule Version&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+<a name="eMule Hello answer" class=bnf_def>&lt;eMule Hello answer&gt;</a>    <span class=bnf_symb>::=</span> <span class=hexnum>0x02</span> <a href="#eMule Version" class=bnf_ref>&lt;eMule Version&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+<span class=comment>/* zlib compressed data can come in more than one packets without changing start and len */</span>
+<a name="eMule Data compressed" class=bnf_def>&lt;eMule Data compressed&gt;</a> <span class=bnf_symb>::=</span> <span class=hexnum>0x40</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#eMule Start offset" class=bnf_ref>&lt;eMule Start offset&gt;</a> <a href="#eMule Data length" class=bnf_ref>&lt;eMule Data length&gt;</a> <a href="#ZDATA" class=bnf_ref>ZDATA</a>
+<a name="eMule Queue ranking" class=bnf_def>&lt;eMule Queue ranking&gt;</a>   <span class=bnf_symb>::=</span> <span class=hexnum>0x60</span> <a href="#eMule Rank" class=bnf_ref>&lt;eMule Rank&gt;</a>
+<a name="eMule File desc" class=bnf_def>&lt;eMule File desc&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x61</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>   <span class=comment>// File comment (128 bytes max)</span>
+<a name="eMule Sources request" class=bnf_def>&lt;eMule Sources request&gt;</a> <span class=bnf_symb>::=</span> <span class=hexnum>0x81</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="eMule Sources answer" class=bnf_def>&lt;eMule Sources answer&gt;</a>  <span class=bnf_symb>::=</span> <span class=hexnum>0x82</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#eMule Address list" class=bnf_ref>&lt;eMule Address list&gt;</a>
+
+UDP
+-----------
+<a name="eMule OP_REASKFILEPING" class=bnf_def>&lt;eMule OP_REASKFILEPING&gt;</a><span class=bnf_symb>::=</span> <span class=hexnum>0x90</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a>
+<a name="eMule OP_REASKACK" class=bnf_def>&lt;eMule OP_REASKACK&gt;</a>     <span class=bnf_symb>::=</span> <span class=hexnum>0x91</span> <a href="#eMule Rank" class=bnf_ref>&lt;eMule Rank&gt;</a>
+<a name="eMule File not found" class=bnf_def>&lt;eMule File not found&gt;</a>  <span class=bnf_symb>::=</span> <span class=hexnum>0x92</span>
+<a name="eMule Queue Full" class=bnf_def>&lt;eMule Queue Full&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0x93</span>
+
+<a name="eMule Version" class=bnf_def>&lt;eMule Version&gt;</a>         <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>
+<a name="eMule Start offset" class=bnf_def>&lt;eMule Start offset&gt;</a>    <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="eMule Data length" class=bnf_def>&lt;eMule Data length&gt;</a>     <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="eMule Address list" class=bnf_def>&lt;eMule Address list&gt;</a>    <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>*
+<a name="eMule Rank" class=bnf_def>&lt;eMule Rank&gt;</a>            <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>
+
+
+<span class=sec_name>3. <a name="section_3_">Met files format</a></span>
+======================================================================
+
+<span class=sec_name>3.1. <a name="section_3_1_">server.met</a></span>
+-------------------------
+<a name="server.met" class=bnf_def>&lt;server.met&gt;</a>        <span class=bnf_symb>::=</span> <span class=hexnum>0x0e</span> <a href="#Server desc list" class=bnf_ref>&lt;Server desc list&gt;</a> <a href="#Tail" class=bnf_ref>&lt;Tail&gt;</a>
+<a name="Server desc list" class=bnf_def>&lt;Server desc list&gt;</a>  <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Server desc" class=bnf_ref>&lt;Server desc&gt;</a>*
+<a name="Server desc" class=bnf_def>&lt;Server desc&gt;</a>       <span class=bnf_symb>::=</span> <a href="#IP" class=bnf_ref>&lt;IP&gt;</a> <a href="#Port" class=bnf_ref>&lt;Port&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+<a name="Tail" class=bnf_def>&lt;Tail&gt;</a>              <span class=bnf_symb>::=</span> <a href="#DATA" class=bnf_ref>DATA</a>
+
+NOTE: <a href="#Tail" class=bnf_ref>&lt;Tail&gt;</a> may keep some data as
+28 unhandled bytes at the end:
+  <span class=hexnum>0x11A0</span> : 6D 61 64 65 20 62 79 20 6F 20 63 20 62 20 20 4D : made.by.o.c.b..M
+  <span class=hexnum>0x11B0</span> : 20 61 20 75 20 72 20 69 20 63 20 65             : .a.u.r.i.c.e
+
+<span class=sec_name>3.2. <a name="section_3_2_">part.met</a></span>
+-------------------------
+<a name="part.met" class=bnf_def>&lt;part.met&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0xe1</span> <a href="#File details" class=bnf_ref>&lt;File details&gt;</a> <span class=hexnum>0x00</span>
+<a name="File details" class=bnf_def>&lt;File details&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0x02</span> <a href="#Date" class=bnf_ref>&lt;Date&gt;</a> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+                        [ <span class=hexnum>0x01</span> <a href="#B part hashes" class=bnf_ref>&lt;B part hashes&gt;</a> ] [ <span class=hexnum>0x01</span> <a href="#S part hashes" class=bnf_ref>&lt;S part hashes&gt;</a> ]
+<a name="B part hashes" class=bnf_def>&lt;B part hashes&gt;</a>     <span class=bnf_symb>::=</span> <a href="#HASH" class=bnf_ref>HASH</a>*   <span class=comment>// number of hashes == ceil(size/9728000)</span>
+<a name="S part hashes" class=bnf_def>&lt;S part hashes&gt;</a>     <span class=bnf_symb>::=</span> <a href="#HASH" class=bnf_ref>HASH</a>8*  <span class=comment>// number of hashes == ceil(size/486400)</span>
+
+<a name="Date" class=bnf_def>&lt;Date&gt;</a>              <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+
+<span class=sec_name>3.3. <a name="section_3_3_">known.met</a></span>
+-------------------------
+<a name="known.met" class=bnf_def>&lt;known.met&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x0e</span> <a href="#File details list" class=bnf_ref>&lt;File details list&gt;</a>
+<a name="File details list" class=bnf_def>&lt;File details list&gt;</a> <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#File details" class=bnf_ref>&lt;File details&gt;</a>*
+
+<span class=sec_name>3.4. <a name="section_3_4_">pref.met</a></span>
+-------------------------
+<a name="pref.met" class=bnf_def>&lt;pref.met&gt;</a>          <span class=bnf_symb>::=</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a> <a href="#HASH" class=bnf_ref>HASH</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a> <a href="#Preferencies" class=bnf_ref>&lt;Preferencies&gt;</a>
+<a name="Preferencies" class=bnf_def>&lt;Preferencies&gt;</a>      <span class=bnf_symb>::=</span> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+
+<span class=sec_name>3.5. <a name="section_3_5_">formats for old versions</a></span>
+-------------------------
+<a name="part.v04.met" class=bnf_def>&lt;part.v04.met&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0xe0</span> <a href="#File details v04" class=bnf_ref>&lt;File details v04&gt;</a>
+<a name="File details v04" class=bnf_def>&lt;File details v04&gt;</a>      <span class=bnf_symb>::=</span> <a href="#Date" class=bnf_ref>&lt;Date&gt;</a> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Part hash list" class=bnf_ref>&lt;Part hash list&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+
+<a name="known.v04.met" class=bnf_def>&lt;known.v04.met&gt;</a>         <span class=bnf_symb>::=</span> <span class=hexnum>0x0e</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#File details v04" class=bnf_ref>&lt;File details v04&gt;</a>*
+
+
+<span class=sec_name>4. <a name="section_4_">Basic data format</a></span>
+======================================================================
+
+<a name="Search query" class=bnf_def>&lt;Search query&gt;</a>      <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span> <a href="#Operator" class=bnf_ref>&lt;Operator&gt;</a> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a> <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>                       <span class=comment>// search by name</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a>       <span class=comment>// search by meta</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x03</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Minmax" class=bnf_ref>&lt;Minmax&gt;</a> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <span class=comment>// search by limit</span>
+<a name="Operator" class=bnf_def>&lt;Operator&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span>     <span class=comment>// and</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span>     <span class=comment>// or</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span>     <span class=comment>// and not</span>
+<a name="Minmax" class=bnf_def>&lt;Minmax&gt;</a>            <span class=bnf_symb>::=</span> <span class=hexnum>0x01</span>     <span class=comment>// min</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span>     <span class=comment>// max</span>
+
+<a name="File info list" class=bnf_def>&lt;File info list&gt;</a>    <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#File info" class=bnf_ref>&lt;File info&gt;</a>*
+<a name="File info" class=bnf_def>&lt;File info&gt;</a>         <span class=bnf_symb>::=</span> <a href="#File hash" class=bnf_ref>&lt;File hash&gt;</a> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a> <a href="#Port" class=bnf_ref>&lt;Port&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+<a name="Server info list" class=bnf_def>&lt;Server info list&gt;</a>  <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Server info" class=bnf_ref>&lt;Server info&gt;</a>*
+<a name="Server info" class=bnf_def>&lt;Server info&gt;</a>       <span class=bnf_symb>::=</span> <a href="#Server hash" class=bnf_ref>&lt;Server hash&gt;</a> <a href="#Server address" class=bnf_ref>&lt;Server address&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+<a name="Client info list" class=bnf_def>&lt;Client info list&gt;</a>  <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Client info" class=bnf_ref>&lt;Client info&gt;</a>*
+<a name="Client info" class=bnf_def>&lt;Client info&gt;</a>       <span class=bnf_symb>::=</span> <a href="#Client hash" class=bnf_ref>&lt;Client hash&gt;</a> <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a> <a href="#Port" class=bnf_ref>&lt;Port&gt;</a> <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>
+
+<a name="Meta tag list" class=bnf_def>&lt;Meta tag list&gt;</a>     <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#Meta tag" class=bnf_ref>&lt;Meta tag&gt;</a>*
+<a name="Meta tag" class=bnf_def>&lt;Meta tag&gt;</a>          <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span> Undefined
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#HASH" class=bnf_ref>HASH</a>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x03</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#DWORD" class=bnf_ref>DWORD</a>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x04</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#FLOAT" class=bnf_ref>FLOAT</a>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x05</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#BOOL" class=bnf_ref>BOOL</a>       <span class=comment>// <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x06</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#BOOL" class=bnf_ref>BOOL</a> Array <span class=comment>// <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x07</span> <a href="#Meta tag name" class=bnf_ref>&lt;Meta tag name&gt;</a> <a href="#BLOB" class=bnf_ref>BLOB</a>       <span class=comment>// <span class=unknown>??</span></span>
+<a name="Meta tag name" class=bnf_def>&lt;Meta tag name&gt;</a>     <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#Special tag" class=bnf_ref>&lt;Special tag&gt;</a>  <span class=comment>// <a href="#WORD" class=bnf_ref>WORD</a> is the number of bytes in <a href="#Special tag" class=bnf_ref>&lt;Special tag&gt;</a></span>
+                    <span class=bnf_symb>||=</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Special tag" class=bnf_def>&lt;Special tag&gt;</a>       <span class=bnf_symb>::=</span> <span class=hexnum>0x01</span>        <span class=comment>// name</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x02</span>        <span class=comment>// size: size of file</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x03</span>        <span class=comment>// type: Audio, Video, Image, Pro, Doc, Col</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x04</span>        <span class=comment>// format: file extension</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x05</span>        <span class=comment>// Collection (depricated)  // <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x06</span>        <span class=comment>// Part Path                // <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x07</span>        <span class=comment>// Part Hash                // <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x08</span>        <span class=comment>// copied</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x09</span> <a href="#DATA" class=bnf_ref>DATA</a>   <span class=comment>// gap start: <a href="#DATA" class=bnf_ref>DATA</a> keeps number of gap as string</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x0a</span> <a href="#DATA" class=bnf_ref>DATA</a>   <span class=comment>// gap end: <a href="#DATA" class=bnf_ref>DATA</a> keeps number of gap as string</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x0b</span>        <span class=comment>// description</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x0c</span>        <span class=comment>// ping</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x0d</span>        <span class=comment>// fail</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x0e</span>        <span class=comment>// preference</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x0f</span>        <span class=comment>// port</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x10</span>        <span class=comment>// ip</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x11</span>        <span class=comment>// version</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x12</span>        <span class=comment>// tempfile</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x13</span>        <span class=comment>// priority</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x14</span>        <span class=comment>// status</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x15</span>        <span class=comment>// availability</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x16</span>        <span class=comment>// QTime                    // <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x17</span>        <span class=comment>// Parts                    // <span class=unknown>??</span></span>
+                    <span class=bnf_symb>||=</span> <a href="#eMule special tag" class=bnf_ref>&lt;eMule special tag&gt;</a>
+
+<a name="eMule special tag" class=bnf_def>&lt;eMule special tag&gt;</a> <span class=bnf_symb>::=</span> <span class=hexnum>0x20</span>        <span class=comment>// Compression</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x21</span>        <span class=comment>// UDP client port</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x22</span>        <span class=comment>// UDP version</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x23</span>        <span class=comment>// Source exchange</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x24</span>        <span class=comment>// Comments</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x25</span>        <span class=comment>// Extended request</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x26</span>        <span class=comment>// Compatible client</span>
+
+<a name="Address list" class=bnf_def>&lt;Address list&gt;</a>      <span class=bnf_symb>::=</span> <a href="#BYTE" class=bnf_ref>BYTE</a> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>*
+<a name="Server address" class=bnf_def>&lt;Server address&gt;</a>    <span class=bnf_symb>::=</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>
+<a name="Client address" class=bnf_def>&lt;Client address&gt;</a>    <span class=bnf_symb>::=</span> <a href="#Address" class=bnf_ref>&lt;Address&gt;</a>
+<a name="Address" class=bnf_def>&lt;Address&gt;</a>           <span class=bnf_symb>::=</span> <a href="#IP" class=bnf_ref>&lt;IP&gt;</a> <a href="#Port" class=bnf_ref>&lt;Port&gt;</a>
+
+<span class=comment>/* Warning there are broken clients that send the list 2 Times where <a href="#WORD" class=bnf_ref>WORD</a> has the doubled len */</span>
+<span class=comment>/* Part status are stored as follow:
+bytes [            0            ] [            1            ] [            2            ] ...
+bits  [ 7  6  5  4  3  2  1  0  ] [ 7  6  5  4  3  2  1  0  ] [ 7  6  5  4  3  2  1  0  ] ...
+parts [ 7  6  5  4  3  2  1  0  ] [ 15 14 13 12 11 10 9  8  ] [ 23 22 21 20 19 18 17 16 ] ... 
+*/</span>
+<a name="Part status list" class=bnf_def>&lt;Part status list&gt;</a>  <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#BYTE" class=bnf_ref>BYTE</a>*  <span class=comment>// number of bytes is <a href="#WORD" class=bnf_ref>WORD</a>/8, 1 bit for each part</span>
+
+<span class=comment>/* Warning there are broken clients that send the list 2 Times where <a href="#WORD" class=bnf_ref>WORD</a> has the doubled len */</span>
+<a name="Part hash list" class=bnf_def>&lt;Part hash list&gt;</a>    <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a> <a href="#HASH" class=bnf_ref>HASH</a>*
+
+<a name="Data range" class=bnf_def>&lt;Data range&gt;</a>        <span class=bnf_symb>::=</span> <a href="#Start offset" class=bnf_ref>&lt;Start offset&gt;</a> <a href="#End offset" class=bnf_ref>&lt;End offset&gt;</a>     <span class=comment>// Len = End - Start (mean End is not included)</span>
+<a name="Start offset" class=bnf_def>&lt;Start offset&gt;</a>      <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="End offset" class=bnf_def>&lt;End offset&gt;</a>        <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+
+<a name="Directory list" class=bnf_def>&lt;Directory list&gt;</a>    <span class=bnf_symb>::=</span> <a href="#String list" class=bnf_ref>&lt;String list&gt;</a>
+<a name="Directory" class=bnf_def>&lt;Directory&gt;</a>         <span class=bnf_symb>::=</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="File name" class=bnf_def>&lt;File name&gt;</a>         <span class=bnf_symb>::=</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Server name" class=bnf_def>&lt;Server name&gt;</a>       <span class=bnf_symb>::=</span> <a href="#String" class=bnf_ref>&lt;String&gt;</a>
+<a name="Client ID" class=bnf_def>&lt;Client ID&gt;</a>         <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>   <span class=comment>// client IP for high id, or number</span>
+<a name="Nusers" class=bnf_def>&lt;Nusers&gt;</a>            <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="Nusersmax" class=bnf_def>&lt;Nusersmax&gt;</a>         <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="Nfiles" class=bnf_def>&lt;Nfiles&gt;</a>            <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="File hash" class=bnf_def>&lt;File hash&gt;</a>         <span class=bnf_symb>::=</span> <a href="#HASH" class=bnf_ref>HASH</a>    <span class=comment>// MD4 of file for files of unknown type</span>
+<a name="Client hash" class=bnf_def>&lt;Client hash&gt;</a>       <span class=bnf_symb>::=</span> <a href="#HASH" class=bnf_ref>HASH</a>    <span class=unknown>??</span>
+<a name="Server hash" class=bnf_def>&lt;Server hash&gt;</a>       <span class=bnf_symb>::=</span> <a href="#HASH" class=bnf_ref>HASH</a>    <span class=unknown>??</span>
+<a name="IP" class=bnf_def>&lt;IP&gt;</a>                <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a>
+<a name="Port" class=bnf_def>&lt;Port&gt;</a>              <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>
+
+<a name="More" class=bnf_def>&lt;More&gt;</a>              <span class=bnf_symb>::=</span> <span class=hexnum>0x00</span>
+                    <span class=bnf_symb>||=</span> <span class=hexnum>0x01</span>
+
+<a name="String list" class=bnf_def>&lt;String list&gt;</a>       <span class=bnf_symb>::=</span> <a href="#DWORD" class=bnf_ref>DWORD</a> <a href="#String" class=bnf_ref>&lt;String&gt;</a>*
+<a name="String" class=bnf_def>&lt;String&gt;</a>            <span class=bnf_symb>::=</span> <a href="#String length" class=bnf_ref>&lt;String length&gt;</a> <a href="#DATA" class=bnf_ref>DATA</a>
+<a name="String length" class=bnf_def>&lt;String length&gt;</a>     <span class=bnf_symb>::=</span> <a href="#WORD" class=bnf_ref>WORD</a>
+
+<a name="BYTE" class=bnf_def>BYTE</a>    1 byte integer
+<a name="WORD" class=bnf_def>WORD</a>    2 bytes integer
+<a name="DWORD" class=bnf_def>DWORD</a>   4 bytes integer
+<a name="FLOAT" class=bnf_def>FLOAT</a>   4 bytes single float
+<a name="HASH" class=bnf_def>HASH</a>    16 bytes MD4 digest
+<a name="HASH" class=bnf_def>HASH</a>8   8 first bytes of <a href="#HASH" class=bnf_ref>HASH</a>
+<a name="DATA" class=bnf_def>DATA</a>    Data of custom length
+<a name="ZDATA" class=bnf_def>ZDATA</a>   zlib-compressed <a href="#DATA" class=bnf_ref>DATA</a>
+<a name="BOOL" class=bnf_def>BOOL</a>    <span class=unknown>??</span>
+<a name="BLOB" class=bnf_def>BLOB</a>    <span class=unknown>??</span>
+
+
+<span class=sec_name>5. <a name="section_5_">Semantics</a></span>
+======================================================================
+
+<span class=sec_name>5.1. <a name="section_5_1_">HighID and LowID</a></span>
+-------------------------
+The <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a> match the client IP address in case of high ID, so if the ID
+value is stored in hexadecimal as <span class=hexnum>0xAABBCCDD</span>, the IP is DD.CC.BB.AA.
+The <a href="#Client ID" class=bnf_ref>&lt;Client ID&gt;</a> is a low ID when it is below 16777216, so the last low ID is 
+<span class=hexnum>0x00FFFFFF</span>, every IP that end with a 0 is considered as a low ID.
+
+<span class=sec_name>5.2. <a name="section_5_2_">UDP port</a></span>
+-------------------------
+Number of UDP port on server is equal to number of TCP listen port + 4.
+
+
+<span class=sec_name>6. <a name="section_6_">Changes</a></span>
+======================================================================
+
+0.6.2 Mon Apr 19 17:39:12 MSD 2004
+    - file details updated (Kornilov Matvei)
+    - added section for old protocol versions
+    - added packets <span class=hexnum>0x60</span>, <span class=hexnum>0x5c</span> (eMule)
+    - added section Semantics for all info about protocol semantic
+    - updated comment for part status
+
+0.6.1 Wed Apr 23 17:25:43 MSD 2003
+    - updated html "makeup"
+    - removed value type comments from special tag name, because
+      value type is stored in meta tag
+    - added HighID and LowID section (eKwak Team)
+    - added list of contributors
+    - added shared dirs/files requests (<span class=hexnum>0x5d</span>-<span class=hexnum>0x61</span>) (eMule)
+    - fixed <a href="#Slot request" class=bnf_ref>&lt;Slot request&gt;</a> (eKwak Team)
+    - fixed <a href="#Meta tag" class=bnf_ref>&lt;Meta tag&gt;</a> for <span class=hexnum>0x2</span> and <span class=hexnum>0x3</span> (eKwak Team)
+    - added extension for <a href="#UDP Server status request" class=bnf_ref>&lt;UDP Server status request&gt;</a> (Stéphane Loeuillet)
+    - added part.met byte <span class=hexnum>0xe1</span>  (<span class=unknown>??</span>)
+    - added eMule packets: <span class=hexnum>0x90</span>, <span class=hexnum>0x91</span>, <span class=hexnum>0x92</span>, <span class=hexnum>0x93</span> (<span class=unknown>??</span>)
+    - fixed <a href="#Search query" class=bnf_ref>&lt;Search query&gt;</a> for <span class=hexnum>0x1</span> and <span class=hexnum>0x2</span>
+
+0.6   Mon Jan 20 14:03:12 MSK 2003
+    - added format of whole packet (header, protocol, etc.).
+    - fixed some mistypos.
+
+      Mon Jan 20 12:42:51 MSK 2003 (Qi-Hong Chen)
+    - fixed mistypos for <a href="#known.met" class=bnf_ref>&lt;known.met&gt;</a>.
+    - changed to <a href="#File details" class=bnf_ref>&lt;File details&gt;</a> in 3.2 to avoid names clash with packet 
+      <a href="#File status" class=bnf_ref>&lt;File status&gt;</a>.
+    - fixed "Meta list" entries to <a href="#Meta tag list" class=bnf_ref>&lt;Meta tag list&gt;</a>.
+    - added format for <a href="#Date" class=bnf_ref>&lt;Date&gt;</a>.
+
+      Sun Dez 15 11:44:00 GMT+1 2002 (Thomas Lussnig)
+    - eMule Packets.
+    - Metta tag and Meta Special tag.
+    - some anotations.
+
+0.5   Fri Oct 18 12:28:37 MSD 2002
+    - packet names for <span class=hexnum>0x54</span>-<span class=hexnum>0x57</span> changed to "Slot ...".
+    - added core&lt;-&gt;gui protocol.
+    - the document reorganized.
+
+0.4   Fri Oct 11 11:53:32 MSD 2002
+    - is chat actually function in eDonkey network? at least not for
+      server v16.39 under linux.
+    - rewritten udp section.
+    - added packet <span class=hexnum>0x9e</span> - UDP Callback fail.
+    - added packet <span class=hexnum>0x18</span> - server know the packet and drops connection.
+    - added packet <span class=hexnum>0x05</span> - this packet server sends to client, if server
+      receive bad packet from client. Server sends <span class=hexnum>0x05</span> and closes connection.
+
+0.3   Tue Oct  8 17:50:28 MSD 2002
+    - added format for *.met files.
+0.2
+    - merged information from mldonkey.
+0.1
+    - started document from some public info and dumped packets.
+</pre>
+<hr>
+This file was generated by make_html 
+<a href="http://www.perl.org/">perl</a> script from eDonkey-protocol
+text file at ðÎÄ áÐÒ 19 18:44:31 MSD 2004
+.
+</body></html>
