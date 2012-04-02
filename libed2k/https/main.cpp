@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
 
 		boost::asio::io_service io_service;
 		IsAuth auth(io_service);
-		auth.requestAuth("el.is74.ru", "auth.php", "pavlovatg74", "", "0.5.6.7");
+		auth.requestAuth("el.is74.ru", "auth.php", "", "", "0.5.6.7");
 		io_service.run();
 		return 0;
 /*
