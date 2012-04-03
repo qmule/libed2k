@@ -1,0 +1,28 @@
+
+import os, fnmatch
+from os.path import join, basename
+
+def globrec(rootdir, wildcard):
+    matches = []
+    for root, dirnames, filenames in os.walk(rootdir):
+        for filename in fnmatch.filter(filenames, wildcard):
+            matches.append(join(root, filename))
+    return matches
+
+# Environment
+cryptoppHome = os.getenv('CRYPTOPP_HOME')
+
+# Constants 
+incdir = 'include'
+srcdir = 'src'
+bindir = 'bin'
+
+# Arguments
+args = {
+    'CPPPATH' : [ incdir ],
+    'LIBS'    : [ 'cryptopp' ]
+    }
+
+env = Environment(**args)
+cpps = globrec(srcdir, '*.cpp')
+env.Program(join(bindir, 'ed2k_client'), cpps)
