@@ -1,5 +1,7 @@
-
 // ed2k transfer handle
+
+#ifndef __LIBED2K_TRANSFER_HANDLE__
+#define __LIBED2K_TRANSFER_HANDLE__
 
 namespace libed2k
 {
@@ -10,3 +12,5 @@ namespace libed2k
     {
     };
 }
+
+#endif
