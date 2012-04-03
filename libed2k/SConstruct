@@ -18,7 +18,7 @@ bindir = 'bin'
 # Arguments
 args = {
     'CPPPATH' : [ incdir ],
-    'LIBS'    : [ 'cryptopp' ]
+    'LIBS'    : [ 'boost_program_options', 'cryptopp' ]
     }
 
 env = Environment(**args)
