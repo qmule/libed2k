@@ -1,6 +1,6 @@
 EXAMPLE_BIN=crypto
 
-OBJF = ../../src/Crypto.o 
+OBJF = ../../src/is_crypto.o 
 OBJF += $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
 
 LDFLAGS=-lssl -lboost_iostreams -lboost_thread -lpthread -lboost_system -lboost_signals -lcrypto++ -lcryptopp

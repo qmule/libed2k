@@ -1,6 +1,6 @@
 #include <string>
 #include <iostream>
-#include "Crypto.h"
+#include "is_crypto.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -12,3 +12,4 @@ int main(int argc, char* argv[])
 	std::cout << "Encrypted password: " << strEPassword << std::endl;
 	return 0;
 };
+

@@ -5,7 +5,7 @@
 #include <cryptopp/gzip.h>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md5.h>
-#include "Crypto.h"
+#include "is_crypto.hpp"
 
 namespace IsCrypto
 {
