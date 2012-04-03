@@ -1,3 +1,6 @@
+#ifndef __IS_CRYPTO__
+#define __IS_CRYPTO__
+
 #include <time.h>
 #include <cryptopp/blowfish.h>
 #include <cryptopp/base64.h>
@@ -185,3 +188,5 @@ std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& st
     return (decipher);
 }
 };
+
+#endif //__IS_CRYPTO__
