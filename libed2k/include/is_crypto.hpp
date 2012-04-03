@@ -1,12 +1,15 @@
 #include <string>
+#include <cryptopp/config.h>
+#include <windows.h>
 
+// include config.h for byte definition
 // special functions for encrypt and decrypt passwords
 // it is simple port of Authorisation from emule is mod
 // used for backward compatibility
-namespace IsCrypto
+namespace is_crypto
 {
+
 #ifndef WIN32
-    typedef unsigned char byte;
     typedef unsigned int DWORD;
     typedef unsigned int UINT;
 #endif

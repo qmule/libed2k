@@ -4,9 +4,9 @@
 
 int main(int argc, char* argv[])
 {
-	std::string strFilename = "./test.crypto";
-	std::string strEPassword = IsCrypto::EncryptPasswd("password", strFilename);
-	std::string strPassword = IsCrypto::DecryptPasswd(strEPassword, strFilename);
+	std::string strFilename = "./xxx.txt";
+	std::string strEPassword = is_crypto::EncryptPasswd("password", strFilename);
+	std::string strPassword = is_crypto::DecryptPasswd(strEPassword, strFilename);
 
 	std::cout << "Decrypted password: " << strPassword << std::endl;
 	std::cout << "Encrypted password: " << strEPassword << std::endl;

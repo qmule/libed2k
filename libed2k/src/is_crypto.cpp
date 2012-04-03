@@ -1,3 +1,4 @@
+#include <time.h>
 #include <cryptopp/blowfish.h>
 #include <cryptopp/base64.h>
 #include <cryptopp/files.h>
@@ -7,7 +8,7 @@
 #include <cryptopp/md5.h>
 #include "is_crypto.hpp"
 
-namespace IsCrypto
+namespace is_crypto
 {
 
 //функция преобразования числа в массив байтов заданной длинны по хитрому алгоритму :-)
@@ -53,12 +54,13 @@ void CreateKey(byte *key, int len_key)
     DWORD VSNumber;
 
 #ifdef WIN32
+	// do not use wchar since we not need these values
     DWORD MCLength;
     DWORD FileSF;
-    wchar_t NameBuffer[MAX_PATH];
-    wchar_t SysNameBuffer[MAX_PATH];
+    char NameBuffer[MAX_PATH];
+    char SysNameBuffer[MAX_PATH];
     //получаем серииник тома
-    if (!GetVolumeInformation(L"C:\\",NameBuffer, sizeof(NameBuffer),
+    if (!GetVolumeInformationA("C:\\",NameBuffer, sizeof(NameBuffer),
             &VSNumber,&MCLength,&FileSF,SysNameBuffer,sizeof(SysNameBuffer))){
         VSNumber = 1024; // если нам не удалось узнать серииник тома чтож, ставим заранее приготовленное число
     }
@@ -94,7 +96,9 @@ std::string EncryptPasswd(const std::string& strPasswd, const std::string& strFi
 
     //создаём новый файл со случайным числом
     srand((UINT)time(NULL));
-    std::fstream rand_file(strFilename.c_str(), std::ios::out| std::ios::trunc);
+
+	// TODO - add file created test?
+	std::fstream rand_file(strFilename.c_str(), std::ios::out| std::ios::trunc);
 
     for(int i=0;i<MAX_NUMBER_IN_FILE;i++)
     {
