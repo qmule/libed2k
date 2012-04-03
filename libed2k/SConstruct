@@ -9,8 +9,6 @@ def globrec(rootdir, wildcard):
             matches.append(join(root, filename))
     return matches
 
-# Environment
-cryptoppHome = os.getenv('CRYPTOPP_HOME')
 
 # Constants 
 incdir = 'include'
