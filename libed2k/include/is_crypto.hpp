@@ -1,5 +1,8 @@
 #include <string>
 
+// special functions for encrypt and decrypt passwords
+// it is simple port of Authorisation from emule is mod
+// used for backward compatibility
 namespace IsCrypto
 {
 #ifndef WIN32
