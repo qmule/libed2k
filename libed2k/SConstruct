@@ -15,10 +15,16 @@ incdir = 'include'
 srcdir = 'src'
 bindir = 'bin'
 
+# Environment
+boostRoot      = os.getenv('BOOST_ROOT')
+libtorrentRoot = os.getenv('LIBTORRENT_ROOT')
+
 # Arguments
 args = {
-    'CPPPATH' : [ incdir ],
-    'LIBS'    : [ 'boost_program_options', 'cryptopp' ]
+    'CPPPATH' : [incdir] + [join(p, 'include') for p in [boostRoot, libtorrentRoot]],
+    'LIBPATH' : [join(p, 'lib') for p in [boostRoot, libtorrentRoot]],
+    'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
+                 'boost_thread', 'boost_signals', 'cryptopp', 'ssl', 'pthread']
     }
 
 env = Environment(**args)
