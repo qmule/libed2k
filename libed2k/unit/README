@@ -1,0 +1,8 @@
+To run tests:
+Add $BOOST_HOME/lib to LD_LIBRARY_PATH 
+./run_tests
+some options:
+--log_level=all 
+--log-level=test_suite
+--report_format=XML 
+--report_level=detailed
