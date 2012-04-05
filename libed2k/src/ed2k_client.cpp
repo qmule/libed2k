@@ -14,7 +14,12 @@ int main(int argc, char* argv[])
         ("mode", po::value<std::string>(), "client run mode");
 
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
+    try {
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+    } catch(boost::program_options::error& poe) {
+        std::cout << poe.what() << std::endl;
+        return 1;
+    }
     po::notify(vm);
 
     if (vm.count("help")) {

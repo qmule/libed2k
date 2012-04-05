@@ -28,6 +28,8 @@ namespace libed2k
         void init(int listen_port, const char* listen_interface,
                   const fingerprint& id, const std::string& logpath);
 
+		// data shared between the main thread
+		// and the working thread
         boost::shared_ptr<aux::session_impl> m_impl;
     };
 }

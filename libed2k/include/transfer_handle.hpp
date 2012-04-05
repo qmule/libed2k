@@ -11,6 +11,7 @@ namespace libed2k
     class transfer_handle
     {
     };
+
 }
 
 #endif
