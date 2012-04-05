@@ -1,5 +1,5 @@
 
-#include "libtorrent/peer_connection.hpp"
+#include <libtorrent/peer_connection.hpp>
 
 #include "session_impl.hpp"
 
@@ -27,7 +27,7 @@ session_impl::session_impl(int lst_port, const char* listen_interface,
     m_max_connections(200),
     m_logpath(logpath)
 {
-    libtorrent::error_code ec;
+    error_code ec;
     m_listen_interface = tcp::endpoint(
         libtorrent::address::from_string(listen_interface, ec), lst_port);
     TORRENT_ASSERT(!ec);
@@ -60,6 +60,38 @@ session_impl::session_impl(int lst_port, const char* listen_interface,
 }
 
 void session_impl::operator()()
+{
+    // main session thread
+
+    eh_initializer();
+
+    if (m_listen_interface.port() != 0)
+    {
+        boost::mutex::scoped_lock l(m_mutex);
+        open_listen_port();
+    }
+
+    do
+    {
+        error_code ec;
+        m_io_service.run(ec);
+        TORRENT_ASSERT(m_abort == true);
+        if (ec)
+        {
+#ifdef TORRENT_DEBUG
+            std::cerr << ec.message() << "\n";
+            std::string err = ec.message();
+#endif
+            TORRENT_ASSERT(false);
+        }
+        m_io_service.reset();
+    } while (!m_abort);
+
+    boost::mutex::scoped_lock l(m_mutex);
+    m_transfers.clear();
+}
+
+void session_impl::open_listen_port()
 {
 }
 

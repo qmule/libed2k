@@ -10,6 +10,7 @@
 #include <boost/thread/condition.hpp>
 #include <boost/pool/object_pool.hpp>
 
+#include <libtorrent/session.hpp>
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/policy.hpp>
 #include <libtorrent/file_pool.hpp>
@@ -31,6 +32,8 @@ namespace libed2k {
 
     typedef boost::asio::ip::tcp tcp;
     typedef libtorrent::logger logger;
+    typedef libtorrent::aux::eh_initializer eh_initializer;
+    typedef libtorrent::error_code error_code;
     namespace fs = boost::filesystem;
 
     namespace aux {
@@ -50,11 +53,17 @@ namespace libed2k {
             // main thread entry point
             void operator()();
 
+            void open_listen_port();
+
             unsigned short listen_port() const;
 
         private:
 
             void on_disk_queue();
+
+			// must be locked to access the data
+			// in this struct
+			mutable boost::mutex m_mutex;
 
             boost::object_pool<libtorrent::policy::ipv4_peer> m_ipv4_peer_pool;
 
