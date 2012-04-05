@@ -18,6 +18,7 @@
 #include <libtorrent/connection_queue.hpp>
 #include <libtorrent/bandwidth_manager.hpp>
 #include <libtorrent/ip_filter.hpp>
+#include <libtorrent/debug.hpp>
 
 #include "fingerprint.hpp"
 #include "peer_connection.hpp"
@@ -25,10 +26,16 @@
 #include "md4_hash.hpp"
 #include "transfer.hpp"
 
+
 namespace libed2k {
+
+    typedef boost::asio::ip::tcp tcp;
+    typedef libtorrent::logger logger;
+    namespace fs = boost::filesystem;
+
     namespace aux {
 
-        struct session_impl
+        struct session_impl: boost::noncopyable
         {
 
             // the size of each allocation that is chained in the send buffer
@@ -40,8 +47,14 @@ namespace libed2k {
             session_impl(int listen_port, const char* listen_interface,
                          const fingerprint& id, const std::string& logpath);
 
-            void on_disk_queue();
+            // main thread entry point
+            void operator()();
 
+            unsigned short listen_port() const;
+
+        private:
+
+            void on_disk_queue();
 
             boost::object_pool<libtorrent::policy::ipv4_peer> m_ipv4_peer_pool;
 
@@ -67,7 +80,7 @@ namespace libed2k {
             // them
             mutable boost::asio::io_service m_io_service;
 
-            boost::asio::ip::tcp::resolver m_host_resolver;
+            tcp::resolver m_host_resolver;
 
             // handles delayed alerts
             libtorrent::alert_manager m_alerts;
@@ -99,6 +112,8 @@ namespace libed2k {
             libtorrent::bandwidth_channel m_download_channel;
             libtorrent::bandwidth_channel m_upload_channel;
 
+            libtorrent::bandwidth_channel* m_bandwidth_channel[2];
+
             server_manager m_server_manager;
             transfer_map m_transfers;
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
@@ -114,22 +129,17 @@ namespace libed2k {
             // filters outgoing connections
             libtorrent::port_filter m_port_filter;
 
-            // the number of retries we make when binding the
-            // listen socket. For each retry the port number
-            // is incremented by one
-            int m_listen_port_retries;
-
             // the ip-address of the interface
             // we are supposed to listen on.
             // if the ip is set to zero, it means
             // that we should let the os decide which
             // interface to listen on
-            boost::asio::ip::tcp::endpoint m_listen_interface;
+            tcp::endpoint m_listen_interface;
 
             // if we're listening on an IPv6 interface
             // this is one of the non local IPv6 interfaces
             // on this machine
-            boost::asio::ip::tcp::endpoint m_ipv4_interface;
+            tcp::endpoint m_ipv4_interface;
 
             // set to true when the session object
             // is being destructed and the thread
@@ -148,6 +158,19 @@ namespace libed2k {
 
 			// the max number of connections, as set by the user
 			int m_max_connections;
+
+			boost::shared_ptr<logger> create_log(std::string const& name, 
+                                                 int instance, bool append = true);
+
+            fs::path m_logpath;
+
+        public:
+            boost::shared_ptr<logger> m_logger;
+        private:
+
+            // the main working thread
+            // !!! should be last in the member list
+            boost::scoped_ptr<boost::thread> m_thread;
 
         };
     }

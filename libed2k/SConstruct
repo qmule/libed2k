@@ -26,8 +26,8 @@ args = {
     'CXXFLAGS': ['-DBOOST_FILESYSTEM_VERSION=2'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot, libtorrentRoot]],
     'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
-                 'boost_thread', 'boost_signals', 'torrent-rasterbar', 
-                 'cryptopp', 'ssl', 'pthread']
+                 'boost_thread', 'boost_signals', 'boost_filesystem',
+                 'torrent-rasterbar', 'cryptopp', 'ssl', 'pthread']
     }
 
 env = Environment(**args)
