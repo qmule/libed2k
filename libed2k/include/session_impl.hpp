@@ -5,28 +5,12 @@
 
 #include <string>
 
-#include <boost/filesystem/path.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/condition.hpp>
-#include <boost/pool/object_pool.hpp>
-
-#include <libtorrent/session.hpp>
-#include <libtorrent/torrent_handle.hpp>
-#include <libtorrent/policy.hpp>
-#include <libtorrent/file_pool.hpp>
-#include <libtorrent/alert.hpp>
-#include <libtorrent/disk_io_thread.hpp>
-#include <libtorrent/connection_queue.hpp>
-#include <libtorrent/bandwidth_manager.hpp>
-#include <libtorrent/ip_filter.hpp>
-#include <libtorrent/debug.hpp>
+#include <libtorrent/alert_types.hpp>
 
 #include "fingerprint.hpp"
-#include "peer_connection.hpp"
 #include "server_manager.hpp"
 #include "md4_hash.hpp"
 #include "transfer.hpp"
-
 
 namespace libed2k {
 
@@ -34,7 +18,15 @@ namespace libed2k {
     typedef libtorrent::logger logger;
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::error_code error_code;
+    typedef libtorrent::stream_socket stream_socket;
+    typedef libtorrent::ip_filter ip_filter;
+    typedef libtorrent::peer_blocked_alert peer_blocked_alert;
+    typedef libtorrent::listen_failed_alert listen_failed_alert;
+
+    namespace errors = libtorrent::errors;
     namespace fs = boost::filesystem;
+
+    class peer_connection;
 
     namespace aux {
 
@@ -55,15 +47,33 @@ namespace libed2k {
 
             void open_listen_port();
 
+            void async_accept(boost::shared_ptr<tcp::acceptor> const& listener);
+            void on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
+                                      boost::weak_ptr<tcp::acceptor> listener, 
+                                      error_code const& e);
+
+            void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
+
             unsigned short listen_port() const;
+
+            bool is_aborted() const { return m_abort; }
+            bool is_paused() const { return m_paused; }
+
+
+            int max_connections() const { return m_max_connections; }
+            int num_connections() const { return m_connections.size(); }
 
         private:
 
             void on_disk_queue();
 
-			// must be locked to access the data
-			// in this struct
-			mutable boost::mutex m_mutex;
+            bool has_active_transfer() const;
+
+            // must be locked to access the data
+            // in this struct
+            mutable boost::mutex m_mutex;
+
+            void setup_socket_buffers(tcp::socket& s);
 
             boost::object_pool<libtorrent::policy::ipv4_peer> m_ipv4_peer_pool;
 
@@ -145,15 +155,20 @@ namespace libed2k {
             // interface to listen on
             tcp::endpoint m_listen_interface;
 
-            // if we're listening on an IPv6 interface
-            // this is one of the non local IPv6 interfaces
-            // on this machine
-            tcp::endpoint m_ipv4_interface;
+            typedef libtorrent::aux::session_impl::listen_socket_t listen_socket_t;
+
+            // possibly we will be listening on multiple interfaces
+            // so we might need more than one listen socket
+            std::list<listen_socket_t> m_listen_sockets;
+
+            void open_new_incoming_socks_connection();
+
+            listen_socket_t setup_listener(tcp::endpoint ep, bool v6_only = false);
 
             // set to true when the session object
             // is being destructed and the thread
             // should exit
-            volatile bool m_abort;
+            bool m_abort;
 
 			// is true if the session is paused
 			bool m_paused;

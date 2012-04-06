@@ -6,11 +6,14 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-#include "session_impl.hpp"
 #include "fingerprint.hpp"
 
 namespace libed2k
 {
+    namespace aux {
+        class session_impl;
+    }
+
     // Once it's created, the session object will spawn the main thread
     // that will do all the work. The main thread will be idle as long 
     // it doesn't have any transfers to participate in.
