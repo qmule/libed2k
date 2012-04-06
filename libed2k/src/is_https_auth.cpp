@@ -6,12 +6,13 @@
 
 using namespace libed2k;
 
-is_https_auth::is_https_auth(boost::asio::io_service& service) :
+is_https_auth::is_https_auth(boost::asio::io_service& service, auth_callback on_auth /* = NULL*/) :
 		m_service(service),
 		m_context(ssl::context::sslv23),
 		m_ssec(service, m_context),
 		m_resolver(service),
-		m_response(1024) // read only 1024 bytes length
+		m_response(1024), // read only 1024 bytes length,
+        m_on_auth(on_auth)
 {
 
 }
@@ -23,6 +24,7 @@ void is_https_auth::requestAuth(const std::string& strHost,
     const std::string& strVersion)
 {
     using namespace boost::archive::iterators;
+    m_strResult.clear();
     typedef insert_linebreaks<base64_from_binary<transform_width<const char *,6,8> >,72> base64_text;
 
     // generate base64 post data
@@ -175,32 +177,26 @@ void is_https_auth::handle_data(const boost::system::error_code& error)
 {
     if (!error)
     {
-        std::string strResult;
         std::istream response_stream(&m_response);
         std::string strLine;
 
         while (std::getline(response_stream, strLine))
         {
-            strResult += strLine;
+            m_strResult += strLine;
             if (strLine.find_first_of("</DATA>") != std::string::npos)
             {
                 break;
             }
 
         }
-
-        std::cout << "LINE: " << strResult << "\n";	
-
     }
-    else
-    {
-        handle_error(error);
-    }
+
+    handle_error(error);
 }
 
 void is_https_auth::handle_error(const boost::system::error_code& error)
 {
-    std::cout << error.message() << std::endl;
+    m_on_auth(m_strResult, error);
     m_ssec.lowest_layer().close();
 }
 

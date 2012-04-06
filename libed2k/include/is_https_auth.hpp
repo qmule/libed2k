@@ -7,6 +7,7 @@
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <boost/asio/ssl.hpp>
 
 
@@ -22,8 +23,9 @@ namespace ssl = boost::asio::ssl;
 class is_https_auth : boost::noncopyable
 {
 public:
+    typedef boost::function<void (std::string&, const boost::system::error_code&)> auth_callback;
 
-	explicit is_https_auth(boost::asio::io_service& service);		
+	explicit is_https_auth(boost::asio::io_service& service, auth_callback on_auth = NULL);
 
 	void requestAuth(const std::string& strHost,
 					const std::string& strPage,
@@ -83,7 +85,8 @@ private:
 	tcp::resolver				m_resolver; //!< tcp resolver
 	boost::asio::streambuf		m_response; //!< response buffer
 	boost::asio::streambuf 		m_request;	//!< request buffer
-
+	auth_callback               m_on_auth;
+	std::string                 m_strResult; //XML result
 };
 
 };
