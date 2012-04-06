@@ -1,7 +1,12 @@
-#define BOOST_TEST_MODULE Test-case fixture example
+#define BOOST_TEST_DYN_LINK
+
+#ifdef STAND_ALONE
+#   define BOOST_TEST_MODULE Main
+#endif
+
+#include <boost/test/unit_test.hpp>
 #include <string>
 #include <boost/filesystem.hpp>
-#include <boost/test/unit_test.hpp>
 #include "is_crypto.hpp"
 
 // test for encrypt / decrypt password 
