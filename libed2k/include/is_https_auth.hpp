@@ -17,12 +17,42 @@ using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 /**
-  * this class provide authorisation to is https server
+  * this class provide authorization to is https server
   *
 */
 class is_https_auth : boost::noncopyable
 {
 public:
+    //перечисление содержит статус авторизации
+    enum eAuthStatus
+    {
+        AUTH_NONE = 0,
+        AUTH_SUCCESS,
+        AUTH_STARTED,
+        AUTH_REQUEST,
+        AUTH_WAITING,
+        AUTH_FAILED
+    };
+
+    //перечисление содержит типы сообщений авторизации
+    enum eAuthMessageType
+    {
+        LOG_MESSAGE = 0,
+        INFO_MESSAGE_NOMODAL,
+        INFO_MESSAGE_MODAL,
+        ERR_MESSAGE,
+        WARN_PROTOCOL,
+        ERR_PROTOCOL
+    };
+
+    // перечисление содержит константы результата авторизации
+    enum eAuthResult
+    {
+        AUTH_OK = 0,
+        AUTH_ERROR,
+        AUTH_WAIT
+    };
+
     typedef boost::function<void (std::string&, const boost::system::error_code&)> auth_callback;
 
 	explicit is_https_auth(boost::asio::io_service& service, auth_callback on_auth = NULL);
@@ -41,10 +71,8 @@ private:
 	template <typename Iterator>
 	Iterator conn_condition(const boost::system::error_code& ec,  Iterator next)
 	{
-	    if (ec) std::cout << "Error: " << ec.message() << std::endl;
-
-	    std::cout << "Trying: " << next->endpoint() << std::endl;
-
+	    //if (ec) std::cout << "Error: " << ec.message() << std::endl;
+	    //std::cout << "Trying: " << next->endpoint() << std::endl;
 	    return next;
 	}
 
