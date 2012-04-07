@@ -5,11 +5,25 @@
 
 namespace libed2k
 {
+    class transfer;
+
     // We will usually have to store our transfer handles somewhere, 
     // since it's the object through which we retrieve information 
     // about the transfer and aborts the transfer.
-    class transfer_handle
+    struct transfer_handle
     {
+        friend struct aux::session_impl;
+        friend class transfer;
+
+        transfer_handle() {}
+
+    private:
+
+        transfer_handle(const boost::weak_ptr<transfer>& t):
+            m_transfer(t)
+        {}
+
+        boost::weak_ptr<transfer> m_transfer;
     };
 
 }

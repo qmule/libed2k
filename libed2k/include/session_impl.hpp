@@ -10,7 +10,7 @@
 #include "fingerprint.hpp"
 #include "server_manager.hpp"
 #include "md4_hash.hpp"
-#include "transfer.hpp"
+#include "transfer_handle.hpp"
 
 namespace libed2k {
 
@@ -27,6 +27,8 @@ namespace libed2k {
     namespace fs = boost::filesystem;
 
     class peer_connection;
+    class transfer;
+    struct add_transfer_params;
 
     namespace aux {
 
@@ -54,11 +56,14 @@ namespace libed2k {
 
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
 
+            boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
+
             unsigned short listen_port() const;
 
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }
 
+            transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
 
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }
@@ -66,6 +71,8 @@ namespace libed2k {
         private:
 
             void on_disk_queue();
+
+            void on_tick(error_code const& e);
 
             bool has_active_transfer() const;
 
@@ -120,19 +127,6 @@ namespace libed2k {
             // members to be destructed
             libtorrent::connection_queue m_half_open;
 
-            // the bandwidth manager is responsible for
-            // handing out bandwidth to connections that
-            // asks for it, it can also throttle the
-            // rate.
-            libtorrent::bandwidth_manager<peer_connection> m_download_rate;
-            libtorrent::bandwidth_manager<peer_connection> m_upload_rate;
-
-            // the global rate limiter bandwidth channels
-            libtorrent::bandwidth_channel m_download_channel;
-            libtorrent::bandwidth_channel m_upload_channel;
-
-            libtorrent::bandwidth_channel* m_bandwidth_channel[2];
-
             server_manager m_server_manager;
             transfer_map m_transfers;
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
@@ -141,12 +135,6 @@ namespace libed2k {
             // object. It is the complete list of all connected
             // peers.
             connection_map m_connections;
-
-            // filters incoming connections
-            libtorrent::ip_filter m_ip_filter;
-
-            // filters outgoing connections
-            libtorrent::port_filter m_port_filter;
 
             // the ip-address of the interface
             // we are supposed to listen on.
@@ -172,13 +160,6 @@ namespace libed2k {
 
 			// is true if the session is paused
 			bool m_paused;
-
-			// the max number of unchoked peers as set by the user
-			int m_max_uploads;
-
-			// the number of unchoked peers as set by the auto-unchoker
-			// this should always be >= m_max_uploads
-			int m_allowed_upload_slots;
 
 			// the max number of connections, as set by the user
 			int m_max_connections;

@@ -6,13 +6,48 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-#include "fingerprint.hpp"
+#include <libtorrent/storage.hpp>
 
-namespace libed2k
-{
+#include "fingerprint.hpp"
+#include "md4_hash.hpp"
+
+namespace libed2k {
+
+    typedef libtorrent::storage_constructor_type storage_constructor_type;
+
+    namespace fs = boost::filesystem;
+
     namespace aux {
         class session_impl;
     }
+
+    enum storage_mode_t
+    {
+        storage_mode_allocate = 0,
+        storage_mode_sparse,
+        storage_mode_compact
+    };
+
+    struct add_transfer_params
+    {
+        add_transfer_params(storage_constructor_type sc =
+                            libtorrent::default_storage_constructor)
+            : resume_data(0)
+            , storage_mode(storage_mode_sparse)
+            , duplicate_is_error(false)
+            , storage(sc)
+            , upload_mode(false)
+        {}
+
+        md4_hash info_hash;
+        fs::path save_path;
+        std::vector<char>* resume_data;
+        storage_mode_t storage_mode;
+        bool duplicate_is_error;
+        storage_constructor_type storage;
+        bool upload_mode;
+    };
+
 
     // Once it's created, the session object will spawn the main thread
     // that will do all the work. The main thread will be idle as long 
