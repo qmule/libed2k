@@ -7,7 +7,7 @@
 #include "session_impl.hpp"
 #include "transfer_handle.hpp"
 #include "transfer.hpp"
-#include "error_code.hpp"
+//#include "error_code.hpp"
 #include "peer_connection.hpp"
 
 using namespace libed2k;

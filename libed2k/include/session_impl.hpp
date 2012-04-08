@@ -17,7 +17,7 @@ namespace libed2k {
     typedef boost::asio::ip::tcp tcp;
     typedef libtorrent::logger logger;
     typedef libtorrent::aux::eh_initializer eh_initializer;
-    typedef libed2k::error_code error_code;
+    typedef libtorrent::error_code error_code;
     typedef libtorrent::stream_socket stream_socket;
     typedef libtorrent::ip_filter ip_filter;
     typedef libtorrent::peer_blocked_alert peer_blocked_alert;

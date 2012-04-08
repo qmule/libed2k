@@ -3,6 +3,8 @@
 
 #include <boost/cstdint.hpp>
 
+#include "md4_hash.hpp"
+
 namespace libed2k
 {
 
@@ -116,14 +118,14 @@ private:
     tag();
     type m_nType;
 
-    union
-    {
+//    union
+//    {
         md4_hash        m_hashValue;
         std::string     m_pstrValue;
         boost::uint64_t m_nValue;
         float           m_fValue;
         unsigned char*  m_pData;
-    };
+//    };
 
 };
 
