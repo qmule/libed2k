@@ -34,6 +34,7 @@ namespace libed2k {
 
         struct session_impl: boost::noncopyable
         {
+            friend class libed2k::transfer;
 
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
@@ -99,7 +100,7 @@ namespace libed2k {
             // file pool must be destructed after the torrents
             // since they will still have references to it
             // when they are destructed.
-            libtorrent::file_pool m_files;
+            libtorrent::file_pool m_filepool;
 
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on

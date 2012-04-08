@@ -17,12 +17,12 @@ session_impl::session_impl(int lst_port, const char* listen_interface,
                            const fingerprint& id, const std::string& logpath):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
-    m_files(40),
+    m_filepool(40),
     m_io_service(),
 	m_host_resolver(m_io_service),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_files),
+                  m_filepool),
     m_half_open(m_io_service),
     m_server_manager(*this),
     m_abort(false),
@@ -127,12 +127,12 @@ session_impl::session_impl(int lst_port, const char* listen_interface,
         // 80% of the available file descriptors should go
         m_max_connections = (std::min)(m_max_connections, int(rl.rlim_cur * 8 / 10));
         // 20% goes towards regular files
-        m_files.resize((std::min)(m_files.size_limit(), int(rl.rlim_cur * 2 / 10)));
+        m_filepool.resize((std::min)(m_filepool.size_limit(), int(rl.rlim_cur * 2 / 10)));
 
         (*m_logger) << libtorrent::time_now_string() << "   max connections: "
                     << m_max_connections << "\n";
         (*m_logger) << libtorrent::time_now_string() << "   max files: "
-                    << m_files.size_limit() << "\n";
+                    << m_filepool.size_limit() << "\n";
     }
 #endif // TORRENT_BSD || TORRENT_LINUX
 
@@ -340,7 +340,7 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
         if (pos >= queue_pos) queue_pos = pos + 1;
     }
 
-    transfer_ptr.reset(new transfer(*this, m_listen_interface, 16*1024, queue_pos, params));
+    transfer_ptr.reset(new transfer(*this, m_listen_interface, queue_pos, params));
     transfer_ptr->start();
 
     m_transfers.insert(std::make_pair(params.info_hash, transfer_ptr));

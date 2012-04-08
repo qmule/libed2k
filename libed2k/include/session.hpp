@@ -30,13 +30,11 @@ namespace libed2k {
 
     struct add_transfer_params
     {
-        add_transfer_params(storage_constructor_type sc =
-                            libtorrent::default_storage_constructor)
+        add_transfer_params()
             : resume_data(0)
             , storage_mode(storage_mode_sparse)
             , duplicate_is_error(false)
-            , storage(sc)
-            , upload_mode(false)
+            , seed_mode(false)
         {}
 
         md4_hash info_hash;
@@ -44,8 +42,7 @@ namespace libed2k {
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
-        storage_constructor_type storage;
-        bool upload_mode;
+        bool seed_mode;
     };
 
 
