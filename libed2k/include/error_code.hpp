@@ -2,8 +2,45 @@
 #ifndef __LIBED2K_ERROR_CODE__
 #define __LIBED2K_ERROR_CODE__
 
-namespace libed2k {
+#include <exception>
+#include <boost/shared_ptr.hpp>
+#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
+// asio assumes that the windows error codes are defined already
+#include <winsock2.h>
+#endif
 
+#include <boost/system/error_code.hpp>
+
+namespace libed2k
+{
+    namespace errors
+    {
+        enum error_code_enum
+        {
+            no_error = 0,
+            tag_type_mismatch
+        };
+    }
+}
+
+namespace boost
+{
+    namespace system
+    {
+        template<> struct is_error_code_enum<libed2k::errors::error_code_enum>
+        {
+            static const bool value = true;
+        };
+
+        template<> struct is_error_condition_enum<libed2k::errors::error_code_enum>
+        {
+            static const bool value = true;
+        };
+    }
+}
+
+namespace libed2k
+{
     struct libed2k_error_category : boost::system::error_category
     {
         virtual const char* name() const;
@@ -18,6 +55,37 @@ namespace libed2k {
         return libed2k_category;
     }
 
+    namespace errors
+    {
+        inline boost::system::error_code make_error_code(error_code_enum e)
+        {
+            return boost::system::error_code(e, get_libed2k_category());
+        }
+    }
+
+    using boost::system::error_code;
+
+    struct libed2k_exception: std::exception
+    {
+        libed2k_exception(error_code const& s): m_error(s) {}
+
+        virtual const char* what() const throw()
+        {
+            if (!m_msg) m_msg.reset(new std::string(m_error.message()));
+            return m_msg->c_str();
+        }
+
+        virtual ~libed2k_exception() throw() {}
+
+        error_code error() const
+        {
+            return m_error;
+        }
+
+        private:
+            error_code m_error;
+            mutable boost::shared_ptr<std::string> m_msg;
+    };
 }
 
 #endif
