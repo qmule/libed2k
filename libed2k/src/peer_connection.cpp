@@ -10,6 +10,10 @@ peer_connection::peer_connection(aux::session_impl& ses,
 {
 }
 
+peer_connection::~peer_connection()
+{
+    // TODO: implement
+}
 
 void peer_connection::start()
 {
