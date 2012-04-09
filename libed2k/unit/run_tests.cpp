@@ -1,10 +1,10 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE main
-#include "error_code.hpp"
 #include <boost/test/unit_test.hpp>
+#include "error_code.hpp"
 
 
-BOOST_AUTO_TEST_SUITE(simple_exception_test);
+BOOST_AUTO_TEST_SUITE(simple_exception_test)
 
 struct simple_exception
 {
@@ -40,5 +40,5 @@ BOOST_FIXTURE_TEST_CASE(test_libed2k_exceptions, simple_exception)
 
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()
 

@@ -187,6 +187,6 @@ std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& st
     ///return OptUtf8ToStr((std::stringA)decipher.c_str()); ?
     return (decipher);
 }
-};
+}
 
 #endif //__IS_CRYPTO__

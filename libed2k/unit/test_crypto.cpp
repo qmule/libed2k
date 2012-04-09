@@ -4,8 +4,8 @@
 #   define BOOST_TEST_MODULE Main
 #endif
 
-#include <boost/test/unit_test.hpp>
 #include <string>
+#include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 #include "is_crypto.hpp"
 

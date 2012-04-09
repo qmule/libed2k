@@ -20,6 +20,7 @@ namespace libed2k{
     {
     public:
     	typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
+    	static const md4hash_container m_emptyMD4Hash;
 
     	md4_hash()
     	{
@@ -109,6 +110,7 @@ namespace libed2k{
     	md4hash_container   m_hash;
     };
 
+    const md4_hash::md4hash_container md4_hash::m_emptyMD4Hash = {0x31, 0xD6, 0xCF, 0xE0, 0xD1, 0x6A, 0xE9, 0x31,0xB7, 0x3C, 0x59, 0xD7, 0xE0, 0xC0, 0x89, 0xC0 };
 };
 
 

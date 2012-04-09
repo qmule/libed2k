@@ -1,8 +1,10 @@
-BIN=https
+BIN=ed2k_client
 OBJF += $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
 LIBED2K = ../../src/libed2k.a
 
 CXXFLAGS = -g -I../../include
+LDFLAGS = -lboost_program_options 
+
 
 .PHONY: all clean
 

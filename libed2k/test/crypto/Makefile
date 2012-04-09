@@ -1,10 +1,16 @@
-EXAMPLE_BIN=crypto
+BIN=crypto
 
-OBJF = ../../src/is_crypto.o 
 OBJF += $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
+LIBED2K = ../../src/libed2k.a
+CXXFLAGS = -g -I../../include
 
-LDFLAGS=-lssl -lboost_iostreams -lboost_thread -lpthread -lboost_system -lboost_signals -lcrypto++ -lcryptopp
-CXXFLAGS = -Wall -g -I../../include
+.PHONY: all clean
+
+all: $(BIN)
+
+clean: 
+	rm -f $(OBJF)
+	rm -f $(BIN)
 
 include ../../Makefile.conf
 

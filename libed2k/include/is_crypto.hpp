@@ -16,12 +16,8 @@ namespace is_crypto
     typedef unsigned int UINT;
 #endif
 
-void CreateIV(byte *src, int len_src, byte *iv, int len_iv);
-void CreateKey(byte *key, int len_key);
-void convert_number(int number, byte *array, int len_array);
+extern std::string EncryptPasswd(const std::string& strPasswd, const std::string& strFilename);
+extern std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& strFilename);
 
-std::string EncryptPasswd(const std::string& strPasswd, const std::string& strFilename);
-std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& strFilename);
-
-};
+}
 
