@@ -10,6 +10,7 @@
 
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libtorrent/error_code.hpp>
+#include <libtorrent/chained_buffer.hpp>
 
 namespace libed2k
 {
@@ -38,7 +39,9 @@ namespace libed2k
             msg_have,
             msg_request,
             msg_piece,
-            msg_cancel
+            msg_cancel,
+
+            num_supported_messages
         };
 
         // called from the main loop when this connection has any
@@ -63,6 +66,8 @@ namespace libed2k
         void on_piece(int received);
         void on_cancel(int received);
 
+        typedef void (peer_connection::*message_handler)(int received);
+
         // the following functions appends messages
         // to the send buffer
         // DRAFT
@@ -74,6 +79,12 @@ namespace libed2k
         void write_piece(peer_request const& r, disk_buffer_holder& buffer);
         void write_handshake();
 
+        enum message_type_flags { message_type_request = 1 };
+        void send_buffer(char const* buf, int size, int flags = 0);
+        void setup_send();
+
+        // this will cause this peer_connection to be disconnected.
+        void disconnect(error_code const& ec, int error = 0);
         bool is_disconnecting() const { return m_disconnecting; }
 
         // this function is called after it has been constructed and properly
@@ -84,11 +95,25 @@ namespace libed2k
 
     private:
 
+        // DRAFT
+        enum state
+        {
+            read_packet_size,
+            read_packet
+        };
+
+        // state of on_receive
+        state m_state;
+
+        static const message_handler m_message_handler[num_supported_messages];
+
         bool dispatch_message(int received);
 
         // a back reference to the session
         // the peer belongs to.
         aux::session_impl& m_ses;
+
+        libtorrent::chained_buffer m_send_buffer;
 
         boost::shared_ptr<tcp::socket> m_socket;
 
@@ -101,6 +126,9 @@ namespace libed2k
         // to the list of connections that will be closed.
         bool m_disconnecting;
 
+        // a list of byte offsets inside the send buffer
+        // the piece requests
+        std::vector<int> m_requests_in_buffer;
     };
 
 }

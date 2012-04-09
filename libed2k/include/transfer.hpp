@@ -23,6 +23,7 @@ namespace libed2k {
     namespace aux{
         class session_impl;
     }
+    class peer;
 
 	// a transfer is a class that holds information
 	// for a specific download. It updates itself against
@@ -36,6 +37,8 @@ namespace libed2k {
         ~transfer();
 
         void start();
+
+        bool connect_to_peer(peer* peerinfo);
 
         bool is_paused() const;
 

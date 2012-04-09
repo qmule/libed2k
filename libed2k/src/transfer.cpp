@@ -35,6 +35,11 @@ void transfer::start()
 
 }
 
+bool transfer::connect_to_peer(peer* peerinfo)
+{
+
+}
+
 bool transfer::is_paused() const
 {
     return m_paused || m_ses.is_paused();

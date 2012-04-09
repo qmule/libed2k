@@ -348,6 +348,22 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
     return transfer_handle(transfer_ptr);
 }
 
+std::pair<char*, int> session_impl::allocate_buffer(int size)
+{
+}
+
+void session_impl::free_buffer(char* buf, int size)
+{
+}
+
+char* session_impl::allocate_disk_buffer(char const* category)
+{
+}
+
+void session_impl::free_disk_buffer(char* buf)
+{
+}
+
 unsigned short session_impl::listen_port() const
 {
 }

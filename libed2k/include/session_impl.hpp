@@ -69,6 +69,12 @@ namespace libed2k {
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }
 
+            std::pair<char*, int> allocate_buffer(int size);
+            void free_buffer(char* buf, int size);
+
+            char* allocate_disk_buffer(char const* category);
+            void free_disk_buffer(char* buf);
+
         private:
 
             void on_disk_queue();
