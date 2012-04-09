@@ -31,5 +31,6 @@ args = {
     }
 
 env = Environment(**args)
-cpps = globrec(srcdir, '*.cpp')
-env.Program(join(bindir, 'ed2k_client'), cpps)
+sources = globrec(srcdir, '*.cpp')
+ed2k_client = join('test', 'ed2k_client', 'ed2k_client.cpp')
+env.Program(join(bindir, 'ed2k_client'), sources + [ed2k_client])
