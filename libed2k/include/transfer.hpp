@@ -8,6 +8,8 @@
 #include <boost/intrusive_ptr.hpp>
 #include <boost/filesystem.hpp>
 
+#include "policy.hpp"
+
 namespace libtorrent {
     class torrent_info;
     class piece_manager;
@@ -52,6 +54,7 @@ namespace libed2k {
             return m_picker.get() != 0;
         }
 
+        std::set<peer_connection*> m_connections;
 
     private:
 
@@ -75,6 +78,8 @@ namespace libed2k {
 
         // Indicates whether transfer will download anything
         bool m_seed_mode;
+
+        policy m_policy;
 
         // used for compatibility with piece_manager,
         // may store invalid data

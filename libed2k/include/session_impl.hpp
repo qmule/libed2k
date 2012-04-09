@@ -11,6 +11,7 @@
 #include "server_manager.hpp"
 #include "md4_hash.hpp"
 #include "transfer_handle.hpp"
+#include "session_settings.hpp"
 
 namespace libed2k {
 
@@ -75,6 +76,7 @@ namespace libed2k {
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
 
+            session_settings const& settings() const { return m_settings; }
         private:
 
             void on_disk_queue();
@@ -159,6 +161,9 @@ namespace libed2k {
             void open_new_incoming_socks_connection();
 
             listen_socket_t setup_listener(tcp::endpoint ep, bool v6_only = false);
+
+            // the settings for the client
+            session_settings m_settings;
 
             // set to true when the session object
             // is being destructed and the thread

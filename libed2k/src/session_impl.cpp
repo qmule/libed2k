@@ -293,7 +293,7 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 
     setup_socket_buffers(*s);
 
-    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, s, endp));
+    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, s, endp, 0));
 
     if (!c->is_disconnecting())
     {

@@ -2,7 +2,8 @@
 #include "session.hpp"
 #include "session_impl.hpp"
 #include "transfer.hpp"
-
+#include "peer.hpp"
+#include "peer_connection.hpp"
 
 using namespace libed2k;
 
@@ -37,7 +38,38 @@ void transfer::start()
 
 bool transfer::connect_to_peer(peer* peerinfo)
 {
+    tcp::endpoint ip(peerinfo->ip());
+    boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_ses.m_io_service));
 
+    m_ses.setup_socket_buffers(*sock);
+
+    boost::intrusive_ptr<peer_connection> c(
+        new peer_connection(m_ses, shared_from_this(), sock, ip, peerinfo));
+
+    // add the newly connected peer to this torrent's peer list
+    m_connections.insert(boost::get_pointer(c));
+    m_ses.m_connections.insert(c);
+    m_policy.set_connection(peerinfo, c.get());
+    c->start();
+
+    int timeout = m_ses.settings().peer_connect_timeout;
+
+    try {
+        m_ses.m_half_open.enqueue(
+            boost::bind(&peer_connection::on_connect, c, _1),
+            boost::bind(&peer_connection::on_timeout, c),
+            libtorrent::seconds(timeout));
+    }
+    catch (std::exception& e)
+    {
+        std::set<peer_connection*>::iterator i =
+            m_connections.find(boost::get_pointer(c));
+        if (i != m_connections.end()) m_connections.erase(i);
+        c->disconnect(errors::no_error, 1);
+        return false;
+    }
+
+    return peerinfo->connection;
 }
 
 bool transfer::is_paused() const

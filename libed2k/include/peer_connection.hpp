@@ -18,8 +18,10 @@ namespace libed2k
     typedef boost::asio::ip::tcp tcp;
     typedef libtorrent::error_code error_code;
 
+    class peer;
     class peer_request;
     class disk_buffer_holder;
+    class transfer;
     namespace aux{
         class session_impl;
     }
@@ -28,8 +30,19 @@ namespace libed2k
                             public boost::noncopyable
     {
     public:
+
+        // this is the constructor where the we are the active part.
+        // The peer_conenction should handshake and verify that the
+        // other end has the correct id
+        peer_connection(aux::session_impl& ses, boost::weak_ptr<transfer>,
+                        boost::shared_ptr<tcp::socket> s,
+                        const tcp::endpoint& remote, peer* peerinfo);
+
+        // with this constructor we have been contacted and we still don't
+        // know which torrent the connection belongs to
         peer_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s,
-                        const tcp::endpoint& remote);
+                        tcp::endpoint const& remote, peer* peerinfo);
+
         ~peer_connection();
 
         // DRAFT
@@ -83,9 +96,16 @@ namespace libed2k
         void send_buffer(char const* buf, int size, int flags = 0);
         void setup_send();
 
+        void on_timeout();
         // this will cause this peer_connection to be disconnected.
         void disconnect(error_code const& ec, int error = 0);
         bool is_disconnecting() const { return m_disconnecting; }
+
+        // called when it's time for this peer_conncetion to actually
+        // initiate the tcp connection. This may be postponed until
+        // the library isn't using up the limitation of half-open
+        // tcp connections.
+        void on_connect(int ticket);
 
         // this function is called after it has been constructed and properly
         // reference counted. It is safe to call self() in this function
@@ -121,6 +141,13 @@ namespace libed2k
         // it may not necessarily be the peer we're
         // connected to, in case we use a proxy
         tcp::endpoint m_remote;
+
+        // this is the transfer this connection is
+        // associated with. If the connection is an
+        // incoming connection, this is set to zero
+        // until the some info??? is received. Then it's
+        // set to the transfer it belongs to.
+        boost::weak_ptr<transfer> m_transfer;
 
         // this is true if this connection has been added
         // to the list of connections that will be closed.

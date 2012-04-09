@@ -4,9 +4,18 @@
 
 using namespace libed2k;
 
-peer_connection::peer_connection(aux::session_impl& ses, 
+peer_connection::peer_connection(aux::session_impl& ses,
+                                 boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
-                                 const tcp::endpoint& remote):
+                                 const tcp::endpoint& remote, peer* peerinfo):
+    m_ses(ses), m_socket(s), m_remote(remote), m_transfer(transfer)
+{
+}
+
+peer_connection::peer_connection(aux::session_impl& ses,
+                                 boost::shared_ptr<tcp::socket> s,
+                                 const tcp::endpoint& remote,
+                                 peer* peerinfo):
     m_ses(ses), m_socket(s), m_remote(remote)
 {
 }
@@ -50,7 +59,17 @@ void peer_connection::setup_send()
 {
 }
 
+void peer_connection::on_timeout()
+{
+    // TODO: implement
+}
+
 void peer_connection::disconnect(error_code const& ec, int error)
+{
+    // TODO: implement
+}
+
+void peer_connection::on_connect(int ticket)
 {
     // TODO: implement
 }
