@@ -96,6 +96,9 @@ namespace libed2k
         void send_buffer(char const* buf, int size, int flags = 0);
         void setup_send();
 
+        enum sync_t { read_async, read_sync };
+        void setup_receive(sync_t sync = read_sync);
+
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
         void disconnect(error_code const& ec, int error = 0);
@@ -146,6 +149,22 @@ namespace libed2k
         // it may not necessarily be the peer we're
         // connected to, in case we use a proxy
         tcp::endpoint m_remote;
+
+        // the ticket id from the connection queue.
+        // This is used to identify the connection
+        // so that it can be removed from the queue
+        // once the connection completes
+        int m_connection_ticket;
+
+        // this is true until this socket has become
+        // writable for the first time (i.e. the
+        // connection completed). While connecting
+        // the timeout will not be triggered. This is
+        // because windows XP SP2 may delay connection
+        // attempts, which means that the connection
+        // may not even have been attempted when the
+        // time out is reached.
+        bool m_connecting;
 
         // this is the transfer this connection is
         // associated with. If the connection is an

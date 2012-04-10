@@ -10,7 +10,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
                                  const tcp::endpoint& remote, peer* peerinfo):
-    m_ses(ses), m_socket(s), m_remote(remote), m_transfer(transfer)
+    m_ses(ses), m_socket(s), m_remote(remote), m_transfer(transfer),
+    m_connection_ticket(-1), m_connecting(true)
 {
 }
 
@@ -18,7 +19,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::shared_ptr<tcp::socket> s,
                                  const tcp::endpoint& remote,
                                  peer* peerinfo):
-    m_ses(ses), m_socket(s), m_remote(remote)
+    m_ses(ses), m_socket(s), m_remote(remote), m_connection_ticket(-1),
+    m_connecting(false)
 {
 }
 
@@ -61,6 +63,10 @@ void peer_connection::setup_send()
 {
 }
 
+void peer_connection::setup_receive(sync_t sync)
+{
+}
+
 void peer_connection::on_timeout()
 {
     // TODO: implement
@@ -74,6 +80,9 @@ void peer_connection::disconnect(error_code const& ec, int error)
 void peer_connection::on_connect(int ticket)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+    m_connection_ticket = ticket;
+
     boost::shared_ptr<transfer> t = m_transfer.lock();
     error_code ec;
 
@@ -125,7 +134,25 @@ void peer_connection::on_connect(int ticket)
 
 void peer_connection::on_connection_complete(error_code const& e)
 {
-    // TODO: implement
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+    if (m_disconnecting) return;
+
+    m_connecting = false;
+    m_ses.m_half_open.done(m_connection_ticket);
+
+    error_code ec;
+    if (e)
+    {
+        disconnect(e, 1);
+        return;
+    }
+
+    if (m_disconnecting) return;
+
+    setup_send();
+    setup_receive();
+
 }
 
 void peer_connection::start()
