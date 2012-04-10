@@ -7,6 +7,7 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include <boost/aligned_storage.hpp>
 
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libtorrent/error_code.hpp>
@@ -30,6 +31,13 @@ namespace libed2k
                             public boost::noncopyable
     {
     public:
+
+        enum channels
+        {
+            upload_channel,
+            download_channel,
+            num_channels
+        };
 
         // this is the constructor where the we are the active part.
         // The peer_conenction should handshake and verify that the
@@ -59,8 +67,9 @@ namespace libed2k
 
         // called from the main loop when this connection has any
         // work to do.
-        void on_sent(error_code const& error, std::size_t bytes_transferred);
-        void on_receive(error_code const& error, std::size_t bytes_transferred);
+        void on_send_data(error_code const& error, std::size_t bytes_transferred);
+        void on_receive_data(error_code const& error, std::size_t bytes_transferred);
+        void on_receive_data_nolock(error_code const& error, std::size_t bytes_transferred);
 
         // the message handlers are called
         // each time a recv() returns some new
@@ -99,6 +108,8 @@ namespace libed2k
         enum sync_t { read_async, read_sync };
         void setup_receive(sync_t sync = read_sync);
 
+        size_t try_read(sync_t s, error_code& ec);
+
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
         void disconnect(error_code const& ec, int error = 0);
@@ -121,6 +132,11 @@ namespace libed2k
         // do in the constructor).
         void start();
 
+        // tells if this connection has data it want to send
+        // and has enough upload bandwidth quota left to send it.
+        bool can_write() const;
+        bool can_read(char* state = 0) const;
+
     private:
 
         // DRAFT
@@ -130,8 +146,20 @@ namespace libed2k
             read_packet
         };
 
+        // bw_idle: the channel is not used
+        // bw_limit: the channel is waiting for quota
+        // bw_network: the channel is waiting for an async write
+        //   for read operation to complete
+        // bw_disk: the peer is waiting for the disk io thread
+        //   to catch up
+        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
+
         // state of on_receive
         state m_state;
+
+        // upload and download channel state
+        // enum from peer_info::bw_state
+        char m_channel_state[2];
 
         static const message_handler m_message_handler[num_supported_messages];
 
@@ -180,6 +208,71 @@ namespace libed2k
         // a list of byte offsets inside the send buffer
         // the piece requests
         std::vector<int> m_requests_in_buffer;
+
+        template <std::size_t Size>
+        struct handler_storage
+        {
+            boost::aligned_storage<Size> bytes;
+        };
+
+        handler_storage<TORRENT_READ_HANDLER_MAX_SIZE> m_read_handler_storage;
+        handler_storage<TORRENT_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
+
+        template <class Handler, std::size_t Size>
+        struct allocating_handler
+        {
+            allocating_handler(Handler const& h, handler_storage<Size>& s):
+                handler(h), storage(s)
+            {}
+
+            template <class A0>
+            void operator()(A0 const& a0) const
+            {
+                handler(a0);
+            }
+
+            template <class A0, class A1>
+            void operator()(A0 const& a0, A1 const& a1) const
+            {
+                handler(a0, a1);
+            }
+
+            template <class A0, class A1, class A2>
+            void operator()(A0 const& a0, A1 const& a1, A2 const& a2) const
+            {
+                handler(a0, a1, a2);
+            }
+
+            friend void* asio_handler_allocate(
+                std::size_t size, allocating_handler<Handler, Size>* ctx)
+            {
+                return &ctx->storage.bytes;
+            }
+
+            friend void asio_handler_deallocate(
+                void*, std::size_t, allocating_handler<Handler, Size>* ctx)
+            {
+            }
+
+            Handler handler;
+            handler_storage<Size>& storage;
+        };
+
+        template <class Handler>
+        allocating_handler<Handler, TORRENT_READ_HANDLER_MAX_SIZE>
+        make_read_handler(Handler const& handler)
+        {
+            return allocating_handler<Handler, TORRENT_READ_HANDLER_MAX_SIZE>(
+                handler, m_read_handler_storage);
+        }
+
+        template <class Handler>
+        allocating_handler<Handler, TORRENT_WRITE_HANDLER_MAX_SIZE>
+        make_write_handler(Handler const& handler)
+        {
+            return allocating_handler<Handler, TORRENT_WRITE_HANDLER_MAX_SIZE>(
+                handler, m_write_handler_storage);
+        }
     };
 
 }

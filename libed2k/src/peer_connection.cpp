@@ -13,6 +13,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_ses(ses), m_socket(s), m_remote(remote), m_transfer(transfer),
     m_connection_ticket(-1), m_connecting(true)
 {
+    m_channel_state[upload_channel] = bw_idle;
+    m_channel_state[download_channel] = bw_idle;
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
@@ -22,11 +24,29 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_ses(ses), m_socket(s), m_remote(remote), m_connection_ticket(-1),
     m_connecting(false)
 {
+    m_channel_state[upload_channel] = bw_idle;
+    m_channel_state[download_channel] = bw_idle;
 }
 
 peer_connection::~peer_connection()
 {
     // TODO: implement
+}
+
+
+void peer_connection::on_send_data(error_code const& error,
+                                   std::size_t bytes_transferred)
+{
+}
+
+void peer_connection::on_receive_data(error_code const& error,
+                                      std::size_t bytes_transferred)
+{
+}
+
+void peer_connection::on_receive_data_nolock(
+    error_code const& error, std::size_t bytes_transferred)
+{
 }
 
 void peer_connection::send_buffer(char const* buf, int size, int flags)
@@ -61,9 +81,64 @@ void peer_connection::send_buffer(char const* buf, int size, int flags)
 
 void peer_connection::setup_send()
 {
+    if (m_channel_state[upload_channel] != bw_idle) return;
+
+    if (!can_write())
+    {
+        return;
+    }
+
+    // send the actual buffer
+    if (!m_send_buffer.empty())
+    {
+        // check quota here
+        int amount_to_send = m_send_buffer.size();
+
+        std::list<boost::asio::const_buffer> const& vec =
+            m_send_buffer.build_iovec(amount_to_send);
+        m_socket->async_write_some(
+            vec, make_write_handler(boost::bind(&peer_connection::on_send_data,
+                                                self(), _1, _2)));
+    }
+
+    m_channel_state[upload_channel] = bw_network;
 }
 
 void peer_connection::setup_receive(sync_t sync)
+{
+    if (m_channel_state[download_channel] != bw_idle
+        && m_channel_state[download_channel] != bw_disk) return;
+
+    // check quota here
+
+    if (!can_read(&m_channel_state[download_channel]))
+    {
+        // if we block reading, waiting for the disk, we will wake up
+        // by the disk_io_thread posting a message every time it drops
+        // from being at or exceeding the limit down to below the limit
+
+        return;
+    }
+
+    error_code ec;
+
+    if (sync == read_sync)
+    {
+        size_t bytes_transferred = try_read(read_sync, ec);
+
+        if (ec != boost::asio::error::would_block)
+        {
+            m_channel_state[download_channel] = bw_network;
+            on_receive_data_nolock(ec, bytes_transferred);
+
+            return;
+        }
+    }
+
+    try_read(read_async, ec);
+}
+
+size_t peer_connection::try_read(sync_t s, error_code& ec)
 {
 }
 
@@ -156,5 +231,13 @@ void peer_connection::on_connection_complete(error_code const& e)
 }
 
 void peer_connection::start()
+{
+}
+
+bool peer_connection::can_write() const
+{
+}
+
+bool peer_connection::can_read(char* state) const
 {
 }
