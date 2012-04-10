@@ -13,6 +13,7 @@ transfer::transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
     m_paused(false),
     m_sequential_download(false),
     m_sequence_number(seq),
+    m_net_interface(net_interface.address(), 0),
     m_save_path(p.save_path),
     m_storage_mode(p.storage_mode),
     m_seed_mode(p.seed_mode)

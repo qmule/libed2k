@@ -1,6 +1,8 @@
 
 #include "peer_connection.hpp"
 #include "session_impl.hpp"
+#include "session.hpp"
+#include "transfer.hpp"
 
 using namespace libed2k;
 
@@ -70,6 +72,58 @@ void peer_connection::disconnect(error_code const& ec, int error)
 }
 
 void peer_connection::on_connect(int ticket)
+{
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    error_code ec;
+
+    if (!t)
+    {
+        disconnect(errors::torrent_aborted);
+        return;
+    }
+
+    m_socket->open(m_remote.protocol(), ec);
+    if (ec)
+    {
+        disconnect(ec);
+        return;
+    }
+
+    // set the socket to non-blocking, so that we can
+    // read the entire buffer on each read event we get
+    tcp::socket::non_blocking_io ioc(true);
+    m_socket->io_control(ioc, ec);
+    if (ec)
+    {
+        disconnect(ec);
+        return;
+    }
+
+    tcp::endpoint bind_interface = t->get_interface();
+
+    m_socket->set_option(tcp::acceptor::reuse_address(true), ec);
+    if (ec)
+    {
+        disconnect(ec);
+        return;
+    }
+
+    bind_interface.port(m_ses.port());
+
+    m_socket->bind(bind_interface, ec);
+    if (ec)
+    {
+        disconnect(ec);
+        return;
+    }
+
+    m_socket->async_connect(
+        m_remote, boost::bind(&peer_connection::on_connection_complete, self(), _1));
+
+}
+
+void peer_connection::on_connection_complete(error_code const& e)
 {
     // TODO: implement
 }
