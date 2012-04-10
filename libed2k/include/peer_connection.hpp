@@ -101,6 +101,11 @@ namespace libed2k
         void disconnect(error_code const& ec, int error = 0);
         bool is_disconnecting() const { return m_disconnecting; }
 
+        // this is called when the connection attempt has succeeded
+        // and the peer_connection is supposed to set m_connecting
+        // to false, and stop monitor writability
+        void on_connection_complete(error_code const& e);
+
         // called when it's time for this peer_conncetion to actually
         // initiate the tcp connection. This may be postponed until
         // the library isn't using up the limitation of half-open

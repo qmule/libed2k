@@ -36,6 +36,7 @@ namespace libed2k {
         struct session_impl: boost::noncopyable
         {
             friend class libed2k::transfer;
+            friend class libed2k::peer_connection;
 
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
@@ -60,7 +61,7 @@ namespace libed2k {
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
 
-            unsigned short listen_port() const;
+            unsigned short port() const;
 
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }

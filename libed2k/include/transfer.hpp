@@ -54,6 +54,8 @@ namespace libed2k {
             return m_picker.get() != 0;
         }
 
+        tcp::endpoint const& get_interface() const { return m_net_interface; }
+
         std::set<peer_connection*> m_connections;
 
     private:
@@ -71,6 +73,10 @@ namespace libed2k {
         bool m_sequential_download;
 
         int m_sequence_number;
+
+        // the network interface all outgoing connections
+        // are opened through
+        tcp::endpoint m_net_interface;
 
         fs::path m_save_path;
 

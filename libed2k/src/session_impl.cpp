@@ -108,7 +108,7 @@ session_impl::session_impl(int lst_port, const char* listen_interface,
     }
 #endif
 
-    m_logger = create_log("main_session", listen_port(), false);
+    m_logger = create_log("main_session", port(), false);
     (*m_logger) << libtorrent::time_now_string() << "\n";
 
 #if defined TORRENT_BSD || defined TORRENT_LINUX
@@ -191,7 +191,7 @@ void session_impl::open_listen_port()
         async_accept(s.sock);
     }
 
-    m_logger = create_log("main_session", listen_port(), false);
+    m_logger = create_log("main_session", port(), false);
 }
 
 void session_impl::async_accept(boost::shared_ptr<tcp::acceptor> const& listener)
@@ -364,7 +364,7 @@ void session_impl::free_disk_buffer(char* buf)
 {
 }
 
-unsigned short session_impl::listen_port() const
+unsigned short session_impl::port() const
 {
 }
 
