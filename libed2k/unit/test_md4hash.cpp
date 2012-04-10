@@ -8,7 +8,7 @@
 #include <boost/test/unit_test.hpp>
 #include "md4_hash.hpp"
 
-BOOST_AUTO_TEST_SUITE(test_md4_hash);
+BOOST_AUTO_TEST_SUITE(test_md4_hash)
 
 struct test_md4_hash
 {
@@ -41,4 +41,4 @@ BOOST_AUTO_TEST_CASE(test_compare)
     BOOST_CHECK(h3 > h2);
 }
 
-BOOST_AUTO_TEST_SUITE_END();
+BOOST_AUTO_TEST_SUITE_END()
