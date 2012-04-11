@@ -12,7 +12,9 @@ namespace libed2k
         static const char* msgs[] =
         {
             "no error",
-            "tag has incorrect type"
+            "tag has incorrect type",
+			"unexpected output stream error",
+			"unexpected input stream error"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))
