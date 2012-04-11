@@ -12,20 +12,24 @@
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libtorrent/error_code.hpp>
 #include <libtorrent/chained_buffer.hpp>
+#include <libtorrent/buffer.hpp>
+#include <libtorrent/disk_buffer_holder.hpp>
 
 namespace libed2k
 {
 
     typedef boost::asio::ip::tcp tcp;
     typedef libtorrent::error_code error_code;
+    typedef libtorrent::disk_buffer_holder disk_buffer_holder;
 
     class peer;
     class peer_request;
-    class disk_buffer_holder;
     class transfer;
     namespace aux{
         class session_impl;
     }
+
+    int round_up8(int v);
 
     class peer_connection : public libtorrent::intrusive_ptr_base<peer_connection>,
                             public boost::noncopyable
@@ -169,6 +173,14 @@ namespace libed2k
         // the peer belongs to.
         aux::session_impl& m_ses;
 
+        libtorrent::buffer m_recv_buffer;
+
+        // if this peer is receiving a piece, this
+        // points to a disk buffer that the data is
+        // read into. This eliminates a memcopy from
+        // the receive buffer into the disk buffer
+        disk_buffer_holder m_disk_recv_buffer;
+
         libtorrent::chained_buffer m_send_buffer;
 
         boost::shared_ptr<tcp::socket> m_socket;
@@ -208,6 +220,16 @@ namespace libed2k
         // a list of byte offsets inside the send buffer
         // the piece requests
         std::vector<int> m_requests_in_buffer;
+
+        // the size (in bytes) of the bittorrent message
+        // we're currently receiving
+        int m_packet_size;
+
+        // the number of bytes of the bittorrent payload
+        // we've received so far
+        int m_recv_pos;
+
+        int m_disk_recv_buffer_size;
 
         template <std::size_t Size>
         struct handler_storage

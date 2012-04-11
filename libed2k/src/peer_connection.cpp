@@ -6,12 +6,19 @@
 
 using namespace libed2k;
 
+int libed2k::round_up8(int v)
+{
+    return ((v & 7) == 0) ? v : v + (8 - (v & 7));
+}
+
+
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
                                  const tcp::endpoint& remote, peer* peerinfo):
-    m_ses(ses), m_socket(s), m_remote(remote), m_transfer(transfer),
-    m_connection_ticket(-1), m_connecting(true)
+    m_ses(ses), m_disk_recv_buffer(ses.m_disk_thread, 0), m_socket(s), m_remote(remote),
+    m_transfer(transfer), m_connection_ticket(-1), m_connecting(true), 
+    m_packet_size(0), m_recv_pos(0), m_disk_recv_buffer_size(0)
 {
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -21,8 +28,9 @@ peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::shared_ptr<tcp::socket> s,
                                  const tcp::endpoint& remote,
                                  peer* peerinfo):
-    m_ses(ses), m_socket(s), m_remote(remote), m_connection_ticket(-1),
-    m_connecting(false)
+    m_ses(ses), m_disk_recv_buffer(ses.m_disk_thread, 0), m_socket(s), m_remote(remote),
+    m_connection_ticket(-1), m_connecting(false), m_packet_size(0), m_recv_pos(0),
+    m_disk_recv_buffer_size(0)
 {
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -140,6 +148,76 @@ void peer_connection::setup_receive(sync_t sync)
 
 size_t peer_connection::try_read(sync_t s, error_code& ec)
 {
+    int max_receive = m_packet_size - m_recv_pos;
+
+    // check quota here
+
+    if (max_receive == 0 || !can_read())
+    {
+        ec = boost::asio::error::would_block;
+        return 0;
+    }
+
+    int regular_buffer_size = m_packet_size - m_disk_recv_buffer_size;
+
+    if (int(m_recv_buffer.size()) < regular_buffer_size)
+        m_recv_buffer.resize(round_up8(regular_buffer_size));
+
+    boost::array<boost::asio::mutable_buffer, 2> vec;
+    int num_bufs = 0;
+    if (!m_disk_recv_buffer || regular_buffer_size >= m_recv_pos + max_receive)
+    {
+        // only receive into regular buffer
+        vec[0] = boost::asio::buffer(&m_recv_buffer[m_recv_pos], max_receive);
+        num_bufs = 1;
+    }
+    else if (m_recv_pos >= regular_buffer_size)
+    {
+        // only receive into disk buffer
+        vec[0] = boost::asio::buffer(
+            m_disk_recv_buffer.get() + m_recv_pos - regular_buffer_size, max_receive);
+        num_bufs = 1;
+    }
+    else
+    {
+        // receive into both regular and disk buffer
+        vec[0] = boost::asio::buffer(&m_recv_buffer[m_recv_pos],
+                                     regular_buffer_size - m_recv_pos);
+        vec[1] = boost::asio::buffer(m_disk_recv_buffer.get(),
+                                     max_receive - regular_buffer_size + m_recv_pos);
+        num_bufs = 2;
+    }
+
+    if (s == read_async)
+    {
+        m_channel_state[download_channel] = bw_network;
+
+        if (num_bufs == 1)
+        {
+            m_socket->async_read_some(
+                boost::asio::mutable_buffers_1(vec[0]), make_read_handler(
+                    boost::bind(&peer_connection::on_receive_data, self(), _1, _2)));
+        }
+        else
+        {
+            m_socket->async_read_some(
+                vec, make_read_handler(
+                    boost::bind(&peer_connection::on_receive_data, self(), _1, _2)));
+        }
+        return 0;
+    }
+
+    size_t ret = 0;
+    if (num_bufs == 1)
+    {
+        ret = m_socket->read_some(boost::asio::mutable_buffers_1(vec[0]), ec);
+    }
+    else
+    {
+        ret = m_socket->read_some(vec, ec);
+    }
+
+    return ret;
 }
 
 void peer_connection::on_timeout()
