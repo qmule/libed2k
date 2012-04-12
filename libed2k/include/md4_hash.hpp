@@ -39,12 +39,12 @@ namespace libed2k{
 
     	bool operator<(const md4_hash& hash) const
     	{
-    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == -1);
+    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) < 0);
     	}
 
     	bool operator>(const md4_hash& hash) const
     	{
-    	     return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == 1);
+    	     return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) > 0);
     	}
 
     	void clear()
@@ -76,7 +76,7 @@ namespace libed2k{
                 else
                 {
                      throw std::bad_cast();
-                }
+                }                
 
                 if (i % 2 == 0)
                 {
@@ -110,7 +110,7 @@ namespace libed2k{
     	md4hash_container   m_hash;
     };
 
-};
+}
 
 
 
