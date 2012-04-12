@@ -7,6 +7,7 @@
 #include <boost/smart_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/io_service.hpp>
 #include <boost/aligned_storage.hpp>
 
 #include <libtorrent/intrusive_ptr_base.hpp>
@@ -14,6 +15,7 @@
 #include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/buffer.hpp>
 #include <libtorrent/disk_buffer_holder.hpp>
+#include <libtorrent/time.hpp>
 
 namespace libed2k
 {
@@ -21,6 +23,8 @@ namespace libed2k
     typedef boost::asio::ip::tcp tcp;
     typedef libtorrent::error_code error_code;
     typedef libtorrent::disk_buffer_holder disk_buffer_holder;
+    typedef libtorrent::ptime ptime;
+    typedef libtorrent::buffer buffer;
 
     class peer;
     class peer_request;
@@ -61,6 +65,7 @@ namespace libed2k
         enum message_type
         {
             msg_interested,
+            msg_not_interested,
             msg_have,
             msg_request,
             msg_piece,
@@ -73,7 +78,21 @@ namespace libed2k
         // work to do.
         void on_send_data(error_code const& error, std::size_t bytes_transferred);
         void on_receive_data(error_code const& error, std::size_t bytes_transferred);
-        void on_receive_data_nolock(error_code const& error, std::size_t bytes_transferred);
+        void on_receive_data_nolock(error_code const& error,
+                                    std::size_t bytes_transferred);
+        void on_sent(error_code const& error, std::size_t bytes_transferred);
+        void on_receive(error_code const& error, std::size_t bytes_transferred);
+
+        buffer::const_interval receive_buffer() const
+        {
+            if (m_recv_buffer.empty())
+                return buffer::const_interval(0,0);
+            return buffer::const_interval(&m_recv_buffer[0],
+                                          &m_recv_buffer[0] + m_recv_pos);
+        }
+
+        void reset_recv_buffer(int packet_size);
+        void cut_receive_buffer(int size, int packet_size);
 
         // the message handlers are called
         // each time a recv() returns some new
@@ -161,6 +180,8 @@ namespace libed2k
         // state of on_receive
         state m_state;
 
+        bool packet_finished() const { return m_packet_size <= m_recv_pos; }
+
         // upload and download channel state
         // enum from peer_info::bw_state
         char m_channel_state[2];
@@ -172,6 +193,14 @@ namespace libed2k
         // a back reference to the session
         // the peer belongs to.
         aux::session_impl& m_ses;
+
+        // keep the io_service running as long as we
+        // have peer connections
+        boost::asio::io_service::work m_work;
+
+        // timeouts
+        ptime m_last_receive;
+        ptime m_last_sent;
 
         libtorrent::buffer m_recv_buffer;
 
