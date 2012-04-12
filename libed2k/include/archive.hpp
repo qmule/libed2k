@@ -76,6 +76,11 @@ namespace libed2k
             {
             }
 
+            std::ostream& container()
+            {
+                return (m_container);
+            }
+
             template<typename T>
             ed2k_oarchive& operator<<(T& t)
             {
@@ -85,8 +90,13 @@ namespace libed2k
 
             ed2k_oarchive& operator <<(std::string& str)
             {
-                uint16_t nSize = static_cast<uint16_t>(str.size());
-                *this << nSize;
+                raw_write(str.c_str(), str.size());
+                return *this;
+            }
+
+            // special const
+            ed2k_oarchive& operator <<(const std::string& str)
+            {
                 raw_write(str.c_str(), str.size());
                 return *this;
             }
@@ -107,6 +117,7 @@ namespace libed2k
                     throw libed2k::libed2k_exception(libed2k::errors::unexpected_ostream_error);
                 }
             }
+
         private:
             // Fundamental types simple read as raw binary block
             template<typename T>
@@ -136,6 +147,11 @@ namespace libed2k
             {
             }
 
+            std::istream& container()
+            {
+                return (m_container);
+            }
+
             template<typename T>
             ed2k_iarchive& operator>>(T& t)
             {
@@ -161,15 +177,26 @@ namespace libed2k
                 }
             }
 
+            // simple pass some data
+            void shift(size_t nSize)
+            {
+                m_container.seekg(nSize, std::ios_base::cur);
+
+                if (!m_container.good())
+                {
+                    throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
+                }
+            }
+
             ed2k_iarchive& operator>>(std::string& str)
             {
-                uint16_t nSize = static_cast<uint16_t>(str.size());
-                *this >> nSize;
+                //uint16_t nSize = static_cast<uint16_t>(str.size());
+                //*this >> nSize;
+                size_t nSize = str.size();
 
-                if (nSize)
+                if (nSize != 0)
                 {
 			        std::vector<char> v(nSize);
-
                     raw_read(&v[0], nSize);
                     str.assign(&v[0], nSize);
                 }

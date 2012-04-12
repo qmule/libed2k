@@ -59,7 +59,7 @@ namespace libed2k{
 
     	    for ( size_t i = 0; i < MD4_HASH_SIZE * 2; i++ )
     	    {
-    	        unsigned char word = strHash[i];
+    	        unsigned int word = strHash[i];
 
                 if ((word >= '0') && (word <= '9'))
                 {
@@ -78,13 +78,15 @@ namespace libed2k{
                      throw std::bad_cast();
                 }                
 
+                unsigned char cData = static_cast<unsigned char>(word);
+
                 if (i % 2 == 0)
                 {
-                    m_hash[i/2] = word << 4;
+                    m_hash[i/2] = static_cast<unsigned char>(cData << 4);
                 }
                 else
                 {
-                    m_hash[i/2] += word;
+                    m_hash[i/2] += static_cast<unsigned char>(cData);
                 }
     	    }
     	}

@@ -14,7 +14,11 @@ namespace libed2k
             "no error",
             "tag has incorrect type",
 			"unexpected output stream error",
-			"unexpected input stream error"
+			"unexpected input stream error",
+			"invalid tag type",
+			"blob tag too long",
+			"incompatible tag getter",
+			"save undefined tag error"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))
