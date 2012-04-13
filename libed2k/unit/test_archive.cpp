@@ -11,6 +11,7 @@
 #include <boost/iostreams/stream.hpp>
 #include "archive.hpp"
 #include "ctag.hpp"
+#include "base_socket.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_archive)
 
@@ -248,6 +249,7 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
 {
     // it is test source array
     float fTemplate = 1292.54f;
+    libed2k::md4_hash::md4hash_container hash_template = {'\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E', '\x0F'};
     const char* pData = (const char*)&fTemplate;
     const boost::uint8_t m_source_archive[] =
             {   /*1 byte*/          static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_UINT8 | 0x80), '\x10', '\xED',
@@ -257,6 +259,8 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
                 /*defined string*/  static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_STR5), '\x04', '\x00', 'I', 'V', 'A', 'N', 'A', 'P', 'P', 'L', 'E',
                 /*blob*/            static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_BLOB | 0x80), '\x0A', '\x03', '\x00', '\x00', '\x00', '\x0D', '\x0A', '\x0B',
                 /*float*/           static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_FLOAT32 | 0x80), '\x15', *pData, *(pData+1), *(pData + 2), *(pData + 3),
+                /*bool*/			static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_BOOL | 0x80), '\x15', '\x01',
+                /*hash*/			static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_HASH16 | 0x80), '\x20', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E', '\x0F',
                 /*invalid blob*/    static_cast<boost::uint8_t>(libed2k::tag::TAGTYPE_BLOB | 0x80), '\x0A', '\xFF', '\xFF', '\xEE', '\xFF', '\x0D', '\x0A', '\x0B',};
 
     const char* dataPtr = (const char*)&m_source_archive[0];
@@ -271,8 +275,10 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
     libed2k::tag t4;    // test string tag
     libed2k::tag t5;    // test predefined string type
     libed2k::tag t6;    // test blob type
-    libed2k::tag t7;     // test float type
-    libed2k::tag t8;    // test incorrect blob size
+    libed2k::tag t7;    // test float type
+    libed2k::tag t8;	// test bool type
+    libed2k::tag t9;	// test hash16 type
+    libed2k::tag t10;    // test incorrect blob size
 
     in_array_archive >> t;
     BOOST_CHECK(t.isInt());
@@ -319,7 +325,17 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
     BOOST_CHECK_EQUAL(t7.getNameID(), '\x15');
     BOOST_CHECK_EQUAL(t7.getFloat(), fTemplate);
 
-    BOOST_CHECK_THROW((in_array_archive >> t7), libed2k::libed2k_exception);
+    in_array_archive >> t8;
+    BOOST_CHECK(t8.isBool());
+    BOOST_CHECK_EQUAL(t8.getNameID(), '\x15');
+    BOOST_CHECK(t8.getBool());
+
+    in_array_archive >> t9;
+    BOOST_CHECK(t9.isHash());
+    BOOST_CHECK_EQUAL(t9.getNameID(), '\x20');
+    BOOST_CHECK(t9.getHash() == libed2k::md4_hash(hash_template));
+
+    BOOST_CHECK_THROW((in_array_archive >> t10), libed2k::libed2k_exception);
 
     // ok, prepare for save-restore
     std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
@@ -332,7 +348,8 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
     out_string_archive << t5;
     out_string_archive << t6;
     out_string_archive << t7;
-
+    out_string_archive << t8;
+    out_string_archive << t9;
 
 
     // go to begin
@@ -343,6 +360,9 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
     libed2k::tag dt5;    // test predefined string type
     libed2k::tag dt6;    // test blob type
     libed2k::tag dt7;    // test float type
+    libed2k::tag dt8;    // test bool type
+    libed2k::tag dt9;    // test hash type
+
 
     sstream_out.flush();
     sstream_out.seekg(0, std::ios::beg);
@@ -359,6 +379,8 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
     in_string_archive >> dt5;
     in_string_archive >> dt6;
     in_string_archive >> dt7;
+    in_string_archive >> dt8;
+    in_string_archive >> dt9;
 
     BOOST_CHECK(t  == dt);
     BOOST_CHECK(t2 == dt2);
@@ -367,6 +389,9 @@ BOOST_AUTO_TEST_CASE(test_ctag1)
     BOOST_CHECK(t5 == dt5);
     BOOST_CHECK(t6 == dt6);
     BOOST_CHECK(t7 == dt7);
+    BOOST_CHECK(t8 == dt8);
+    BOOST_CHECK(t9 == dt9);
+
 }
 
 

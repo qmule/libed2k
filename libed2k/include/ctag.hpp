@@ -104,6 +104,11 @@ public:
         return (m_nType == TAGTYPE_FLOAT32);
     }
 
+    inline bool isBool() const
+    {
+    	return (m_nType == TAGTYPE_BOOL);
+    }
+
     inline bool isHash() const
     {
         return (m_nType == TAGTYPE_HASH16);
@@ -155,6 +160,18 @@ public:
     {
         CHECK_TAG_TYPE(isBlob());
         return (m_vValue);
+    }
+
+    bool getBool() const
+    {
+    	CHECK_TAG_TYPE(isBool());
+    	return (m_vValue[0]);
+    }
+
+    md4_hash getHash() const
+    {
+    	CHECK_TAG_TYPE(isHash());
+    	return (md4_hash(m_vValue));
     }
 
     inline boost::uint8_t getNameID() const
@@ -271,7 +288,7 @@ public:
             }
             case TAGTYPE_FLOAT32:
             {
-                binary_write(ar); // is it correct
+                binary_write(ar); // is it correct?
                 break;
             }
             case TAGTYPE_STRING:
@@ -283,9 +300,11 @@ public:
             }
             case TAGTYPE_BLOB:
             {
-                boost::uint32_t nSize = m_vValue.size();
+                boost::uint32_t nSize = static_cast<boost::uint32_t>(m_vValue.size());
                 ar & nSize;
             }
+            // simple write array content
+            case TAGTYPE_BOOL:
             case TAGTYPE_HASH16:
                 binary_write(ar);
                 break;

@@ -7,7 +7,9 @@
 #include <string>
 #include <sstream>
 #include <string.h>
+#include <algorithm>
 #include <typeinfo>
+#include <vector>
 
 namespace libed2k{
 
@@ -30,6 +32,20 @@ namespace libed2k{
     	md4_hash(const std::string strHash)
     	{
     	    fromString(strHash);
+    	}
+
+    	md4_hash(const std::vector<boost::uint8_t>& vHash)
+    	{
+    		size_t nSize = std::max(vHash.size(), MD4_HASH_SIZE);
+    		for (size_t i = 0; i < nSize; i++)
+    		{
+    			m_hash[i] = vHash[i];
+    		}
+    	}
+
+    	md4_hash(const md4hash_container& container)
+    	{
+    		memcpy(m_hash, container, MD4_HASH_SIZE);
     	}
 
     	bool operator==(const md4_hash& hash) const
