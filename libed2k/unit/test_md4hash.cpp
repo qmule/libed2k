@@ -37,6 +37,8 @@ BOOST_AUTO_TEST_CASE(test_compare)
     libed2k::md4_hash h1("000102030405060708090A0B0C0D0F0D");
     libed2k::md4_hash h2("000102030405060708090A0B0C0D0F0D");
     libed2k::md4_hash h3("0A0102030405060708090A0B0C0D0F0D");
+    BOOST_CHECK(h3[0] == '\x0A');
+    BOOST_CHECK(h2[0] == '\x00');
     BOOST_CHECK(h1 == h2);
     BOOST_CHECK(h3 > h2);
 }

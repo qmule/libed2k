@@ -7,7 +7,9 @@
 #include <string>
 #include <sstream>
 #include <string.h>
+#include <algorithm>
 #include <typeinfo>
+#include <vector>
 
 namespace libed2k{
 
@@ -32,6 +34,20 @@ namespace libed2k{
     	    fromString(strHash);
     	}
 
+    	md4_hash(const std::vector<boost::uint8_t>& vHash)
+    	{
+    		size_t nSize = std::max(vHash.size(), MD4_HASH_SIZE);
+    		for (size_t i = 0; i < nSize; i++)
+    		{
+    			m_hash[i] = vHash[i];
+    		}
+    	}
+
+    	md4_hash(const md4hash_container& container)
+    	{
+    		memcpy(m_hash, container, MD4_HASH_SIZE);
+    	}
+
     	bool operator==(const md4_hash& hash) const
         {
     	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == 0);
@@ -39,12 +55,12 @@ namespace libed2k{
 
     	bool operator<(const md4_hash& hash) const
     	{
-    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == -1);
+    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) < 0);
     	}
 
     	bool operator>(const md4_hash& hash) const
     	{
-    	     return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == 1);
+    	     return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) > 0);
     	}
 
     	void clear()
@@ -59,7 +75,7 @@ namespace libed2k{
 
     	    for ( size_t i = 0; i < MD4_HASH_SIZE * 2; i++ )
     	    {
-    	        unsigned char word = strHash[i];
+    	        unsigned int word = strHash[i];
 
                 if ((word >= '0') && (word <= '9'))
                 {
@@ -76,15 +92,17 @@ namespace libed2k{
                 else
                 {
                      throw std::bad_cast();
-                }
+                }                
+
+                unsigned char cData = static_cast<unsigned char>(word);
 
                 if (i % 2 == 0)
                 {
-                    m_hash[i/2] = word << 4;
+                    m_hash[i/2] = static_cast<unsigned char>(cData << 4);
                 }
                 else
                 {
-                    m_hash[i/2] += word;
+                    m_hash[i/2] += static_cast<unsigned char>(cData);
                 }
     	    }
     	}
@@ -110,7 +128,7 @@ namespace libed2k{
     	md4hash_container   m_hash;
     };
 
-};
+}
 
 
 
