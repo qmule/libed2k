@@ -180,7 +180,7 @@ public:
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 protected:
-    typed_tag(const std::string& strName, boost::uint8_t nNameId) : base_tag(strName, nNameId)
+    typed_tag(const std::string& strName,  tg_nid_type nNameId) : base_tag(strName, nNameId)
     {
     }
 private:

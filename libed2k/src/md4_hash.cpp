@@ -4,4 +4,4 @@
 using namespace libed2k;
 
 const md4_hash::md4hash_container md4_hash::m_emptyMD4Hash = 
-{0x31, 0xD6, 0xCF, 0xE0, 0xD1, 0x6A, 0xE9, 0x31,0xB7, 0x3C, 0x59, 0xD7, 0xE0, 0xC0, 0x89, 0xC0 };
+{'\x31', '\xD6', '\xCF', '\xE0', '\xD1', '\x6A', '\xE9', '\x31' , '\xB7', '\x3C', '\x59', '\xD7', '\xE0', '\xC0', '\x89', '\xC0' };

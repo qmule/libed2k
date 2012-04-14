@@ -204,6 +204,23 @@ void tag_list::load(archive::ed2k_iarchive& ar)
             }
         }
 
+        // don't process bool arrays
+        if (nType == TAGTYPE_BOOLARRAY)
+        {
+            // this tag must been passed
+            boost::uint16_t nLength;
+            ar & nLength;
+            ar.container().seekg((nLength/8) + 1, std::ios::cur);
+
+            // check status
+            if (!ar.container().good())
+            {
+                throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
+            }
+
+            continue;
+        }
+
         switch (nType)
         {
         case TAGTYPE_UINT64:

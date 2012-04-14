@@ -73,6 +73,7 @@ namespace libed2k{
 
     	void fromString(const std::string& strHash)
     	{
+
     	    if (strHash.size() < MD4_HASH_SIZE*2)
     	    {
     	        throw libed2k_exception(errors::md4_hash_index_error);

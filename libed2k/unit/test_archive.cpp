@@ -361,6 +361,25 @@ BOOST_AUTO_TEST_CASE(test_tag_conversation)
     BOOST_REQUIRE(pt->getType() == libed2k::TAGTYPE_UINT16);
     n1_d = *((libed2k::typed_tag<boost::uint16_t>*)(pt.get()));
     BOOST_CHECK(n1 == n1_d);
+
+    const boost::uint8_t m_source_archive[] =
+                    {   /* 2 bytes list size*/      '\x03', '\x00',
+                        /*1 byte*/          static_cast<boost::uint8_t>(libed2k::TAGTYPE_UINT8), '\x01', '\x00', '\xED', '\xFA',
+                        /*bool array*/      static_cast<boost::uint8_t>(libed2k::TAGTYPE_BOOLARRAY | 0x80), '\x11', '\x08', '\x00', '\xFF', '\x0F',
+                        /*8 bytes*/         static_cast<boost::uint8_t>(libed2k::TAGTYPE_UINT64), '\x04', '\x00', '\x30', '\x31', '\x32', '\x33', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08'
+                    };
+
+    libed2k::tag_list tl;
+    const char* dataPtr = (const char*)&m_source_archive[0];
+    boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer(dataPtr, sizeof(m_source_archive));
+    std::istream in_array_stream(&array_source_buffer);
+    libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
+    in_array_archive >> tl;
+
+    BOOST_REQUIRE_EQUAL(tl.count(), 2);
+    BOOST_CHECK_EQUAL(tl[0]->getNameId(), 0xED);
+    BOOST_CHECK_EQUAL(tl[1]->getType(), libed2k::TAGTYPE_UINT64);
+
 }
 
 
