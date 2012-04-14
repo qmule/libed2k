@@ -156,6 +156,7 @@ namespace libed2k {
 
         // used for compatibility with piece_manager,
         // may store invalid data
+        // should store valid file path
         boost::intrusive_ptr<libtorrent::torrent_info> m_info;
 
         // the piece_manager keeps the transfer object

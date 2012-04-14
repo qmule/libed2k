@@ -176,9 +176,9 @@ void transfer::init()
 
     if (has_picker())
     {
-        int blocks_per_piece;      // TODO: need define
-        int blocks_in_last_piece;  // TODO: need define
-        m_picker->init(blocks_per_piece, blocks_in_last_piece, m_info->num_pieces());
+        int blocks_per_piece = 1;
+        int blocks_in_last_piece = 1;
+        m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
     }
 
     // TODO: checking resume data

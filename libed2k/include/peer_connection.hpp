@@ -240,6 +240,13 @@ namespace libed2k
         // connected to, in case we use a proxy
         tcp::endpoint m_remote;
 
+        // this is the transfer this connection is
+        // associated with. If the connection is an
+        // incoming connection, this is set to zero
+        // until the some info??? is received. Then it's
+        // set to the transfer it belongs to.
+        boost::weak_ptr<transfer> m_transfer;
+
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming
         // and hasn't been added to a transfer yet.
@@ -263,13 +270,6 @@ namespace libed2k
 
 		// set to true when this peer is only uploading
 		bool m_upload_only;
-
-        // this is the transfer this connection is
-        // associated with. If the connection is an
-        // incoming connection, this is set to zero
-        // until the some info??? is received. Then it's
-        // set to the transfer it belongs to.
-        boost::weak_ptr<transfer> m_transfer;
 
         // this is true if this connection has been added
         // to the list of connections that will be closed.

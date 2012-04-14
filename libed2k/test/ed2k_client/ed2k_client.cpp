@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     po::variables_map vm;
     try {
         po::store(po::parse_command_line(argc, argv, desc), vm);
-    } catch(boost::program_options::error& poe) {
+    } catch(po::error& poe) {
         std::cout << poe.what() << std::endl;
         return 1;
     }
@@ -33,6 +33,10 @@ int main(int argc, char* argv[])
     } else {
         std::cout << "Run mode was not set." << std::endl;
     }
+
+    std::cout << "---- libed2k_client started" << std::endl
+              << "---- press q to exit" << std::endl;
+    while (std::cin.get() != 'q');
 
     return 0;
 }
