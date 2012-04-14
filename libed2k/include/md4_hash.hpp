@@ -11,6 +11,7 @@
 #include <typeinfo>
 #include <vector>
 #include "archive.hpp"
+#include "error_code.hpp"
 
 namespace libed2k{
 
@@ -72,7 +73,11 @@ namespace libed2k{
 
     	void fromString(const std::string& strHash)
     	{
-            BOOST_ASSERT(strHash.size() == MD4_HASH_SIZE*2);
+    	    if (strHash.size() < MD4_HASH_SIZE*2)
+    	    {
+    	        throw libed2k_exception(errors::md4_hash_index_error);
+    	    }
+
     	    clear();
 
     	    for ( size_t i = 0; i < MD4_HASH_SIZE * 2; i++ )
@@ -93,7 +98,7 @@ namespace libed2k{
                 }
                 else
                 {
-                     throw std::bad_cast();
+                     throw libed2k_exception(errors::md4_hash_convert_error);
                 }                
 
                 unsigned char cData = static_cast<unsigned char>(word);
@@ -123,7 +128,11 @@ namespace libed2k{
 
     	boost::uint8_t operator[](size_t n) const
     	{
-    	    BOOST_ASSERT(n < MD4_HASH_SIZE);
+    	    if (n >= MD4_HASH_SIZE)
+            {
+                throw libed2k_exception(errors::md4_hash_index_error);
+            }
+
     	    return (m_hash[n]);
     	}
 

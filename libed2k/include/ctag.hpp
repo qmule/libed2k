@@ -98,7 +98,7 @@ public:
     friend class tag_list;
 
     base_tag(tg_nid_type nNameId) : m_strName(""), m_nNameId(nNameId){}
-    base_tag(const std::string& strName) : m_strName(strName){}
+    base_tag(const std::string& strName) : m_strName(strName), m_nNameId(0){}
 
     virtual ~base_tag()
     {
@@ -139,9 +139,9 @@ public:
     friend class libed2k::archive::access;
     friend class tag_list;
 
-    typed_tag(boost::uint8_t nNameId) : base_tag(nNameId){}
+    typed_tag(tg_nid_type nNameId) : base_tag(nNameId){}
     typed_tag(const std::string& strName) : base_tag(strName){}
-    typed_tag(T t, boost::uint8_t nNameId) : base_tag(nNameId), m_value(t){}
+    typed_tag(T t, tg_nid_type nNameId) : base_tag(nNameId), m_value(t){}
     typed_tag(T t, const std::string& strName) : base_tag(strName), m_value(t){}
     virtual ~typed_tag() {}
 
@@ -173,6 +173,11 @@ public:
         return (false);
     }
 
+    operator T() const
+    {
+        return (m_value);
+    }
+
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 protected:
     typed_tag(const std::string& strName, boost::uint8_t nNameId) : base_tag(strName, nNameId)
@@ -181,6 +186,18 @@ protected:
 private:
     T   m_value;
 };
+
+template<typename T>
+boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId)
+{
+    return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId)));
+}
+
+template<typename T>
+boost::shared_ptr<base_tag> make_typed_tag(T t, std::string strName)
+{
+    return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, strName)));
+}
 
 /**
   * all string data handler
@@ -235,6 +252,11 @@ public:
         return (false);
     }
 
+    operator std::string() const
+    {
+        return (m_strValue);
+    }
+
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -286,6 +308,11 @@ public:
         return (false);
     }
 
+    operator std::vector<boost::uint8_t>() const
+    {
+        return (m_value);
+    }
+
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
 
@@ -300,7 +327,7 @@ private:
 
 /**
   * class for tag list representation
-  * used to decode/encode tag list appended sequnces
+  * used to decode/encode tag list appended sequences in ed2k packets
  */
 class tag_list
 {

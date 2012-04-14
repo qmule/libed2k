@@ -332,4 +332,36 @@ BOOST_AUTO_TEST_CASE(test_tag_errors)
     BOOST_CHECK_THROW(in_array_archive >> tl, libed2k::libed2k_exception);
 }
 
+BOOST_AUTO_TEST_CASE(test_tag_conversation)
+{
+    libed2k::string_tag s1("TEST", '\x10');
+    libed2k::string_tag s2("TEST DATA", "name");
+    libed2k::string_tag s3("TEST", libed2k::TAGTYPE_STRING, "my name");
+
+    std::string strRes = s1;
+    BOOST_CHECK_EQUAL(s1.getNameId(), '\x10');
+    BOOST_CHECK(std::string("TEST") == strRes);
+    BOOST_CHECK_EQUAL(s1.getType(), libed2k::TAGTYPE_STR4); // auto conversation
+
+    strRes = s2;
+    BOOST_CHECK_EQUAL(s2.getNameId(), 0);
+    BOOST_CHECK(std::string("TEST DATA") == strRes);
+    BOOST_CHECK_EQUAL(s2.getType(), libed2k::TAGTYPE_STR9); // auto conversation
+
+    strRes = s3;
+    BOOST_CHECK_EQUAL(s3.getNameId(), 0);
+    BOOST_CHECK_EQUAL(s3.getName(), "my name");
+    BOOST_CHECK(std::string("TEST") == strRes);
+    BOOST_CHECK_EQUAL(s3.getType(), libed2k::TAGTYPE_STRING); // no auto conversion
+
+
+    boost::uint16_t n1 = 1000;
+    boost::uint16_t n1_d;
+    boost::shared_ptr<libed2k::base_tag> pt = libed2k::make_typed_tag(n1, std::string("some name"));
+    BOOST_REQUIRE(pt->getType() == libed2k::TAGTYPE_UINT16);
+    n1_d = *((libed2k::typed_tag<boost::uint16_t>*)(pt.get()));
+    BOOST_CHECK(n1 == n1_d);
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
