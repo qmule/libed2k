@@ -16,6 +16,13 @@
 #include <libtorrent/buffer.hpp>
 #include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
+#include <libtorrent/io.hpp>
+
+namespace libtorrent
+{
+    class peer_request;
+    class disk_io_job;
+}
 
 namespace libed2k
 {
@@ -25,15 +32,15 @@ namespace libed2k
     typedef libtorrent::disk_buffer_holder disk_buffer_holder;
     typedef libtorrent::ptime ptime;
     typedef libtorrent::buffer buffer;
+    typedef libtorrent::peer_request peer_request;
+    typedef libtorrent::disk_io_job disk_io_job;
 
     class peer;
-    class peer_request;
     class transfer;
     namespace aux{
         class session_impl;
     }
-
-    int round_up8(int v);
+    namespace detail = libtorrent::detail;
 
     class peer_connection : public libtorrent::intrusive_ptr_base<peer_connection>,
                             public boost::noncopyable
@@ -60,6 +67,8 @@ namespace libed2k
                         tcp::endpoint const& remote, peer* peerinfo);
 
         ~peer_connection();
+
+        peer* peer_info() const { return m_peer_info; }
 
         // DRAFT
         enum message_type
@@ -91,6 +100,8 @@ namespace libed2k
                                           &m_recv_buffer[0] + m_recv_pos);
         }
 
+        bool allocate_disk_receive_buffer(int disk_buffer_size);
+        char* release_disk_receive_buffer();
         void reset_recv_buffer(int packet_size);
         void cut_receive_buffer(int size, int packet_size);
 
@@ -110,6 +121,10 @@ namespace libed2k
         void on_request(int received);
         void on_piece(int received);
         void on_cancel(int received);
+
+        void incoming_piece(peer_request const& p, disk_buffer_holder& data);
+        void incoming_piece_fragment(int bytes);
+        void start_receive_piece(peer_request const& r);
 
         typedef void (peer_connection::*message_handler)(int received);
 
@@ -160,7 +175,13 @@ namespace libed2k
         bool can_write() const;
         bool can_read(char* state = 0) const;
 
+        void set_upload_only(bool u);
+        bool upload_only() const { return m_upload_only; }
+
     private:
+
+        void on_disk_write_complete(int ret, disk_io_job const& j,
+                                    peer_request r, boost::shared_ptr<transfer> t);
 
         // DRAFT
         enum state
@@ -219,6 +240,11 @@ namespace libed2k
         // connected to, in case we use a proxy
         tcp::endpoint m_remote;
 
+        // this peer's peer info struct. This may
+        // be 0, in case the connection is incoming
+        // and hasn't been added to a transfer yet.
+        peer* m_peer_info;
+
         // the ticket id from the connection queue.
         // This is used to identify the connection
         // so that it can be removed from the queue
@@ -234,6 +260,9 @@ namespace libed2k
         // may not even have been attempted when the
         // time out is reached.
         bool m_connecting;
+
+		// set to true when this peer is only uploading
+		bool m_upload_only;
 
         // this is the transfer this connection is
         // associated with. If the connection is an
