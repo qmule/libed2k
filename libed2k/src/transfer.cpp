@@ -135,7 +135,7 @@ void transfer::finished()
         peer_connection* p = *i;
         if (p->upload_only())
         {
-            p->disconnect(libtorrent::errors::torrent_finished);
+            p->disconnect(errors::transfer_finished);
         }
     }
 

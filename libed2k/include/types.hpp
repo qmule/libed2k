@@ -7,7 +7,6 @@ namespace libtorrent {
     class piece_manager;
     class piece_picker;
     class logger;
-    class error_code;
     class listen_failed_alert;
 
     namespace aux{
@@ -25,7 +24,6 @@ namespace libed2k {
     typedef libtorrent::piece_block piece_block;
     typedef libtorrent::disk_io_job disk_io_job;
     typedef libtorrent::logger logger;
-    typedef libtorrent::error_code error_code;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
 

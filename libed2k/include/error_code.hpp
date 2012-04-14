@@ -18,14 +18,21 @@ namespace libed2k
         enum error_code_enum
         {
             no_error = 0,
+            // protocol errors
             tag_type_mismatch,
-			unexpected_ostream_error,
-			unexpected_istream_error,
-			invalid_tag_type,
-			blob_tag_too_long,
-			incompatible_tag_getter,
-			save_undefined_tag_error,
-			tag_list_index_error
+            unexpected_ostream_error,
+            unexpected_istream_error,
+            invalid_tag_type,
+            blob_tag_too_long,
+            incompatible_tag_getter,
+            save_undefined_tag_error,
+            tag_list_index_error,
+            // transport errors
+            session_is_closing,
+            duplicate_transfer,
+            transfer_finished,
+
+            num_errors
         };
     }
 }

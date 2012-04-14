@@ -7,7 +7,6 @@
 #include "session_impl.hpp"
 #include "transfer_handle.hpp"
 #include "transfer.hpp"
-//#include "error_code.hpp"
 #include "peer_connection.hpp"
 
 using namespace libed2k;
@@ -317,7 +316,7 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
 
     if (is_aborted())
     {
-        ec = libtorrent::errors::session_is_closing;
+        ec = errors::session_is_closing;
         return transfer_handle();
     }
 
@@ -328,7 +327,7 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
         if (!params.duplicate_is_error)
             return transfer_handle(transfer_ptr);
 
-        ec = libtorrent::errors::duplicate_torrent;
+        ec = errors::duplicate_transfer;
         return transfer_handle();
     }
 
