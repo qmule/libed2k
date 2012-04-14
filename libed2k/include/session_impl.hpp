@@ -24,7 +24,7 @@ namespace libed2k {
     typedef libtorrent::peer_blocked_alert peer_blocked_alert;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
 
-    namespace errors = libtorrent::errors;
+    //namespace errors = libtorrent::errors;
     namespace fs = boost::filesystem;
 
     class peer_connection;

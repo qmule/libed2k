@@ -24,7 +24,8 @@ namespace libed2k
 			invalid_tag_type,
 			blob_tag_too_long,
 			incompatible_tag_getter,
-			save_undefined_tag_error
+			save_undefined_tag_error,
+			tag_list_index_error
         };
     }
 }

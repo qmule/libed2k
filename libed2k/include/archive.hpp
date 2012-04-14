@@ -32,7 +32,7 @@ namespace libed2k
         template<class Archive, class T>
         struct member_saver
         {
-            static void invoke(Archive & ar,const T & t)
+            static void invoke(Archive & ar,T & t)
             {
                 access::member_save(ar, t);
             }

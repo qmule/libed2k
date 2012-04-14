@@ -317,7 +317,7 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
 
     if (is_aborted())
     {
-        ec = errors::session_is_closing;
+        ec = libtorrent::errors::session_is_closing;
         return transfer_handle();
     }
 
@@ -328,7 +328,7 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
         if (!params.duplicate_is_error)
             return transfer_handle(transfer_ptr);
 
-        ec = errors::duplicate_torrent;
+        ec = libtorrent::errors::duplicate_torrent;
         return transfer_handle();
     }
 

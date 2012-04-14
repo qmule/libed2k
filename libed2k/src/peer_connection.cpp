@@ -75,7 +75,8 @@ void peer_connection::send_buffer(char const* buf, int size, int flags)
     std::pair<char*, int> buffer = m_ses.allocate_buffer(size);
     if (buffer.first == 0)
     {
-        disconnect(errors::no_memory);
+
+        disconnect(libtorrent::errors::no_memory);
         return;
     }
     TORRENT_ASSERT(buffer.second >= size);
@@ -241,7 +242,7 @@ void peer_connection::on_connect(int ticket)
 
     if (!t)
     {
-        disconnect(errors::torrent_aborted);
+        disconnect(libtorrent::errors::torrent_aborted);
         return;
     }
 

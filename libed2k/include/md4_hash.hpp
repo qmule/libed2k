@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <typeinfo>
 #include <vector>
+#include "archive.hpp"
 
 namespace libed2k{
 
@@ -21,6 +22,7 @@ namespace libed2k{
     class md4_hash
     {
     public:
+        friend class archive::access;
     	typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
     	static const md4hash_container m_emptyMD4Hash;
 
@@ -124,6 +126,16 @@ namespace libed2k{
     	    BOOST_ASSERT(n < MD4_HASH_SIZE);
     	    return (m_hash[n]);
     	}
+
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    	    for (size_t n = 0; n < sizeof(md4hash_container); n++)
+    	    {
+    	        ar & m_hash[n];
+    	    }
+    	}
+
     private:
     	md4hash_container   m_hash;
     };

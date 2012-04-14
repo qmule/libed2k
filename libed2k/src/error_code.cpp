@@ -18,7 +18,8 @@ namespace libed2k
 			"invalid tag type",
 			"blob tag too long",
 			"incompatible tag getter",
-			"save undefined tag error"
+			"save undefined tag error",
+			"tag list index error"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))
