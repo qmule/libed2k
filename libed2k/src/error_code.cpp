@@ -12,13 +12,14 @@ namespace libed2k
         static const char* msgs[] =
         {
             "no error",
+            "md4_hash index error",
+            "md4_hash convert error",
             "tag has incorrect type",
 			"unexpected output stream error",
 			"unexpected input stream error",
 			"invalid tag type",
 			"blob tag too long",
 			"incompatible tag getter",
-			"save undefined tag error",
 			"tag list index error"
         };
 
