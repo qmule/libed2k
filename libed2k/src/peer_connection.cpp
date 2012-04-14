@@ -1,24 +1,44 @@
 
+#include <libtorrent/piece_picker.hpp>
+#include <libtorrent/storage.hpp>
+
 #include "peer_connection.hpp"
 #include "session_impl.hpp"
 #include "session.hpp"
 #include "transfer.hpp"
+#include "util.hpp"
 
 using namespace libed2k;
 
-int libed2k::round_up8(int v)
+const libed2k::peer_connection::message_handler
+libed2k::peer_connection::m_message_handler[] =
 {
-    return ((v & 7) == 0) ? v : v + (8 - (v & 7));
-}
-
+    &peer_connection::on_interested,
+    &peer_connection::on_not_interested,
+    &peer_connection::on_have,
+    &peer_connection::on_request,
+    &peer_connection::on_piece,
+    &peer_connection::on_cancel
+};
 
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
                                  const tcp::endpoint& remote, peer* peerinfo):
-    m_ses(ses), m_disk_recv_buffer(ses.m_disk_thread, 0), m_socket(s), m_remote(remote),
-    m_transfer(transfer), m_connection_ticket(-1), m_connecting(true), 
-    m_packet_size(0), m_recv_pos(0), m_disk_recv_buffer_size(0)
+    m_ses(ses),
+    m_work(ses.m_io_service),
+    m_last_receive(libtorrent::time_now()),
+    m_last_sent(libtorrent::time_now()),
+    m_disk_recv_buffer(ses.m_disk_thread, 0),
+    m_socket(s),
+    m_remote(remote),
+    m_transfer(transfer),
+    m_peer_info(peerinfo),
+    m_connection_ticket(-1),
+    m_connecting(true),
+    m_packet_size(0),
+    m_recv_pos(0),
+    m_disk_recv_buffer_size(0)
 {
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -28,8 +48,18 @@ peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::shared_ptr<tcp::socket> s,
                                  const tcp::endpoint& remote,
                                  peer* peerinfo):
-    m_ses(ses), m_disk_recv_buffer(ses.m_disk_thread, 0), m_socket(s), m_remote(remote),
-    m_connection_ticket(-1), m_connecting(false), m_packet_size(0), m_recv_pos(0),
+    m_ses(ses),
+    m_work(ses.m_io_service),
+    m_last_receive(libtorrent::time_now()),
+    m_last_sent(libtorrent::time_now()),
+    m_disk_recv_buffer(ses.m_disk_thread, 0),
+    m_socket(s),
+    m_remote(remote),
+    m_peer_info(peerinfo),
+    m_connection_ticket(-1),
+    m_connecting(false),
+    m_packet_size(0),
+    m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
     m_channel_state[upload_channel] = bw_idle;
@@ -50,11 +80,145 @@ void peer_connection::on_send_data(error_code const& error,
 void peer_connection::on_receive_data(error_code const& error,
                                       std::size_t bytes_transferred)
 {
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+    on_receive_data_nolock(error, bytes_transferred);
 }
 
 void peer_connection::on_receive_data_nolock(
     error_code const& error, std::size_t bytes_transferred)
 {
+    // keep ourselves alive in until this function exits in
+    // case we disconnect
+    boost::intrusive_ptr<peer_connection> me(self());
+
+    m_channel_state[download_channel] = bw_idle;
+
+    int bytes_in_loop = bytes_transferred;
+
+    if (error)
+    {
+        on_receive(error, bytes_transferred);
+        disconnect(error);
+        return;
+    }
+
+    int num_loops = 0;
+    do
+    {
+        // correct the dl quota usage, if not all of the buffer was actually read
+        //m_quota[download_channel] -= bytes_transferred;
+
+        if (m_disconnecting)
+        {
+            return;
+        }
+
+        m_last_receive = libtorrent::time_now();
+        m_recv_pos += bytes_transferred;
+
+        on_receive(error, bytes_transferred);
+
+        if (m_disconnecting) return;
+
+        //if (m_recv_pos >= m_soft_packet_size) m_soft_packet_size = 0;
+
+        if (num_loops > 20) break;
+
+        error_code ec;
+        bytes_transferred = try_read(read_sync, ec);
+        if (ec && ec != boost::asio::error::would_block)
+        {
+            disconnect(ec);
+            return;
+        }
+
+        if (ec == boost::asio::error::would_block) break;
+        bytes_in_loop += bytes_transferred;
+        ++num_loops;
+    }
+    while (bytes_transferred > 0);
+
+    setup_receive(read_async);
+}
+
+void peer_connection::on_sent(error_code const& error, std::size_t bytes_transferred)
+{
+}
+
+void peer_connection::on_receive(error_code const& error, std::size_t bytes_transferred)
+{
+    if (error) return;
+
+    //buffer::const_interval recv_buffer = receive_buffer();
+
+    if (m_state == read_packet)
+    {
+        dispatch_message(bytes_transferred);
+        return;
+    }
+
+}
+
+bool peer_connection::dispatch_message(int received)
+{
+    buffer::const_interval recv_buffer = receive_buffer();
+
+    int packet_type = (unsigned char)recv_buffer[0];
+
+    // call the correct handler for this packet type
+    (this->*m_message_handler[packet_type])(received);
+
+    return packet_finished();
+}
+
+bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
+{
+    if (disk_buffer_size == 0) return true;
+
+    if (disk_buffer_size > 16 * 1024)
+    {
+        disconnect(libtorrent::errors::invalid_piece_size, 2);
+        return false;
+    }
+
+    // first free the old buffer
+    m_disk_recv_buffer.reset();
+    // then allocate a new one
+
+    m_disk_recv_buffer.reset(m_ses.allocate_disk_buffer("receive buffer"));
+    if (!m_disk_recv_buffer)
+    {
+        disconnect(libtorrent::errors::no_memory);
+        return false;
+    }
+    m_disk_recv_buffer_size = disk_buffer_size;
+    return true;
+}
+
+char* peer_connection::release_disk_receive_buffer()
+{
+    m_disk_recv_buffer_size = 0;
+    return m_disk_recv_buffer.release();
+}
+
+void peer_connection::reset_recv_buffer(int packet_size)
+{
+    if (m_recv_pos > m_packet_size)
+    {
+        cut_receive_buffer(m_packet_size, packet_size);
+        return;
+    }
+    m_recv_pos = 0;
+    m_packet_size = packet_size;
+}
+
+void peer_connection::cut_receive_buffer(int size, int packet_size)
+{
+    if (size > 0)
+        std::memmove(&m_recv_buffer[0], &m_recv_buffer[0] + size, m_recv_pos - size);
+
+    m_recv_pos -= size;
+    m_packet_size = packet_size;
 }
 
 void peer_connection::send_buffer(char const* buf, int size, int flags)
@@ -306,7 +470,121 @@ void peer_connection::on_connection_complete(error_code const& e)
 
     setup_send();
     setup_receive();
+}
 
+void peer_connection::on_interested(int received)
+{
+}
+
+void peer_connection::on_not_interested(int received)
+{
+}
+
+void peer_connection::on_have(int received)
+{
+}
+
+void peer_connection::on_request(int received)
+{
+}
+
+// -----------------------------
+// ----------- PIECE -----------
+// -----------------------------
+void peer_connection::on_piece(int received)
+{
+    buffer::const_interval recv_buffer = receive_buffer();
+    int recv_pos = recv_buffer.end - recv_buffer.begin;
+    int header_size = 0; // ???
+
+    if (recv_pos == 1) // receive buffer is empty
+    {
+        if (!allocate_disk_receive_buffer(m_packet_size - header_size))
+        {
+            return;
+        }
+    }
+
+    peer_request p;
+
+    if (recv_pos >= header_size) // read header
+    {
+        const char* ptr = recv_buffer.begin + 1;
+        p.piece = detail::read_int32(ptr);
+        p.start = detail::read_int32(ptr);
+        p.length = m_packet_size - header_size;
+    }
+
+    int piece_bytes = 0;
+    if (recv_pos <= header_size)
+    {
+        // only received protocol data
+    }
+    else if (recv_pos - received >= header_size)
+    {
+        // only received payload data
+        piece_bytes = received;
+    }
+    else
+    {
+        // received a bit of both
+        piece_bytes = recv_pos - header_size;
+    }
+
+    if (recv_pos < header_size) return;
+
+    if (recv_pos - received < header_size && recv_pos >= header_size)
+    {
+        // call this once, the first time the entire header
+        // has been received
+        start_receive_piece(p);
+        if (is_disconnecting()) return;
+    }
+
+    incoming_piece_fragment(piece_bytes);
+    if (!packet_finished()) return;
+
+    disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
+    incoming_piece(p, holder);
+}
+
+void peer_connection::on_cancel(int received)
+{
+}
+
+void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& data)
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (is_disconnecting()) return;
+    if (t->is_seed()) return;
+
+    piece_picker& picker = t->picker();
+    piece_manager& fs = t->filesystem();
+    piece_block block_finished(p.piece, p.start / t->block_size());
+
+    fs.async_write(p, data, boost::bind(&peer_connection::on_disk_write_complete,
+                                        self(), _1, _2, p, t));
+
+    bool was_finished = picker.is_piece_finished(p.piece);
+    picker.mark_as_writing(block_finished, peer_info());
+
+    // did we just finish the piece?
+    // this means all blocks are either written
+    // to disk or are in the disk write cache
+    if (picker.is_piece_finished(p.piece) && !was_finished)
+    {
+        t->async_verify_piece(
+            p.piece, boost::bind(&transfer::piece_finished, t, p.piece, _1));
+    }
+}
+
+void peer_connection::incoming_piece_fragment(int bytes)
+{
+}
+
+void peer_connection::start_receive_piece(peer_request const& r)
+{
 }
 
 void peer_connection::start()
@@ -319,4 +597,20 @@ bool peer_connection::can_write() const
 
 bool peer_connection::can_read(char* state) const
 {
+}
+
+void peer_connection::on_disk_write_complete(
+    int ret, disk_io_job const& j, peer_request r, boost::shared_ptr<transfer> t)
+{
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+    // in case the outstanding bytes just dropped down
+    // to allow to receive more data
+    setup_receive();
+
+    if (t->is_seed()) return;
+
+    piece_block block_finished(r.piece, r.start / t->block_size());
+    piece_picker& picker = t->picker();
+    picker.mark_as_finished(block_finished, peer_info());
 }

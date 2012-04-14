@@ -12,20 +12,9 @@
 #include "md4_hash.hpp"
 #include "transfer_handle.hpp"
 #include "session_settings.hpp"
+#include "types.hpp"
 
 namespace libed2k {
-
-    typedef boost::asio::ip::tcp tcp;
-    typedef libtorrent::logger logger;
-    typedef libtorrent::aux::eh_initializer eh_initializer;
-    typedef libtorrent::error_code error_code;
-    typedef libtorrent::stream_socket stream_socket;
-    typedef libtorrent::ip_filter ip_filter;
-    typedef libtorrent::peer_blocked_alert peer_blocked_alert;
-    typedef libtorrent::listen_failed_alert listen_failed_alert;
-
-    //namespace errors = libtorrent::errors;
-    namespace fs = boost::filesystem;
 
     class peer_connection;
     class transfer;

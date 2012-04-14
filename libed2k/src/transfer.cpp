@@ -4,6 +4,8 @@
 #include "transfer.hpp"
 #include "peer.hpp"
 #include "peer_connection.hpp"
+#include "constants.hpp"
+#include "util.hpp"
 
 using namespace libed2k;
 
@@ -73,9 +75,93 @@ bool transfer::connect_to_peer(peer* peerinfo)
     return peerinfo->connection;
 }
 
+void transfer::piece_passed(int index)
+{
+    bool was_finished = (num_have() == num_pieces());
+    we_have(index);
+    if (!was_finished && is_finished())
+    {
+        // transfer finished
+        // i.e. all the pieces we're interested in have
+        // been downloaded. Release the files (they will open
+        // in read only mode if needed)
+        finished();
+        // if we just became a seed, picker is now invalid, since it
+        // is deallocated by the torrent once it starts seeding
+    }
+}
+
+void transfer::we_have(int index)
+{
+    //TODO: update progress
+
+    m_picker->we_have(index);
+}
+
+int transfer::num_pieces() const
+{
+    return div_ceil(m_filesize, PIECE_SIZE);
+}
+
+// called when torrent is complete (all pieces downloaded)
+void transfer::completed()
+{
+    m_picker.reset();
+
+    //set_state(torrent_status::seeding);
+    //if (!m_announcing) return;
+
+    //announce_with_tracker();
+}
+
+// called when torrent is finished (all interesting
+// pieces have been downloaded)
+void transfer::finished()
+{
+    //TODO: post alert
+
+    //set_state(transfer_status::finished);
+    //set_queue_position(-1);
+
+    // we have to call completed() before we start
+    // disconnecting peers, since there's an assert
+    // to make sure we're cleared the piece picker
+    if (is_seed()) completed();
+
+    // disconnect all seeds
+    for (std::set<peer_connection*>::iterator i = m_connections.begin();
+         i != m_connections.end(); ++i)
+    {
+        peer_connection* p = *i;
+        if (p->upload_only())
+        {
+            p->disconnect(libtorrent::errors::torrent_finished);
+        }
+    }
+
+    //if (m_abort) return;
+
+    // we need to keep the object alive during this operation
+    m_storage->async_release_files(
+        boost::bind(&transfer::on_files_released, shared_from_this(), _1, _2));
+}
+
+void transfer::piece_failed(int index)
+{
+}
+
+void transfer::restore_piece_state(int index)
+{
+}
+
 bool transfer::is_paused() const
 {
     return m_paused || m_ses.is_paused();
+}
+
+void transfer::on_files_released(int ret, disk_io_job const& j)
+{
+    // do nothing
 }
 
 void transfer::init()
@@ -97,4 +183,41 @@ void transfer::init()
 
     // TODO: checking resume data
 
+}
+
+void transfer::async_verify_piece(int piece_index, boost::function<void(int)> const&)
+{
+    //TODO: piece verification
+}
+
+// passed_hash_check
+//  0: success, piece passed check
+// -1: disk failure
+// -2: piece failed check
+void transfer::piece_finished(int index, int passed_hash_check)
+{
+    // even though the piece passed the hash-check
+    // it might still have failed being written to disk
+    // if so, piece_picker::write_failed() has been
+    // called, and the piece is no longer finished.
+    // in this case, we have to ignore the fact that
+    // it passed the check
+    if (!m_picker->is_piece_finished(index)) return;
+
+    if (passed_hash_check == 0)
+    {
+        // the following call may cause picker to become invalid
+        // in case we just became a seed
+        piece_passed(index);
+    }
+    else if (passed_hash_check == -2)
+    {
+        // piece_failed() will restore the piece
+        piece_failed(index);
+    }
+    else
+    {
+        m_picker->restore_piece(index);
+        restore_piece_state(index);
+    }
 }
