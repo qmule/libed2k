@@ -177,21 +177,10 @@ namespace libed2k
                 }
             }
 
-            // simple pass some data
-            void shift(size_t nSize)
-            {
-                m_container.seekg(nSize, std::ios_base::cur);
-
-                if (!m_container.good())
-                {
-                    throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
-                }
-            }
-
+            // you must resize string to appropriate size before load
+            // this function doesn't read object size because in some cases size can was stored in uint16 or uint32
             ed2k_iarchive& operator>>(std::string& str)
             {
-                //uint16_t nSize = static_cast<uint16_t>(str.size());
-                //*this >> nSize;
                 size_t nSize = str.size();
 
                 if (nSize != 0)
@@ -203,6 +192,7 @@ namespace libed2k
 
                 return *this;
             }
+
         private:
             std::istream& m_container;
 

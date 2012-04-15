@@ -11,6 +11,7 @@
 #include <boost/iostreams/stream.hpp>
 #include "archive.hpp"
 #include "ctag.hpp"
+#include "packet_struct.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_archive)
 
@@ -248,7 +249,7 @@ BOOST_AUTO_TEST_CASE(test_file_archive)
 BOOST_AUTO_TEST_CASE(test_tag_list)
 {
     libed2k::tag_list tl;
-    boost::shared_ptr<libed2k::base_tag> ptag(new libed2k::typed_tag<float>(10.6f, "XXX"));
+    boost::shared_ptr<libed2k::base_tag> ptag(new libed2k::typed_tag<float>(10.6f, "XXX", true));
     float fTemplate = 1292.54f;
     const char* pData = (const char*)&fTemplate;
     libed2k::md4_hash md4("000102030405060708090A0B0C0D0E0F");
@@ -289,15 +290,15 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
     BOOST_CHECK(tl[7]->getType() == libed2k::TAGTYPE_BOOL);
 
     libed2k::tag_list tl2;
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint8_t>('\xED', 0x10)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint16_t>(0x0D0A, '\xED')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint64_t>(0x0807060504030201UL, '\xED')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("STRING", libed2k::TAGTYPE_STRING, 'x10')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("APPLE", libed2k::TAGTYPE_STR5, 'x10')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::array_tag(vBlob, 'x10')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<float>(fTemplate, '\x10')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<bool>(true, '\x10')));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<libed2k::md4_hash>(md4, '\x10')));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint8_t>('\xED', 0x10, true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint16_t>(0x0D0A, '\xED', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint64_t>(0x0807060504030201UL, '\xED', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("STRING", libed2k::TAGTYPE_STRING, '\x10', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("APPLE", libed2k::TAGTYPE_STR5, '\x10', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::array_tag(vBlob, '\x10', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<float>(fTemplate, '\x10', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<bool>(true, '\x10', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<libed2k::md4_hash>(md4, '\x10', true)));
 
     BOOST_CHECK(tl == tl2);
 
@@ -334,9 +335,11 @@ BOOST_AUTO_TEST_CASE(test_tag_errors)
 
 BOOST_AUTO_TEST_CASE(test_tag_conversation)
 {
-    libed2k::string_tag s1("TEST", '\x10');
-    libed2k::string_tag s2("TEST DATA", "name");
-    libed2k::string_tag s3("TEST", libed2k::TAGTYPE_STRING, "my name");
+    libed2k::string_tag s1("TEST", '\x10', true);                               //!< auto convert
+    libed2k::string_tag s2("TEST DATA", "name", true);                          //!< auto convert
+    libed2k::string_tag s3("TEST", libed2k::TAGTYPE_STRING, "my name", true);   //!< none
+    libed2k::string_tag s4("PLAN", libed2k::FT_CATEGORY, false);                //!< no auto convert
+
 
     std::string strRes = s1;
     BOOST_CHECK_EQUAL(s1.getNameId(), '\x10');
@@ -355,9 +358,15 @@ BOOST_AUTO_TEST_CASE(test_tag_conversation)
     BOOST_CHECK_EQUAL(s3.getType(), libed2k::TAGTYPE_STRING); // no auto conversion
 
 
+    strRes = s4;
+    BOOST_CHECK_EQUAL(s4.getNameId(), libed2k::FT_CATEGORY);
+    BOOST_CHECK(s4.getName().empty());
+    BOOST_CHECK(std::string("PLAN") == strRes);
+    BOOST_CHECK_EQUAL(s3.getType(), libed2k::TAGTYPE_STRING); // no auto conversion
+
     boost::uint16_t n1 = 1000;
     boost::uint16_t n1_d;
-    boost::shared_ptr<libed2k::base_tag> pt = libed2k::make_typed_tag(n1, std::string("some name"));
+    boost::shared_ptr<libed2k::base_tag> pt = libed2k::make_typed_tag(n1, std::string("some name"), true);
     BOOST_REQUIRE(pt->getType() == libed2k::TAGTYPE_UINT16);
     n1_d = *((libed2k::typed_tag<boost::uint16_t>*)(pt.get()));
     BOOST_CHECK(n1 == n1_d);
@@ -382,5 +391,65 @@ BOOST_AUTO_TEST_CASE(test_tag_conversation)
 
 }
 
+BOOST_AUTO_TEST_CASE(test_tags_mixed)
+{
+    boost::uint16_t n1 = 1000;
+    boost::uint64_t n2 = 32323267673UL;
+    std::vector<boost::uint8_t> vData(1000);
+    libed2k::tag_list src_list;
+    src_list.add_tag(libed2k::make_typed_tag(std::string("IVAN"), libed2k::FT_FILENAME, true));
+    src_list.add_tag(libed2k::make_typed_tag(std::string("IVANANDPLAN"), libed2k::FT_FILENAME, false));
+    src_list.add_tag(libed2k::make_typed_tag(std::string("IVAN"), libed2k::FT_FILENAME, false));
+    src_list.add_tag(libed2k::make_typed_tag(vData, libed2k::FT_AICH_HASH, false));
+    src_list.add_tag(libed2k::make_typed_tag(n1, "I'm integer", false));
+    src_list.add_tag(libed2k::make_typed_tag(n2, "I'm integer", true));
+
+
+    std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
+    libed2k::archive::ed2k_oarchive out_string_archive(sstream_out);
+    out_string_archive << src_list;
+
+    // go to begin
+    sstream_out.seekg(0, std::ios::beg);
+
+    libed2k::tag_list dst_list;
+    libed2k::archive::ed2k_iarchive in_string_archive(sstream_out);
+    in_string_archive >> dst_list;
+
+    BOOST_CHECK(src_list == dst_list);
+}
+
+BOOST_AUTO_TEST_CASE(test_packets)
+{
+    libed2k::shared_file_entry sh(libed2k::md4_hash::m_emptyMD4Hash, 100, 12);
+    libed2k::shared_files_list flist;
+    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::m_emptyMD4Hash, 1,2));
+    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::m_emptyMD4Hash, 3,4));
+    flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::m_emptyMD4Hash, 4,5));
+
+    std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
+    libed2k::archive::ed2k_oarchive out_string_archive(sstream_out);
+    out_string_archive << sh;
+    out_string_archive << flist;
+
+    sstream_out.seekg(0, std::ios::beg);
+    libed2k::archive::ed2k_iarchive in_string_archive(sstream_out);
+    libed2k::shared_file_entry dsh;
+    libed2k::shared_files_list flist2;
+    in_string_archive >> dsh;
+    in_string_archive >> flist2;
+
+    BOOST_CHECK(sh.m_hFile == dsh.m_hFile);
+    BOOST_REQUIRE(flist.m_size == flist2.m_size);
+
+    BOOST_CHECK(flist.m_collection[0].m_nFileId == 1);
+    BOOST_CHECK(flist.m_collection[1].m_nFileId == 3);
+    BOOST_CHECK(flist.m_collection[2].m_nFileId == 4);
+    BOOST_CHECK(flist.m_collection[0].m_nPort == 2);
+    BOOST_CHECK(flist.m_collection[1].m_nPort == 4);
+    BOOST_CHECK(flist.m_collection[2].m_nPort == 5);
+
+
+}
 
 BOOST_AUTO_TEST_SUITE_END()

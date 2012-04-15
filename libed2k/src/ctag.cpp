@@ -19,8 +19,20 @@ void base_tag::save(archive::ed2k_oarchive& ar)
 
     if (m_strName.empty())
     {
-        nType |= 0x80;
-        ar & nType;
+        if (m_bNewED2K)
+        {
+            // for new we write special tag flag
+            nType |= 0x80;
+            ar & nType;
+        }
+        else
+        {
+            // for old we write same type and name with length 1
+            boost::uint16_t nLength = 1;
+            ar & nType;
+            ar & nLength;
+        }
+
         ar & m_nNameId;
     }
     else
@@ -293,6 +305,30 @@ bool operator==(const tag_list& t1, const tag_list& t2)
     }
 
     return (true);
+}
+
+template<>
+boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, tg_nid_type nNameId, bool bNewED2K)
+{
+    return (boost::shared_ptr<base_tag>(new string_tag(strValue, nNameId, bNewED2K)));
+}
+
+template<>
+boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, const std::string& strName, bool bNewED2K)
+{
+    return (boost::shared_ptr<base_tag>(new string_tag(strValue, strName, bNewED2K)));
+}
+
+template<>
+boost::shared_ptr<base_tag> func_implement<blob_type >::f(blob_type vValue, tg_nid_type nNameId, bool bNewED2K)
+{
+    return (boost::shared_ptr<base_tag>(new array_tag(vValue, nNameId, bNewED2K)));
+}
+
+template<>
+boost::shared_ptr<base_tag> func_implement<blob_type>::f(blob_type vValue, const std::string& strName, bool bNewED2K)
+{
+    return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
 }
 
 }

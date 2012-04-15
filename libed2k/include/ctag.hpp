@@ -19,6 +19,55 @@ if (!x)\
 
 typedef boost::uint8_t tg_nid_type;
 typedef boost::uint8_t tg_type;
+typedef std::vector<boost::uint8_t> blob_type;
+
+const tg_nid_type FT_FILENAME           = '\x01';    // <string>
+const tg_nid_type FT_FILESIZE           = '\x02';    // <uint32>
+const tg_nid_type FT_FILESIZE_HI        = '\x3A';    // <uint32>
+const tg_nid_type FT_FILETYPE           = '\x03';    // <string> or <uint32>
+const tg_nid_type FT_FILEFORMAT         = '\x04';    // <string>
+const tg_nid_type FT_LASTSEENCOMPLETE   = '\x05';    // <uint32>
+const tg_nid_type FT_TRANSFERRED        = '\x08';    // <uint32>
+const tg_nid_type FT_GAPSTART           = '\x09';    // <uint32>
+const tg_nid_type FT_GAPEND             = '\x0A';    // <uint32>
+const tg_nid_type FT_PARTFILENAME       = '\x12';    // <string>
+const tg_nid_type FT_OLDDLPRIORITY      = '\x13';    // Not used anymore
+const tg_nid_type FT_STATUS             = '\x14';    // <uint32>
+const tg_nid_type FT_SOURCES            = '\x15';    // <uint32>
+const tg_nid_type FT_PERMISSIONS        = '\x16';    // <uint32>
+const tg_nid_type FT_OLDULPRIORITY      = '\x17';    // Not used anymore
+const tg_nid_type FT_DLPRIORITY         = '\x18';    // Was 13
+const tg_nid_type FT_ULPRIORITY         = '\x19';    // Was 17
+const tg_nid_type FT_KADLASTPUBLISHKEY  = '\x20';    // <uint32>
+const tg_nid_type FT_KADLASTPUBLISHSRC  = '\x21';    // <uint32>
+const tg_nid_type FT_FLAGS              = '\x22';    // <uint32>
+const tg_nid_type FT_DL_ACTIVE_TIME     = '\x23';    // <uint32>
+const tg_nid_type FT_CORRUPTEDPARTS     = '\x24';    // <string>
+const tg_nid_type FT_DL_PREVIEW         = '\x25';
+const tg_nid_type FT_KADLASTPUBLISHNOTES= '\x26';    // <uint32>
+const tg_nid_type FT_AICH_HASH          = '\x27';
+const tg_nid_type FT_COMPLETE_SOURCES   = '\x30';    // nr. of sources which share a
+
+
+                        // complete version of the
+                        // associated file (supported
+                        // by eserver 16.46+) statistic
+
+const tg_nid_type FT_PUBLISHINFO        = '\x33';    // <uint32>
+const tg_nid_type FT_ATTRANSFERRED      = '\x50';    // <uint32>
+const tg_nid_type FT_ATREQUESTED        = '\x51';    // <uint32>
+const tg_nid_type FT_ATACCEPTED         = '\x52';    // <uint32>
+const tg_nid_type FT_CATEGORY           = '\x53';    // <uint32>
+const tg_nid_type FT_ATTRANSFERREDHI    = '\x54';    // <uint32>
+const tg_nid_type FT_MEDIA_ARTIST       = '\xD0';    // <string>
+const tg_nid_type FT_MEDIA_ALBUM        = '\xD1';    // <string>
+const tg_nid_type FT_MEDIA_TITLE        = '\xD2';    // <string>
+const tg_nid_type FT_MEDIA_LENGTH       = '\xD3';    // <uint32> !!!
+const tg_nid_type FT_MEDIA_BITRATE      = '\xD4';    // <uint32>
+const tg_nid_type FT_MEDIA_CODEC        = '\xD5';    // <string>
+const tg_nid_type FT_FILERATING         = '\xF7';    // <uint8>
+
+
 
 enum tg_types
 {
@@ -97,8 +146,24 @@ public:
     friend class libed2k::archive::access;
     friend class tag_list;
 
-    base_tag(tg_nid_type nNameId) : m_strName(""), m_nNameId(nNameId){}
-    base_tag(const std::string& strName) : m_strName(strName), m_nNameId(0){}
+    /**
+      * create base tag
+      * @param nNameId - one byte tag name
+      * @param bNewED2K - flag for control save procedure, when true we use optimal saving
+      * for empty tags flag will set automatically after load
+      * by default we think packet is bNewED2K, but it has no matter because load is universal procedure
+     */
+    base_tag(tg_nid_type nNameId, bool bNewED2K = true) : m_strName(""), m_nNameId(nNameId), m_bNewED2K(bNewED2K){}
+
+    /**
+      * create base tag with string name
+      * @param strName - string tag name
+      * @param bNewED2K - flag control saving procedure
+      * for empty tags flag will set automatically after load
+      * by default we think packet is bNewED2K, but it has no matter because load is universal procedure
+      *
+     */
+    base_tag(const std::string& strName, bool bNewED2K = true) : m_strName(strName), m_nNameId(0), m_bNewED2K(bNewED2K){}
 
     virtual ~base_tag()
     {
@@ -107,6 +172,11 @@ public:
     bool defined() const
     {
         return (!m_strName.empty() || (m_nNameId != 0));
+    }
+
+    bool isNewED2K() const
+    {
+        return (m_bNewED2K);
     }
 
     const std::string getName() const;
@@ -127,6 +197,7 @@ protected:
 private:
     std::string     m_strName;
     tg_nid_type     m_nNameId;
+    bool            m_bNewED2K;
 };
 
 /**
@@ -139,10 +210,17 @@ public:
     friend class libed2k::archive::access;
     friend class tag_list;
 
+    /**
+      * for empty tag we don't to set special protocol level
+     */
     typed_tag(tg_nid_type nNameId) : base_tag(nNameId){}
     typed_tag(const std::string& strName) : base_tag(strName){}
-    typed_tag(T t, tg_nid_type nNameId) : base_tag(nNameId), m_value(t){}
-    typed_tag(T t, const std::string& strName) : base_tag(strName), m_value(t){}
+
+    /**
+      * for tag with data we have to set correct protocol level
+     */
+    typed_tag(T t, tg_nid_type nNameId, bool bNewED2K) : base_tag(nNameId, bNewED2K), m_value(t){}
+    typed_tag(T t, const std::string& strName, bool bNewED2K) : base_tag(strName, bNewED2K), m_value(t){}
     virtual ~typed_tag() {}
 
 
@@ -187,17 +265,6 @@ private:
     T   m_value;
 };
 
-template<typename T>
-boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId)
-{
-    return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId)));
-}
-
-template<typename T>
-boost::shared_ptr<base_tag> make_typed_tag(T t, std::string strName)
-{
-    return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, strName)));
-}
 
 /**
   * all string data handler
@@ -209,31 +276,58 @@ public:
     friend class libed2k::archive::access;
     friend class tag_list;
 
-    string_tag(tg_types type, tg_nid_type nNameId) : base_tag(nNameId), m_type(type)
-    {
-    }
+    /**
+      * for empty tags we don't set special protocol level
+     */
+    string_tag(tg_types type, tg_nid_type nNameId) : base_tag(nNameId), m_type(type){}
+    string_tag(tg_types type, const std::string& strName) : base_tag(strName), m_type(type){ }
 
-    string_tag(tg_types type, const std::string& strName) : base_tag(strName), m_type(type)
-    {
-    }
-
-    string_tag(const std::string& strValue, tg_nid_type nNameId) : base_tag(nNameId)
-    {
-        m_strValue = strValue;
-        length2type();
-    }
-
-    string_tag(const std::string& strValue, const std::string& strName) : base_tag(strName)
+    /**
+      * for tags with data we have to set correct protocol level
+      * type auto setting executed for new ED2K
+     */
+    string_tag(const std::string& strValue, tg_nid_type nNameId, bool bNewED2K) : base_tag(nNameId, bNewED2K)
     {
         m_strValue = strValue;
-        length2type();
+
+        // use compression only on new ED2K
+        if (isNewED2K())
+        {
+            length2type();
+        }
+        else
+        {
+            m_type = TAGTYPE_STRING;
+        }
     }
 
-    string_tag(const std::string& strValue, tg_type type, tg_nid_type nNameId) : base_tag(nNameId), m_type(type), m_strValue(strValue)
+    /**
+      * for tags with data we have to set correct protocol level
+      * type auto setting executed for new ED2K
+     */
+    string_tag(const std::string& strValue, const std::string& strName, bool bNewED2K) : base_tag(strName, bNewED2K)
+    {
+        m_strValue = strValue;
+
+        // use compression only on new ED2K
+        if (isNewED2K())
+        {
+            length2type();
+        }
+        else
+        {
+            m_type = TAGTYPE_STRING;
+        }
+    }
+
+    /**
+      * special case without any changes in types
+     */
+    string_tag(const std::string& strValue, tg_type type, tg_nid_type nNameId, bool bNewED2K) : base_tag(nNameId, bNewED2K), m_type(type), m_strValue(strValue)
     {
     }
 
-    string_tag(const std::string& strValue, tg_type type, const std::string& strName) : base_tag(strName), m_type(type), m_strValue(strValue)
+    string_tag(const std::string& strValue, tg_type type, const std::string& strName, bool bNewED2K) : base_tag(strName, bNewED2K), m_type(type), m_strValue(strValue)
     {
     }
 
@@ -277,19 +371,20 @@ public:
     friend class libed2k::archive::access;
     friend class tag_list;
 
-    array_tag(tg_nid_type nNameId) : base_tag(nNameId)
+    /**
+      * for empty tags we don't set protocol level
+     */
+    array_tag(tg_nid_type nNameId) : base_tag(nNameId) { }
+    array_tag(const std::string& strName) : base_tag(strName) {}
+
+    /**
+      * for tags with value we have to set special protocol level
+     */
+    array_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K) : base_tag(nNameId, bNewED2K), m_value(vValue)
     {
     }
 
-    array_tag(const std::string& strName) : base_tag(strName)
-    {
-    }
-
-    array_tag(const std::vector<boost::uint8_t>& vValue, tg_nid_type nNameId) : base_tag(nNameId), m_value(vValue)
-    {
-    }
-
-    array_tag(const std::vector<boost::uint8_t>& vValue, const std::string& strName) : base_tag(strName), m_value(vValue)
+    array_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K) : base_tag(strName, bNewED2K), m_value(vValue)
     {
     }
 
@@ -308,7 +403,7 @@ public:
         return (false);
     }
 
-    operator std::vector<boost::uint8_t>() const
+    operator blob_type() const
     {
         return (m_value);
     }
@@ -321,9 +416,49 @@ protected:
     array_tag(const std::string& strName, tg_nid_type nNameId);
 
 private:
-    std::vector<boost::uint8_t> m_value;
+    blob_type m_value;
     tg_type m_type;
 };
+
+template<class T>
+struct func_implement
+{
+    static boost::shared_ptr<base_tag> f(T t, tg_nid_type nNameId, bool bNewED2K)
+    {
+        return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId, bNewED2K)));
+    }
+
+    static boost::shared_ptr<base_tag> f(T t, const std::string& strName, bool bNewED2K)
+    {
+        return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, strName, bNewED2K)));
+    }
+};
+
+template<class T>
+boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId, bool bNewED2K)
+{
+    return (func_implement<T>::f(t, nNameId, bNewED2K));
+}
+
+template<class T>
+boost::shared_ptr<base_tag> make_typed_tag(T t, const std::string& strName, bool bNewED2K)
+{
+    return (func_implement<T>::f(t, strName, bNewED2K));
+}
+
+
+template<>
+boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, tg_nid_type nNameId, bool bNewED2K);
+
+template<>
+boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, const std::string& strName, bool bNewED2K);
+
+template<>
+boost::shared_ptr<base_tag> func_implement<blob_type>::f(blob_type vValue, tg_nid_type nNameId, bool bNewED2K);
+
+template<>
+boost::shared_ptr<base_tag> func_implement<blob_type>::f(blob_type vValue, const std::string& strName, bool bNewED2K);
+
 
 /**
   * class for tag list representation
