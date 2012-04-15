@@ -5,10 +5,10 @@
 
 namespace libed2k {
 
-void session::init(int listen_port, const char* listen_interface,
-                   const fingerprint& id, const std::string& logpath)
+void session::init(const fingerprint& id, int listen_port, const char* listen_interface,
+                   const std::string& logpath)
 {
-    m_impl.reset(new aux::session_impl(listen_port, listen_interface, id, logpath));
+    m_impl.reset(new aux::session_impl(id, listen_port, listen_interface, logpath));
 }
 
 }

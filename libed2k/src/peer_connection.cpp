@@ -436,7 +436,7 @@ void peer_connection::on_connect(int ticket)
         return;
     }
 
-    bind_interface.port(m_ses.port());
+    bind_interface.port(m_ses.listen_port());
 
     m_socket->bind(bind_interface, ec);
     if (ec)
