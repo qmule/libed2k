@@ -53,15 +53,15 @@ namespace libed2k {
     class session
     {
     public:
-        session(int listen_port, const char* listen_interface,
-                const fingerprint& id, const std::string& logpath = ".")
+        session(const fingerprint& id, int listen_port, const char* listen_interface,
+                const std::string& logpath = ".")
         {
-            init(listen_port, listen_interface, id, logpath);
+            init(id, listen_port, listen_interface, logpath);
         }
 
     private:
-        void init(int listen_port, const char* listen_interface,
-                  const fingerprint& id, const std::string& logpath);
+        void init(const fingerprint& id, int listen_port, const char* listen_interface,
+                  const std::string& logpath);
 
 		// data shared between the main thread
 		// and the working thread

@@ -2,6 +2,7 @@
 #include <sys/resource.h>
 
 #include <libtorrent/peer_connection.hpp>
+#include <libtorrent/socket.hpp>
 
 #include "session.hpp"
 #include "session_impl.hpp"
@@ -12,8 +13,8 @@
 using namespace libed2k;
 using namespace libed2k::aux;
 
-session_impl::session_impl(int lst_port, const char* listen_interface,
-                           const fingerprint& id, const std::string& logpath):
+session_impl::session_impl(const fingerprint& id, int lst_port, const char* listen_interface,
+                           const std::string& logpath):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
@@ -107,7 +108,7 @@ session_impl::session_impl(int lst_port, const char* listen_interface,
     }
 #endif
 
-    m_logger = create_log("main_session", port(), false);
+    m_logger = create_log("main_session", listen_port(), false);
     (*m_logger) << libtorrent::time_now_string() << "\n";
 
 #if defined TORRENT_BSD || defined TORRENT_LINUX
@@ -190,7 +191,7 @@ void session_impl::open_listen_port()
         async_accept(s.sock);
     }
 
-    m_logger = create_log("main_session", port(), false);
+    m_logger = create_log("main_session", listen_port(), false);
 }
 
 void session_impl::async_accept(boost::shared_ptr<tcp::acceptor> const& listener)
@@ -363,8 +364,10 @@ void session_impl::free_disk_buffer(char* buf)
 {
 }
 
-unsigned short session_impl::port() const
+unsigned short session_impl::listen_port() const
 {
+    if (m_listen_sockets.empty()) return 0;
+    return m_listen_sockets.front().external_port;
 }
 
 void session_impl::on_disk_queue()
@@ -428,6 +431,52 @@ void session_impl::setup_socket_buffers(tcp::socket& s)
 session_impl::listen_socket_t session_impl::setup_listener(
     tcp::endpoint ep, bool v6_only)
 {
+    error_code ec;
+    listen_socket_t s;
+    s.sock.reset(new tcp::acceptor(m_io_service));
+    s.sock->open(ep.protocol(), ec);
+
+    if (ec)
+    {
+        (*m_logger) << "failed to open socket: " << libtorrent::print_endpoint(ep)
+                    << ": " << ec.message() << "\n" << "\n";
+    }
+
+    s.sock->bind(ep, ec);
+
+    if (ec)
+    {
+        // post alert
+
+        char msg[200];
+        snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
+                 libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
+        (*m_logger) << libtorrent::time_now_string() << msg << "\n";
+
+        return listen_socket_t();
+    }
+
+    s.external_port = s.sock->local_endpoint(ec).port();
+    s.sock->listen(5, ec);
+
+    if (ec)
+    {
+        // post alert
+
+        char msg[200];
+        snprintf(msg, 200, "cannot listen on interface \"%s\": %s",
+                 libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
+        (*m_logger) << libtorrent::time_now_string() << msg << "\n";
+
+        return listen_socket_t();
+    }
+
+    // post alert succeeded
+
+    (*m_logger) << "listening on: " << ep
+                << " external port: " << s.external_port << "\n";
+
+    return s;
 }
 
 boost::shared_ptr<logger> session_impl::create_log(
