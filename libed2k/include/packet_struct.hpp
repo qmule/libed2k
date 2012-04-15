@@ -79,16 +79,15 @@ namespace libed2k
         }
     };
 
-
     /**
       * shared file structure
      */
     struct shared_file_entry
     {
-        md4_hash        m_hFile;    //!< md4 file hash
-        boost::uint32_t m_nFileId;  //!< client id for HighID
-        boost::uint16_t m_nPort;    //!< client port for HighID
-        tag_list        m_list;     //!< file information list
+        md4_hash                    m_hFile;    //!< md4 file hash
+        boost::uint32_t             m_nFileId;  //!< client id for HighID
+        boost::uint16_t             m_nPort;    //!< client port for HighID
+        tag_list<boost::uint16_t>   m_list;     //!< file information list
 
 
         shared_file_entry();
@@ -114,10 +113,10 @@ namespace libed2k
      */
     struct cs_login_request
     {
-        md4_hash        m_hClient;
-        boost::uint32_t m_nClientId;
-        boost::uint16_t m_nPort;
-        tag_list        m_list;
+        md4_hash                    m_hClient;
+        boost::uint32_t             m_nClientId;
+        boost::uint16_t             m_nPort;
+        tag_list<boost::uint16_t>   m_list;
     };
 
     /**
@@ -126,6 +125,12 @@ namespace libed2k
     typedef container_holder<boost::uint8_t, std::vector<server_address> > server_list;
     typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > shared_files_list;
 
+    struct server_info
+    {
+        md4_hash                    m_hServer;
+        server_address              m_address;
+        tag_list<boost::uint32_t>   m_list;
+    };
 
 }
 

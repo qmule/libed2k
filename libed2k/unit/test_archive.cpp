@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(test_file_archive)
 
 BOOST_AUTO_TEST_CASE(test_tag_list)
 {
-    libed2k::tag_list tl;
+    libed2k::tag_list<boost::uint16_t> tl;
     boost::shared_ptr<libed2k::base_tag> ptag(new libed2k::typed_tag<float>(10.6f, "XXX", true));
     float fTemplate = 1292.54f;
     const char* pData = (const char*)&fTemplate;
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
     BOOST_CHECK(tl[6]->getType() == libed2k::TAGTYPE_FLOAT32);
     BOOST_CHECK(tl[7]->getType() == libed2k::TAGTYPE_BOOL);
 
-    libed2k::tag_list tl2;
+    libed2k::tag_list<boost::uint16_t> tl2;
     tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint8_t>('\xED', 0x10, true)));
     tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint16_t>(0x0D0A, '\xED', true)));
     tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint64_t>(0x0807060504030201UL, '\xED', true)));
@@ -320,7 +320,7 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
 
 BOOST_AUTO_TEST_CASE(test_tag_errors)
 {
-    libed2k::tag_list tl;
+    libed2k::tag_list<boost::uint16_t> tl;
     const boost::uint8_t m_source_archive[] =
                     {  '\x02', '\x00',
                         /*hash*/            static_cast<boost::uint8_t>(libed2k::TAGTYPE_HASH16 | 0x80), '\x20', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E', '\x0F',
@@ -378,7 +378,7 @@ BOOST_AUTO_TEST_CASE(test_tag_conversation)
                         /*8 bytes*/         static_cast<boost::uint8_t>(libed2k::TAGTYPE_UINT64), '\x04', '\x00', '\x30', '\x31', '\x32', '\x33', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08'
                     };
 
-    libed2k::tag_list tl;
+    libed2k::tag_list<boost::uint16_t> tl;
     const char* dataPtr = (const char*)&m_source_archive[0];
     boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer(dataPtr, sizeof(m_source_archive));
     std::istream in_array_stream(&array_source_buffer);
@@ -396,7 +396,7 @@ BOOST_AUTO_TEST_CASE(test_tags_mixed)
     boost::uint16_t n1 = 1000;
     boost::uint64_t n2 = 32323267673UL;
     std::vector<boost::uint8_t> vData(1000);
-    libed2k::tag_list src_list;
+    libed2k::tag_list<boost::uint16_t> src_list;
     src_list.add_tag(libed2k::make_typed_tag(std::string("IVAN"), libed2k::FT_FILENAME, true));
     src_list.add_tag(libed2k::make_typed_tag(std::string("IVANANDPLAN"), libed2k::FT_FILENAME, false));
     src_list.add_tag(libed2k::make_typed_tag(std::string("IVAN"), libed2k::FT_FILENAME, false));
@@ -412,7 +412,7 @@ BOOST_AUTO_TEST_CASE(test_tags_mixed)
     // go to begin
     sstream_out.seekg(0, std::ios::beg);
 
-    libed2k::tag_list dst_list;
+    libed2k::tag_list<boost::uint16_t> dst_list;
     libed2k::archive::ed2k_iarchive in_string_archive(sstream_out);
     in_string_archive >> dst_list;
 
