@@ -428,8 +428,7 @@ private:
 template<class T>
 boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId, bool bNewED2K)
 {
-	//return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId, bNewED2K)));
-    return (func_implement<T>::f(t, nNameId, bNewED2K));
+	return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId, bNewED2K)));
 }
 
 
@@ -437,7 +436,6 @@ boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId, bool bNewED
 template<class T>
 boost::shared_ptr<base_tag> make_typed_tag(T t, const std::string& strName, bool bNewED2K)
 {
-    //return (func_implement<T>::f(t, strName, bNewED2K));
 	return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, strName, bNewED2K)));
 }
 

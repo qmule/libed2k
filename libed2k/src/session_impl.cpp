@@ -1,5 +1,7 @@
 
-
+#ifndef WIN32
+#include <sys/resource.h>
+#endif
 
 #include <libtorrent/peer_connection.hpp>
 #include <libtorrent/socket.hpp>
