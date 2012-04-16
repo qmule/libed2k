@@ -1,4 +1,6 @@
+#ifndef WIN32
 #define BOOST_TEST_DYN_LINK
+#endif
 
 #ifdef STAND_ALONE
 #   define BOOST_TEST_MODULE Main
@@ -177,7 +179,7 @@ BOOST_AUTO_TEST_CASE(test_memory_archive)
     BOOST_CHECK_EQUAL(m_source_archive[2], vData[2]);
     BOOST_CHECK_EQUAL(m_source_archive[3], vData[3]);
     in_array_stream2.seekg(4, std::ios_base::cur);
-    uint16_t nData6;
+	boost::uint16_t nData6;
     in_array_archive2 >> nData6;
     BOOST_CHECK_EQUAL(m_source_archive[6], nData6);
 
@@ -319,7 +321,7 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
 }
 
 BOOST_AUTO_TEST_CASE(test_tag_errors)
-{
+{	
     libed2k::tag_list<boost::uint16_t> tl;
     const boost::uint8_t m_source_archive[] =
                     {  '\x02', '\x00',
@@ -329,6 +331,7 @@ BOOST_AUTO_TEST_CASE(test_tag_errors)
     const char* dataPtr = (const char*)&m_source_archive[0];
     boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer(dataPtr, sizeof(m_source_archive));
     std::istream in_array_stream(&array_source_buffer);
+	 
     libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
     BOOST_CHECK_THROW(in_array_archive >> tl, libed2k::libed2k_exception);
 }
@@ -397,10 +400,10 @@ BOOST_AUTO_TEST_CASE(test_tags_mixed)
     boost::uint64_t n2 = 32323267673UL;
     std::vector<boost::uint8_t> vData(1000);
     libed2k::tag_list<boost::uint16_t> src_list;
-    src_list.add_tag(libed2k::make_typed_tag(std::string("IVAN"), libed2k::FT_FILENAME, true));
-    src_list.add_tag(libed2k::make_typed_tag(std::string("IVANANDPLAN"), libed2k::FT_FILENAME, false));
-    src_list.add_tag(libed2k::make_typed_tag(std::string("IVAN"), libed2k::FT_FILENAME, false));
-    src_list.add_tag(libed2k::make_typed_tag(vData, libed2k::FT_AICH_HASH, false));
+    src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::FT_FILENAME, true));
+    src_list.add_tag(libed2k::make_string_tag(std::string("IVANANDPLAN"), libed2k::FT_FILENAME, false));
+    src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::FT_FILENAME, false));
+    src_list.add_tag(libed2k::make_blob_tag(vData, libed2k::FT_AICH_HASH, false));
     src_list.add_tag(libed2k::make_typed_tag(n1, "I'm integer", false));
     src_list.add_tag(libed2k::make_typed_tag(n2, "I'm integer", true));
 

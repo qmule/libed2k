@@ -1,4 +1,6 @@
+#ifndef WIN32
 #define BOOST_TEST_DYN_LINK
+#endif
 
 #ifdef STAND_ALONE
 #   define BOOST_TEST_MODULE Main

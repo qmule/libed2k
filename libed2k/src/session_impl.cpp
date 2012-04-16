@@ -1,5 +1,5 @@
 
-#include <sys/resource.h>
+
 
 #include <libtorrent/peer_connection.hpp>
 #include <libtorrent/socket.hpp>
@@ -21,10 +21,10 @@ session_impl::session_impl(const fingerprint& id, int lst_port, const char* list
     m_io_service(),
 	m_host_resolver(m_io_service),
     m_alerts(m_io_service),
-    m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
+    m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), // TODO - check it!
                   m_filepool),
     m_half_open(m_io_service),
-    m_server_manager(*this),
+    m_server_manager(*this), // TODO - check it
     m_abort(false),
     m_paused(false),
     m_max_connections(200),
@@ -350,6 +350,9 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
 
 std::pair<char*, int> session_impl::allocate_buffer(int size)
 {
+	// TODO - should implement
+	std::pair<char*, int> pr(NULL, 0);
+	return (pr);
 }
 
 void session_impl::free_buffer(char* buf, int size)
@@ -358,6 +361,8 @@ void session_impl::free_buffer(char* buf, int size)
 
 char* session_impl::allocate_disk_buffer(char const* category)
 {
+	// TODO - should implement
+	return NULL;
 }
 
 void session_impl::free_disk_buffer(char* buf)

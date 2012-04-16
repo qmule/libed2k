@@ -593,10 +593,14 @@ void peer_connection::start()
 
 bool peer_connection::can_write() const
 {
+	// TODO - should implement
+	return (true);
 }
 
 bool peer_connection::can_read(char* state) const
 {
+    // TODO - should implement
+	return (true);  
 }
 
 void peer_connection::on_disk_write_complete(

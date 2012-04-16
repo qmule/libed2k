@@ -35,7 +35,7 @@ namespace libed2k
     typedef libtorrent::peer_request peer_request;
     typedef libtorrent::disk_io_job disk_io_job;
 
-    class peer;
+    struct peer;
     class transfer;
     namespace aux{
         class session_impl;

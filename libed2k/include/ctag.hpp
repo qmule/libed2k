@@ -426,43 +426,25 @@ private:
 };
 
 template<class T>
-struct func_implement
-{
-    static boost::shared_ptr<base_tag> f(T t, tg_nid_type nNameId, bool bNewED2K)
-    {
-        return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId, bNewED2K)));
-    }
-
-    static boost::shared_ptr<base_tag> f(T t, const std::string& strName, bool bNewED2K)
-    {
-        return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, strName, bNewED2K)));
-    }
-};
-
-template<class T>
 boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId, bool bNewED2K)
 {
+	//return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId, bNewED2K)));
     return (func_implement<T>::f(t, nNameId, bNewED2K));
 }
+
+
 
 template<class T>
 boost::shared_ptr<base_tag> make_typed_tag(T t, const std::string& strName, bool bNewED2K)
 {
-    return (func_implement<T>::f(t, strName, bNewED2K));
+    //return (func_implement<T>::f(t, strName, bNewED2K));
+	return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, strName, bNewED2K)));
 }
 
-
-template<>
-boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, tg_nid_type nNameId, bool bNewED2K);
-
-template<>
-boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, const std::string& strName, bool bNewED2K);
-
-template<>
-boost::shared_ptr<base_tag> func_implement<blob_type>::f(blob_type vValue, tg_nid_type nNameId, bool bNewED2K);
-
-template<>
-boost::shared_ptr<base_tag> func_implement<blob_type>::f(blob_type vValue, const std::string& strName, bool bNewED2K);
+boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, tg_nid_type nNameId, bool bNewED2K);
+boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, const std::string& strName, bool bNewED2K);
+boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K);
+boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K);
 
 
 /**
@@ -578,7 +560,21 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
             // this tag must been passed
             boost::uint16_t nLength;
             ar & nLength;
-            ar.container().seekg((nLength/8) + 1, std::ios::cur);
+
+#ifdef WIN32
+			// windows generates exceptions independent by exceptions flags in stream
+			try
+			{
+                ar.container().seekg((nLength/8) + 1, std::ios::cur);
+			}
+			catch(std::ios_base::failure& f)
+			{
+				throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
+			}
+#else
+			ar.container().seekg((nLength/8) + 1, std::ios::cur);
+#endif
+
 
             // check status
             if (!ar.container().good())
