@@ -7,7 +7,9 @@ namespace libed2k {
     {
         session_settings():
             peer_timeout(120),
-            peer_connect_timeout(7)
+            peer_connect_timeout(7),
+            recv_socket_buffer_size(0),
+            send_socket_buffer_size(0)
         {}
 
         // the number of seconds to wait for any activity on
@@ -20,6 +22,10 @@ namespace libed2k {
         // connection is dropped. The time is specified in seconds.
         int peer_connect_timeout;
 
+        // sets the socket send and receive buffer sizes
+        // 0 means OS default
+        int recv_socket_buffer_size;
+        int send_socket_buffer_size;
     };
 
 }

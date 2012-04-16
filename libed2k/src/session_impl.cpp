@@ -13,8 +13,8 @@
 using namespace libed2k;
 using namespace libed2k::aux;
 
-session_impl::session_impl(const fingerprint& id, int lst_port, const char* listen_interface,
-                           const std::string& logpath):
+session_impl::session_impl(const fingerprint& id, int lst_port,
+                           const char* listen_interface, const std::string& logpath):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
@@ -350,18 +350,30 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
 
 std::pair<char*, int> session_impl::allocate_buffer(int size)
 {
+    int num_buffers = (size + send_buffer_size - 1) / send_buffer_size;
+
+    boost::mutex::scoped_lock l(m_send_buffer_mutex);
+
+    return std::make_pair((char*)m_send_buffers.ordered_malloc(num_buffers),
+                          num_buffers * send_buffer_size);
 }
 
 void session_impl::free_buffer(char* buf, int size)
 {
+    int num_buffers = size / send_buffer_size;
+
+    boost::mutex::scoped_lock l(m_send_buffer_mutex);
+    m_send_buffers.ordered_free(buf, num_buffers);
 }
 
 char* session_impl::allocate_disk_buffer(char const* category)
 {
+    return m_disk_thread.allocate_buffer(category);
 }
 
 void session_impl::free_disk_buffer(char* buf)
 {
+    m_disk_thread.free_buffer(buf);
 }
 
 unsigned short session_impl::listen_port() const
@@ -426,6 +438,17 @@ bool session_impl::has_active_transfer() const
 
 void session_impl::setup_socket_buffers(tcp::socket& s)
 {
+    error_code ec;
+    if (m_settings.send_socket_buffer_size)
+    {
+        tcp::socket::send_buffer_size option(m_settings.send_socket_buffer_size);
+        s.set_option(option, ec);
+    }
+    if (m_settings.recv_socket_buffer_size)
+    {
+        tcp::socket::receive_buffer_size option(m_settings.recv_socket_buffer_size);
+        s.set_option(option, ec);
+    }
 }
 
 session_impl::listen_socket_t session_impl::setup_listener(
