@@ -7,8 +7,57 @@
 
 namespace libed2k
 {
+    // protocol type
+    typedef boost::uint8_t  proto_type;
+
+    // enum for client<->server messages
+	enum OP_ClientToServerTCP
+	{
+	    OP_LOGINREQUEST             = 0x01, // <HASH 16><ID 4><PORT 2><1 Tag_set>
+		OP_REJECT                   = 0x05, // (null)
+		OP_GETSERVERLIST            = 0x14, // (null)client->server
+		OP_OFFERFILES               = 0x15, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+		OP_SEARCHREQUEST            = 0x16, // <Query_Tree>
+		OP_DISCONNECT               = 0x18, // (not verified)
+		OP_GETSOURCES               = 0x19, // <HASH 16>
+                                            // v2 <HASH 16><SIZE_4> (17.3) (mandatory on 17.8)
+                                            // v2large <HASH 16><FILESIZE 4(0)><FILESIZE 8> (17.9) (large files only)
+		OP_SEARCH_USER              = 0x1A, // <Query_Tree>
+		OP_CALLBACKREQUEST          = 0x1C, // <ID 4>
+	//  OP_QUERY_CHATS              = 0x1D, // (deprecated, not supported by server any longer)
+	//  OP_CHAT_MESSAGE             = 0x1E, // (deprecated, not supported by server any longer)
+	//  OP_JOIN_ROOM                = 0x1F, // (deprecated, not supported by server any longer)
+		OP_QUERY_MORE_RESULT        = 0x21, // (null)
+		OP_GETSOURCES_OBFU          = 0x23,
+		OP_SERVERLIST               = 0x32, // <count 1>(<IP 4><PORT 2>)[count] server->client
+		OP_SEARCHRESULT             = 0x33, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+		OP_SERVERSTATUS             = 0x34, // <USER 4><FILES 4>
+		OP_CALLBACKREQUESTED        = 0x35, // <IP 4><PORT 2>
+		OP_CALLBACK_FAIL            = 0x36, // (null notverified)
+		OP_SERVERMESSAGE            = 0x38, // <len 2><Message len>
+	//  OP_CHAT_ROOM_REQUEST        = 0x39, // (deprecated, not supported by server any longer)
+	//  OP_CHAT_BROADCAST           = 0x3A, // (deprecated, not supported by server any longer)
+	//  OP_CHAT_USER_JOIN           = 0x3B, // (deprecated, not supported by server any longer)
+	//  OP_CHAT_USER_LEAVE          = 0x3C, // (deprecated, not supported by server any longer)
+	//  OP_CHAT_USER                = 0x3D, // (deprecated, not supported by server any longer)
+		OP_IDCHANGE                 = 0x40, // <NEW_ID 4>
+		OP_SERVERIDENT              = 0x41, // <HASH 16><IP 4><PORT 2>{1 TAG_SET}
+		OP_FOUNDSOURCES             = 0x42, // <HASH 16><count 1>(<ID 4><PORT 2>)[count]
+		OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+		OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
+	};
+
+	/**
+	  * supported protocols
+	 */
+	const proto_type    OP_EDONKEYHEADER        = '\xE3';
+	const proto_type    OP_EDONKEYPROT          = OP_EDONKEYHEADER;
+	const proto_type    OP_PACKEDPROT           = '\xD4';
+	const proto_type    OP_EMULEPROT            = '\xC5';
+
     /**
       *  common container holder structure
+      *  contains size_type for read it from archives and some container for data
      */
     template<typename size_type, class collection_type>
     struct container_holder
@@ -36,26 +85,28 @@ namespace libed2k
         void load(Archive& ar)
         {
             ar & m_size;
+            m_collection.resize(static_cast<size_t>(m_size));
+
             for (size_type i = 0; i < m_size; i++)
             {
-                elem e;
-                ar & e;
-                *(std::back_inserter(m_collection)) = e;
-                //std::back_insert_iterator< collection_type > back_it (m_collection);
+                ar & m_collection[i];
             }
         }
 
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
+    /**
+      * common libed2k packet header
+      *
+     */
     struct libed2k_header
     {
-        typedef boost::uint8_t  proto_type;
         typedef boost::uint32_t size_type;
 
-        proto_type  m_protocol;
-        size_type   m_size;
-        proto_type  m_type;
+        proto_type  m_protocol;             //!< protocol identifier
+        size_type   m_size;                 //!< packet body size
+        proto_type  m_type;                 //!< packet opcode
     };
 
     // common protocol structures
@@ -66,10 +117,14 @@ namespace libed2k
     const boost::uint32_t FILE_INCOMPLETE_ID    = 0xfcfcfcfcU;
     const boost::uint16_t FILE_INCOMPLETE_PORT  = 0xfcfcU;
 
-    struct server_address
+    /**
+      * common network object identifier in ed2k network
+      *
+     */
+    struct net_identifier
     {
-        boost::uint32_t m_nIP;
-        boost::uint16_t m_nPort;
+        boost::uint32_t m_nIP;          //!< client id or ip
+        boost::uint16_t m_nPort;        //!< port
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -80,7 +135,7 @@ namespace libed2k
     };
 
     /**
-      * shared file structure
+      * shared file item structure in offer list
      */
     struct shared_file_entry
     {
@@ -104,9 +159,6 @@ namespace libed2k
     };
 
     //!< client <-> server messages
-    //!< CS = client to server
-    //!< SC = server to client
-
 
     /**
       * login request structure - contain some info and 4 tag items
@@ -122,16 +174,160 @@ namespace libed2k
     /**
       * empty structure for get servers list from server
      */
-    typedef container_holder<boost::uint8_t, std::vector<server_address> > server_list;
-    typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > shared_files_list;
+    typedef container_holder<boost::uint8_t, std::vector<net_identifier> > server_list;
+    typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > offer_files_list;
 
-    struct server_info
+    /**
+      * structure contain server IP/port, hash and some information tags
+     */
+    struct server_info_entry
     {
         md4_hash                    m_hServer;
-        server_address              m_address;
+        net_identifier              m_address;
         tag_list<boost::uint32_t>   m_list;
     };
 
+    /**
+      * structure contain one entry in searh result list
+     */
+    struct search_file_entry
+    {
+    	md4_hash					m_hFile;		//!< file hash
+    	boost::uint32_t				m_nClientId;	//!< client id/ip
+    	boost::uint16_t				m_nPort;		//!< port
+    	tag_list<boost::uint32_t>	m_list;			//!< tag list with additional data - file name,size,sources ...
+    };
+
+    typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
+
+    /**
+      * this structure holds search requests to eDonkey server
+      *
+     */
+    struct search_tree
+    {
+
+    };
+
+    /**
+      * request sources for file
+     */
+    struct get_sources_struct
+    {
+        md4_hash        m_hFile;        //!< file hash
+        boost::uint32_t m_nSize;        //!< file size if file is not large file, otherwise is zero
+        boost::uint16_t m_nLargeSize;   //!< file size if file is large file
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+
+            if (m_nLargeSize != 0)
+            {
+                m_nSize = 0;
+                ar & m_nSize;
+                ar & m_nLargeSize;
+            }
+            else
+            {
+                ar & m_nSize;
+            }
+        }
+    };
+
+    struct callback_req_struct
+    {
+        boost::uint32_t m_nUserId;
+    };
+
+    /**
+      * server status structure
+     */
+    struct server_status_struct
+    {
+        boost::uint32_t m_nUserCount;
+        boost::uint32_t m_nFilesCount;
+    };
+
+    /**
+      * incoming callback request structure
+     */
+    struct callback_req_in
+    {
+        boost::uint32_t m_nIP;
+        boost::uint32_t m_nPort;
+        boost::uint8_t  m_nCryptOptions;
+        md4_hash        m_hUser;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+
+        }
+    };
+
+    /**
+      * file sources found structure
+     */
+    struct found_sources
+    {
+        md4_hash    m_hFile;
+        container_holder<boost::uint8_t, std::vector<net_identifier> > m_sources;
+    };
+
+    /**
+      * id new value structure
+     */
+    struct id_change
+    {
+        boost::uint32_t m_nId;
+    };
+
+    /**
+      * structure for get packet opcode from structure type
+     */
+    template<typename T>
+    struct packet_type
+    {
+        static const proto_type value = 0;
+    };
+
+    template<> struct packet_type<cs_login_request>     { static const proto_type value = OP_LOGINREQUEST; };
+    //OP_REJECT                   = 0x05
+    //OP_GETSERVERLIST            = 0x14
+    template<> struct packet_type<offer_files_list>     { static const proto_type value = OP_OFFERFILES;    };
+    template<> struct packet_type<search_tree>          { static const proto_type value = OP_SEARCHREQUEST; };
+    //OP_DISCONNECT               = 0x18, // (not verified)
+    template<> struct packet_type<get_sources_struct>   { static const proto_type value = OP_GETSOURCES;    };
+    //OP_SEARCH_USER              = 0x1A, // <Query_Tree>
+    template<> struct packet_type<callback_req_struct>  { static const proto_type value = OP_CALLBACKREQUEST;};
+
+    //  OP_QUERY_CHATS              = 0x1D, // (deprecated, not supported by server any longer)
+    //  OP_CHAT_MESSAGE             = 0x1E, // (deprecated, not supported by server any longer)
+    //  OP_JOIN_ROOM                = 0x1F, // (deprecated, not supported by server any longer)
+    //        OP_QUERY_MORE_RESULT        = 0x21, // (null) // do not use
+    //        OP_GETSOURCES_OBFU          = 0x23,           // do not use
+    template<> struct packet_type<server_list>          { static const proto_type value = OP_SERVERLIST;    };
+    template<> struct packet_type<search_file_list>     { static const proto_type value = OP_SEARCHRESULT;  };
+    template<> struct packet_type<server_status_struct> { static const proto_type value = OP_SERVERSTATUS;  };
+    template<> struct packet_type<callback_req_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };
+
+//            OP_CALLBACK_FAIL            = 0x36, // (null notverified)
+//            OP_SERVERMESSAGE            = 0x38, // <len 2><Message len> ?
+
+        //  OP_CHAT_ROOM_REQUEST        = 0x39, // (deprecated, not supported by server any longer)
+        //  OP_CHAT_BROADCAST           = 0x3A, // (deprecated, not supported by server any longer)
+        //  OP_CHAT_USER_JOIN           = 0x3B, // (deprecated, not supported by server any longer)
+        //  OP_CHAT_USER_LEAVE          = 0x3C, // (deprecated, not supported by server any longer)
+        //  OP_CHAT_USER                = 0x3D, // (deprecated, not supported by server any longer)
+    template<> struct packet_type<id_change>            { static const proto_type value = OP_IDCHANGE;    };
+    template<> struct packet_type<server_info_entry>    { static const proto_type value = OP_SERVERIDENT; };
+            //OP_SERVERIDENT              = 0x41, // <HASH 16><IP 4><PORT 2>{1 TAG_SET}
+            // do not use
+            //OP_FOUNDSOURCES             = 0x42, // <HASH 16><count 1>(<ID 4><PORT 2>)[count]
+            //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+            //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
 }
 
 
