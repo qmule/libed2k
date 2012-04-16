@@ -10,43 +10,13 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include "archive.hpp"
+#include "packet_struct.hpp"
 
 using boost::asio::ip::tcp;
 using boost::asio::buffer;
 
 namespace libed2k{
 
-/**
-  * ed2k network packet header
- */
-struct libed2k_header
-{
-	typedef boost::uint8_t	proto_type;
-	typedef boost::uint32_t	size_type;
-
-	proto_type	m_protocol;
-	size_type	m_size;
-	proto_type	m_type;
-
-	void dump() const
-	{
-		std::cout << "proto: " << static_cast<int>(m_protocol)
-						<< " size: " << m_size
-						<< " type: " << static_cast<int>(m_type) << std::endl;
-	}
-};
-
-/**
-  * generate packet type id from packet structure type
- */
-template<typename SMessage>
-struct socketMessageType
-{
-	static const libed2k_header::proto_type value = 0;
-};
-
-//template<> struct socketMessageType<HelloServer> { static const libed2k_header::proto_type value = 1; };
-//template<> struct socketMessageType<HelloClient> { static const libed2k_header::proto_type value = 2; };
 
 /**
   * base socket class for in-place handle protocol type(compression/decompression), write data with serialization and vice versa
@@ -57,7 +27,7 @@ class base_socket
 public:
 	enum{ header_size = sizeof( libed2k_header) };
 
-	base_socket(boost::asio::io_service& io) : m_socket(io), archive_stream(std::ios_base::binary)
+	base_socket(boost::asio::io_service& io) : m_socket(io), out_stream(std::ios_base::binary)
 	{}
 
 	boost::asio::ip::tcp::socket& socket()
@@ -65,26 +35,28 @@ public:
 		return (m_socket);
 	}
 
-	 // simple write data structure into socket
+	 /**
+	   * write structure into socket
+	   *
+	  */
 	template <typename T, typename Handler>
-	void async_write(const T& t, Handler handler)
+	void async_write(T& t, Handler handler)
 	{
-		archive_stream.str("");
+		out_stream.str("");
 		// Serialize the data first so we know how large it is.
-		libed2k::archive::ed2k_oarchive oa(archive_stream);
+		archive::ed2k_oarchive oa(out_stream);
 		oa << t;
 
 		// generate header
-		m_out_header.m_protocol = 10;	// TODO - make correct protocol
-		m_out_header.m_size = archive_stream.str().size();
-		m_out_header.m_type = socketMessageType<T>::value;
-		m_out_header.dump();
+		m_out_header.m_protocol = OP_EDONKEYPROT;
+		m_out_header.m_size     = out_stream.str().size();
+		m_out_header.m_type     = packet_type<T>::value;
 
 		// Write the serialized data to the socket. We use "gather-write" to send
 		// both the header and the data in a single write operation.
 		std::vector<boost::asio::const_buffer> buffers;
 		buffers.push_back(boost::asio::buffer(&m_out_header, header_size));
-		buffers.push_back(boost::asio::buffer(archive_stream.str()));
+		buffers.push_back(boost::asio::buffer(out_stream.str()));
 		boost::asio::async_write(m_socket, buffers, handler);
 	}
 
@@ -144,11 +116,11 @@ public:
 		return (m_in_header);
 	}
 private:
-	boost::asio::ip::tcp::socket	m_socket;
-	std::ostringstream 				archive_stream;
-	libed2k_header					m_out_header;
-	libed2k_header					m_in_header;
-	std::vector<char> 				m_in_container;
+	boost::asio::ip::tcp::socket	m_socket;       //!< operation socket
+	std::ostringstream 				out_stream;     //!< output buffer
+	libed2k_header					m_out_header;   //!< output header
+	libed2k_header					m_in_header;    //!< incoming message header
+	std::vector<char> 				m_in_container; //!< buffer for incoming messages
 };
 
 }
