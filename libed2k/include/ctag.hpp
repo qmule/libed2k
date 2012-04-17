@@ -460,15 +460,13 @@ public:
     size_t count() const;
     void clear();
     const boost::shared_ptr<base_tag> operator[](size_t n) const;
-
-    LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
-
+    LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 private:
     std::vector<boost::shared_ptr<base_tag> >   m_container;
 };
-
 
 template<typename size_type>
 tag_list<size_type>::tag_list()
@@ -508,7 +506,7 @@ const boost::shared_ptr<base_tag> tag_list<size_type>::operator[](size_t n) cons
 template<typename size_type>
 void tag_list<size_type>::save(archive::ed2k_oarchive& ar)
 {
-    boost::uint16_t nSize = static_cast<boost::uint16_t>(m_container.size());
+    size_type nSize = static_cast<size_type>(m_container.size());
     ar & nSize;
 
     for (size_t n = 0; n < m_container.size(); n++)
