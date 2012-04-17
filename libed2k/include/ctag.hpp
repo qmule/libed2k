@@ -49,9 +49,9 @@ const tg_nid_type FT_AICH_HASH          = '\x27';
 const tg_nid_type FT_COMPLETE_SOURCES   = '\x30';    // nr. of sources which share a
 
 
-                        // complete version of the
-                        // associated file (supported
-                        // by eserver 16.46+) statistic
+// complete version of the
+// associated file (supported
+// by eserver 16.46+) statistic
 
 const tg_nid_type FT_PUBLISHINFO        = '\x33';    // <uint32>
 const tg_nid_type FT_ATTRANSFERRED      = '\x50';    // <uint32>
@@ -68,6 +68,85 @@ const tg_nid_type FT_MEDIA_CODEC        = '\xD5';    // <string>
 const tg_nid_type FT_FILERATING         = '\xF7';    // <uint8>
 
 
+// server tags
+const tg_nid_type ST_SERVERNAME         = '\x01'; // <string>
+// Unused (0x02-0x0A)
+const tg_nid_type ST_DESCRIPTION        = '\x0B'; // <string>
+const tg_nid_type ST_PING               = '\x0C'; // <uint32>
+const tg_nid_type ST_FAIL               = '\x0D'; // <uint32>
+const tg_nid_type ST_PREFERENCE         = '\x0E'; // <uint32>
+        // Unused (0x0F-0x84)
+const tg_nid_type ST_DYNIP              = '\x85';
+const tg_nid_type ST_LASTPING_DEPRECATED= '\x86'; // <uint32> // DEPRECATED, use 0x90
+const tg_nid_type ST_MAXUSERS           = '\x87';
+const tg_nid_type ST_SOFTFILES          = '\x88';
+const tg_nid_type ST_HARDFILES          = '\x89';
+        // Unused (0x8A-0x8F)
+const tg_nid_type ST_LASTPING           = '\x90'; // <uint32>
+const tg_nid_type ST_VERSION            = '\x91'; // <string>
+const tg_nid_type ST_UDPFLAGS           = '\x92'; // <uint32>
+const tg_nid_type ST_AUXPORTSLIST       = '\x93'; // <string>
+const tg_nid_type ST_LOWIDUSERS         = '\x94'; // <uint32>
+const tg_nid_type ST_UDPKEY             = '\x95'; // <uint32>
+const tg_nid_type ST_UDPKEYIP           = '\x96'; // <uint32>
+const tg_nid_type ST_TCPPORTOBFUSCATION = '\x97'; // <uint16>
+const tg_nid_type ST_UDPPORTOBFUSCATION = '\x98'; // <uint16>
+
+// client tags
+const tg_nid_type CT_NAME                         = '\x01';
+const tg_nid_type CT_SERVER_UDPSEARCH_FLAGS       = '\x0E';
+const tg_nid_type CT_PORT                         = '\x0F';
+const tg_nid_type CT_VERSION                      = '\x11';
+const tg_nid_type CT_SERVER_FLAGS                 = '\x20'; // currently only used to inform a server about supported features
+const tg_nid_type CT_EMULECOMPAT_OPTIONS          = '\xEF';
+const tg_nid_type CT_EMULE_RESERVED1              = '\xF0';
+const tg_nid_type CT_EMULE_RESERVED2              = '\xF1';
+const tg_nid_type CT_EMULE_RESERVED3              = '\xF2';
+const tg_nid_type CT_EMULE_RESERVED4              = '\xF3';
+const tg_nid_type CT_EMULE_RESERVED5              = '\xF4';
+const tg_nid_type CT_EMULE_RESERVED6              = '\xF5';
+const tg_nid_type CT_EMULE_RESERVED7              = '\xF6';
+const tg_nid_type CT_EMULE_RESERVED8              = '\xF7';
+const tg_nid_type CT_EMULE_RESERVED9              = '\xF8';
+const tg_nid_type CT_EMULE_UDPPORTS               = '\xF9';
+const tg_nid_type CT_EMULE_MISCOPTIONS1           = '\xFA';
+const tg_nid_type CT_EMULE_VERSION                = '\xFB';
+const tg_nid_type CT_EMULE_BUDDYIP                = '\xFC';
+const tg_nid_type CT_EMULE_BUDDYUDP               = '\xFD';
+const tg_nid_type CT_EMULE_MISCOPTIONS2           = '\xFE';
+const tg_nid_type CT_EMULE_RESERVED13             = '\xFF';
+
+// old emule flags
+const unsigned int ET_COMPRESSION          = 0x20u;
+const unsigned int ET_UDPPORT              = 0x21u;
+const unsigned int ET_UDPVER               = 0x22u;
+const unsigned int ET_SOURCEEXCHANGE       = 0x23u;
+const unsigned int ET_COMMENTS             = 0x24u;
+const unsigned int ET_EXTENDEDREQUEST      = 0x25u;
+const unsigned int ET_COMPATIBLECLIENT     = 0x26u;
+const unsigned int ET_FEATURES             = 0x27u;        //! bit 0: SecIdent v1 - bit 1: SecIdent v2
+const unsigned int ET_MOD_VERSION          = 0x55u;
+// ET_FEATURESET        = 0x54u,        // int - [Bloodymad Featureset] // UNUSED
+const unsigned int ET_OS_INFO              = 0x94u;         // Reused rand tag (MOD_OXY), because the type is unknown
+
+
+// capabilities
+const boost::uint32_t SRVCAP_ZLIB               = 0x0001;
+const boost::uint32_t SRVCAP_IP_IN_LOGIN        = 0x0002;
+const boost::uint32_t SRVCAP_AUXPORT            = 0x0004;
+const boost::uint32_t SRVCAP_NEWTAGS            = 0x0008;
+const boost::uint32_t SRVCAP_UNICODE            = 0x0010;
+const boost::uint32_t SRVCAP_LARGEFILES         = 0x0100;
+const boost::uint32_t SRVCAP_SUPPORTCRYPT       = 0x0200;
+const boost::uint32_t SRVCAP_REQUESTCRYPT       = 0x0400;
+const boost::uint32_t SRVCAP_REQUIRECRYPT       = 0x0800;
+
+const boost::uint32_t CAPABLE_ZLIB              = SRVCAP_ZLIB;
+const boost::uint32_t CAPABLE_IP_IN_LOGIN_FRAME = SRVCAP_IP_IN_LOGIN;
+const boost::uint32_t CAPABLE_AUXPORT           = SRVCAP_AUXPORT;
+const boost::uint32_t CAPABLE_NEWTAGS           = SRVCAP_NEWTAGS;
+const boost::uint32_t CAPABLE_UNICODE           = SRVCAP_UNICODE;
+const boost::uint32_t CAPABLE_LARGEFILES        = SRVCAP_LARGEFILES;
 
 enum tg_types
 {
