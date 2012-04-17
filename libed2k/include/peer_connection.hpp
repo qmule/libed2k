@@ -23,7 +23,7 @@
 
 namespace libed2k
 {
-    class peer;
+    struct peer;
     class transfer;
     namespace aux{
         class session_impl;

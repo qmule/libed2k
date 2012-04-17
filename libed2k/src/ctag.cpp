@@ -126,7 +126,21 @@ void array_tag::load(archive::ed2k_iarchive& ar)
         if (nSize > 65535)
         {
             int nSignLength = -1*nSize;
-            ar.container().seekg(nSize, std::ios::cur);   // go to end of blob
+
+			// windows throw exceptions always
+#ifdef WIN32
+			try
+			{
+                ar.container().seekg(nSize, std::ios::cur);   // go to end of blob
+			}
+			catch(std::ios_base::failure& ex)
+			{
+				throw libed2k::libed2k_exception(libed2k::errors::blob_tag_too_long);
+			}
+#else
+			ar.container().seekg(nSize, std::ios::cur);   // go to end of blob
+#endif
+
 
             if (!ar.container().good())
             {
@@ -141,28 +155,25 @@ void array_tag::load(archive::ed2k_iarchive& ar)
     }
 }
 
-template<>
-boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, tg_nid_type nNameId, bool bNewED2K)
+boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, tg_nid_type nNameId, bool bNewED2K)
 {
-    return (boost::shared_ptr<base_tag>(new string_tag(strValue, nNameId, bNewED2K)));
+	return (boost::shared_ptr<base_tag>(new string_tag(strValue, nNameId, bNewED2K)));
 }
 
-template<>
-boost::shared_ptr<base_tag> func_implement<std::string>::f(std::string strValue, const std::string& strName, bool bNewED2K)
+boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, const std::string& strName, bool bNewED2K)
 {
-    return (boost::shared_ptr<base_tag>(new string_tag(strValue, strName, bNewED2K)));
+	return (boost::shared_ptr<base_tag>(new string_tag(strValue, strName, bNewED2K)));
 }
 
-template<>
-boost::shared_ptr<base_tag> func_implement<blob_type >::f(blob_type vValue, tg_nid_type nNameId, bool bNewED2K)
+boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K)
 {
-    return (boost::shared_ptr<base_tag>(new array_tag(vValue, nNameId, bNewED2K)));
+	return (boost::shared_ptr<base_tag>(new array_tag(vValue, nNameId, bNewED2K)));
 }
 
-template<>
-boost::shared_ptr<base_tag> func_implement<blob_type>::f(blob_type vValue, const std::string& strName, bool bNewED2K)
+boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K)
 {
-    return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
+	return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
 }
+
 
 }

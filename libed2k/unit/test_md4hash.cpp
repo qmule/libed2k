@@ -1,4 +1,7 @@
+#ifndef WIN32
 #define BOOST_TEST_DYN_LINK
+#endif
+
 #include <string>
 
 #ifdef STAND_ALONE

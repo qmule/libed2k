@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="libed2k"
-	ProjectGUID="{02157584-77D1-45C8-A21E-C4687083B024}"
-	RootNamespace="libed2k"
+	Name="unittest"
+	ProjectGUID="{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}"
+	RootNamespace="unittest"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -60,10 +60,19 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;$(SolutionDir)$(ConfigurationName)"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -75,6 +84,9 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -82,7 +94,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -105,7 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -122,10 +134,19 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="1"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -137,6 +158,9 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -145,151 +169,39 @@
 	</References>
 	<Files>
 		<Filter
-			Name="Source Files"
+			Name="Файлы исходного кода"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\src\ctag.cpp"
+				RelativePath="..\unit\run_tests.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\error_code.cpp"
+				RelativePath="..\unit\test_archive.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\is_crypto.cpp"
+				RelativePath="..\unit\test_crypto.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\src\is_https_auth.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\md4_hash.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\packet_struct.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\peer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\peer_connection.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\policy.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\session.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\session_impl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\transfer.cpp"
+				RelativePath="..\unit\test_md4hash.cpp"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="Header Files"
+			Name="Заголовочные файлы"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\include\archive.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\ctag.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\error_code.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\fingerprint.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\is_crypto.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\is_https_auth.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\md4_hash.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\packet_struct.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\peer.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\peer_connection.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\peer_id.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\policy.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\server_manager.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\session.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\session_impl.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\session_settings.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\transfer.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\transfer_handle.hpp"
-				>
-			</File>
 		</Filter>
 		<Filter
-			Name="Resource Files"
+			Name="Файлы ресурсов"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
-		<File
-			RelativePath="..\src\Makefile"
-			>
-		</File>
-		<File
-			RelativePath=".\ReadMe.txt"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

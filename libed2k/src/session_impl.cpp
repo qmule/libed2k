@@ -1,5 +1,7 @@
 
+#ifndef WIN32
 #include <sys/resource.h>
+#endif
 
 #include <libtorrent/peer_connection.hpp>
 #include <libtorrent/socket.hpp>
@@ -23,9 +25,9 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
 	m_host_resolver(m_io_service),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool),
+                  m_filepool), // TODO - check it!
     m_half_open(m_io_service),
-    m_server_connection(new server_connection(*this)),
+    m_server_connection(new server_connection(*this)), // TODO - check it
     m_abort(false),
     m_paused(false),
     m_max_connections(200),
