@@ -2,6 +2,7 @@
 #include "session.hpp"
 #include "session_impl.hpp"
 #include "peer_connection.hpp"
+#include "server_connection.hpp"
 
 namespace libed2k {
 

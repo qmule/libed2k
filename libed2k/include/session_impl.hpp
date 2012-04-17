@@ -8,7 +8,6 @@
 #include <libtorrent/alert_types.hpp>
 
 #include "fingerprint.hpp"
-#include "server_manager.hpp"
 #include "md4_hash.hpp"
 #include "transfer_handle.hpp"
 #include "session_settings.hpp"
@@ -17,6 +16,7 @@
 namespace libed2k {
 
     class peer_connection;
+    class server_connection;
     class transfer;
     struct add_transfer_params;
 
@@ -26,6 +26,7 @@ namespace libed2k {
         {
             friend class libed2k::transfer;
             friend class libed2k::peer_connection;
+            friend class libed2k::server_connection;
 
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
@@ -128,7 +129,9 @@ namespace libed2k {
             // members to be destructed
             libtorrent::connection_queue m_half_open;
 
-            server_manager m_server_manager;
+            // ed2k server connection
+            boost::intrusive_ptr<server_connection> m_server_connection;
+
             transfer_map m_transfers;
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
 

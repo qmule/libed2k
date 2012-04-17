@@ -9,6 +9,7 @@
 #include "transfer_handle.hpp"
 #include "transfer.hpp"
 #include "peer_connection.hpp"
+#include "server_connection.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -24,7 +25,7 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
                   m_filepool),
     m_half_open(m_io_service),
-    m_server_manager(*this),
+    m_server_connection(new server_connection(*this)),
     m_abort(false),
     m_paused(false),
     m_max_connections(200),

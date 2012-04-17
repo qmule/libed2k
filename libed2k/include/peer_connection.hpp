@@ -18,23 +18,11 @@
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 
-namespace libtorrent
-{
-    class peer_request;
-    class disk_io_job;
-}
+#include "types.hpp"
+#include "error_code.hpp"
 
 namespace libed2k
 {
-
-    typedef boost::asio::ip::tcp tcp;
-    typedef libtorrent::error_code error_code;
-    typedef libtorrent::disk_buffer_holder disk_buffer_holder;
-    typedef libtorrent::ptime ptime;
-    typedef libtorrent::buffer buffer;
-    typedef libtorrent::peer_request peer_request;
-    typedef libtorrent::disk_io_job disk_io_job;
-
     class peer;
     class transfer;
     namespace aux{
