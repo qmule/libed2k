@@ -101,10 +101,12 @@ namespace libed2k
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
+#pragma pack(0)
     /**
       * common libed2k packet header
       *
      */
+#pragma pack(push,1)
     struct libed2k_header
     {
         typedef boost::uint32_t size_type;
@@ -113,6 +115,7 @@ namespace libed2k
         size_type   m_size;                 //!< packet body size
         proto_type  m_type;                 //!< packet opcode
     };
+#pragma pack(pop)
 
     // common protocol structures
 
@@ -173,7 +176,7 @@ namespace libed2k
         md4_hash                    m_hClient;
         boost::uint32_t             m_nClientId;
         boost::uint16_t             m_nPort;
-        tag_list<boost::uint16_t>   m_list;
+        tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
         void serialize(Archive& ar)

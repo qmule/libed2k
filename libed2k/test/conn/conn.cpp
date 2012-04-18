@@ -10,6 +10,8 @@ using boost::asio::ip::tcp;
 using boost::asio::buffer;
 namespace libed2k{
 
+unsigned long nAddr;
+
 // handle incoming
 class incoming_connection : public boost::enable_shared_from_this<incoming_connection>
 {
@@ -81,8 +83,8 @@ private:
 class tcp_server
 {
 public:
-    tcp_server(boost::asio::io_service& io) :
-        m_acceptor(io, tcp::endpoint(tcp::v4(), 4662))
+    tcp_server(boost::asio::io_service& io, tcp::endpoint endp) :
+        m_acceptor(io, tcp::endpoint(endp))
     {
         start_listening();
     }
@@ -129,6 +131,9 @@ private:
     {
         LDBG_ << "connect ";
 
+
+        //m_conn.async_read_header(boost::bind(&client::handle_read_header, this, boost::asio::placeholders::error));
+
         if (error)
         {
             LDBG_ << " error";
@@ -138,18 +143,25 @@ private:
 
         boost::uint32_t nVersion = 0x3c;
         boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
-        boost::uint32_t nClientVersion  = (3 << 24) | (1 << 17) | (2 << 10) | (3 << 7);
+        boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
 
         // prepare hello packet
-        m_login.m_hClient = md4_hash::m_emptyMD4Hash;
-        m_login.m_nClientId = 1000;
+        m_hLocal = md4_hash::m_emptyMD4Hash;
+        m_hLocal[0] = 120;
+        m_hLocal[1] = 20;
+        m_hLocal[2] = 10;
+
+        m_hLocal[5] = 14;
+        m_hLocal[14] = 111;
+        m_login.m_hClient = m_hLocal;
+        m_login.m_nClientId = 0; //nAddr;
         m_login.m_nPort     = 4662;
 
-        m_login.m_list.add_tag(make_string_tag(std::string("test_user"), CT_NAME, false));
-        m_login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, false));
-        m_login.m_list.add_tag(make_typed_tag(nCapability, CT_SERVER_FLAGS, false));
-        m_login.m_list.add_tag(make_typed_tag(nClientVersion, CT_EMULE_VERSION, false));
-
+        m_login.m_list.add_tag(make_string_tag(std::string("http://www.aMule.org"), CT_NAME,true));
+        m_login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+        m_login.m_list.add_tag(make_typed_tag(nCapability, CT_SERVER_FLAGS, true));
+        m_login.m_list.add_tag(make_typed_tag(nClientVersion, CT_EMULE_VERSION, true));
+        m_login.m_list.dump();
 
 
         // after connect write message to server
@@ -164,6 +176,19 @@ private:
         if (!error)
         {
             LDBG_ << "Write completed ";
+            libed2k_header h;
+
+/*
+            try
+            {
+                m_conn.socket().read_some(boost::asio::buffer(&h, sizeof(h)));
+                LDBG_ << "read packet header " << packetToString(h.m_type);
+            }
+           catch(boost::system::error_code& err)
+           {
+               LDBG_ << "error on read header " << err ;
+           }
+*/
             m_conn.async_read_header(boost::bind(&client::handle_read_header, this, boost::asio::placeholders::error));
         }
         else
@@ -192,6 +217,11 @@ private:
             }
             */
         }
+        else
+        {
+            LDBG_ << "Unable to read packet header";
+            do_close(error);
+        }
     }
 
     void handle_read_server_hello(const boost::system::error_code& error)
@@ -215,7 +245,8 @@ private:
         m_conn.socket().close();
     }
 
-    cs_login_request m_login;
+    cs_login_request    m_login;
+    md4_hash            m_hLocal;
 };
 
 
@@ -227,20 +258,28 @@ int main(int argc, char* argv[])
 {
     init_logs();
 
+    LDBG_ << "size of header " << sizeof(libed2k_header);
     LAPP_ << " first output";
     BOOST_SCOPED_LOG_CTX(LAPP_) << " main";
 
     boost::asio::io_service io;
     // our server endpoint
-    boost::asio::ip::tcp::endpoint server_point(tcp::v4(), 4462);
+
+    //boost::asio::ip::tcp::endpoint server_ep("dore", 4662);
+
+    boost::asio::ip::tcp::endpoint server_point(tcp::v4(), 4662);
+    nAddr = server_point.address().to_v4().to_ulong();
+    LDBG_ << "our ulong id: " << nAddr;
+
     // ok, prepare end point
     tcp::resolver resolver(io);
     tcp::resolver::query query("che-d-113", "4661");
     tcp::resolver::iterator iterator = resolver.resolve(query); // use async resolve
+
     // eMule server end point
     boost::asio::ip::tcp::endpoint client_point = *iterator;
+    tcp_server tserver(io, server_point);
     client c(io, client_point);
-    tcp_server tserver(io);
     io.run();
 
 

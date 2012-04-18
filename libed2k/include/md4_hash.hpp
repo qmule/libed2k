@@ -137,6 +137,15 @@ namespace libed2k{
     	    return (m_hash[n]);
     	}
 
+    	boost::uint8_t& operator[](size_t n)
+        {
+    	    if (n >= MD4_HASH_SIZE)
+            {
+                throw libed2k_exception(errors::md4_hash_index_error);
+            }
+    	    return (m_hash[n]);
+        }
+
     	template<typename Archive>
     	void serialize(Archive& ar)
     	{
@@ -146,6 +155,10 @@ namespace libed2k{
     	    }
     	}
 
+    	/**
+    	  * for using in logger output
+    	 */
+    	friend std::ostream& operator<< (std::ostream& stream, const md4_hash& hash);
     private:
     	md4hash_container   m_hash;
     };
