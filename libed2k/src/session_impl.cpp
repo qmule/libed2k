@@ -156,6 +156,8 @@ void session_impl::operator()()
         open_listen_port();
     }
 
+    m_server_connection->start();
+
     bool stop_loop = false;
     while (!stop_loop)
     {

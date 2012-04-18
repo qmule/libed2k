@@ -9,7 +9,8 @@ namespace libed2k {
             peer_timeout(120),
             peer_connect_timeout(7),
             recv_socket_buffer_size(0),
-            send_socket_buffer_size(0)
+            send_socket_buffer_size(0),
+            server_port(4662)
         {}
 
         // the number of seconds to wait for any activity on
@@ -26,6 +27,11 @@ namespace libed2k {
         // 0 means OS default
         int recv_socket_buffer_size;
         int send_socket_buffer_size;
+
+        // ed2k server hostname
+        std::string server_hostname;
+        // ed2k server port
+        int server_port;
     };
 
 }
