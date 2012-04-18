@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 #include <boost/cstdint.hpp>
+#include "log.hpp"
 #include "archive.hpp"
 #include "md4_hash.hpp"
 
@@ -200,6 +201,8 @@ enum tg_types
             // but should not be handled at all
 };
 
+const char* toString(tg_types tt);
+
 template<typename T>
 struct tag_type_number
 {
@@ -270,6 +273,12 @@ public:
     virtual bool is_equal(const base_tag* pt) const
     {
         return (pt->getType() == getType());
+    }
+
+    void dump() const
+    {
+        BOOST_SCOPED_LOG_CTX(LDBG_) << "base_tag.dump()";
+        //BOOST_SCOPED_LOG_CTX(LDBG_) <<
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()

@@ -2,6 +2,62 @@
 
 namespace libed2k{
 
+const char* toString(tg_types tt)
+{
+    static const char* chUnknown = "unknown result";
+
+    static const char* chFormat[] =
+    {
+        "TAGTYPE_UNDEFINED",
+        "TAGTYPE_HASH16",
+        "TAGTYPE_STRING",
+        "TAGTYPE_UINT32",
+        "TAGTYPE_FLOAT32",
+        "TAGTYPE_BOOL",
+        "TAGTYPE_BOOLARRAY",
+        "TAGTYPE_BLOB",
+        "TAGTYPE_UINT16",
+        "TAGTYPE_UINT8",
+        "TAGTYPE_BSOB",
+        "TAGTYPE_UINT64",// 0x0B,
+        "TAGTYPE_HOLE",  // 0x0C
+        "TAGTYPE_HOLE",  // 0x0D
+        "TAGTYPE_HOLE",  // 0x0E
+        "TAGTYPE_HOLE",  // 0x0F
+        "TAGTYPE_HOLE",  // 0x10
+        // Compressed string types
+        "TAGTYPE_STR1",  // = 0x11,
+        "TAGTYPE_STR2",
+        "TAGTYPE_STR3",
+        "TAGTYPE_STR4",
+        "TAGTYPE_STR5",
+        "TAGTYPE_STR6",
+        "TAGTYPE_STR7",
+        "TAGTYPE_STR8",
+        "TAGTYPE_STR9",
+        "TAGTYPE_STR10",
+        "TAGTYPE_STR11",
+        "TAGTYPE_STR12",
+        "TAGTYPE_STR13",
+        "TAGTYPE_STR14",
+        "TAGTYPE_STR15",
+        "TAGTYPE_STR16",
+        "TAGTYPE_STR17",
+        "TAGTYPE_STR18",
+        "TAGTYPE_STR19",
+        "TAGTYPE_STR20",
+        "TAGTYPE_STR21",
+        "TAGTYPE_STR22"
+    };
+
+    if (tt < sizeof(chFormat)/sizeof(chFormat[0]))
+    {
+        return chFormat[tt];
+    }
+
+    return (chUnknown);
+}
+
 // base tag
 base_tag::base_tag(const std::string& strName, tg_nid_type nNameId) : m_strName(strName), m_nNameId(nNameId)
 {

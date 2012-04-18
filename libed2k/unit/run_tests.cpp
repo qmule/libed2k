@@ -4,6 +4,7 @@
 #define BOOST_TEST_MODULE main
 #include <boost/test/unit_test.hpp>
 #include "error_code.hpp"
+#include "ctag.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(simple_exception_test)
@@ -39,7 +40,11 @@ BOOST_FIXTURE_TEST_CASE(test_libed2k_exceptions, simple_exception)
     {
         BOOST_CHECK_EQUAL(e.what(), libed2k::get_libed2k_category().message(libed2k::errors::tag_type_mismatch));
     }
+}
 
+BOOST_AUTO_TEST_CASE(test_to_string_functions)
+{
+    BOOST_CHECK_EQUAL(libed2k::toString(libed2k::TAGTYPE_STR22), std::string("TAGTYPE_STR22"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
