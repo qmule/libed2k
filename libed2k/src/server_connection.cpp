@@ -22,7 +22,7 @@ void server_connection::start()
 
 void server_connection::close()
 {
-    m_socket->close();
+    m_socket->socket().close();
     m_name_lookup.cancel();
 }
 
@@ -45,11 +45,9 @@ void server_connection::on_name_lookup(
     LDBG_ << "server name resolved: " << libtorrent::print_endpoint(m_target);
 
     error_code ec;
-    m_socket.reset(new tcp::socket(m_ses.m_io_service));
-    tcp::socket::non_blocking_io ioc(true);
-    m_socket->io_control(ioc, ec);
+    m_socket.reset(new base_socket(m_ses.m_io_service));
 
-    m_socket->async_connect(
+    m_socket->socket().async_connect(
         m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
 
@@ -61,5 +59,7 @@ void server_connection::on_connection_complete(error_code const& error)
               << ", failed: " << error;
         return;
     }
-}
 
+    LDBG_ << "connect to server:" << libtorrent::print_endpoint(m_target)
+          << ", successfully";
+}
