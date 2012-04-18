@@ -5,6 +5,7 @@
 
 #include "session.hpp"
 #include "session_settings.hpp"
+#include "log.hpp"
 
 namespace po = boost::program_options;
 
@@ -15,8 +16,7 @@ int main(int argc, char* argv[])
     desc.add_options()
         ("help", "produce help message")
         ("mode", po::value<std::string>(), "client run mode")
-        ("port", po::value<int>(), "listen port")
-        ("logpath", po::value<std::string>(), "log path");
+        ("port", po::value<int>(), "listen port");
 
     po::variables_map vm;
     try {
@@ -27,8 +27,7 @@ int main(int argc, char* argv[])
     }
     po::notify(vm);
 
-    if (vm.count("help") || !vm.count("mode") || !vm.count("port") ||
-        !vm.count("logpath"))
+    if (vm.count("help") || !vm.count("mode") || !vm.count("port"))
     {
         std::cout << desc << std::endl;
         return 1;
@@ -39,11 +38,11 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     int port = vm["port"].as<int>();
-    std::string logpath = vm["logpath"].as<std::string>();
     libed2k::session_settings settings;
     settings.server_hostname = "localhost";
 
-    libed2k::session ses(print, port, "0.0.0.0", logpath, settings);
+    init_logs();
+    libed2k::session ses(print, port, "0.0.0.0", settings);
 
     std::cout << "---- libed2k_client started" << std::endl
               << "---- press q to exit" << std::endl;
