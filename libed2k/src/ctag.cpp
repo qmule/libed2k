@@ -2,7 +2,7 @@
 
 namespace libed2k{
 
-const char* toString(tg_types tt)
+const char* tagTypetoString(tg_type ttp)
 {
     static const char* chUnknown = "unknown result";
 
@@ -50,9 +50,9 @@ const char* toString(tg_types tt)
         "TAGTYPE_STR22"
     };
 
-    if (tt < sizeof(chFormat)/sizeof(chFormat[0]))
+    if (ttp < sizeof(chFormat)/sizeof(chFormat[0]))
     {
-        return chFormat[tt];
+        return chFormat[ttp];
     }
 
     return (chUnknown);

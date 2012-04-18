@@ -10,6 +10,11 @@ namespace libed2k
     // protocol type
     typedef boost::uint8_t  proto_type;
 
+    /**
+      * print protocol type
+     */
+    const char* packetToString(proto_type protocol);
+
     // enum for client<->server messages
 	enum OP_ClientToServerTCP
 	{
@@ -169,6 +174,15 @@ namespace libed2k
         boost::uint32_t             m_nClientId;
         boost::uint16_t             m_nPort;
         tag_list<boost::uint16_t>   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hClient;
+            ar & m_nClientId;
+            ar & m_nPort;
+            ar & m_list;
+        }
     };
 
     /**
