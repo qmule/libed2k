@@ -4,6 +4,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include "base_socket.hpp"
+#include "log.hpp"
 
 using boost::asio::ip::tcp;
 using boost::asio::buffer;
@@ -307,8 +308,14 @@ private:
 
 int main(int argc, char* argv[])
 {
+    init_logs();
+
+    LAPP_ << " first output";
+    BOOST_SCOPED_LOG_CTX(LAPP_) << " main";
+
     if (argc < 2)
     {
+        LAPP_  << " argc " << argc;
         return 0;
     }
 
