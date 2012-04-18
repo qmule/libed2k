@@ -10,120 +10,6 @@ using boost::asio::ip::tcp;
 using boost::asio::buffer;
 namespace libed2k{
 
-
-const char* toString(proto_type protocol)
-{
-    static const char* pchUnknown = "Unknown packet";
-    static const char* chData[] =
-    {
-            "00",
-            "OP_LOGINREQUEST",
-            "02",
-            "03",
-            "04",
-            "OP_REJECT",
-            "06",
-            "07",
-            "08",
-            "09",
-            "0A",
-            "0B",
-            "0C",
-            "0D",
-            "0E",
-            "0F",
-            "10",
-            "11",
-            "12",
-            "13",
-            "OP_GETSERVERLIST", //14
-            "OP_OFFERFILES",
-            "OP_SEARCHREQUEST",
-            "17",
-            "OP_DISCONNECT",
-            "OP_GETSOURCES",
-            "OP_SEARCH_USER",
-            "1B",
-            "OP_CALLBACKREQUEST",
-            "OP_QUERY_CHATS",
-            "OP_CHAT_MESSAGE",
-            "OP_JOIN_ROOM",
-            "20",
-            "OP_QUERY_MORE_RESULT",
-            "22",
-            "OP_GETSOURCES_OBFU",
-            "24",
-            "25",
-            "26",
-            "27",
-            "28",
-            "29",
-            "2A",
-            "2B",
-            "2C",
-            "2D",
-            "2E",
-            "2F",
-            "30",
-            "31",
-            "OP_SERVERLIST",
-            "OP_SEARCHRESULT",
-            "OP_SERVERSTATUS",
-            "OP_CALLBACKREQUESTED",
-            "OP_CALLBACK_FAIL",
-            "37",
-            "OP_SERVERMESSAGE",
-            "OP_CHAT_ROOM_REQUEST",
-            "OP_CHAT_BROADCAST",
-            "OP_CHAT_USER_JOIN",
-            "OP_CHAT_USER_LEAVE",
-            "OP_CHAT_USER",
-            "3E","3F",
-            "OP_IDCHANGE",
-            "OP_SERVERIDENT",
-            "OP_FOUNDSOURCES",
-            "OP_USERS_LIST",
-            "OP_FOUNDSOURCES_OBFU",
-            "45",
-            "OP_SENDINGPART",
-            "OP_REQUESTPARTS",
-            "OP_FILEREQANSNOFIL",
-            "OP_END_OF_DOWNLOAD",
-            "OP_ASKSHAREDFILES",
-            "OP_ASKSHAREDFILESANSWER",
-            "OP_HELLOANSWER",
-            "OP_CHANGE_CLIENT_ID",//         = 0x4D, // <ID_old 4><ID_new 4> // Unused for sending
-            "OP_MESSAGE",
-            "OP_SETREQFILEID",
-            "OP_FILESTATUS",
-            "OP_HASHSETREQUEST",
-            "OP_HASHSETANSWER",
-            "53",
-            "OP_STARTUPLOADREQ",
-            "OP_ACCEPTUPLOADREQ",
-            "OP_CANCELTRANSFER",
-            "OP_OUTOFPARTREQS",
-            "OP_REQUESTFILENAME",
-            "OP_REQFILENAMEANSWER",
-            "5A",
-            "OP_CHANGE_SLOT",
-            "OP_QUEUERANK",
-            "OP_ASKSHAREDDIRS", //            = 0x5D, // (null)
-            "OP_ASKSHAREDFILESDIR",
-            "OP_ASKSHAREDDIRSANS",
-            "OP_ASKSHAREDFILESDIRANS",
-            "OP_ASKSHAREDDENIEDANS"//       = 0x61  // (null)
-    };
-
-    if (protocol < sizeof(chData)/sizeof(chData[0]))
-    {
-        return (chData[static_cast<unsigned int>(protocol)]);
-    }
-
-    return (pchUnknown);
-}
-
-
 // handle incoming
 class incoming_connection : public boost::enable_shared_from_this<incoming_connection>
 {
@@ -161,7 +47,7 @@ private:
       if (!error)
       {
           std::cout << "Read message header " << std::endl;
-          std::cout << "reseive: " << toString(m_conn.context().m_type) << std::endl;
+          std::cout << "reseive: " << packetToString(m_conn.context().m_type) << std::endl;
           //m_conn.context().dump();
 
           //if (m_conn.context().m_type == socketMessageType<HelloServer>::value)
@@ -196,7 +82,7 @@ class tcp_server
 {
 public:
     tcp_server(boost::asio::io_service& io) :
-        m_acceptor(io, tcp::endpoint(tcp::v4(), 1303))
+        m_acceptor(io, tcp::endpoint(tcp::v4(), 4662))
     {
         start_listening();
     }
@@ -241,16 +127,35 @@ private:
 
     void handle_connect(const boost::system::error_code& error)
     {
+        LDBG_ << "connect ";
+
         if (error)
         {
-            do_close();
+            LDBG_ << " error";
+            do_close(error);
             return;
         }
 
+        boost::uint32_t nVersion = 0x3c;
+        boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+        boost::uint32_t nClientVersion  = (3 << 24) | (1 << 17) | (2 << 10) | (3 << 7);
+
+        // prepare hello packet
+        m_login.m_hClient = md4_hash::m_emptyMD4Hash;
+        m_login.m_nClientId = 1000;
+        m_login.m_nPort     = 4662;
+
+        m_login.m_list.add_tag(make_string_tag(std::string("test_user"), CT_NAME, false));
+        m_login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, false));
+        m_login.m_list.add_tag(make_typed_tag(nCapability, CT_SERVER_FLAGS, false));
+        m_login.m_list.add_tag(make_typed_tag(nClientVersion, CT_EMULE_VERSION, false));
+
+
+
         // after connect write message to server
-        //m_conn.async_write(m_s_hello, boost::bind(&client::handle_write, this,
-        //        boost::asio::placeholders::error,
-        //        boost::asio::placeholders::bytes_transferred));
+        m_conn.async_write(m_login, boost::bind(&client::handle_write, this,
+                boost::asio::placeholders::error,
+                boost::asio::placeholders::bytes_transferred));
     }
 
     void handle_write(const boost::system::error_code& error, size_t nSize)
@@ -258,7 +163,13 @@ private:
         // after wrote data read answer
         if (!error)
         {
+            LDBG_ << "Write completed ";
             m_conn.async_read_header(boost::bind(&client::handle_read_header, this, boost::asio::placeholders::error));
+        }
+        else
+        {
+            LERR_ << "write error " << error.message();
+            do_close(error);
         }
     }
 
@@ -268,6 +179,8 @@ private:
         {
             // read header complete - next read body
             // read answer
+            LDBG_ << "Read header " << packetToString(m_conn.context().m_type);
+
             /*
             if (m_conn.context().m_type == socketMessageType<HelloClient>::value)
             {
@@ -296,15 +209,19 @@ private:
         }
     }
 
-    void do_close()
+    void do_close(const boost::system::error_code& error)
     {
+        LDBG_ << error.message();
         m_conn.socket().close();
     }
 
+    cs_login_request m_login;
 };
 
 
 }
+
+using namespace libed2k;
 
 int main(int argc, char* argv[])
 {
@@ -313,23 +230,18 @@ int main(int argc, char* argv[])
     LAPP_ << " first output";
     BOOST_SCOPED_LOG_CTX(LAPP_) << " main";
 
-    if (argc < 2)
-    {
-        LAPP_  << " argc " << argc;
-        return 0;
-    }
-
-    std::cout << libed2k::toString(atoi(argv[1])) << std::endl;
     boost::asio::io_service io;
     // our server endpoint
     boost::asio::ip::tcp::endpoint server_point(tcp::v4(), 4462);
     // ok, prepare end point
     tcp::resolver resolver(io);
-    tcp::resolver::query query("el.is74.ru", "4461");
+    tcp::resolver::query query("che-d-113", "4661");
     tcp::resolver::iterator iterator = resolver.resolve(query); // use async resolve
     // eMule server end point
     boost::asio::ip::tcp::endpoint client_point = *iterator;
-
+    client c(io, client_point);
+    tcp_server tserver(io);
+    io.run();
 
 
     return 0;

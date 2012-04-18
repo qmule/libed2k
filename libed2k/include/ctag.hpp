@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 #include <boost/cstdint.hpp>
+#include <boost/mem_fn.hpp>
 #include "log.hpp"
 #include "archive.hpp"
 #include "md4_hash.hpp"
@@ -201,7 +202,7 @@ enum tg_types
             // but should not be handled at all
 };
 
-const char* toString(tg_types tt);
+const char* tagTypetoString(tg_type ttp);
 
 template<typename T>
 struct tag_type_number
@@ -275,10 +276,11 @@ public:
         return (pt->getType() == getType());
     }
 
-    void dump() const
+    virtual void dump() const
     {
-        BOOST_SCOPED_LOG_CTX(LDBG_) << "base_tag.dump()";
-        //BOOST_SCOPED_LOG_CTX(LDBG_) <<
+        LDBG_ << "base_tag::dump";
+        LDBG_ << "type: " << tagTypetoString(getType());
+        LDBG_ << "name: " << m_strName;
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -345,6 +347,12 @@ public:
     operator T() const
     {
         return (m_value);
+    }
+
+    virtual void dump() const
+    {
+        base_tag::dump();
+        LDBG_ << "value: " << m_value;
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -443,6 +451,12 @@ public:
         return (m_strValue);
     }
 
+    virtual void dump() const
+    {
+        base_tag::dump();
+        LDBG_ << "value: " << m_strValue;
+    }
+
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -504,6 +518,7 @@ public:
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
 
+
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 protected:
     array_tag(const std::string& strName, tg_nid_type nNameId);
@@ -518,8 +533,6 @@ boost::shared_ptr<base_tag> make_typed_tag(T t, tg_nid_type nNameId, bool bNewED
 {
 	return (boost::shared_ptr<base_tag>(new typed_tag<T>(t, nNameId, bNewED2K)));
 }
-
-
 
 template<class T>
 boost::shared_ptr<base_tag> make_typed_tag(T t, const std::string& strName, bool bNewED2K)
@@ -551,6 +564,7 @@ public:
     
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
+    void dump() const;
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 private:
     std::vector<boost::shared_ptr<base_tag> >   m_container;
@@ -721,6 +735,14 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
 
         ar & *m_container.back();
     }
+}
+
+template<typename size_type>
+void tag_list<size_type>::dump() const
+{
+    LDBG_ << "size type is: " << sizeof(size_type);
+    LDBG_ << "count: " << m_container.size();
+    std::for_each(m_container.begin(), m_container.end(), boost::mem_fn(&base_tag::dump));
 }
 
 template<typename size_type>

@@ -44,7 +44,8 @@ BOOST_FIXTURE_TEST_CASE(test_libed2k_exceptions, simple_exception)
 
 BOOST_AUTO_TEST_CASE(test_to_string_functions)
 {
-    BOOST_CHECK_EQUAL(libed2k::toString(libed2k::TAGTYPE_STR22), std::string("TAGTYPE_STR22"));
+    libed2k::tg_type nType = libed2k::TAGTYPE_STR22;
+    BOOST_CHECK_EQUAL(libed2k::tagTypetoString(nType), std::string("TAGTYPE_STR22"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

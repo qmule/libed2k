@@ -12,6 +12,11 @@ void init_logs()
 {
     // Add formatters and destinations
     // That is, how the message is to be formatted...
+    //g_l()->writer().add_formatter( formatter::tag::thread_id() );
+    //g_l()->writer().add_formatter( formatter::tag::time("$hh:$mm.$ss ") );
+    //g_l()->writer().add_formatter( formatter::idx() );
+    //g_l()->writer().add_formatter( formatter::append_newline() );
+
     g_l()->writer().add_formatter( formatter::idx() );
     g_l()->writer().add_formatter( formatter::time("$hh:$mm.$ss ") );
     g_l()->writer().add_formatter( formatter::append_newline() );
