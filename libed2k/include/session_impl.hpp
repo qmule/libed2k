@@ -34,8 +34,9 @@ namespace libed2k {
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
-            session_impl(const fingerprint& id, int listen_port, const char* listen_interface,
-                         const std::string& logpath);
+            session_impl(const fingerprint& id, int listen_port,
+                         const char* listen_interface, const std::string& logpath,
+                         const session_settings& settings);
 
             // main thread entry point
             void operator()();

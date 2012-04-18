@@ -17,7 +17,8 @@ using namespace libed2k;
 using namespace libed2k::aux;
 
 session_impl::session_impl(const fingerprint& id, int lst_port,
-                           const char* listen_interface, const std::string& logpath):
+                           const char* listen_interface, const std::string& logpath,
+                           const session_settings& settings):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
@@ -28,6 +29,7 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
                   m_filepool), // TODO - check it!
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)), // TODO - check it
+    m_settings(settings),
     m_abort(false),
     m_paused(false),
     m_max_connections(200),

@@ -17,6 +17,7 @@ namespace libed2k {
 
     namespace fs = boost::filesystem;
 
+    struct session_settings;
     namespace aux {
         class session_impl;
     }
@@ -54,14 +55,14 @@ namespace libed2k {
     {
     public:
         session(const fingerprint& id, int listen_port, const char* listen_interface,
-                const std::string& logpath = ".")
+                const std::string& logpath, const session_settings& settings)
         {
-            init(id, listen_port, listen_interface, logpath);
+            init(id, listen_port, listen_interface, logpath, settings);
         }
 
     private:
         void init(const fingerprint& id, int listen_port, const char* listen_interface,
-                  const std::string& logpath);
+                  const std::string& logpath, const session_settings& settings);
 
 		// data shared between the main thread
 		// and the working thread

@@ -4,6 +4,7 @@
 #include <boost/program_options.hpp>
 
 #include "session.hpp"
+#include "session_settings.hpp"
 
 namespace po = boost::program_options;
 
@@ -26,7 +27,8 @@ int main(int argc, char* argv[])
     }
     po::notify(vm);
 
-    if (vm.count("help") || !vm.count("mode") || !vm.count("port") || !vm.count("logpath"))
+    if (vm.count("help") || !vm.count("mode") || !vm.count("port") ||
+        !vm.count("logpath"))
     {
         std::cout << desc << std::endl;
         return 1;
@@ -38,8 +40,10 @@ int main(int argc, char* argv[])
     libed2k::fingerprint print;
     int port = vm["port"].as<int>();
     std::string logpath = vm["logpath"].as<std::string>();
+    libed2k::session_settings settings;
+    settings.server_hostname = "localhost";
 
-    libed2k::session ses(print, port, "0.0.0.0", logpath);
+    libed2k::session ses(print, port, "0.0.0.0", logpath, settings);
 
     std::cout << "---- libed2k_client started" << std::endl
               << "---- press q to exit" << std::endl;
