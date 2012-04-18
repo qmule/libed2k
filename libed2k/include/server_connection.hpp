@@ -9,6 +9,7 @@
 #include <libtorrent/intrusive_ptr_base.hpp>
 
 #include "types.hpp"
+#include "error_code.hpp"
 
 namespace libed2k
 {
@@ -24,6 +25,9 @@ namespace libed2k
         void close();
 
     private:
+
+        void on_name_lookup(const error_code& error, tcp::resolver::iterator i);
+        void on_connection_complete(error_code const& e);
 
         tcp::resolver m_name_lookup;
         boost::shared_ptr<tcp::socket> m_socket;
