@@ -10,6 +10,7 @@
 
 #include "types.hpp"
 #include "error_code.hpp"
+#include "base_socket.hpp"
 
 namespace libed2k
 {
@@ -30,13 +31,11 @@ namespace libed2k
         void on_connection_complete(error_code const& e);
 
         tcp::resolver m_name_lookup;
-        boost::shared_ptr<tcp::socket> m_socket;
+        boost::shared_ptr<base_socket> m_socket;
         tcp::endpoint m_target;
 
         const aux::session_impl& m_ses;
-
     };
-
 }
 
 #endif

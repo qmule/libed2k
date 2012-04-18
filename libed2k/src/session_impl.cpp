@@ -12,12 +12,14 @@
 #include "transfer.hpp"
 #include "peer_connection.hpp"
 #include "server_connection.hpp"
+#include "log.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
 
 session_impl::session_impl(const fingerprint& id, int lst_port,
-                           const char* listen_interface, const std::string& logpath):
+                           const char* listen_interface,
+                           const session_settings& settings):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
@@ -28,11 +30,13 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
                   m_filepool), // TODO - check it!
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)), // TODO - check it
+    m_settings(settings),
     m_abort(false),
     m_paused(false),
-    m_max_connections(200),
-    m_logpath(logpath)
+    m_max_connections(200)
 {
+    LDBG_ << "*** create ed2k session ***";
+
     error_code ec;
     m_listen_interface = tcp::endpoint(
         libtorrent::address::from_string(listen_interface, ec), lst_port);
@@ -111,17 +115,13 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
     }
 #endif
 
-    m_logger = create_log("main_session", listen_port(), false);
-    (*m_logger) << libtorrent::time_now_string() << "\n";
-
 #if defined TORRENT_BSD || defined TORRENT_LINUX
     // ---- auto-cap open files ----
 
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
-        (*m_logger) << libtorrent::time_now_string() << " max number of open files: "
-                    << rl.rlim_cur << "\n";
+        LDBG_ << "max number of open files: " << rl.rlim_cur;
 
         // deduct some margin for epoll/kqueue, log files,
         // futexes, shared objects etc.
@@ -132,10 +132,8 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
         // 20% goes towards regular files
         m_filepool.resize((std::min)(m_filepool.size_limit(), int(rl.rlim_cur * 2 / 10)));
 
-        (*m_logger) << libtorrent::time_now_string() << "   max connections: "
-                    << m_max_connections << "\n";
-        (*m_logger) << libtorrent::time_now_string() << "   max files: "
-                    << m_filepool.size_limit() << "\n";
+        LDBG_ << "max connections: " << m_max_connections;
+        LDBG_ << "max files: " << m_filepool.size_limit();
     }
 #endif // TORRENT_BSD || TORRENT_LINUX
 
@@ -196,7 +194,6 @@ void session_impl::open_listen_port()
         async_accept(s.sock);
     }
 
-    m_logger = create_log("main_session", listen_port(), false);
 }
 
 void session_impl::async_accept(boost::shared_ptr<tcp::acceptor> const& listener)
@@ -225,7 +222,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
         std::string msg =
             "error accepting connection on '" +
             libtorrent::print_endpoint(ep) + "' " + e.message();
-        (*m_logger) << msg << "\n";
+        LDBG_ << msg << "\n";
 
 #ifdef TORRENT_WINDOWS
         // Windows sometimes generates this error. It seems to be
@@ -262,22 +259,21 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 
     if (ec)
     {
-        (*m_logger) << endp << " <== INCOMING CONNECTION FAILED, could "
-            "not retrieve remote endpoint " << ec.message() << "\n";
+        LERR_ << endp << " <== INCOMING CONNECTION FAILED, could "
+            "not retrieve remote endpoint " << ec.message();
         return;
     }
 
-    (*m_logger) << libtorrent::time_now_string() << " <== INCOMING CONNECTION "
-                << endp << "\n";
+    LDBG_ << "<== INCOMING CONNECTION " << endp;
 
     // don't allow more connections than the max setting
     if (num_connections() >= max_connections())
     {
         //TODO: fire alert here
 
-        (*m_logger) << "number of connections limit exceeded (conns: "
-                    << num_connections() << ", limit: " << max_connections()
-                    << "), connection rejected\n";
+        LDBG_ << "number of connections limit exceeded (conns: "
+              << num_connections() << ", limit: " << max_connections()
+              << "), connection rejected";
 
         return;
     }
@@ -286,13 +282,13 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
     // if we don't reject the connection
     if (m_transfers.empty())
     {
-        (*m_logger) << " There are no ttansfers, disconnect\n";
+        LDBG_ << " There are no ttansfers, disconnect\n";
         return;
     }
 
     if (!has_active_transfer())
     {
-        (*m_logger) << " There are no _active_ torrents, disconnect\n";
+        LDBG_ << " There are no _active_ torrents, disconnect\n";
         return;
     }
 
@@ -401,7 +397,7 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        (*m_logger) << "*** TICK TIMER FAILED " << e.message() << "\n";
+        LERR_ << "*** TICK TIMER FAILED " << e.message() << "\n";
         ::abort();
         return;
     }
@@ -466,8 +462,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        (*m_logger) << "failed to open socket: " << libtorrent::print_endpoint(ep)
-                    << ": " << ec.message() << "\n" << "\n";
+        LERR_ << "failed to open socket: " << libtorrent::print_endpoint(ep)
+              << ": " << ec.message();
     }
 
     s.sock->bind(ep, ec);
@@ -479,7 +475,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
         char msg[200];
         snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
                  libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
-        (*m_logger) << libtorrent::time_now_string() << msg << "\n";
+        LERR_ << msg;
 
         return listen_socket_t();
     }
@@ -494,22 +490,14 @@ session_impl::listen_socket_t session_impl::setup_listener(
         char msg[200];
         snprintf(msg, 200, "cannot listen on interface \"%s\": %s",
                  libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
-        (*m_logger) << libtorrent::time_now_string() << msg << "\n";
+        LERR_ << msg;
 
         return listen_socket_t();
     }
 
     // post alert succeeded
 
-    (*m_logger) << "listening on: " << ep
-                << " external port: " << s.external_port << "\n";
+    LDBG_ << "listening on: " << ep << " external port: " << s.external_port;
 
     return s;
-}
-
-boost::shared_ptr<logger> session_impl::create_log(
-    std::string const& name, int instance, bool append)
-{
-    return boost::shared_ptr<logger>(
-        new logger(m_logpath, name + ".log", instance, append));
 }

@@ -34,8 +34,9 @@ namespace libed2k {
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
-            session_impl(const fingerprint& id, int listen_port, const char* listen_interface,
-                         const std::string& logpath);
+            session_impl(const fingerprint& id, int listen_port,
+                         const char* listen_interface,
+                         const session_settings& settings);
 
             // main thread entry point
             void operator()();
@@ -171,13 +172,6 @@ namespace libed2k {
 			// the max number of connections, as set by the user
 			int m_max_connections;
 
-			boost::shared_ptr<logger> create_log(std::string const& name, 
-                                                 int instance, bool append = true);
-
-            fs::path m_logpath;
-
-        public:
-            boost::shared_ptr<logger> m_logger;
         private:
 
             // the main working thread
