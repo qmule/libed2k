@@ -48,24 +48,34 @@ private:
   {
       if (!error)
       {
-          std::cout << "Read message header " << std::endl;
-          std::cout << "reseive: " << packetToString(m_conn.context().m_type) << std::endl;
+          LDBG_ << "incoming message header " << std::endl;
+          LDBG_ << "receive: " << packetToString(m_conn.context().m_type) << std::endl;
           //m_conn.context().dump();
 
-          //if (m_conn.context().m_type == socketMessageType<HelloServer>::value)
-          //{
-          //    m_conn.async_read_body(m_s_hello, boost::bind(&client_connection::handle_read_client_hello, shared_from_this(), boost::asio::placeholders::error));
-          //}
+          if (m_conn.context().m_type == packet_type<cs_login_request>::value)
+          {
+              m_conn.async_read_body(m_request, boost::bind(&incoming_connection::handle_read_cs_request, shared_from_this(), boost::asio::placeholders::error));
+          }
+          else
+          {
+              LDBG_ << "don't know how process it packet";
+          }
 
       }
   }
 
-  void handle_read_client_hello(const boost::system::error_code& error)
+  void handle_read_cs_request(const boost::system::error_code& error)
   {
       if (!error)
       {
-          std::cout << "Reseive client hello, answer\n";
+          LDBG_ << "receive connect request from server";
+          LDBG_ << m_request.m_nPort << " id: " << m_request.m_nClientId;
+          m_request.m_list.dump();
           //m_conn.async_write(m_c_hello, boost::bind(&client_connection::handle_write_client_hello, shared_from_this(), boost::asio::placeholders::error));
+      }
+      else
+      {
+          LERR_ << "error " << error.message();
       }
   }
 
@@ -76,6 +86,7 @@ private:
       start();
   }
 
+  cs_login_request    m_request;
   base_socket m_conn;
 };
 
@@ -206,16 +217,16 @@ private:
             // read answer
             LDBG_ << "Read header " << packetToString(m_conn.context().m_type);
 
-            /*
-            if (m_conn.context().m_type == socketMessageType<HelloClient>::value)
+
+            if (m_conn.context().m_type == packet_type<server_message>::value)
             {
-                m_conn.async_read_body(m_c_hello, boost::bind(&client::handle_read_server_hello, this, boost::asio::placeholders::error));
+                m_conn.async_read_body(m_message, boost::bind(&client::handle_read_server_message, this, boost::asio::placeholders::error));
             }
             else
             {
-                std::cout << "Unknown message type" << std::endl;
+                std::cout << "don't know how process this packet" << std::endl;
             }
-            */
+
         }
         else
         {
@@ -224,18 +235,17 @@ private:
         }
     }
 
-    void handle_read_server_hello(const boost::system::error_code& error)
+    void handle_read_server_message(const boost::system::error_code& error)
     {
         if (!error)
         {
             // callback on read some server message
-            /*
-            std::cout << "Server answer hello\n";
-            m_conn.async_write(m_s_hello, boost::bind(&client::handle_write, this,
-                boost::asio::placeholders::error,
-                boost::asio::placeholders::bytes_transferred));
-                */
-
+            LDBG_ << "server message: ";
+            LDBG_ << m_message.m_strMessage;
+        }
+        else
+        {
+            do_close(error);
         }
     }
 
@@ -247,6 +257,7 @@ private:
 
     cs_login_request    m_login;
     md4_hash            m_hLocal;
+    server_message      m_message;
 };
 
 

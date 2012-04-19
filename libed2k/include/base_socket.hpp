@@ -76,12 +76,12 @@ public:
 			    		= &base_socket::handle_read_body<T, Handler>;
 
 		// increase internal buffer size if need
-		if (m_in_container.size() < m_in_header.m_size)
+		if (m_in_container.size() < m_in_header.m_size - 1)
 		{
-			m_in_container.resize(m_in_header.m_size);
+			m_in_container.resize(m_in_header.m_size - 1);
 		}
 
-		boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size),
+		boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
 				boost::bind(f, this, boost::asio::placeholders::error, boost::ref<T>(t), boost::make_tuple(handler)));
 	}
 
@@ -100,9 +100,9 @@ public:
 		try
 		{
 			typedef boost::iostreams::basic_array_source<char> Device;
-			boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_header.m_size);
+			boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_header.m_size - 1);
 			std::istream in_array_stream(&buffer);
-			libed2k::archive::ed2k_iarchive ia(buffer);
+			archive::ed2k_iarchive ia(in_array_stream);
 
 			ia >> t;
 			boost::get<0>(handler)(error);

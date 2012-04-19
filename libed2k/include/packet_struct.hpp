@@ -188,6 +188,24 @@ namespace libed2k
         }
     };
 
+    struct server_message
+    {
+        boost::uint16_t m_nLength;
+        std::string     m_strMessage;
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nLength;
+            // allocate buffer if it needs
+            if (m_strMessage.size() != m_nLength)
+            {
+                m_strMessage.resize(m_nLength);
+            }
+
+            ar & m_strMessage;
+        }
+    };
+
     /**
       * empty structure for get servers list from server
      */
@@ -331,7 +349,7 @@ namespace libed2k
     template<> struct packet_type<callback_req_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };
 
 //            OP_CALLBACK_FAIL            = 0x36, // (null notverified)
-//            OP_SERVERMESSAGE            = 0x38, // <len 2><Message len> ?
+    template<> struct packet_type<server_message>       { static const proto_type value = OP_SERVERMESSAGE; };
 
         //  OP_CHAT_ROOM_REQUEST        = 0x39, // (deprecated, not supported by server any longer)
         //  OP_CHAT_BROADCAST           = 0x3A, // (deprecated, not supported by server any longer)
