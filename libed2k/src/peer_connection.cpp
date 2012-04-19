@@ -6,6 +6,7 @@
 #include "session_impl.hpp"
 #include "session.hpp"
 #include "transfer.hpp"
+#include "base_socket.hpp"
 #include "util.hpp"
 
 using namespace libed2k;
@@ -23,7 +24,7 @@ libed2k::peer_connection::m_message_handler[] =
 
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
-                                 boost::shared_ptr<tcp::socket> s,
+                                 boost::shared_ptr<base_socket> s,
                                  const tcp::endpoint& remote, peer* peerinfo):
     m_ses(ses),
     m_work(ses.m_io_service),
@@ -45,7 +46,7 @@ peer_connection::peer_connection(aux::session_impl& ses,
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
-                                 boost::shared_ptr<tcp::socket> s,
+                                 boost::shared_ptr<base_socket> s,
                                  const tcp::endpoint& remote,
                                  peer* peerinfo):
     m_ses(ses),
@@ -269,7 +270,7 @@ void peer_connection::setup_send()
 
         std::list<boost::asio::const_buffer> const& vec =
             m_send_buffer.build_iovec(amount_to_send);
-        m_socket->async_write_some(
+        m_socket->socket().async_write_some(
             vec, make_write_handler(boost::bind(&peer_connection::on_send_data,
                                                 self(), _1, _2)));
     }
@@ -359,13 +360,13 @@ size_t peer_connection::try_read(sync_t s, error_code& ec)
 
         if (num_bufs == 1)
         {
-            m_socket->async_read_some(
+            m_socket->socket().async_read_some(
                 boost::asio::mutable_buffers_1(vec[0]), make_read_handler(
                     boost::bind(&peer_connection::on_receive_data, self(), _1, _2)));
         }
         else
         {
-            m_socket->async_read_some(
+            m_socket->socket().async_read_some(
                 vec, make_read_handler(
                     boost::bind(&peer_connection::on_receive_data, self(), _1, _2)));
         }
@@ -375,11 +376,11 @@ size_t peer_connection::try_read(sync_t s, error_code& ec)
     size_t ret = 0;
     if (num_bufs == 1)
     {
-        ret = m_socket->read_some(boost::asio::mutable_buffers_1(vec[0]), ec);
+        ret = m_socket->socket().read_some(boost::asio::mutable_buffers_1(vec[0]), ec);
     }
     else
     {
-        ret = m_socket->read_some(vec, ec);
+        ret = m_socket->socket().read_some(vec, ec);
     }
 
     return ret;
@@ -410,17 +411,7 @@ void peer_connection::on_connect(int ticket)
         return;
     }
 
-    m_socket->open(m_remote.protocol(), ec);
-    if (ec)
-    {
-        disconnect(ec);
-        return;
-    }
-
-    // set the socket to non-blocking, so that we can
-    // read the entire buffer on each read event we get
-    tcp::socket::non_blocking_io ioc(true);
-    m_socket->io_control(ioc, ec);
+    m_socket->socket().open(m_remote.protocol(), ec);
     if (ec)
     {
         disconnect(ec);
@@ -429,7 +420,7 @@ void peer_connection::on_connect(int ticket)
 
     tcp::endpoint bind_interface = t->get_interface();
 
-    m_socket->set_option(tcp::acceptor::reuse_address(true), ec);
+    m_socket->socket().set_option(tcp::acceptor::reuse_address(true), ec);
     if (ec)
     {
         disconnect(ec);
@@ -438,14 +429,14 @@ void peer_connection::on_connect(int ticket)
 
     bind_interface.port(m_ses.listen_port());
 
-    m_socket->bind(bind_interface, ec);
+    m_socket->socket().bind(bind_interface, ec);
     if (ec)
     {
         disconnect(ec);
         return;
     }
 
-    m_socket->async_connect(
+    m_socket->socket().async_connect(
         m_remote, boost::bind(&peer_connection::on_connection_complete, self(), _1));
 
 }
