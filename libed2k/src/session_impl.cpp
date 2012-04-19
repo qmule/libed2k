@@ -16,6 +16,7 @@
 
 using namespace libed2k;
 using namespace libed2k::aux;
+namespace ip = boost::asio::ip;
 
 session_impl::session_impl(const fingerprint& id, int lst_port,
                            const char* listen_interface,
@@ -196,7 +197,7 @@ void session_impl::open_listen_port()
 
 }
 
-void session_impl::async_accept(boost::shared_ptr<tcp::acceptor> const& listener)
+void session_impl::async_accept(boost::shared_ptr<ip::tcp::acceptor> const& listener)
 {
     boost::shared_ptr<base_socket> c(new base_socket(m_io_service));
     listener->async_accept(c->socket(),
@@ -205,7 +206,7 @@ void session_impl::async_accept(boost::shared_ptr<tcp::acceptor> const& listener
 }
 
 void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
-                                        boost::weak_ptr<tcp::acceptor> listen_socket,
+                                        boost::weak_ptr<ip::tcp::acceptor> listen_socket,
                                         error_code const& e)
 {
     boost::shared_ptr<tcp::acceptor> listener = listen_socket.lock();
@@ -223,7 +224,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
         std::string msg =
             "error accepting connection on '" +
             libtorrent::print_endpoint(ep) + "' " + e.message();
-        LDBG_ << msg << "\n";
+        LDBG_ << msg.c_str() << "\n";
 
 #ifdef TORRENT_WINDOWS
         // Windows sometimes generates this error. It seems to be
@@ -261,7 +262,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
     if (ec)
     {
         LERR_ << endp << " <== INCOMING CONNECTION FAILED, could "
-            "not retrieve remote endpoint " << ec.message();
+            "not retrieve remote endpoint " << ec.message().c_str();
         return;
     }
 
@@ -398,7 +399,7 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        LERR_ << "*** TICK TIMER FAILED " << e.message() << "\n";
+        LERR_ << "*** TICK TIMER FAILED " << e.message().c_str() << "\n";
         ::abort();
         return;
     }
@@ -438,7 +439,7 @@ bool session_impl::has_active_transfer() const
     return false;
 }
 
-void session_impl::setup_socket_buffers(tcp::socket& s)
+void session_impl::setup_socket_buffers(ip::tcp::socket& s)
 {
     error_code ec;
     if (m_settings.send_socket_buffer_size)
@@ -454,7 +455,7 @@ void session_impl::setup_socket_buffers(tcp::socket& s)
 }
 
 session_impl::listen_socket_t session_impl::setup_listener(
-    tcp::endpoint ep, bool v6_only)
+    ip::tcp::endpoint ep, bool v6_only)
 {
     error_code ec;
     listen_socket_t s;
@@ -463,8 +464,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        LERR_ << "failed to open socket: " << libtorrent::print_endpoint(ep)
-              << ": " << ec.message();
+        //LERR_ << "failed to open socket: " << libtorrent::print_endpoint(ep)
+        //      << ": " << ec.message().c_str();
     }
 
     s.sock->bind(ep, ec);

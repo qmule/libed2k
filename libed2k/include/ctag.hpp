@@ -280,7 +280,7 @@ public:
     {
         LDBG_ << "base_tag::dump";
         LDBG_ << "type: " << tagTypetoString(getType());
-        LDBG_ << "name: " << m_strName;
+        LDBG_ << "name: " << m_strName.c_str();
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -352,7 +352,7 @@ public:
     virtual void dump() const
     {
         base_tag::dump();
-        LDBG_ << "value: " << m_value;
+        //LDBG_ << "value: " << m_value;
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -454,7 +454,7 @@ public:
     virtual void dump() const
     {
         base_tag::dump();
-        LDBG_ << "value: " << m_strValue;
+        LDBG_ << "value: " << m_strValue.c_str();
     }
 
     void save(archive::ed2k_oarchive& ar);

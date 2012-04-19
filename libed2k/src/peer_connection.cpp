@@ -10,6 +10,7 @@
 #include "util.hpp"
 
 using namespace libed2k;
+namespace ip = boost::asio::ip;
 
 const libed2k::peer_connection::message_handler
 libed2k::peer_connection::m_message_handler[] =
@@ -25,7 +26,7 @@ libed2k::peer_connection::m_message_handler[] =
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<base_socket> s,
-                                 const tcp::endpoint& remote, peer* peerinfo):
+                                 const ip::tcp::endpoint& remote, peer* peerinfo):
     m_ses(ses),
     m_work(ses.m_io_service),
     m_last_receive(libtorrent::time_now()),
@@ -47,7 +48,7 @@ peer_connection::peer_connection(aux::session_impl& ses,
 
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::shared_ptr<base_socket> s,
-                                 const tcp::endpoint& remote,
+                                 const ip::tcp::endpoint& remote,
                                  peer* peerinfo):
     m_ses(ses),
     m_work(ses.m_io_service),

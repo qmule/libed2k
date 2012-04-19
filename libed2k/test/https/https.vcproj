@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_HOME)&quot;;../../include;&quot;$(OPENSSL_HOME)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../../include;&quot;$(OPENSSL_ROOT)\include&quot;"
 				PreprocessorDefinitions="_WIN32_WINNT=0x0501"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -59,8 +59,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="boost_iostreams-vc90-mt-1_47.lib ssleay32MDd.lib libeay32MDd.lib"
-				AdditionalLibraryDirectories="&quot;$(BOOST_HOME)/lib&quot;;&quot;$(OPENSSL_HOME)\lib\VC&quot;"
+				AdditionalDependencies="libboost_iostreams-vc90-mt-sgd-1_49.lib ssleay32MDd.lib libeay32MDd.lib"
+				AdditionalLibraryDirectories="&quot;$(BOOST_ROOT)/stage/lib&quot;;&quot;$(OPENSSL_ROOT)\lib\VC&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
