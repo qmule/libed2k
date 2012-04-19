@@ -186,6 +186,25 @@ void transfer::init()
 
 }
 
+void transfer::second_tick()
+{
+    for (std::set<peer_connection*>::iterator i = m_connections.begin();
+         i != m_connections.end(); ++i)
+    {
+        peer_connection* p = *i;
+
+        try
+        {
+            p->second_tick();
+        }
+        catch (std::exception& e)
+        {
+            LDBG_ << "**ERROR**: " << e.what();
+            p->disconnect(errors::no_error, 1);
+        }
+    }
+}
+
 void transfer::async_verify_piece(int piece_index, boost::function<void(int)> const&)
 {
     //TODO: piece verification

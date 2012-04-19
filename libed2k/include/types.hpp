@@ -38,12 +38,12 @@ namespace libed2k {
     typedef libtorrent::buffer buffer;
     typedef libtorrent::peer_request peer_request;
     typedef libtorrent::logger logger;
-    typedef libtorrent::ptime ptime;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
 
     namespace fs = boost::filesystem;
-
+    namespace time = boost::posix_time;
+    typedef time::ptime ptime;
 
 }
 

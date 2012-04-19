@@ -12,7 +12,9 @@
 #include "transfer.hpp"
 #include "peer_connection.hpp"
 #include "server_connection.hpp"
+#include "constants.hpp"
 #include "log.hpp"
+#include "util.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -27,13 +29,15 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
 	m_host_resolver(m_io_service),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool), // TODO - check it!
+                  m_filepool, BLOCK_SIZE), // TODO - check it!
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)), // TODO - check it
     m_settings(settings),
     m_abort(false),
     m_paused(false),
-    m_max_connections(200)
+    m_max_connections(200),
+    m_last_second_tick(time_now()),
+    m_timer(m_io_service)
 {
     LDBG_ << "*** create ed2k session ***";
 
@@ -398,16 +402,36 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        LERR_ << "*** TICK TIMER FAILED " << e.message() << "\n";
+        LERR_ << "*** TICK TIMER FAILED " << e.message();
         ::abort();
         return;
     }
+
+    error_code ec;
+    ptime now = time_now();
+    m_timer.expires_from_now(time::milliseconds(100), ec);
+    m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
+
+    // only tick the following once per second
+    if (now - m_last_second_tick < time::seconds(1)) return;
+    m_last_second_tick = now;
+
+    LDBG_ << "session second tick";
 
     // --------------------------------------------------------------
     // check for incoming connections that might have timed out
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+    // --------------------------------------------------------------
+    // second_tick every torrent
+    // --------------------------------------------------------------
+
+    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        t.second_tick();
+    }
 
     // --------------------------------------------------------------
     // connect new peers

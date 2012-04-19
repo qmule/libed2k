@@ -1,4 +1,6 @@
 
+#include <boost/lexical_cast.hpp>
+
 #include "server_connection.hpp"
 #include "session_impl.hpp"
 #include "log.hpp"
@@ -15,7 +17,8 @@ void server_connection::start()
 {
     const session_settings& settings = m_ses.settings();
 
-    tcp::resolver::query q(settings.server_hostname, "");
+    tcp::resolver::query q(settings.server_hostname,
+                           boost::lexical_cast<std::string>(settings.server_port));
     m_name_lookup.async_resolve(
         q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
 }
@@ -40,7 +43,6 @@ void server_connection::on_name_lookup(
     }
 
     m_target = *i;
-    m_target.port(settings.server_port);
 
     LDBG_ << "server name resolved: " << libtorrent::print_endpoint(m_target);
 

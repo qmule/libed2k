@@ -4,7 +4,6 @@
 #define __LIBED2K_SESSION_IMPL__
 
 #include <string>
-
 #include <libtorrent/alert_types.hpp>
 
 #include "fingerprint.hpp"
@@ -172,6 +171,11 @@ namespace libed2k {
 
 			// the max number of connections, as set by the user
 			int m_max_connections;
+
+            ptime m_last_second_tick;
+
+            // the timer used to fire the tick
+            boost::asio::deadline_timer m_timer;
 
         private:
 
