@@ -39,7 +39,8 @@ namespace libed2k{
 
     	md4_hash(const std::vector<boost::uint8_t>& vHash)
     	{
-    		size_t nSize = std::max(vHash.size(), MD4_HASH_SIZE);
+            size_t nSize = (vHash.size()> MD4_HASH_SIZE)?MD4_HASH_SIZE:vHash.size();
+
     		for (size_t i = 0; i < nSize; i++)
     		{
     			m_hash[i] = vHash[i];

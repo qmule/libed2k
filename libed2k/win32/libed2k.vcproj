@@ -166,6 +166,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\log.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\md4_hash.cpp"
 				>
 			</File>
@@ -225,6 +229,10 @@
 			</File>
 			<File
 				RelativePath="..\include\is_https_auth.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\log.hpp"
 				>
 			</File>
 			<File

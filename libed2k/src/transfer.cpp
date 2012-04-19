@@ -9,8 +9,10 @@
 #include "util.hpp"
 
 using namespace libed2k;
+namespace ip = boost::asio::ip;
 
-transfer::transfer(aux::session_impl& ses, tcp::endpoint const& net_interface, 
+
+transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
     m_ses(ses),
     m_paused(false),
