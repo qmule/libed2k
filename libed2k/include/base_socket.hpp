@@ -3,12 +3,14 @@
 
 #include <string>
 #include <sstream>
+#include <map>
 #include <boost/cstdint.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include "log.hpp"
 #include "archive.hpp"
 #include "packet_struct.hpp"
@@ -17,7 +19,6 @@ using boost::asio::ip::tcp;
 using boost::asio::buffer;
 
 namespace libed2k{
-
 
 /**
   * base socket class for in-place handle protocol type(compression/decompression), write data with serialization and vice versa
@@ -28,7 +29,27 @@ class base_socket
 public:
 	enum{ header_size = sizeof( libed2k_header) };
 
-	base_socket(boost::asio::io_service& io) : m_socket(io), out_stream(std::ios_base::binary)
+	typedef std::vector<char> socket_buffer;
+	typedef boost::iostreams::basic_array_source<char> Device;
+
+	/**
+	  * call back on receive data packet
+	  * @param read data buffer
+	  * @param error code
+	 */
+	typedef boost::function<void (socket_buffer&, const boost::system::error_code&)> message_handler;
+
+	/**
+	  * callback container
+	 */
+	typedef std::map<proto_type, message_handler> callback_map;
+
+	typedef void (*on_event)(const boost::system::error_code&);
+
+	base_socket(boost::asio::io_service& io) :
+	    m_socket(io),
+	    m_unhandled_handler(NULL),
+	    out_stream(std::ios_base::binary)
 	{}
 
 	boost::asio::ip::tcp::socket& socket()
@@ -63,6 +84,7 @@ public:
 		boost::asio::async_write(m_socket, buffers, handler);
 	}
 
+	/*
 	template<typename Handler>
 	void async_read_header(Handler handler)
 	{
@@ -84,7 +106,7 @@ public:
 		boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
 				boost::bind(f, this, boost::asio::placeholders::error, boost::ref<T>(t), boost::make_tuple(handler)));
 	}
-
+*/
 	/**
 	  * read packet body and serialize it into type T
 	 */
@@ -99,7 +121,6 @@ public:
 
 		try
 		{
-			typedef boost::iostreams::basic_array_source<char> Device;
 			boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_header.m_size - 1);
 			std::istream in_array_stream(&buffer);
 			archive::ed2k_iarchive ia(in_array_stream);
@@ -113,17 +134,101 @@ public:
 		}
 	}
 
+	/**
+	  * start async read
+	  * after reading completed - appropriate user callback will faired
+	  * or callback for unhandled packets if it set
+	 */
+	void async_read()
+	{
+	    boost::asio::async_read(m_socket,
+	            boost::asio::buffer(&m_in_header, header_size),
+	            boost::bind(&base_socket::handle_read_header, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	}
 
+	/**
+	  * read packet header
+	 */
 	const libed2k_header& context() const
 	{
 		return (m_in_header);
 	}
+
+	/**
+	  * add ordinary callback
+	 */
+	void add_callback(proto_type ptype, message_handler handler)
+	{
+	    m_callbacks.insert(make_pair(ptype, handler));
+	}
+
+	/**
+	  * add callback for unhandled operation
+	 */
+	void add_unhandled_callback(message_handler handler)
+	{
+	    m_unhandled_handler = handler;
+	}
 private:
 	boost::asio::ip::tcp::socket	m_socket;       //!< operation socket
+	message_handler                 m_unhandled_handler;
 	std::ostringstream 				out_stream;     //!< output buffer
 	libed2k_header					m_out_header;   //!< output header
 	libed2k_header					m_in_header;    //!< incoming message header
-	std::vector<char> 				m_in_container; //!< buffer for incoming messages
+	socket_buffer 				    m_in_container; //!< buffer for incoming messages
+	callback_map                    m_callbacks;
+
+	void handle_read_header(const boost::system::error_code& error, size_t nSize)
+	{
+	    if (!error)
+	    {
+	        // we must download body in any case
+            // increase internal buffer size if need
+            if (m_in_container.size() < m_in_header.m_size - 1)
+            {
+                m_in_container.resize(m_in_header.m_size - 1);
+            }
+
+            boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                    boost::bind(&base_socket::handle_read_packet, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	    }
+	    else
+	    {
+	        // call error callback
+	    }
+	}
+
+	void handle_read_packet(const boost::system::error_code& error, size_t nSize)
+	{
+	    if (!error)
+	    {
+	        //!< search appropriate dispatcher
+	        callback_map::iterator itr = m_callbacks.find(m_in_header.m_type);
+
+	        if (itr != m_callbacks.end())
+	        {
+	            LDBG_ << "call normal handler";
+	            itr->second(m_in_container, error);
+	        }
+	        else
+	        {
+	            if (m_unhandled_handler)
+	            {
+	                LDBG_ << "call unhandled ";
+	                m_unhandled_handler(m_in_container, error);
+	            }
+	            else
+	            {
+	                LDBG_ << "unhandled handler is null";
+	            }
+	        }
+
+	    }
+	    else
+	    {
+	        // call error callback
+	    }
+	}
 };
 
 }

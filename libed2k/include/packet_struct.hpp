@@ -101,7 +101,6 @@ namespace libed2k
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
-#pragma pack(0)
     /**
       * common libed2k packet header
       *

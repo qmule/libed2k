@@ -20,7 +20,10 @@ public:
 
   static pointer create(boost::asio::io_service& io_service)
   {
-      return pointer(new incoming_connection(io_service));
+      pointer p = pointer(new incoming_connection(io_service));
+      p->m_conn.add_unhandled_callback(boost::bind(&incoming_connection::handle_unhandled_packets, p, _1, _2));
+      p->m_conn.add_callback(OP_LOGINREQUEST, boost::bind(&incoming_connection::handle_read_hello, p, _1, _2));
+      return (p);
   }
 
   tcp::socket& socket()
@@ -31,7 +34,7 @@ public:
 
   void start()
   {
-      m_conn.async_read_header(boost::bind(&incoming_connection::handle_read_header, shared_from_this(), boost::asio::placeholders::error));
+      m_conn.async_read();
   }
 
   ~incoming_connection()
@@ -44,34 +47,12 @@ private:
 
   }
 
-  void handle_read_header(const boost::system::error_code& error)
+  void handle_write_client_hello(base_socket::socket_buffer& sb, const error_code& error)
   {
       if (!error)
       {
-          LDBG_ << "incoming message header " << std::endl;
-          LDBG_ << "receive: " << packetToString(m_conn.context().m_type) << std::endl;
-          //m_conn.context().dump();
-
-          if (m_conn.context().m_type == packet_type<cs_login_request>::value)
-          {
-              m_conn.async_read_body(m_request, boost::bind(&incoming_connection::handle_read_cs_request, shared_from_this(), boost::asio::placeholders::error));
-          }
-          else
-          {
-              LDBG_ << "don't know how process it packet";
-          }
-
-      }
-  }
-
-  void handle_read_cs_request(const boost::system::error_code& error)
-  {
-      if (!error)
-      {
-          LDBG_ << "receive connect request from server";
-          LDBG_ << m_request.m_nPort << " id: " << m_request.m_nClientId;
-          m_request.m_list.dump();
-          //m_conn.async_write(m_c_hello, boost::bind(&client_connection::handle_write_client_hello, shared_from_this(), boost::asio::placeholders::error));
+          LDBG_ << "server wrote packet ";
+          m_conn.async_read();
       }
       else
       {
@@ -79,14 +60,32 @@ private:
       }
   }
 
-  void handle_write_client_hello(const boost::system::error_code& error)
+  void handle_read_hello(base_socket::socket_buffer& sb, const error_code& error)
   {
-      std::cout << "Write data to client " << std::endl;
-      // wait on next message
-      start();
+      if (!error)
+      {
+          LDBG_ << "server read packet " << packetToString(m_conn.context().m_type);
+          m_conn.async_read();
+      }
+      else
+      {
+          LERR_ << "error " << error.message();
+      }
   }
 
-  cs_login_request    m_request;
+  void handle_unhandled_packets(base_socket::socket_buffer& sb, const error_code& error)
+  {
+      if (!error)
+      {
+          LDBG_ << "server receive unhandled packet";
+          m_conn.async_read();
+      }
+      else
+      {
+          LERR_ << "error " << error.message();
+      }
+  }
+
   base_socket m_conn;
 };
 
@@ -130,8 +129,11 @@ private:
 class client
 {
 public:
-    client(boost::asio::io_service& service, boost::asio::ip::tcp::endpoint endpoint) : m_conn(service)
+    client(boost::asio::io_service& service, boost::asio::ip::tcp::endpoint endpoint) :
+        m_conn(service)
     {
+        m_conn.add_callback(OP_SERVERMESSAGE, boost::bind(&client::on_read_server_message, this, _1, _2)); // add callback
+        m_conn.add_unhandled_callback(boost::bind(&client::on_read_unhandled_message, this, _1, _2));
         m_conn.socket().async_connect(endpoint, boost::bind(&client::handle_connect, this, boost::asio::placeholders::error));
     }
 
@@ -200,7 +202,8 @@ private:
                LDBG_ << "error on read header " << err ;
            }
 */
-            m_conn.async_read_header(boost::bind(&client::handle_read_header, this, boost::asio::placeholders::error));
+            //m_conn.async_read_header(boost::bind(&client::handle_read_header, this, boost::asio::placeholders::error));
+            m_conn.async_read();
         }
         else
         {
@@ -209,44 +212,26 @@ private:
         }
     }
 
-    void handle_read_header(const boost::system::error_code& error)
+    void on_read_server_message(base_socket::socket_buffer& sb, const boost::system::error_code& error)
     {
+        LDBG_ << "read server message";
+        LDBG_ << "Read header " << packetToString(m_conn.context().m_type);
+
         if (!error)
         {
-            // read header complete - next read body
-            // read answer
-            LDBG_ << "Read header " << packetToString(m_conn.context().m_type);
-
-
-            if (m_conn.context().m_type == packet_type<server_message>::value)
-            {
-                m_conn.async_read_body(m_message, boost::bind(&client::handle_read_server_message, this, boost::asio::placeholders::error));
-            }
-            else
-            {
-                std::cout << "don't know how process this packet" << std::endl;
-            }
-
-        }
-        else
-        {
-            LDBG_ << "Unable to read packet header";
-            do_close(error);
+            boost::iostreams::stream_buffer<base_socket::Device> buffer(&sb[0], m_conn.context().m_size - 1);
+            std::istream in_array_stream(&buffer);
+            archive::ed2k_iarchive ia(in_array_stream);
+            server_message sm;
+            ia >> sm;
+            m_conn.async_read();    // read next messages
         }
     }
 
-    void handle_read_server_message(const boost::system::error_code& error)
+    void on_read_unhandled_message(base_socket::socket_buffer& sb, const boost::system::error_code& error)
     {
-        if (!error)
-        {
-            // callback on read some server message
-            LDBG_ << "server message: ";
-            LDBG_ << m_message.m_strMessage;
-        }
-        else
-        {
-            do_close(error);
-        }
+        LDBG_ << "client receive unhandled packet" << packetToString(m_conn.context().m_type);
+        m_conn.async_read();
     }
 
     void do_close(const boost::system::error_code& error)

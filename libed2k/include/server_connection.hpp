@@ -29,6 +29,7 @@ namespace libed2k
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);
         void on_connection_complete(error_code const& e);
+        void on_unhandled_packet(base_socket::socket_buffer& sb, const error_code& error);
 
         tcp::resolver m_name_lookup;
         boost::shared_ptr<base_socket> m_socket;

@@ -63,3 +63,8 @@ void server_connection::on_connection_complete(error_code const& error)
     LDBG_ << "connect to server:" << libtorrent::print_endpoint(m_target)
           << ", successfully";
 }
+
+void server_connection::on_unhandled_packet(base_socket::socket_buffer& sb, const error_code& error)
+{
+
+}

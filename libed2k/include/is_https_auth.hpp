@@ -117,6 +117,6 @@ private:
 	std::string                 m_strResult; //XML result
 };
 
-};
+}
 
 #endif //__IS_HTTP_AUTH__
