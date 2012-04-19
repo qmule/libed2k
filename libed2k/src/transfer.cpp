@@ -4,6 +4,7 @@
 #include "transfer.hpp"
 #include "peer.hpp"
 #include "peer_connection.hpp"
+#include "base_socket.hpp"
 #include "constants.hpp"
 #include "util.hpp"
 
@@ -42,9 +43,9 @@ void transfer::start()
 bool transfer::connect_to_peer(peer* peerinfo)
 {
     tcp::endpoint ip(peerinfo->ip());
-    boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_ses.m_io_service));
+    boost::shared_ptr<base_socket> sock(new base_socket(m_ses.m_io_service));
 
-    m_ses.setup_socket_buffers(*sock);
+    m_ses.setup_socket_buffers(sock->socket());
 
     boost::intrusive_ptr<peer_connection> c(
         new peer_connection(m_ses, shared_from_this(), sock, ip, peerinfo));

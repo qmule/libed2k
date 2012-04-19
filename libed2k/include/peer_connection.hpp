@@ -25,6 +25,7 @@ namespace libed2k
 {
     struct peer;
     class transfer;
+    class base_socket;
     namespace aux{
         class session_impl;
     }
@@ -46,12 +47,12 @@ namespace libed2k
         // The peer_conenction should handshake and verify that the
         // other end has the correct id
         peer_connection(aux::session_impl& ses, boost::weak_ptr<transfer>,
-                        boost::shared_ptr<tcp::socket> s,
+                        boost::shared_ptr<base_socket> s,
                         const tcp::endpoint& remote, peer* peerinfo);
 
         // with this constructor we have been contacted and we still don't
         // know which torrent the connection belongs to
-        peer_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s,
+        peer_connection(aux::session_impl& ses, boost::shared_ptr<base_socket> s,
                         tcp::endpoint const& remote, peer* peerinfo);
 
         ~peer_connection();
@@ -221,7 +222,7 @@ namespace libed2k
 
         libtorrent::chained_buffer m_send_buffer;
 
-        boost::shared_ptr<tcp::socket> m_socket;
+        boost::shared_ptr<base_socket> m_socket;
 
         // this is the peer we're actually talking to
         // it may not necessarily be the peer we're

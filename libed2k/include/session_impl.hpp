@@ -18,6 +18,7 @@ namespace libed2k {
     class peer_connection;
     class server_connection;
     class transfer;
+    class base_socket;
     struct add_transfer_params;
 
     namespace aux {
@@ -44,11 +45,11 @@ namespace libed2k {
             void open_listen_port();
 
             void async_accept(boost::shared_ptr<tcp::acceptor> const& listener);
-            void on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
+            void on_accept_connection(boost::shared_ptr<base_socket> const& s,
                                       boost::weak_ptr<tcp::acceptor> listener, 
                                       error_code const& e);
 
-            void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
+            void incoming_connection(boost::shared_ptr<base_socket> const& s);
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
 
