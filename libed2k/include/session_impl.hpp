@@ -39,6 +39,7 @@ namespace libed2k {
 
             session_impl(const fingerprint& id, const char* listen_interface,
                          const session_settings& settings);
+            ~session_impl();
 
             // main thread entry point
             void operator()();
@@ -56,6 +57,8 @@ namespace libed2k {
 
             unsigned short listen_port() const;
 
+            void abort();
+
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }
 
@@ -70,8 +73,9 @@ namespace libed2k {
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
 
-            session_settings const& settings() const { return m_settings; }
-            session_settings mutable_settings() { return m_settings; }
+            const session_settings& settings() const { return m_settings; }
+            session_settings& settings() { return m_settings; }
+
         private:
 
             void on_disk_queue();

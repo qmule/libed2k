@@ -14,9 +14,10 @@ int main(int argc, char* argv[])
     // Declare the supported options.
     po::options_description desc("ed2k_client options");
     desc.add_options()
-        ("help", "produce help message")
-        ("peer_port", po::value<int>(), "listen port for incoming peer connections")
-        ("server", po::value<std::string>(), "ed2k server name");
+        ("server", po::value<std::string>(), "ed2k server name")
+        ("peer_port", po::value<int>(),
+         "port for incoming peer connections (default 4662)")
+        ("help", "produce help message");
 
     po::variables_map vm;
     try {

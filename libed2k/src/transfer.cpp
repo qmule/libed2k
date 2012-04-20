@@ -43,6 +43,32 @@ void transfer::start()
 
 }
 
+void transfer::abort()
+{
+    if (m_abort) return;
+    m_abort = true;
+
+    // disconnect all peers and close all
+    // files belonging to the torrents
+    //disconnect_all(errors::transfer_aborted);
+
+    // post a message to the main thread to destruct
+    // the torrent object from there
+    if (m_owning_storage.get())
+    {
+        m_storage->abort_disk_io();
+        m_storage->async_release_files(
+            boost::bind(&transfer::on_transfer_aborted, shared_from_this(), _1, _2));
+    }
+
+    //dequeue_transfer_check();
+
+    //if (m_state == transfer_status::checking_files)
+    //    set_state(transfer_status::queued_for_checking);
+
+    m_owning_storage = 0;
+}
+
 bool transfer::connect_to_peer(peer* peerinfo)
 {
     tcp::endpoint ip(peerinfo->ip());
@@ -176,6 +202,12 @@ bool transfer::is_paused() const
 void transfer::on_files_released(int ret, disk_io_job const& j)
 {
     // do nothing
+}
+
+void transfer::on_transfer_aborted(int ret, disk_io_job const& j)
+{
+    // the transfer should be completely shut down now, and the
+    // destructor has to be called from the main thread
 }
 
 void transfer::init()

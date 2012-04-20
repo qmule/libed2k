@@ -60,6 +60,7 @@ namespace libed2k {
         {
             init(id, listen_interface, settings);
         }
+        ~session();
 
         // all transfer_handles must be destructed before the session is destructed!
         transfer_handle add_transfer(const add_transfer_params& params);

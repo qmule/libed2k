@@ -147,6 +147,29 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_thread.reset(new boost::thread(boost::ref(*this)));
 }
 
+session_impl::~session_impl()
+{
+    boost::mutex::scoped_lock l(m_mutex);
+
+    DBG("*** shutting down session ***");
+    abort();
+
+    l.unlock();
+    // we need to wait for the disk-io thread to
+    // die first, to make sure it won't post any
+    // more messages to the io_service containing references
+    // to disk_io_pool inside the disk_io_thread. Once
+    // the main thread has handled all the outstanding requests
+    // we know it's safe to destruct the disk thread.
+    DBG("waiting for disk io thread");
+    m_disk_thread.join();
+
+    DBG("waiting for main thread");
+    m_thread->join();
+
+    DBG("shutdown complete!");
+}
+
 void session_impl::operator()()
 {
     // main session thread
@@ -166,13 +189,10 @@ void session_impl::operator()()
     {
         error_code ec;
         m_io_service.run(ec);
-        TORRENT_ASSERT(m_abort == true);
         if (ec)
         {
             std::cerr << ec.message() << "\n";
             std::string err = ec.message();
-
-            TORRENT_ASSERT(false);
         }
         m_io_service.reset();
 
@@ -198,7 +218,6 @@ void session_impl::open_listen_port()
         m_listen_sockets.push_back(s);
         async_accept(s.sock);
     }
-
 }
 
 void session_impl::async_accept(boost::shared_ptr<ip::tcp::acceptor> const& listener)
@@ -283,7 +302,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
         return;
     }
 
-    // do not check torrents and transfers when edonkey server come to us
+    // do not check transfers when edonkey server come to us
     // compare only by address
     if (m_server_connection->m_target.address() != endp.address())
     {
@@ -291,13 +310,13 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
         // if we don't reject the connection
         if (m_transfers.empty())
         {
-            DBG(" There are no ttansfers, disconnect");
+            DBG(" There are no transfers, disconnect");
             return;
         }
 
         if (!has_active_transfer())
         {
-            DBG(" There are no _active_ torrents, disconnect");
+            DBG("There are no active transfers, disconnect");
             return;
         }
     }
@@ -392,6 +411,59 @@ unsigned short session_impl::listen_port() const
     return m_listen_sockets.front().external_port;
 }
 
+void session_impl::abort()
+{
+    if (m_abort) return;
+    DBG("*** ABORT CALLED ***");
+
+    // abort the main thread
+    m_abort = true;
+    error_code ec;
+    m_timer.cancel(ec);
+
+    // close the listen sockets
+    for (std::list<listen_socket_t>::iterator i = m_listen_sockets.begin(),
+             end(m_listen_sockets.end()); i != end; ++i)
+    {
+        i->sock->close(ec);
+    }
+
+    DBG("aborting all transfers (" << m_transfers.size() << ")");
+    // abort all transfers
+    for (transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
+    {
+        i->second->abort();
+    }
+
+    DBG("aborting all server requests");
+    //m_server_connection.abort_all_requests();
+    m_server_connection->close();
+
+    for (transfer_map::iterator i = m_transfers.begin();
+         i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        t.abort();
+    }
+
+    DBG("aborting all connections (" << m_connections.size() << ")");
+
+    // closing all the connections needs to be done from a callback,
+    // when the session mutex is not held
+    //m_io_service.post(boost::bind(&connection_queue::close, &m_half_open));
+
+    DBG("connection queue: " << m_half_open.size());
+
+    // abort all connections
+    while (!m_connections.empty())
+    {
+        (*m_connections.begin())->disconnect(errors::stopping_transfer);
+    }
+
+    DBG("connection queue: " << m_half_open.size());
+}
+
 void session_impl::on_disk_queue()
 {
 }
@@ -426,9 +498,8 @@ void session_impl::on_tick(error_code const& e)
     // TODO: should it be implemented?
 
     // --------------------------------------------------------------
-    // second_tick every torrent
+    // second_tick every transfer
     // --------------------------------------------------------------
-
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
