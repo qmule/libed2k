@@ -15,6 +15,10 @@ namespace libed2k {
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
     }
 
+    inline ptime time_now()
+    {
+        return time::microsec_clock::universal_time();
+    }
 
 }
 

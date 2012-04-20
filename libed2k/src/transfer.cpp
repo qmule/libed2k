@@ -12,7 +12,7 @@ using namespace libed2k;
 namespace ip = boost::asio::ip;
 
 
-transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface, 
+transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
     m_ses(ses),
     m_paused(false),
@@ -186,6 +186,25 @@ void transfer::init()
 
     // TODO: checking resume data
 
+}
+
+void transfer::second_tick()
+{
+    for (std::set<peer_connection*>::iterator i = m_connections.begin();
+         i != m_connections.end(); ++i)
+    {
+        peer_connection* p = *i;
+
+        try
+        {
+            p->second_tick();
+        }
+        catch (std::exception& e)
+        {
+            LDBG_ << "**ERROR**: " << e.what();
+            p->disconnect(errors::no_error, 1);
+        }
+    }
 }
 
 void transfer::async_verify_piece(int piece_index, boost::function<void(int)> const&)

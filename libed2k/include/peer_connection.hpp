@@ -59,6 +59,9 @@ namespace libed2k
 
         peer* peer_info() const { return m_peer_info; }
 
+        // is called once every second by the main loop
+        void second_tick();
+
         // DRAFT
         enum message_type
         {
@@ -114,6 +117,8 @@ namespace libed2k
         void incoming_piece(peer_request const& p, disk_buffer_holder& data);
         void incoming_piece_fragment(int bytes);
         void start_receive_piece(peer_request const& r);
+
+        void send_block_requests();
 
         typedef void (peer_connection::*message_handler)(int received);
 

@@ -187,6 +187,9 @@ namespace libed2k
         }
     };
 
+    /**
+      * server text message
+     */
     struct server_message
     {
         boost::uint16_t m_nLength;

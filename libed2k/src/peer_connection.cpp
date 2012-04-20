@@ -29,8 +29,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
                                  const ip::tcp::endpoint& remote, peer* peerinfo):
     m_ses(ses),
     m_work(ses.m_io_service),
-    m_last_receive(libtorrent::time_now()),
-    m_last_sent(libtorrent::time_now()),
+    m_last_receive(time_now()),
+    m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
     m_socket(s),
     m_remote(remote),
@@ -52,8 +52,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
                                  peer* peerinfo):
     m_ses(ses),
     m_work(ses.m_io_service),
-    m_last_receive(libtorrent::time_now()),
-    m_last_sent(libtorrent::time_now()),
+    m_last_receive(time_now()),
+    m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
     m_socket(s),
     m_remote(remote),
@@ -73,6 +73,10 @@ peer_connection::~peer_connection()
     // TODO: implement
 }
 
+void peer_connection::second_tick()
+{
+    LDBG_ << "peer connection second tick";
+}
 
 void peer_connection::on_send_data(error_code const& error,
                                    std::size_t bytes_transferred)
@@ -115,7 +119,7 @@ void peer_connection::on_receive_data_nolock(
             return;
         }
 
-        m_last_receive = libtorrent::time_now();
+        m_last_receive = time_now();
         m_recv_pos += bytes_transferred;
 
         on_receive(error, bytes_transferred);

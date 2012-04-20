@@ -12,7 +12,9 @@
 #include "transfer.hpp"
 #include "peer_connection.hpp"
 #include "server_connection.hpp"
+#include "constants.hpp"
 #include "log.hpp"
+#include "util.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -28,15 +30,17 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
 	m_host_resolver(m_io_service),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool), // TODO - check it!
+                  m_filepool, BLOCK_SIZE), // TODO - check it!
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)), // TODO - check it
     m_settings(settings),
     m_abort(false),
     m_paused(false),
-    m_max_connections(200)
+    m_max_connections(200),
+    m_last_second_tick(time_now()),
+    m_timer(m_io_service)
 {
-    LDBG_ << "*** create ed2k session ***";
+    DBG("*** create ed2k session ***");
 
     error_code ec;
     m_listen_interface = tcp::endpoint(
@@ -122,7 +126,7 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
     {
-        LDBG_ << "max number of open files: " << rl.rlim_cur;
+        DBG("max number of open files: " << rl.rlim_cur);
 
         // deduct some margin for epoll/kqueue, log files,
         // futexes, shared objects etc.
@@ -133,8 +137,8 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
         // 20% goes towards regular files
         m_filepool.resize((std::min)(m_filepool.size_limit(), int(rl.rlim_cur * 2 / 10)));
 
-        LDBG_ << "max connections: " << m_max_connections;
-        LDBG_ << "max files: " << m_filepool.size_limit();
+        DBG("max connections: " << m_max_connections);
+        DBG("max files: " << m_filepool.size_limit());
     }
 #endif // TORRENT_BSD || TORRENT_LINUX
 
@@ -224,7 +228,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
         std::string msg =
             "error accepting connection on '" +
             libtorrent::print_endpoint(ep) + "' " + e.message();
-        LDBG_ << msg.c_str() << "\n";
+        DBG(msg);
 
 #ifdef TORRENT_WINDOWS
         // Windows sometimes generates this error. It seems to be
@@ -261,37 +265,42 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
 
     if (ec)
     {
-        LERR_ << endp << " <== INCOMING CONNECTION FAILED, could "
-            "not retrieve remote endpoint " << ec.message().c_str();
+        ERR(endp << " <== INCOMING CONNECTION FAILED, could not retrieve remote endpoint " << ec.message());
         return;
     }
 
-    LDBG_ << "<== INCOMING CONNECTION " << endp;
+    DBG("<== INCOMING CONNECTION " << endp);
 
     // don't allow more connections than the max setting
     if (num_connections() >= max_connections())
     {
         //TODO: fire alert here
 
-        LDBG_ << "number of connections limit exceeded (conns: "
+        DBG("number of connections limit exceeded (conns: "
               << num_connections() << ", limit: " << max_connections()
-              << "), connection rejected";
+              << "), connection rejected");
 
         return;
     }
 
-    // check if we have any active transfers
-    // if we don't reject the connection
-    if (m_transfers.empty())
+    // do not check torrents and transfers when edonkey server come to us
+    // compare only by address
+    if (m_server_connection->m_target.address() != endp.address())
     {
-        LDBG_ << " There are no ttansfers, disconnect\n";
-        return;
-    }
 
-    if (!has_active_transfer())
-    {
-        LDBG_ << " There are no _active_ torrents, disconnect\n";
-        return;
+        // check if we have any active transfers
+        // if we don't reject the connection
+        if (m_transfers.empty())
+        {
+            DBG(" There are no ttansfers, disconnect");
+            return;
+        }
+
+        if (!has_active_transfer())
+        {
+            DBG(" There are no _active_ torrents, disconnect");
+            return;
+        }
     }
 
     setup_socket_buffers(s->socket());
@@ -399,16 +408,36 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        LERR_ << "*** TICK TIMER FAILED " << e.message().c_str() << "\n";
+        LERR_ << "*** TICK TIMER FAILED " << e.message();
         ::abort();
         return;
     }
+
+    error_code ec;
+    ptime now = time_now();
+    m_timer.expires_from_now(time::milliseconds(100), ec);
+    m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
+
+    // only tick the following once per second
+    if (now - m_last_second_tick < time::seconds(1)) return;
+    m_last_second_tick = now;
+
+    DBG("session second tick");
 
     // --------------------------------------------------------------
     // check for incoming connections that might have timed out
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+    // --------------------------------------------------------------
+    // second_tick every torrent
+    // --------------------------------------------------------------
+
+    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        t.second_tick();
+    }
 
     // --------------------------------------------------------------
     // connect new peers
@@ -492,14 +521,14 @@ session_impl::listen_socket_t session_impl::setup_listener(
         char msg[200];
         snprintf(msg, 200, "cannot listen on interface \"%s\": %s",
                  libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
-        LERR_ << msg;
+        ERR(msg);
 
         return listen_socket_t();
     }
 
     // post alert succeeded
 
-    LDBG_ << "listening on: " << ep << " external port: " << s.external_port;
+    DBG("listening on: " << ep << " external port: " << s.external_port);
 
     return s;
 }

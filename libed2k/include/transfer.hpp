@@ -71,6 +71,8 @@ namespace libed2k {
         int queue_position() const { return m_sequence_number; }
         int block_size() const { return m_block_size; }
 
+        void second_tick();
+
         void async_verify_piece(int piece_index, boost::function<void(int)> const&);
 
         // this is called from the peer_connection

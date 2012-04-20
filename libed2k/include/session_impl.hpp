@@ -4,7 +4,6 @@
 #define __LIBED2K_SESSION_IMPL__
 
 #include <string>
-
 #include <libtorrent/alert_types.hpp>
 
 #include "fingerprint.hpp"
@@ -70,6 +69,7 @@ namespace libed2k {
             void free_disk_buffer(char* buf);
 
             session_settings const& settings() const { return m_settings; }
+            session_settings mutable_settings() { return m_settings; }
         private:
 
             void on_disk_queue();
@@ -172,6 +172,11 @@ namespace libed2k {
 
 			// the max number of connections, as set by the user
 			int m_max_connections;
+
+            ptime m_last_second_tick;
+
+            // the timer used to fire the tick
+            boost::asio::deadline_timer m_timer;
 
         private:
 
