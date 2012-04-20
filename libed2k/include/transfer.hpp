@@ -160,7 +160,7 @@ namespace libed2k {
         // are opened through
         tcp::endpoint m_net_interface;
 
-        fs::path m_save_path;
+        fs::path m_file_path;
 
         size_t m_filesize;
 

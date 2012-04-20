@@ -19,8 +19,7 @@ using namespace libed2k;
 using namespace libed2k::aux;
 namespace ip = boost::asio::ip;
 
-session_impl::session_impl(const fingerprint& id, int lst_port,
-                           const char* listen_interface,
+session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
@@ -45,7 +44,7 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
 
     error_code ec;
     m_listen_interface = tcp::endpoint(
-        libtorrent::address::from_string(listen_interface, ec), lst_port);
+        libtorrent::address::from_string(listen_interface, ec), settings.peer_port);
     TORRENT_ASSERT(!ec);
 
 #ifdef WIN32
@@ -319,10 +318,9 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
-transfer_handle session_impl::add_transfer(add_transfer_params const& params, error_code& ec)
+transfer_handle session_impl::add_transfer(add_transfer_params const& params,
+                                           error_code& ec)
 {
-    TORRENT_ASSERT(!params.save_path.empty());
-
     if (is_aborted())
     {
         ec = errors::session_is_closing;

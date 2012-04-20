@@ -15,6 +15,7 @@
 
 namespace libed2k {
 
+    class session;
     class peer_connection;
     class server_connection;
     class transfer;
@@ -25,6 +26,7 @@ namespace libed2k {
 
         struct session_impl: boost::noncopyable
         {
+            friend class libed2k::session;
             friend class libed2k::transfer;
             friend class libed2k::peer_connection;
             friend class libed2k::server_connection;
@@ -35,8 +37,7 @@ namespace libed2k {
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
-            session_impl(const fingerprint& id, int listen_port,
-                         const char* listen_interface,
+            session_impl(const fingerprint& id, const char* listen_interface,
                          const session_settings& settings);
 
             // main thread entry point
