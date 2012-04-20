@@ -50,13 +50,13 @@ void server_connection::on_name_lookup(
     error_code ec;
     m_socket.reset(new base_socket(m_ses.m_io_service));
 
-    m_socket->set_unhandled_callback(boost::bind(&server_connection::on_unhandled_packet, this, _1, _2));   //!< handler for unknown packets
-    m_socket->add_callback(OP_REJECT,       boost::bind(&server_connection::on_reject,          this, _1, _2));
-    m_socket->add_callback(OP_DISCONNECT,   boost::bind(&server_connection::on_disconnect,      this, _1, _2));
-    m_socket->add_callback(OP_SERVERMESSAGE,boost::bind(&server_connection::on_server_message,  this, _1, _2));
-    m_socket->add_callback(OP_SERVERLIST,   boost::bind(&server_connection::on_server_list,     this, _1, _2));
-    m_socket->add_callback(OP_USERS_LIST,   boost::bind(&server_connection::on_users_list,      this, _1, _2));
-    m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1, _2));
+    m_socket->set_unhandled_callback(boost::bind(&server_connection::on_unhandled_packet, this, _1));   //!< handler for unknown packets
+    m_socket->add_callback(OP_REJECT,       boost::bind(&server_connection::on_reject,          this, _1));
+    m_socket->add_callback(OP_DISCONNECT,   boost::bind(&server_connection::on_disconnect,      this, _1));
+    m_socket->add_callback(OP_SERVERMESSAGE,boost::bind(&server_connection::on_server_message,  this, _1));
+    m_socket->add_callback(OP_SERVERLIST,   boost::bind(&server_connection::on_server_list,     this, _1));
+    m_socket->add_callback(OP_USERS_LIST,   boost::bind(&server_connection::on_users_list,      this, _1));
+    m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1));
 
     m_socket->socket().async_connect(
         m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
@@ -98,7 +98,7 @@ void server_connection::on_connection_complete(error_code const& error)
             boost::asio::placeholders::bytes_transferred));
 }
 
-void server_connection::on_unhandled_packet(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_unhandled_packet(const error_code& error)
 {
     LDBG_ << "receive handle less  packet: " << packetToString(m_socket->context().m_type);
     m_socket->async_read(); // read next packet
@@ -115,7 +115,7 @@ void server_connection::on_write_completed(const error_code& error, size_t nSize
     }
 }
 
-void server_connection::on_reject(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_reject(const error_code& error)
 {
     LDBG_ << "receive " << packetToString(m_socket->context().m_type);
 
@@ -126,7 +126,7 @@ void server_connection::on_reject(base_socket::socket_buffer& sb, const error_co
     }
 }
 
-void server_connection::on_disconnect(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_disconnect(const error_code& error)
 {
     LDBG_ << "receive " << packetToString(m_socket->context().m_type);
 
@@ -137,18 +137,15 @@ void server_connection::on_disconnect(base_socket::socket_buffer& sb, const erro
     }
 }
 
-void server_connection::on_server_message(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_server_message(const error_code& error)
 {
     LDBG_ << "receive " << packetToString(m_socket->context().m_type);
 
     if (!error)
     {
         server_message smsg;
-        boost::iostreams::stream_buffer<base_socket::Device> buffer(&sb[0], m_socket->context().m_size - 1);
-        std::istream in_array_stream(&buffer);
-        archive::ed2k_iarchive ia(in_array_stream);
+        m_socket->decode_packet(smsg);
 
-        ia >> smsg;
         LDBG_ << smsg.m_strMessage;
         // TODO add alert there
         m_socket->async_read();
@@ -156,18 +153,36 @@ void server_connection::on_server_message(base_socket::socket_buffer& sb, const 
     }
 }
 
-void server_connection::on_server_list(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_server_list(const error_code& error)
 {
     LDBG_ << "receive " << packetToString(m_socket->context().m_type);
 
     if (!error)
     {
+        server_list slist;
+        m_socket->decode_packet(slist);
+        DBG("container size: " << slist.m_collection.size());
         m_socket->async_read();
         return;
     };
 }
 
-void server_connection::on_users_list(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_server_status(const error_code& error)
+{
+    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+
+    if (!error)
+    {
+        //server_list slist;
+        //m_socket->decode_packet(slist);
+
+        //DBG("container size: " << slist.m_collection.size());
+        m_socket->async_read();
+        return;
+    };
+}
+
+void server_connection::on_users_list(const error_code& error)
 {
     DBG("receive " << packetToString(m_socket->context().m_type));
 
@@ -178,14 +193,14 @@ void server_connection::on_users_list(base_socket::socket_buffer& sb, const erro
     }
 }
 
-void server_connection::on_id_change(base_socket::socket_buffer& sb, const error_code& error)
+void server_connection::on_id_change(const error_code& error)
 {
     DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
         // simple read new id
-        m_nClientId = *((boost::uint32_t*)&sb[0]);
+        m_socket->decode_packet(m_nClientId);
         DBG("Client ID is: " << m_nClientId);
         m_socket->async_read();
         return;

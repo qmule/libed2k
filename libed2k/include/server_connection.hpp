@@ -31,17 +31,18 @@ namespace libed2k
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
         void on_connection_complete(error_code const& e);                                   //!< connect to host name and go to start
-        void on_unhandled_packet(base_socket::socket_buffer& sb, const error_code& error);
+        void on_unhandled_packet(const error_code& error);
 
         void on_write_completed(const error_code& error, size_t nSize);                     //!< after write operation
 
         //!< server message handlers
-        void on_reject(base_socket::socket_buffer& sb, const error_code& error);            //!< server reject last command
-        void on_disconnect(base_socket::socket_buffer& sb, const error_code& error);        //!< disconnect signal received
-        void on_server_message(base_socket::socket_buffer& sb, const error_code& error);    //!< server message received
-        void on_server_list(base_socket::socket_buffer& sb, const error_code& error);       //!< server list received
-        void on_users_list(base_socket::socket_buffer& sb, const error_code& error);        //!< users list from server
-        void on_id_change(base_socket::socket_buffer& sb, const error_code& error);         //!< our id changed message
+        void on_reject(const error_code& error);            //!< server reject last command
+        void on_disconnect(const error_code& error);        //!< disconnect signal received
+        void on_server_message(const error_code& error);    //!< server message received
+        void on_server_list(const error_code& error);       //!< server list received
+        void on_server_status(const error_code& error);     //!< server status
+        void on_users_list(const error_code& error);        //!< users list from server
+        void on_id_change(const error_code& error);         //!< our id changed message
 
         boost::uint32_t                 m_nClientId;
         tcp::resolver                   m_name_lookup;

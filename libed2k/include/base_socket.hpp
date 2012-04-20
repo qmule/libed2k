@@ -34,9 +34,8 @@ public:
 	  * @param read data buffer
 	  * @param error code
 	 */
-	typedef boost::function<void (socket_buffer&, const boost::system::error_code&)> message_handler;
-	typedef std::map<proto_type, message_handler> callback_map;                     //!< call backs storage type
-	typedef boost::function<void (const boost::system::error_code&)> event_handler; //!< common socket event handler
+	typedef boost::function<void (const boost::system::error_code&)> socket_handler;
+	typedef std::map<proto_type, socket_handler> callback_map;                     //!< call backs storage type
 
 	base_socket(boost::asio::io_service& io) :
 	    m_socket(io),
@@ -129,7 +128,7 @@ public:
 	/**
 	  * add ordinary callback
 	 */
-	void add_callback(proto_type ptype, message_handler handler)
+	void add_callback(proto_type ptype, socket_handler handler)
 	{
 	    m_callbacks.insert(make_pair(ptype, handler));
 	}
@@ -137,20 +136,42 @@ public:
 	/**
 	  * add callback for unhandled operation
 	 */
-	void set_unhandled_callback(message_handler handler)
+	void set_unhandled_callback(socket_handler handler)
 	{
 	    m_unhandled_handler = handler;
 	}
 
-	void set_error_callback(event_handler handler)
+	void set_error_callback(socket_handler handler)
 	{
 	    m_handle_error = handler;
 	}
 
+	/**
+	  * this method will call from external handlers for extract buffer into structure
+	  * on error return false
+	 */
+	template<typename T>
+	bool decode_packet(T& t)
+	{
+	    try
+        {
+            boost::iostreams::stream_buffer<base_socket::Device> buffer(&m_in_container[0], m_in_header.m_size - 1);
+            std::istream in_array_stream(&buffer);
+            archive::ed2k_iarchive ia(in_array_stream);
+            ia >> t;
+        }
+        catch(libed2k_exception& e)
+        {
+            return (false);
+        }
+
+        return (true);
+	}
+
 private:
 	boost::asio::ip::tcp::socket	m_socket;       //!< operation socket
-	message_handler                 m_unhandled_handler;
-	event_handler                   m_handle_error; //!< on error
+	socket_handler                  m_unhandled_handler;
+	socket_handler                  m_handle_error; //!< on error
 	std::ostringstream 				out_stream;     //!< output buffer
 	libed2k_header					m_out_header;   //!< output header
 	libed2k_header					m_in_header;    //!< incoming message header
@@ -201,14 +222,14 @@ private:
                 std::string strData = "ddfd";
 	            LDBG_ << "call normal handler";
                 LDBG_ << strData;
-	            itr->second(m_in_container, error);
+	            itr->second(error);
 	        }
 	        else
 	        {
 	            if (m_unhandled_handler)
 	            {
 	                LDBG_ << "call unhandled ";
-	                m_unhandled_handler(m_in_container, error);
+	                m_unhandled_handler(error);
 	            }
 	            else
 	            {

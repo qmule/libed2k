@@ -314,14 +314,6 @@ namespace libed2k
     };
 
     /**
-      * id new value structure
-     */
-    struct id_change
-    {
-        boost::uint32_t m_nId;
-    };
-
-    /**
       * structure for get packet opcode from structure type
      */
     template<typename T>
@@ -358,7 +350,7 @@ namespace libed2k
         //  OP_CHAT_USER_JOIN           = 0x3B, // (deprecated, not supported by server any longer)
         //  OP_CHAT_USER_LEAVE          = 0x3C, // (deprecated, not supported by server any longer)
         //  OP_CHAT_USER                = 0x3D, // (deprecated, not supported by server any longer)
-    template<> struct packet_type<id_change>            { static const proto_type value = OP_IDCHANGE;    };
+    //template<> struct packet_type<id_change>            { static const proto_type value = OP_IDCHANGE;    };
     template<> struct packet_type<server_info_entry>    { static const proto_type value = OP_SERVERIDENT; };
             //OP_SERVERIDENT              = 0x41, // <HASH 16><IP 4><PORT 2>{1 TAG_SET}
             // do not use
