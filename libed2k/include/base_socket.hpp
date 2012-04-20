@@ -15,9 +15,6 @@
 #include "archive.hpp"
 #include "packet_struct.hpp"
 
-using boost::asio::ip::tcp;
-using boost::asio::buffer;
-
 namespace libed2k{
 
 /**

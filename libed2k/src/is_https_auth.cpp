@@ -4,7 +4,7 @@
 #include <boost/archive/iterators/ostream_iterator.hpp>
 #include "is_https_auth.hpp"
 
-using namespace libed2k;
+namespace libed2k{
 
 is_https_auth::is_https_auth(boost::asio::io_service& service, auth_callback on_auth /* = NULL*/) :
 		m_service(service),
@@ -200,3 +200,4 @@ void is_https_auth::handle_error(const boost::system::error_code& error)
     m_ssec.lowest_layer().close();
 }
 
+}

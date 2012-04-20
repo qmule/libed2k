@@ -2,11 +2,9 @@
 #define __LIBED2K_PEER__
 
 #include <boost/asio.hpp>
+#include "types.hpp"
 
 namespace libed2k {
-
-    typedef boost::asio::ip::tcp tcp;
-    typedef boost::asio::ip::address address;
 
     class peer_connection;
 

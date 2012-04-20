@@ -5,7 +5,7 @@
 #include "session_impl.hpp"
 #include "log.hpp"
 
-using namespace libed2k;
+namespace libed2k{
 
 server_connection::server_connection(const aux::session_impl& ses):
     m_nClientId(0),
@@ -190,4 +190,6 @@ void server_connection::on_id_change(base_socket::socket_buffer& sb, const error
         m_socket->async_read();
         return;
     }
+}
+
 }
