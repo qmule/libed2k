@@ -3,12 +3,16 @@
 #ifndef __LIBED2K_TRANSFER__
 #define __LIBED2K_TRANSFER__
 
+#include <set>
 #include <boost/asio.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/function.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include "policy.hpp"
+#include "types.hpp"
 
 namespace libtorrent {
     class torrent_info;
@@ -36,6 +40,14 @@ namespace libed2k {
         void start();
 
         bool connect_to_peer(peer* peerinfo);
+
+        bool want_more_peers() const;
+        bool try_connect_peer();
+        void give_connect_points(int points);
+
+        // the number of peers that belong to this torrent
+        int num_peers() const { return (int)m_connections.size(); }
+        int num_seeds() const;
 
         // piece_passed is called when a piece passes the hash check
         // this will tell all peers that we just got his piece
@@ -134,6 +146,9 @@ namespace libed2k {
         aux::session_impl& m_ses;
 
         boost::scoped_ptr<piece_picker> m_picker;
+
+        // is set to true when the transfer has been aborted.
+        bool m_abort;
 
         bool m_paused;
         bool m_sequential_download;

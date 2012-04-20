@@ -1,17 +1,24 @@
 #ifndef __LIBED2K_POLICY__
 #define __LIBED2K_POLICY__
 
+#include <deque>
+
 namespace libed2k {
 
     class peer;
     class peer_connection;
+    class transfer;
 
     class policy
     {
     public:
         void set_connection(peer* p, peer_connection* c);
-
+        bool connect_one_peer();
     private:
+        typedef std::deque<peer*> peers_t;
+
+        peers_t m_peers;
+        transfer* m_transfer;
 
         bool is_connect_candidate(peer const& p, bool finished) const;
 

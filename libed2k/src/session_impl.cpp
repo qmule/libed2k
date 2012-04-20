@@ -14,7 +14,6 @@
 #include "server_connection.hpp"
 #include "constants.hpp"
 #include "log.hpp"
-#include "util.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -33,6 +32,8 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
                   m_filepool, BLOCK_SIZE), // TODO - check it!
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)), // TODO - check it
+    m_transfers(),
+    m_next_connect_transfer(m_transfers),
     m_settings(settings),
     m_abort(false),
     m_paused(false),
@@ -288,13 +289,13 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
     // if we don't reject the connection
     if (m_transfers.empty())
     {
-        LDBG_ << " There are no ttansfers, disconnect\n";
+        LDBG_ << " There are no tansfers, disconnect";
         return;
     }
 
     if (!has_active_transfer())
     {
-        LDBG_ << " There are no _active_ torrents, disconnect\n";
+        LDBG_ << " There are no active transfers, disconnect";
         return;
     }
 
@@ -417,8 +418,6 @@ void session_impl::on_tick(error_code const& e)
     if (now - m_last_second_tick < time::seconds(1)) return;
     m_last_second_tick = now;
 
-    LDBG_ << "session second tick";
-
     // --------------------------------------------------------------
     // check for incoming connections that might have timed out
     // --------------------------------------------------------------
@@ -434,19 +433,70 @@ void session_impl::on_tick(error_code const& e)
         t.second_tick();
     }
 
-    // --------------------------------------------------------------
-    // connect new peers
-    // --------------------------------------------------------------
-    // TODO: implement
-
-    // let transfers connect to peers if they want to
-    // if there are any transfers and any free slots
+    connect_new_peers();
 
     // --------------------------------------------------------------
     // disconnect peers when we have too many
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+}
+
+void session_impl::connect_new_peers()
+{
+    // TODO:
+    // this loop will "hand out" max(connection_speed, half_open.free_slots())
+    // to the transfers, in a round robin fashion, so that every transfer is
+    // equally likely to connect to a peer
+
+    int free_slots = m_half_open.free_slots();
+    if (!m_transfers.empty() && free_slots > -m_half_open.limit() &&
+        num_connections() < m_max_connections && !m_abort)
+    {
+        // this is the maximum number of connections we will
+        // attempt this tick
+        int max_connections_per_second = 10;
+        int steps_since_last_connect = 0;
+        int num_transfers = int(m_transfers.size());
+        for (;;)
+        {
+            transfer& t = *m_next_connect_transfer->second;
+            if (t.want_more_peers())
+            {
+                try
+                {
+                    if (t.try_connect_peer())
+                    {
+                        --max_connections_per_second;
+                        --free_slots;
+                        steps_since_last_connect = 0;
+                    }
+                }
+                catch (std::bad_alloc&)
+                {
+                    // we ran out of memory trying to connect to a peer
+                    // lower the global limit to the number of peers
+                    // we already have
+                    m_max_connections = num_connections();
+                    if (m_max_connections < 2) m_max_connections = 2;
+                }
+            }
+
+            ++m_next_connect_transfer;
+            ++steps_since_last_connect;
+
+            // if we have gone two whole loops without
+            // handing out a single connection, break
+            if (steps_since_last_connect > num_transfers * 2) break;
+            // if there are no more free connection slots, abort
+            if (free_slots <= -m_half_open.limit()) break;
+            // if we should not make any more connections
+            // attempts this tick, abort
+            if (max_connections_per_second == 0) break;
+            // maintain the global limit on number of connections
+            if (num_connections() >= m_max_connections) break;
+        }
+    }
 }
 
 bool session_impl::has_active_transfer() const

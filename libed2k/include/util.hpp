@@ -20,6 +20,29 @@ namespace libed2k {
         return time::microsec_clock::universal_time();
     }
 
+    template <typename C>
+    class cyclic_iterator {
+        typedef typename C::iterator I;
+        I m_it;
+        C& m_cont;
+    public:
+        cyclic_iterator(C& c):
+            m_it(c.begin()), m_cont(c)
+        {
+        }
+
+        typename C::value_type* operator->()
+        {
+            return m_it.operator->();
+        }
+
+        cyclic_iterator& operator++()
+        {
+            ++m_it;
+            if (m_it == m_cont.end()) m_it = m_cont.begin();
+            return *this;
+        }
+    };
 }
 
 #endif

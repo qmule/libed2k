@@ -11,6 +11,7 @@
 #include "transfer_handle.hpp"
 #include "session_settings.hpp"
 #include "types.hpp"
+#include "util.hpp"
 
 namespace libed2k {
 
@@ -77,6 +78,10 @@ namespace libed2k {
 
             bool has_active_transfer() const;
 
+            // let transfers connect to peers if they want to
+            // if there are any trasfers and any free slots
+            void connect_new_peers();
+
             // must be locked to access the data
             // in this struct
             mutable boost::mutex m_mutex;
@@ -134,6 +139,12 @@ namespace libed2k {
             boost::intrusive_ptr<server_connection> m_server_connection;
 
             transfer_map m_transfers;
+
+            // the index of the torrent that will be offered to
+            // connect to a peer next time on_tick is called.
+            // This implements a round robin.
+            cyclic_iterator<transfer_map> m_next_connect_transfer;
+
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
 
             // this maps sockets to their peer_connection
@@ -176,8 +187,6 @@ namespace libed2k {
 
             // the timer used to fire the tick
             boost::asio::deadline_timer m_timer;
-
-        private:
 
             // the main working thread
             // !!! should be last in the member list

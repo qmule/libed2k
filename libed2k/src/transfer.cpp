@@ -15,6 +15,7 @@ namespace ip = boost::asio::ip;
 transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
     m_ses(ses),
+    m_abort(false),
     m_paused(false),
     m_sequential_download(false),
     m_sequence_number(seq),
@@ -76,6 +77,16 @@ bool transfer::connect_to_peer(peer* peerinfo)
     }
 
     return peerinfo->connection;
+}
+
+bool transfer::want_more_peers() const
+{
+    return !is_paused() && !m_abort;
+}
+
+bool transfer::try_connect_peer()
+{
+    return m_policy.connect_one_peer();
 }
 
 void transfer::piece_passed(int index)
