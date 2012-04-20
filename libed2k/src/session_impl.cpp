@@ -478,7 +478,7 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        LERR_ << "*** TICK TIMER FAILED " << e.message();
+        ERR("*** TICK TIMER FAILED " << e.message());
         ::abort();
         return;
     }
@@ -611,8 +611,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //LERR_ << "failed to open socket: " << libtorrent::print_endpoint(ep)
-        //      << ": " << ec.message().c_str();
+        //ERR("failed to open socket: " << libtorrent::print_endpoint(ep)
+        //    << ": " << ec.message().c_str());
     }
 
     s.sock->bind(ep, ec);
@@ -624,7 +624,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
         char msg[200];
         snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
                  libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
-        LERR_ << msg;
+        ERR(msg);
 
         return listen_socket_t();
     }

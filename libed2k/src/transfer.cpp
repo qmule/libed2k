@@ -244,7 +244,7 @@ void transfer::second_tick()
         }
         catch (std::exception& e)
         {
-            LDBG_ << "**ERROR**: " << e.what();
+            DBG("**ERROR**: " << e.what());
             p->disconnect(errors::no_error, 1);
         }
     }

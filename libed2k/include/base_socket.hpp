@@ -61,12 +61,12 @@ public:
 		archive::ed2k_oarchive oa(out_stream);
 		oa << t;
 
-		LDBG_ << "stream size: " << out_stream.str().size();
+		DBG("stream size: " << out_stream.str().size());
 		// generate header
 		m_out_header.m_protocol = OP_EDONKEYPROT;
 		m_out_header.m_size     = out_stream.str().size() + 1;  // packet size without protocol type and packet body size field
 		m_out_header.m_type     = packet_type<T>::value;
-		LDBG_ << "packet type: " <<  packetToString(packet_type<T>::value);
+		DBG("packet type: " <<  packetToString(packet_type<T>::value));
 
 		// Write the serialized data to the socket. We use "gather-write" to send
 		// both the header and the data in a single write operation.
@@ -220,20 +220,20 @@ private:
 	        if (itr != m_callbacks.end())
 	        {
                 std::string strData = "ddfd";
-	            LDBG_ << "call normal handler";
-                LDBG_ << strData;
-	            itr->second(error);
+                DBG("call normal handler");
+                DBG(strData);
+                itr->second(error);
 	        }
 	        else
 	        {
 	            if (m_unhandled_handler)
 	            {
-	                LDBG_ << "call unhandled ";
+	                DBG("call unhandled");
 	                m_unhandled_handler(error);
 	            }
 	            else
 	            {
-	                LDBG_ << "unhandled handler is null";
+	                DBG("unhandled handler is null");
 	            }
 	        }
 

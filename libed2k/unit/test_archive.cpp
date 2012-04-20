@@ -129,7 +129,7 @@ private:
 
 BOOST_AUTO_TEST_CASE(test_memory_archive)
 {
-    LAPP_ << "test_memory_archive";
+    APP("test_memory_archive");
     // it is test source array
     const boost::uint16_t m_source_archive[10] = {0x0102, 0x0304, 0x0506, 0x0708, 0x090A, 0x0B0C, 0x0D0E, 0x3040, 0x3020, 0xFFDD};
     const char* dataPtr = (const char*)&m_source_archive[0];

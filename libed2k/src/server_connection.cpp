@@ -38,14 +38,14 @@ void server_connection::on_name_lookup(
     if (error == boost::asio::error::operation_aborted) return;
     if (error || i == tcp::resolver::iterator())
     {
-        LERR_ << "server name: " << settings.server_hostname
-              << ", resolve failed: " << error;
+        ERR("server name: " << settings.server_hostname
+            << ", resolve failed: " << error);
         return;
     }
 
     m_target = *i;
 
-    LDBG_ << "server name resolved: " << libtorrent::print_endpoint(m_target);
+    DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
 
     error_code ec;
     m_socket.reset(new base_socket(m_ses.m_io_service));
@@ -66,8 +66,8 @@ void server_connection::on_connection_complete(error_code const& error)
 {
     if (error)
     {
-        LERR_ << "connection to: " << libtorrent::print_endpoint(m_target)
-              << ", failed: " << error;
+        ERR("connection to: " << libtorrent::print_endpoint(m_target)
+            << ", failed: " << error);
         return;
     }
 
@@ -100,13 +100,13 @@ void server_connection::on_connection_complete(error_code const& error)
 
 void server_connection::on_unhandled_packet(const error_code& error)
 {
-    LDBG_ << "receive handle less  packet: " << packetToString(m_socket->context().m_type);
+    DBG("receive handle less  packet: " << packetToString(m_socket->context().m_type));
     m_socket->async_read(); // read next packet
 }
 
 void server_connection::on_write_completed(const error_code& error, size_t nSize)
 {
-    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+    DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
@@ -117,7 +117,7 @@ void server_connection::on_write_completed(const error_code& error, size_t nSize
 
 void server_connection::on_reject(const error_code& error)
 {
-    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+    DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
@@ -128,7 +128,7 @@ void server_connection::on_reject(const error_code& error)
 
 void server_connection::on_disconnect(const error_code& error)
 {
-    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+    DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
@@ -139,14 +139,14 @@ void server_connection::on_disconnect(const error_code& error)
 
 void server_connection::on_server_message(const error_code& error)
 {
-    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+    DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
         server_message smsg;
         m_socket->decode_packet(smsg);
 
-        LDBG_ << smsg.m_strMessage;
+        DBG(smsg.m_strMessage);
         // TODO add alert there
         m_socket->async_read();
         return;
@@ -155,7 +155,7 @@ void server_connection::on_server_message(const error_code& error)
 
 void server_connection::on_server_list(const error_code& error)
 {
-    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+    DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
@@ -169,7 +169,7 @@ void server_connection::on_server_list(const error_code& error)
 
 void server_connection::on_server_status(const error_code& error)
 {
-    LDBG_ << "receive " << packetToString(m_socket->context().m_type);
+    DBG("receive " << packetToString(m_socket->context().m_type));
 
     if (!error)
     {
