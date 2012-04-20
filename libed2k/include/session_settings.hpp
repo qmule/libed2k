@@ -11,8 +11,14 @@ namespace libed2k {
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
             server_port(4661),
-            peer_port(4662)
-        {}
+            peer_port(4662),
+            client_name("http://www.aMule.org")
+        {
+            // prepare empty client hash
+            client_hash = md4_hash::m_emptyMD4Hash;
+            client_hash[5] = 14;
+            client_hash[14] = 111;
+        }
 
         // the number of seconds to wait for any activity on
         // the peer wire before closing the connectiong due
@@ -35,6 +41,9 @@ namespace libed2k {
         int server_port;
         // ed2k peer port for incoming peer connections
         int peer_port;
+
+        std::string client_name; // ed2k client name
+        md4_hash client_hash;    // ed2k client hash
     };
 
 }

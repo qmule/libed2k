@@ -9,11 +9,11 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/asio/ssl.hpp>
+#include "types.hpp"
 
 
 namespace libed2k{
 
-using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
 
 /**

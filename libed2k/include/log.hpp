@@ -3,18 +3,8 @@
 
 #include <boost/logging/format_fwd.hpp>
 
+
 // Step 1: Optimize : use a cache string, to make formatting the message faster
-/*
-namespace bl = boost::logging;
-typedef bl::tag::holder<
-    // string class
-    bl::optimize::cache_string_one_str<>,
-    // tags
-    bl::tag::thread_id, bl::tag::time> log_string_type;
-// note: if you don't use tags, you can simply use a string class:
-// typedef bl::optimize::cache_string_one_str<> log_string_type;
-BOOST_LOG_FORMAT_MSG( log_string_type )
-*/
 BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 
 #ifndef BOOST_LOG_COMPILE_FAST
@@ -33,6 +23,10 @@ BOOST_DECLARE_LOG(g_l, log_type)
 #define LDBG_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), debug ) << "[dbg] "
 #define LERR_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), error ) << "[ERR] "
 #define LAPP_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), info )
+
+#define DBG(x) LDBG_ << x
+#define APP(x) LAPP_ << x
+#define ERR(x) LERR_ << x
 
 void init_logs();
 

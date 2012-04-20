@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -190,6 +190,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\server_connection.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\session.cpp"
 				>
 			</File>
@@ -209,6 +213,10 @@
 			>
 			<File
 				RelativePath="..\include\archive.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\base_socket.hpp"
 				>
 			</File>
 			<File
@@ -260,7 +268,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\server_manager.hpp"
+				RelativePath="..\include\server_connection.hpp"
 				>
 			</File>
 			<File
