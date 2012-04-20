@@ -69,6 +69,7 @@ namespace libed2k {
             void free_disk_buffer(char* buf);
 
             session_settings const& settings() const { return m_settings; }
+            session_settings mutable_settings() { return m_settings; }
         private:
 
             void on_disk_queue();

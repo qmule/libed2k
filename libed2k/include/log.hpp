@@ -34,6 +34,10 @@ BOOST_DECLARE_LOG(g_l, log_type)
 #define LERR_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), error ) << "[ERR] "
 #define LAPP_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), info )
 
+#define DBG(x) LDBG_ << x
+#define APP(x) LAPP_ << x
+#define ERR(x) LERR_ << x
+
 void init_logs();
 
 #endif //__LOG__
