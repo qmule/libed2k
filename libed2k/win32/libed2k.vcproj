@@ -212,6 +212,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\base_socket.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\ctag.hpp"
 				>
 			</File>

@@ -207,7 +207,9 @@ private:
 
 	        if (itr != m_callbacks.end())
 	        {
+                std::string strData = "ddfd";
 	            LDBG_ << "call normal handler";
+                LDBG_ << strData;
 	            itr->second(m_in_container, error);
 	        }
 	        else
