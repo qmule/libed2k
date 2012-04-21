@@ -341,9 +341,10 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
-transfer_handle session_impl::add_transfer(add_transfer_params const& params,
-                                           error_code& ec)
+transfer_handle session_impl::add_transfer(
+    add_transfer_params const& params, error_code& ec)
 {
+    DBG("add transfer: " << params.file_path << ", hash: " << params.info_hash);
     if (is_aborted())
     {
         ec = errors::session_is_closing;
@@ -354,9 +355,12 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params,
     boost::shared_ptr<transfer> transfer_ptr = find_transfer(params.info_hash).lock();
     if (transfer_ptr)
     {
-        if (!params.duplicate_is_error)
+        if (!params.duplicate_is_error) {
+            DBG("return existing transfer with same hash");
             return transfer_handle(transfer_ptr);
+        }
 
+        DBG("return invalid transfer");
         ec = errors::duplicate_transfer;
         return transfer_handle();
     }
@@ -375,6 +379,28 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params,
     m_transfers.insert(std::make_pair(params.info_hash, transfer_ptr));
 
     return transfer_handle(transfer_ptr);
+}
+
+std::vector<transfer_handle> session_impl::add_transfer_dir(
+    const fs::path& dir, error_code& ec)
+{
+    DBG("using transfer dir: " << dir);
+    std::vector<transfer_handle> handles;
+
+    for (fs::recursive_directory_iterator i(dir), end; i != end; ++i)
+    {
+        if (fs::is_regular_file(i->path()))
+        {
+            add_transfer_params params;
+            params.info_hash = hash_md4(i->path().filename());
+            params.file_path = i->path();
+            params.seed_mode = true;
+            transfer_handle handle = add_transfer(params, ec);
+            if (ec) break;
+            handles.push_back(handle);
+        }
+    }
+    return handles;
 }
 
 std::pair<char*, int> session_impl::allocate_buffer(int size)
@@ -478,7 +504,7 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        LERR_ << "*** TICK TIMER FAILED " << e.message();
+        ERR("*** TICK TIMER FAILED " << e.message());
         ::abort();
         return;
     }
@@ -611,8 +637,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //LERR_ << "failed to open socket: " << libtorrent::print_endpoint(ep)
-        //      << ": " << ec.message().c_str();
+        //ERR("failed to open socket: " << libtorrent::print_endpoint(ep)
+        //    << ": " << ec.message().c_str());
     }
 
     s.sock->bind(ep, ec);
@@ -624,7 +650,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
         char msg[200];
         snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
                  libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
-        LERR_ << msg;
+        ERR(msg);
 
         return listen_socket_t();
     }

@@ -105,7 +105,7 @@ public:
 		m_out_header.m_protocol = OP_EDONKEYPROT;
 		m_out_header.m_size     = m_strOutput.size() + 1;  // packet size without protocol type and packet body size field
 		m_out_header.m_type     = packet_type<T>::value;
-		LDBG_ << "packet type: " <<  packetToString(packet_type<T>::value);
+		DBG("packet type: " <<  packetToString(packet_type<T>::value));
 
 		// Write the serialized data to the socket. We use "gather-write" to send
 		// both the header and the data in a single write operation.

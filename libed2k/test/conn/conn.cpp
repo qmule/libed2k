@@ -16,11 +16,11 @@ int main(int argc, char* argv[])
 
     if (argc < 3)
     {
-        LERR_ << "Set server host and port";
+        ERR("Set server host and port");
         return (1);
     }
 
-    LDBG_ << "Server: " << argv[1] << " port: " << argv[2];
+    DBG("Server: " << argv[1] << " port: " << argv[2]);
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;

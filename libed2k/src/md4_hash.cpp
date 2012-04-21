@@ -11,13 +11,8 @@ const md4_hash::md4hash_container md4_hash::m_emptyMD4Hash =
 
 std::ostream& operator<< (std::ostream& stream, const md4_hash& hash)
 {
-
-    for (size_t n = 0; n < sizeof(md4_hash::md4hash_container); n++)
-    {
-        stream << std::hex << hash.m_hash[n];
-    }
-
-    return (stream);
+    stream << hash.toString();
+    return stream;
 }
 
 }

@@ -278,9 +278,9 @@ public:
 
     virtual void dump() const
     {
-        LDBG_ << "base_tag::dump";
-        LDBG_ << "type: " << tagTypetoString(getType());
-        LDBG_ << "name: " << m_strName.c_str();
+        DBG("base_tag::dump");
+        DBG("type: " << tagTypetoString(getType()));
+        DBG("name: " << m_strName.c_str());
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -352,7 +352,7 @@ public:
     virtual void dump() const
     {
         base_tag::dump();
-        //LDBG_ << "value: " << m_value;
+        //DBG("value: " << m_value);
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -454,7 +454,7 @@ public:
     virtual void dump() const
     {
         base_tag::dump();
-        LDBG_ << "value: " << m_strValue.c_str();
+        DBG("value: " << m_strValue.c_str());
     }
 
     void save(archive::ed2k_oarchive& ar);
@@ -740,8 +740,8 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
 template<typename size_type>
 void tag_list<size_type>::dump() const
 {
-    LDBG_ << "size type is: " << sizeof(size_type);
-    LDBG_ << "count: " << m_container.size();
+    DBG("size type is: " << sizeof(size_type));
+    DBG("count: " << m_container.size());
     std::for_each(m_container.begin(), m_container.end(), boost::mem_fn(&base_tag::dump));
 }
 
