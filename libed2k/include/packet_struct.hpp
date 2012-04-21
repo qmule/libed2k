@@ -113,6 +113,11 @@ namespace libed2k
         proto_type  m_protocol;             //!< protocol identifier
         size_type   m_size;                 //!< packet body size
         proto_type  m_type;                 //!< packet opcode
+
+        /**
+          * create empty unknown packet
+         */
+        libed2k_header() : m_protocol(OP_EDONKEYPROT), m_size(1), m_type(0){}
     };
 #pragma pack(pop)
 
@@ -281,10 +286,17 @@ namespace libed2k
     /**
       * server status structure
      */
-    struct server_status_struct
+    struct server_status
     {
         boost::uint32_t m_nUserCount;
         boost::uint32_t m_nFilesCount;
+
+        template<typename Archive>
+        void serialize(Archive & ar)
+        {
+            ar & m_nUserCount;
+            ar & m_nFilesCount;
+        }
     };
 
     /**
@@ -339,7 +351,7 @@ namespace libed2k
     //        OP_GETSOURCES_OBFU          = 0x23,           // do not use
     template<> struct packet_type<server_list>          { static const proto_type value = OP_SERVERLIST;    };
     template<> struct packet_type<search_file_list>     { static const proto_type value = OP_SEARCHRESULT;  };
-    template<> struct packet_type<server_status_struct> { static const proto_type value = OP_SERVERSTATUS;  };
+    template<> struct packet_type<server_status>        { static const proto_type value = OP_SERVERSTATUS;  };
     template<> struct packet_type<callback_req_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };
 
 //            OP_CALLBACK_FAIL            = 0x36, // (null notverified)

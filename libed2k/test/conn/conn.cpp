@@ -23,10 +23,9 @@ int main(int argc, char* argv[])
     LDBG_ << "Server: " << argv[1] << " port: " << argv[2];
 
     libed2k::fingerprint print;
-    int listen_port = atoi(argv[2]);
     libed2k::session_settings settings;
     settings.server_hostname = argv[1];
-    libed2k::session ses(print, listen_port, "0.0.0.0", settings);
+    libed2k::session ses(print, "0.0.0.0", settings);
 
     std::cout << "---- libed2k_client started" << std::endl
               << "---- press q to exit" << std::endl;

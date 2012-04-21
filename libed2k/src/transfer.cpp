@@ -72,7 +72,7 @@ void transfer::abort()
 bool transfer::connect_to_peer(peer* peerinfo)
 {
     tcp::endpoint ip(peerinfo->ip());
-    boost::shared_ptr<base_socket> sock(new base_socket(m_ses.m_io_service));
+    boost::shared_ptr<base_socket> sock(new base_socket(m_ses.m_io_service, m_ses.settings().peer_timeout));
 
     m_ses.setup_socket_buffers(sock->socket());
 

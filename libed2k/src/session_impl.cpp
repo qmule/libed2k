@@ -222,7 +222,7 @@ void session_impl::open_listen_port()
 
 void session_impl::async_accept(boost::shared_ptr<ip::tcp::acceptor> const& listener)
 {
-    boost::shared_ptr<base_socket> c(new base_socket(m_io_service));
+    boost::shared_ptr<base_socket> c(new base_socket(m_io_service, m_settings.peer_timeout));
     listener->async_accept(c->socket(),
                            bind(&session_impl::on_accept_connection, this, c,
                                 boost::weak_ptr<tcp::acceptor>(listener), _1));
