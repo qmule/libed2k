@@ -285,6 +285,13 @@ namespace libed2k
     {
         boost::uint32_t m_nUserCount;
         boost::uint32_t m_nFilesCount;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nUserCount;
+            ar & m_nFilesCount;
+        }
     };
 
     /**

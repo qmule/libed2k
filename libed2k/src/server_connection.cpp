@@ -55,6 +55,7 @@ void server_connection::on_name_lookup(
     m_socket->add_callback(OP_DISCONNECT,   boost::bind(&server_connection::on_disconnect,      this, _1));
     m_socket->add_callback(OP_SERVERMESSAGE,boost::bind(&server_connection::on_server_message,  this, _1));
     m_socket->add_callback(OP_SERVERLIST,   boost::bind(&server_connection::on_server_list,     this, _1));
+    m_socket->add_callback(OP_SERVERSTATUS, boost::bind(&server_connection::on_server_status,   this, _1));
     m_socket->add_callback(OP_USERS_LIST,   boost::bind(&server_connection::on_users_list,      this, _1));
     m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1));
 
@@ -173,10 +174,10 @@ void server_connection::on_server_status(const error_code& error)
 
     if (!error)
     {
-        //server_list slist;
-        //m_socket->decode_packet(slist);
+        server_status_struct sss;
+        m_socket->decode_packet(sss);
 
-        //DBG("container size: " << slist.m_collection.size());
+        DBG("users count: " << sss.m_nUserCount << " files count: " << sss.m_nFilesCount);
         m_socket->async_read();
         return;
     };
