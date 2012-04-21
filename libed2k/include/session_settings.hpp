@@ -11,7 +11,7 @@ namespace libed2k {
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
             server_port(4661),
-            listen_port(4462),
+            peer_port(4662),
             client_name("http://www.aMule.org")
         {
             // prepare empty client hash
@@ -39,10 +39,11 @@ namespace libed2k {
         std::string server_hostname;
         // ed2k server port
         int server_port;
+        // ed2k peer port for incoming peer connections
+        int peer_port;
 
-        int listen_port;                // ed2k client listen port 4462 by default
-        std::string client_name;        // ed2k client name
-        md4_hash        client_hash;    // ed2k client hash
+        std::string client_name; // ed2k client name
+        md4_hash client_hash;    // ed2k client hash
     };
 
 }

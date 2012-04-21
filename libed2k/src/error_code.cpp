@@ -25,7 +25,8 @@ namespace libed2k
             // transport errors
             "session is closing",
             "duplicate transfer",
-            "transfer finished"
+            "transfer finished",
+            "stopping transfer"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

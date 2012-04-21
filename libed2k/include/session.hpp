@@ -10,6 +10,7 @@
 
 #include "fingerprint.hpp"
 #include "md4_hash.hpp"
+#include "transfer_handle.hpp"
 
 namespace libed2k {
 
@@ -39,7 +40,7 @@ namespace libed2k {
         {}
 
         md4_hash info_hash;
-        fs::path save_path;
+        fs::path file_path;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
@@ -54,14 +55,18 @@ namespace libed2k {
     class session
     {
     public:
-        session(const fingerprint& id, int listen_port, const char* listen_interface,
+        session(const fingerprint& id, const char* listen_interface,
                 const session_settings& settings)
         {
-            init(id, listen_port, listen_interface, settings);
+            init(id, listen_interface, settings);
         }
+        ~session();
+
+        // all transfer_handles must be destructed before the session is destructed!
+        transfer_handle add_transfer(const add_transfer_params& params);
 
     private:
-        void init(const fingerprint& id, int listen_port, const char* listen_interface,
+        void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);
 
 		// data shared between the main thread

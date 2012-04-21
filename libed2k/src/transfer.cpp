@@ -15,11 +15,12 @@ namespace ip = boost::asio::ip;
 transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
     m_ses(ses),
+    m_abort(false),
     m_paused(false),
     m_sequential_download(false),
     m_sequence_number(seq),
     m_net_interface(net_interface.address(), 0),
-    m_save_path(p.save_path),
+    m_file_path(p.file_path),
     m_storage_mode(p.storage_mode),
     m_seed_mode(p.seed_mode)
 {
@@ -40,6 +41,32 @@ void transfer::start()
 
     init();
 
+}
+
+void transfer::abort()
+{
+    if (m_abort) return;
+    m_abort = true;
+
+    // disconnect all peers and close all
+    // files belonging to the torrents
+    //disconnect_all(errors::transfer_aborted);
+
+    // post a message to the main thread to destruct
+    // the torrent object from there
+    if (m_owning_storage.get())
+    {
+        m_storage->abort_disk_io();
+        m_storage->async_release_files(
+            boost::bind(&transfer::on_transfer_aborted, shared_from_this(), _1, _2));
+    }
+
+    //dequeue_transfer_check();
+
+    //if (m_state == transfer_status::checking_files)
+    //    set_state(transfer_status::queued_for_checking);
+
+    m_owning_storage = 0;
 }
 
 bool transfer::connect_to_peer(peer* peerinfo)
@@ -76,6 +103,16 @@ bool transfer::connect_to_peer(peer* peerinfo)
     }
 
     return peerinfo->connection;
+}
+
+bool transfer::want_more_peers() const
+{
+    return !is_paused() && !m_abort;
+}
+
+bool transfer::try_connect_peer()
+{
+    return m_policy.connect_one_peer();
 }
 
 void transfer::piece_passed(int index)
@@ -167,13 +204,19 @@ void transfer::on_files_released(int ret, disk_io_job const& j)
     // do nothing
 }
 
+void transfer::on_transfer_aborted(int ret, disk_io_job const& j)
+{
+    // the transfer should be completely shut down now, and the
+    // destructor has to be called from the main thread
+}
+
 void transfer::init()
 {
     // the shared_from_this() will create an intentional
     // cycle of ownership, see the hpp file for description.
     m_owning_storage = new libtorrent::piece_manager(
-        shared_from_this(), m_info, m_save_path, m_ses.m_filepool,
-        m_ses.m_disk_thread, libtorrent::default_storage_constructor, 
+        shared_from_this(), m_info, m_file_path.parent_path(), m_ses.m_filepool,
+        m_ses.m_disk_thread, libtorrent::default_storage_constructor,
         static_cast<libtorrent::storage_mode_t>(m_storage_mode));
     m_storage = m_owning_storage.get();
 
@@ -201,7 +244,7 @@ void transfer::second_tick()
         }
         catch (std::exception& e)
         {
-            LDBG_ << "**ERROR**: " << e.what();
+            DBG("**ERROR**: " << e.what());
             p->disconnect(errors::no_error, 1);
         }
     }

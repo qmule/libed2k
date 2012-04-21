@@ -14,14 +14,12 @@
 #include "server_connection.hpp"
 #include "constants.hpp"
 #include "log.hpp"
-#include "util.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
 namespace ip = boost::asio::ip;
 
-session_impl::session_impl(const fingerprint& id, int lst_port,
-                           const char* listen_interface,
+session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings):
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
@@ -33,6 +31,8 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
                   m_filepool, BLOCK_SIZE), // TODO - check it!
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)), // TODO - check it
+    m_transfers(),
+    m_next_connect_transfer(m_transfers),
     m_settings(settings),
     m_abort(false),
     m_paused(false),
@@ -44,7 +44,7 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
 
     error_code ec;
     m_listen_interface = tcp::endpoint(
-        libtorrent::address::from_string(listen_interface, ec), lst_port);
+        libtorrent::address::from_string(listen_interface, ec), settings.peer_port);
     TORRENT_ASSERT(!ec);
 
 #ifdef WIN32
@@ -147,6 +147,29 @@ session_impl::session_impl(const fingerprint& id, int lst_port,
     m_thread.reset(new boost::thread(boost::ref(*this)));
 }
 
+session_impl::~session_impl()
+{
+    boost::mutex::scoped_lock l(m_mutex);
+
+    DBG("*** shutting down session ***");
+    abort();
+
+    l.unlock();
+    // we need to wait for the disk-io thread to
+    // die first, to make sure it won't post any
+    // more messages to the io_service containing references
+    // to disk_io_pool inside the disk_io_thread. Once
+    // the main thread has handled all the outstanding requests
+    // we know it's safe to destruct the disk thread.
+    DBG("waiting for disk io thread");
+    m_disk_thread.join();
+
+    DBG("waiting for main thread");
+    m_thread->join();
+
+    DBG("shutdown complete!");
+}
+
 void session_impl::operator()()
 {
     // main session thread
@@ -166,13 +189,10 @@ void session_impl::operator()()
     {
         error_code ec;
         m_io_service.run(ec);
-        TORRENT_ASSERT(m_abort == true);
         if (ec)
         {
             std::cerr << ec.message() << "\n";
             std::string err = ec.message();
-
-            TORRENT_ASSERT(false);
         }
         m_io_service.reset();
 
@@ -198,7 +218,6 @@ void session_impl::open_listen_port()
         m_listen_sockets.push_back(s);
         async_accept(s.sock);
     }
-
 }
 
 void session_impl::async_accept(boost::shared_ptr<ip::tcp::acceptor> const& listener)
@@ -283,22 +302,21 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
         return;
     }
 
-    // do not check torrents and transfers when edonkey server come to us
+    // do not check transfers when edonkey server come to us
     // compare only by address
     if (m_server_connection->m_target.address() != endp.address())
     {
-
         // check if we have any active transfers
         // if we don't reject the connection
         if (m_transfers.empty())
         {
-            DBG(" There are no ttansfers, disconnect");
+            DBG(" There are no transfers, disconnect");
             return;
         }
 
         if (!has_active_transfer())
         {
-            DBG(" There are no _active_ torrents, disconnect");
+            DBG("There are no active transfers, disconnect");
             return;
         }
     }
@@ -323,10 +341,9 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
-transfer_handle session_impl::add_transfer(add_transfer_params const& params, error_code& ec)
+transfer_handle session_impl::add_transfer(add_transfer_params const& params,
+                                           error_code& ec)
 {
-    TORRENT_ASSERT(!params.save_path.empty());
-
     if (is_aborted())
     {
         ec = errors::session_is_closing;
@@ -394,6 +411,59 @@ unsigned short session_impl::listen_port() const
     return m_listen_sockets.front().external_port;
 }
 
+void session_impl::abort()
+{
+    if (m_abort) return;
+    DBG("*** ABORT CALLED ***");
+
+    // abort the main thread
+    m_abort = true;
+    error_code ec;
+    m_timer.cancel(ec);
+
+    // close the listen sockets
+    for (std::list<listen_socket_t>::iterator i = m_listen_sockets.begin(),
+             end(m_listen_sockets.end()); i != end; ++i)
+    {
+        i->sock->close(ec);
+    }
+
+    DBG("aborting all transfers (" << m_transfers.size() << ")");
+    // abort all transfers
+    for (transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
+    {
+        i->second->abort();
+    }
+
+    DBG("aborting all server requests");
+    //m_server_connection.abort_all_requests();
+    m_server_connection->close();
+
+    for (transfer_map::iterator i = m_transfers.begin();
+         i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        t.abort();
+    }
+
+    DBG("aborting all connections (" << m_connections.size() << ")");
+
+    // closing all the connections needs to be done from a callback,
+    // when the session mutex is not held
+    //m_io_service.post(boost::bind(&connection_queue::close, &m_half_open));
+
+    DBG("connection queue: " << m_half_open.size());
+
+    // abort all connections
+    while (!m_connections.empty())
+    {
+        (*m_connections.begin())->disconnect(errors::stopping_transfer);
+    }
+
+    DBG("connection queue: " << m_half_open.size());
+}
+
 void session_impl::on_disk_queue()
 {
 }
@@ -408,7 +478,7 @@ void session_impl::on_tick(error_code const& e)
 
     if (e)
     {
-        LERR_ << "*** TICK TIMER FAILED " << e.message();
+        ERR("*** TICK TIMER FAILED " << e.message());
         ::abort();
         return;
     }
@@ -422,36 +492,84 @@ void session_impl::on_tick(error_code const& e)
     if (now - m_last_second_tick < time::seconds(1)) return;
     m_last_second_tick = now;
 
-    DBG("session second tick");
-
     // --------------------------------------------------------------
     // check for incoming connections that might have timed out
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
     // --------------------------------------------------------------
-    // second_tick every torrent
+    // second_tick every transfer
     // --------------------------------------------------------------
-
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
         t.second_tick();
     }
 
-    // --------------------------------------------------------------
-    // connect new peers
-    // --------------------------------------------------------------
-    // TODO: implement
-
-    // let transfers connect to peers if they want to
-    // if there are any transfers and any free slots
+    connect_new_peers();
 
     // --------------------------------------------------------------
     // disconnect peers when we have too many
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+}
+
+void session_impl::connect_new_peers()
+{
+    // TODO:
+    // this loop will "hand out" max(connection_speed, half_open.free_slots())
+    // to the transfers, in a round robin fashion, so that every transfer is
+    // equally likely to connect to a peer
+
+    int free_slots = m_half_open.free_slots();
+    if (!m_transfers.empty() && free_slots > -m_half_open.limit() &&
+        num_connections() < m_max_connections && !m_abort)
+    {
+        // this is the maximum number of connections we will
+        // attempt this tick
+        int max_connections_per_second = 10;
+        int steps_since_last_connect = 0;
+        int num_transfers = int(m_transfers.size());
+        for (;;)
+        {
+            transfer& t = *m_next_connect_transfer->second;
+            if (t.want_more_peers())
+            {
+                try
+                {
+                    if (t.try_connect_peer())
+                    {
+                        --max_connections_per_second;
+                        --free_slots;
+                        steps_since_last_connect = 0;
+                    }
+                }
+                catch (std::bad_alloc&)
+                {
+                    // we ran out of memory trying to connect to a peer
+                    // lower the global limit to the number of peers
+                    // we already have
+                    m_max_connections = num_connections();
+                    if (m_max_connections < 2) m_max_connections = 2;
+                }
+            }
+
+            ++m_next_connect_transfer;
+            ++steps_since_last_connect;
+
+            // if we have gone two whole loops without
+            // handing out a single connection, break
+            if (steps_since_last_connect > num_transfers * 2) break;
+            // if there are no more free connection slots, abort
+            if (free_slots <= -m_half_open.limit()) break;
+            // if we should not make any more connections
+            // attempts this tick, abort
+            if (max_connections_per_second == 0) break;
+            // maintain the global limit on number of connections
+            if (num_connections() >= m_max_connections) break;
+        }
+    }
 }
 
 bool session_impl::has_active_transfer() const
@@ -493,8 +611,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //LERR_ << "failed to open socket: " << libtorrent::print_endpoint(ep)
-        //      << ": " << ec.message().c_str();
+        //ERR("failed to open socket: " << libtorrent::print_endpoint(ep)
+        //    << ": " << ec.message().c_str());
     }
 
     s.sock->bind(ep, ec);
@@ -506,7 +624,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
         char msg[200];
         snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
                  libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
-        LERR_ << msg;
+        ERR(msg);
 
         return listen_socket_t();
     }

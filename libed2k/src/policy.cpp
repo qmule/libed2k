@@ -1,6 +1,8 @@
 
 #include "policy.hpp"
 #include "peer.hpp"
+#include "session.hpp"
+#include "transfer.hpp"
 
 using namespace libed2k;
 
@@ -11,6 +13,13 @@ void policy::set_connection(peer* p, peer_connection* c)
     if (was_conn_cand) --m_num_connect_candidates;
 
 }
+
+bool policy::connect_one_peer()
+{
+    // TODO: should be smarter
+    return !m_peers.empty() && m_transfer->connect_to_peer(*m_peers.begin());
+}
+
 
 bool policy::is_connect_candidate(peer const& p, bool finished) const
 {

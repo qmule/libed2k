@@ -75,7 +75,7 @@ peer_connection::~peer_connection()
 
 void peer_connection::second_tick()
 {
-    LDBG_ << "peer connection second tick";
+    DBG("peer connection second tick");
 }
 
 void peer_connection::on_send_data(error_code const& error,
