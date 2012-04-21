@@ -7,7 +7,7 @@ namespace libed2k {
     template <typename A, typename B>
     A div_ceil(A a, B b)
     {
-        return A(a/b + (a%b == 0 ? 0 : 1));
+        return A(a/b + bool(a%b));
     }
 
     inline int round_up8(int v)
@@ -27,20 +27,22 @@ namespace libed2k {
         C& m_cont;
     public:
         cyclic_iterator(C& c):
-            m_it(c.begin()), m_cont(c)
-        {
+            m_it(c.begin()), m_cont(c) {
         }
 
-        typename C::value_type* operator->()
-        {
+        typename C::value_type* operator->() {
+            validate();
             return m_it.operator->();
         }
 
-        cyclic_iterator& operator++()
-        {
+        cyclic_iterator& operator++() {
             ++m_it;
-            if (m_it == m_cont.end()) m_it = m_cont.begin();
+            validate();
             return *this;
+        }
+    private:
+        void validate() {
+            if (m_it == m_cont.end()) m_it = m_cont.begin();
         }
     };
 }
