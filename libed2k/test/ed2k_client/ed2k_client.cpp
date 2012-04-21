@@ -6,6 +6,7 @@
 #include "session.hpp"
 #include "session_settings.hpp"
 #include "log.hpp"
+#include "util.hpp"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -55,6 +56,7 @@ int main(int argc, char* argv[])
         {
             libed2k::add_transfer_params params;
             params.file_path = dir / vm["request"].as<fs::path>();
+            params.info_hash = libed2k::hash_md4(params.file_path.filename());
             params.seed_mode = false;
             ses.add_transfer(params);
         }

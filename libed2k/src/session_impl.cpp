@@ -392,6 +392,7 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
         if (fs::is_regular_file(i->path()))
         {
             add_transfer_params params;
+            params.info_hash = hash_md4(i->path().filename());
             params.file_path = i->path();
             params.seed_mode = true;
             transfer_handle handle = add_transfer(params, ec);

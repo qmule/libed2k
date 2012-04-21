@@ -2,10 +2,10 @@
 #ifndef __LIBED2K_TYPES__
 #define __LIBED2K_TYPES__
 
+#include <boost/asio.hpp>
 
 namespace boost{
-    namespace filesystem{
-    }
+    namespace filesystem{}
 }
 
 namespace libtorrent {

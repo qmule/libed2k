@@ -32,11 +32,11 @@ namespace libed2k {
 
     struct add_transfer_params
     {
-        add_transfer_params()
-            : resume_data(0)
-            , storage_mode(storage_mode_sparse)
-            , duplicate_is_error(false)
-            , seed_mode(false)
+        add_transfer_params():
+            resume_data(0),
+            storage_mode(storage_mode_sparse),
+            duplicate_is_error(false),
+            seed_mode(false)
         {}
 
         md4_hash info_hash;

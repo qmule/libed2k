@@ -2,6 +2,9 @@
 #ifndef __LIBED2K_UTIL__
 #define __LIBED2K_UTIL__
 
+#include "md4_hash.hpp"
+#include "types.hpp"
+
 namespace libed2k {
 
     template <typename A, typename B>
@@ -45,6 +48,8 @@ namespace libed2k {
             if (m_it == m_cont.end()) m_it = m_cont.begin();
         }
     };
+
+    md4_hash hash_md4(const std::string& str);
 }
 
 #endif
