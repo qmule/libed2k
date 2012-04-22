@@ -10,7 +10,13 @@ namespace libed2k{
         m_timeout(nTimeout),
         m_stopped(false)
     {
-        m_deadline.async_wait(boost::bind(&base_socket::check_deadline, this));
+        m_deadline.expires_at(boost::posix_time::pos_infin);
+        check_deadline();
+    }
+
+    void base_socket::set_timeout(int nTimeout)
+    {
+        m_deadline.expires_from_now(boost::posix_time::minutes(200));
     }
 
     tcp::socket& base_socket::socket()
@@ -23,11 +29,8 @@ namespace libed2k{
         if (m_stopped)
             return;
 
-        if (m_timeout != 0 )
-        {
-            // set deadline timer
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
-        }
+        // set deadline timer
+        m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
 
         boost::asio::async_read(m_socket,
                 boost::asio::buffer(&m_in_header, header_size),
@@ -58,8 +61,9 @@ namespace libed2k{
         m_handle_error = handler;
     }
 
-    void base_socket::stop()
+    void base_socket::close()
     {
+        DBG("base socket close");
         m_stopped = true;
         boost::system::error_code ignored_ec;
         m_socket.close(ignored_ec);
@@ -77,6 +81,9 @@ namespace libed2k{
 
             if (!m_write_order.empty())
             {
+                // set deadline timer
+                m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+
                 std::vector<boost::asio::const_buffer> buffers;
                 buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
                 buffers.push_back(boost::asio::buffer(m_write_order.front().second));
@@ -172,13 +179,14 @@ namespace libed2k{
         // Check whether the deadline has passed. We compare the deadline against
         // the current time since a new asynchronous operation may have moved the
         // deadline before this actor had a chance to run.
+
         if (m_deadline.expires_at() <= dtimer::traits_type::now())
         {
             DBG("deadline timer expired");
+
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
-
-            stop();
+            m_socket.close();
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
             m_deadline.expires_at(boost::posix_time::pos_infin);

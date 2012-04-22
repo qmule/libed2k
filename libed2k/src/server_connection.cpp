@@ -27,7 +27,7 @@ void server_connection::start()
 
 void server_connection::close()
 {
-    m_socket->socket().close();
+    m_socket->close();
     m_name_lookup.cancel();
 }
 
@@ -63,7 +63,7 @@ void server_connection::on_name_lookup(
     /**
       * do not use timeout on server connection
      */
-    m_socket.reset(new base_socket(m_ses.m_io_service, 0));
+    m_socket.reset(new base_socket(m_ses.m_io_service, settings.peer_timeout));
 
     m_socket->set_unhandled_callback(boost::bind(&server_connection::on_unhandled_packet, this, _1));   //!< handler for unknown packets
     m_socket->add_callback(OP_REJECT,       boost::bind(&server_connection::on_reject,          this, _1));
@@ -74,18 +74,25 @@ void server_connection::on_name_lookup(
     m_socket->add_callback(OP_USERS_LIST,   boost::bind(&server_connection::on_users_list,      this, _1));
     m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1));
 
-    m_socket->socket().async_connect(
-        m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
+    m_socket->do_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
 
 void server_connection::on_connection_complete(error_code const& error)
 {
+    if (is_stopped())
+    {
+        DBG("socket was closed by timeout");
+        return;
+    }
+
     if (error)
     {
         ERR("connection to: " << libtorrent::print_endpoint(m_target)
             << ", failed: " << error);
         return;
     }
+
+    m_socket->set_timeout(boost::posix_time::pos_infin);
 
     DBG("connect to server:" << libtorrent::print_endpoint(m_target) << ", successfully");
 

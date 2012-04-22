@@ -51,6 +51,15 @@ public:
 	 */
 	tcp::socket& socket();
 
+	void set_timeout(int nTimeout);
+
+	template<typename Handler>
+	void do_connect(tcp::endpoint target, Handler handler)
+	{
+	    m_deadline.expires_from_now(boost::posix_time::seconds(20));
+	    m_socket.async_connect(target, handler);
+	}
+
 	/**
 	  * do write your structure into socket
 	  * structure must be serialisable
@@ -77,6 +86,10 @@ public:
             std::vector<boost::asio::const_buffer> buffers;
             buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
             buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+
+            // set deadline timer
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+
             boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, this,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
@@ -188,9 +201,9 @@ public:
 	}
 
 	/**
-	  * stop all operations
+	  * stop all operations and close socket
 	 */
-	void stop();
+	void close();
 private:
 	tcp::socket	                    m_socket;       //!< operation socket
 	socket_handler                  m_unhandled_handler;

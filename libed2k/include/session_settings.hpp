@@ -13,7 +13,7 @@ namespace libed2k {
             server_port(4661),
             peer_port(4662),
             client_name("http://www.aMule.org"),
-            server_keep_alive_timeout(10)
+            server_keep_alive_timeout(20)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
