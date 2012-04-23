@@ -8,8 +8,9 @@ namespace libed2k {
 
     class peer_connection;
 
-    struct peer
+    class peer
     {
+    public:
         tcp::endpoint ip() const { return tcp::endpoint(address, port); }
 
         libed2k::address address;

@@ -15,7 +15,7 @@ namespace libed2k
     // about the transfer and aborts the transfer.
     struct transfer_handle
     {
-        friend struct aux::session_impl;
+        friend class aux::session_impl;
         friend class transfer;
 
         transfer_handle() {}

@@ -197,6 +197,7 @@ public:
         }
         catch(libed2k_exception& e)
         {
+            DBG("Error on conversion " << e.what());
             return (false);
         }
 

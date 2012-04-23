@@ -23,7 +23,7 @@
 
 namespace libed2k
 {
-    struct peer;
+    class peer;
     class transfer;
     class base_socket;
     namespace aux{

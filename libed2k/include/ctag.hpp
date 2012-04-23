@@ -375,12 +375,41 @@ private:
     T   m_value;
 };
 
-template<> boost::uint64_t typed_tag<boost::uint64_t>::asInt() const;
-template<> boost::uint64_t typed_tag<boost::uint32_t>::asInt() const;
-template<> boost::uint64_t typed_tag<boost::uint16_t>::asInt() const;
-template<> boost::uint64_t typed_tag<boost::uint8_t>::asInt() const;
-template<> bool typed_tag<bool>::asBool() const;
-template<> float typed_tag<float>::asFloat() const;
+template<>
+inline boost::uint64_t typed_tag<boost::uint64_t>::asInt() const
+{
+    return (m_value);
+}
+
+template<>
+inline boost::uint64_t typed_tag<boost::uint32_t>::asInt() const
+{
+    return (static_cast<boost::uint32_t>(m_value));
+}
+
+template<>
+inline boost::uint64_t typed_tag<boost::uint16_t>::asInt() const
+{
+    return (static_cast<boost::uint16_t>(m_value));
+}
+
+template<>
+inline boost::uint64_t typed_tag<boost::uint8_t>::asInt() const
+{
+    return (static_cast<boost::uint8_t>(m_value));
+}
+
+template<>
+inline bool typed_tag<bool>::asBool() const
+{
+    return (m_value);
+}
+
+template<>
+inline float typed_tag<float>::asFloat() const
+{
+    return (m_value);
+}
 
 
 
