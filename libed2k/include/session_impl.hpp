@@ -20,12 +20,13 @@ namespace libed2k {
     class server_connection;
     class transfer;
     class base_socket;
-    struct add_transfer_params;
+    class add_transfer_params;
 
     namespace aux {
 
-        struct session_impl: boost::noncopyable
+        class session_impl: boost::noncopyable
         {
+        public:
             friend class libed2k::session;
             friend class libed2k::transfer;
             friend class libed2k::peer_connection;

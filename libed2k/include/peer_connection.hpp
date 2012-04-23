@@ -23,7 +23,7 @@
 
 namespace libed2k
 {
-    struct peer;
+    class peer;
     class transfer;
     class base_socket;
     namespace aux{
@@ -53,7 +53,7 @@ namespace libed2k
         // with this constructor we have been contacted and we still don't
         // know which torrent the connection belongs to
         peer_connection(aux::session_impl& ses, boost::shared_ptr<base_socket> s,
-                        tcp::endpoint const& remote, peer* peerinfo);
+                        const tcp::endpoint& remote, peer* peerinfo);
 
         ~peer_connection();
 

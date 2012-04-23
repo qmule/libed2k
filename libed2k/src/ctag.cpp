@@ -147,42 +147,6 @@ const blob_type& base_tag::asBlob() const
     throw libed2k_exception(errors::incompatible_tag_getter);
 }
 
-template<>
-boost::uint64_t typed_tag<boost::uint64_t>::asInt() const
-{
-    return (m_value);
-}
-
-template<>
-boost::uint64_t typed_tag<boost::uint32_t>::asInt() const
-{
-    return (static_cast<boost::uint32_t>(m_value));
-}
-
-template<>
-boost::uint64_t typed_tag<boost::uint16_t>::asInt() const
-{
-    return (static_cast<boost::uint16_t>(m_value));
-}
-
-template<>
-boost::uint64_t typed_tag<boost::uint8_t>::asInt() const
-{
-    return (static_cast<boost::uint8_t>(m_value));
-}
-
-template<>
-bool typed_tag<bool>::asBool() const
-{
-    return (m_value);
-}
-
-template<>
-float typed_tag<float>::asFloat() const
-{
-    return (m_value);
-}
-
 string_tag::string_tag(tg_types type, const std::string& strName, tg_nid_type nNameId) : base_tag(strName, nNameId), m_type(static_cast<tg_type>(type))
 {
 
