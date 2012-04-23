@@ -122,8 +122,6 @@ namespace libed2k {
             // them
             mutable boost::asio::io_service m_io_service;
 
-            tcp::resolver m_host_resolver;
-
             // handles delayed alerts
             libtorrent::alert_manager m_alerts;
 

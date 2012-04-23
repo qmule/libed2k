@@ -29,6 +29,7 @@ void server_connection::close()
 {
     m_socket->close();
     m_name_lookup.cancel();
+    m_keep_alive.cancel();
 }
 
 bool server_connection::is_stopped() const

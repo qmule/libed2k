@@ -78,7 +78,8 @@ void peer_connection::init_handlers()
 
 peer_connection::~peer_connection()
 {
-    // TODO: implement
+    m_disk_recv_buffer_size = 0;
+    DBG("*** CONNECTION CLOSED");
 }
 
 void peer_connection::second_tick()

@@ -25,7 +25,6 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_send_buffers(send_buffer_size),
     m_filepool(40),
     m_io_service(),
-	m_host_resolver(m_io_service),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
                   m_filepool, BLOCK_SIZE), // TODO - check it!
@@ -477,7 +476,7 @@ void session_impl::abort()
 
     // closing all the connections needs to be done from a callback,
     // when the session mutex is not held
-    //m_io_service.post(boost::bind(&connection_queue::close, &m_half_open));
+    m_io_service.post(boost::bind(&libtorrent::connection_queue::close, &m_half_open));
 
     DBG("connection queue: " << m_half_open.size());
 
