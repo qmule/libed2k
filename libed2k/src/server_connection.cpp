@@ -72,6 +72,8 @@ void server_connection::on_name_lookup(
     m_socket.reset(new base_socket(m_ses.m_io_service, settings.peer_timeout));
 
     m_socket->set_unhandled_callback(boost::bind(&server_connection::on_unhandled_packet, this, _1));   //!< handler for unknown packets
+    m_socket->set_error_callback(boost::bind(&server_connection::on_error, this, _1));                  //!< handler for unknown packets
+
     m_socket->add_callback(OP_REJECT,       boost::bind(&server_connection::on_reject,          this, _1));
     m_socket->add_callback(OP_DISCONNECT,   boost::bind(&server_connection::on_disconnect,      this, _1));
     m_socket->add_callback(OP_SERVERMESSAGE,boost::bind(&server_connection::on_server_message,  this, _1));
@@ -79,6 +81,8 @@ void server_connection::on_name_lookup(
     m_socket->add_callback(OP_SERVERSTATUS, boost::bind(&server_connection::on_server_status,   this, _1));
     m_socket->add_callback(OP_USERS_LIST,   boost::bind(&server_connection::on_users_list,      this, _1));
     m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1));
+    m_socket->add_callback(OP_SERVERIDENT,  boost::bind(&server_connection::on_server_ident,    this, _1));
+    m_socket->add_callback(OP_FOUNDSOURCES, boost::bind(&server_connection::on_found_sources,   this, _1));
 
     m_socket->do_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
@@ -142,6 +146,11 @@ void server_connection::on_unhandled_packet(const error_code& error)
     {
         handle_error(error);
     }
+}
+
+void server_connection::on_error(const error_code& error)
+{
+    DBG("server_connection::on_error " << error.message());
 }
 
 void server_connection::on_reject(const error_code& error)
@@ -258,6 +267,45 @@ void server_connection::on_id_change(const error_code& error)
         handle_error(error);
     }
 
+}
+
+void server_connection::on_server_ident(const error_code& error)
+{
+    DBG("receive " << packetToString(m_socket->context().m_type));
+    if (!error)
+    {
+        server_info_entry se;
+
+        if (m_socket->decode_packet(se))
+        {
+            DBG("Server info entry was parsed");
+            DBG("Info: " << se.m_hServer << " addr " << se.m_address.m_nIP << ":" << se.m_address.m_nPort);
+            DBG("Tag list size: " << se.m_list.count());
+        }
+        else
+        {
+            ERR("Unable to parse server info entry");
+        }
+    }
+}
+
+void server_connection::on_found_sources(const error_code& error)
+{
+    DBG("receive " << packetToString(m_socket->context().m_type));
+    if (!error)
+    {
+        found_sources fs;
+
+        if (m_socket->decode_packet(fs))
+        {
+            DBG("Server info entry was parsed");
+
+        }
+        else
+        {
+            ERR("Unable to parse server info entry");
+        }
+    }
 }
 
 void server_connection::handle_error(const error_code& error)

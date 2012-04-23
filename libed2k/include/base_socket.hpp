@@ -178,6 +178,7 @@ public:
 	void add_callback(proto_type ptype, socket_handler handler);
 	void set_unhandled_callback(socket_handler handler);
 	void set_error_callback(socket_handler handler);    //!< TODO - do we need it?
+	void set_timeout_callback(socket_handler handler);
 
 
 	/**
@@ -207,14 +208,15 @@ public:
 	 */
 	void close();
 private:
-	tcp::socket	                    m_socket;       //!< operation socket
+	tcp::socket	                    m_socket;           //!< operation socket
 	socket_handler                  m_unhandled_handler;
-	socket_handler                  m_handle_error; //!< on error
-	dtimer                          m_deadline;     //!< deadline timer for reading operations
-	int                             m_timeout;      //!< deadline timeout for reading operations
-    bool                            m_stopped;      //!< socket is stopped
-	libed2k_header					m_in_header;    //!< incoming message header
-	socket_buffer 				    m_in_container; //!< buffer for incoming messages
+	socket_handler                  m_handle_error;     //!< on error
+	socket_handler                  m_timeout_handler;  //!< on timeout
+	dtimer                          m_deadline;         //!< deadline timer for reading operations
+	int                             m_timeout;          //!< deadline timeout for reading operations
+    bool                            m_stopped;          //!< socket is stopped
+	libed2k_header					m_in_header;        //!< incoming message header
+	socket_buffer 				    m_in_container;     //!< buffer for incoming messages
 	callback_map                    m_callbacks;
 
 

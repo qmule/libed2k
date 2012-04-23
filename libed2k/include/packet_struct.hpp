@@ -85,8 +85,6 @@ namespace libed2k
 	    OP_ASKSHAREDDENIEDANS       = 0x61  // (null)
 	};
 
-
-
 	/**
 	  * supported protocols
 	 */
@@ -260,6 +258,14 @@ namespace libed2k
         md4_hash                    m_hServer;
         net_identifier              m_address;
         tag_list<boost::uint32_t>   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hServer;
+            ar & m_address;
+            ar & m_list;
+        }
     };
 
     /**
@@ -356,7 +362,16 @@ namespace libed2k
     {
         md4_hash    m_hFile;
         container_holder<boost::uint8_t, std::vector<net_identifier> > m_sources;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_sources;
+        }
     };
+
+
 
     /**
       * structure for get packet opcode from structure type
@@ -380,6 +395,7 @@ namespace libed2k
     //  OP_QUERY_CHATS              = 0x1D, // (deprecated, not supported by server any longer)
     //  OP_CHAT_MESSAGE             = 0x1E, // (deprecated, not supported by server any longer)
     //  OP_JOIN_ROOM                = 0x1F, // (deprecated, not supported by server any longer)
+
     //        OP_QUERY_MORE_RESULT        = 0x21, // (null) // do not use
     //        OP_GETSOURCES_OBFU          = 0x23,           // do not use
     template<> struct packet_type<server_list>          { static const proto_type value = OP_SERVERLIST;    };
@@ -389,19 +405,11 @@ namespace libed2k
 
 //            OP_CALLBACK_FAIL            = 0x36, // (null notverified)
     template<> struct packet_type<server_message>       { static const proto_type value = OP_SERVERMESSAGE; };
-
-        //  OP_CHAT_ROOM_REQUEST        = 0x39, // (deprecated, not supported by server any longer)
-        //  OP_CHAT_BROADCAST           = 0x3A, // (deprecated, not supported by server any longer)
-        //  OP_CHAT_USER_JOIN           = 0x3B, // (deprecated, not supported by server any longer)
-        //  OP_CHAT_USER_LEAVE          = 0x3C, // (deprecated, not supported by server any longer)
-        //  OP_CHAT_USER                = 0x3D, // (deprecated, not supported by server any longer)
     //template<> struct packet_type<id_change>            { static const proto_type value = OP_IDCHANGE;    };
     template<> struct packet_type<server_info_entry>    { static const proto_type value = OP_SERVERIDENT; };
-            //OP_SERVERIDENT              = 0x41, // <HASH 16><IP 4><PORT 2>{1 TAG_SET}
-            // do not use
-            //OP_FOUNDSOURCES             = 0x42, // <HASH 16><count 1>(<ID 4><PORT 2>)[count]
-            //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
-            //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
+    template<> struct packet_type<found_sources>        { static const proto_type value = OP_FOUNDSOURCES;};
+    //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+    //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
 
     // Client to Client structures
     struct client_hello

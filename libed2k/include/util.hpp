@@ -50,6 +50,13 @@ namespace libed2k {
     };
 
     md4_hash hash_md4(const std::string& str);
+
+    #define HIGHEST_LOWID_ED2K      16777216
+
+    inline bool isLowId(boost::uint32_t nId)
+    {
+        return (nId < HIGHEST_LOWID_ED2K);
+    }
 }
 
 #endif

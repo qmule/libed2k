@@ -210,13 +210,13 @@ struct tag_type_number
     static const tg_type value = 0;
 };
 
-template<> struct tag_type_number<boost::uint8_t> { static const tg_type value = TAGTYPE_UINT8; };
-template<> struct tag_type_number<boost::uint16_t> { static const tg_type value = TAGTYPE_UINT16; };
-template<> struct tag_type_number<boost::uint32_t> { static const tg_type value = TAGTYPE_UINT32; };
-template<> struct tag_type_number<boost::uint64_t> { static const tg_type value = TAGTYPE_UINT64; };
-template<> struct tag_type_number<float> { static const tg_type value = TAGTYPE_FLOAT32; };
-template<> struct tag_type_number<bool> { static const tg_type value = TAGTYPE_BOOL; };
-template<> struct tag_type_number<md4_hash> { static const tg_type value = TAGTYPE_HASH16; };
+template<> struct tag_type_number<boost::uint8_t>   { static const tg_type value = TAGTYPE_UINT8;   };
+template<> struct tag_type_number<boost::uint16_t>  { static const tg_type value = TAGTYPE_UINT16;  };
+template<> struct tag_type_number<boost::uint32_t>  { static const tg_type value = TAGTYPE_UINT32;  };
+template<> struct tag_type_number<boost::uint64_t>  { static const tg_type value = TAGTYPE_UINT64;  };
+template<> struct tag_type_number<float>            { static const tg_type value = TAGTYPE_FLOAT32; };
+template<> struct tag_type_number<bool>             { static const tg_type value = TAGTYPE_BOOL;    };
+template<> struct tag_type_number<md4_hash>         { static const tg_type value = TAGTYPE_HASH16;  };
 
 template<typename size_type>
 class tag_list;
@@ -271,17 +271,14 @@ public:
     virtual void load(archive::ed2k_iarchive& ar);
     virtual void save(archive::ed2k_oarchive& ar);
 
-    virtual bool is_equal(const base_tag* pt) const
-    {
-        return (pt->getType() == getType());
-    }
+    virtual bool is_equal(const base_tag* pt) const;
+    virtual void dump() const;
 
-    virtual void dump() const
-    {
-        DBG("base_tag::dump");
-        DBG("type: " << tagTypetoString(getType()));
-        DBG("name: " << m_strName.c_str());
-    }
+    virtual boost::uint64_t     asInt() const;
+    virtual const std::string&  asString() const;
+    virtual bool                asBool() const;
+    virtual float               asFloat() const;
+    virtual const blob_type&    asBlob() const;
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 protected:
@@ -344,6 +341,21 @@ public:
         return (false);
     }
 
+    virtual boost::uint64_t asInt() const
+    {
+        return (base_tag::asInt());
+    }
+
+    virtual bool asBool() const
+    {
+        return (base_tag::asBool());
+    }
+
+    virtual float asFloat() const
+    {
+        return (base_tag::asFloat());
+    }
+
     operator T() const
     {
         return (m_value);
@@ -352,7 +364,6 @@ public:
     virtual void dump() const
     {
         base_tag::dump();
-        //DBG("value: " << m_value);
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -363,6 +374,14 @@ protected:
 private:
     T   m_value;
 };
+
+template<> boost::uint64_t typed_tag<boost::uint64_t>::asInt() const;
+template<> boost::uint64_t typed_tag<boost::uint32_t>::asInt() const;
+template<> boost::uint64_t typed_tag<boost::uint16_t>::asInt() const;
+template<> boost::uint64_t typed_tag<boost::uint8_t>::asInt() const;
+template<> bool typed_tag<bool>::asBool() const;
+template<> float typed_tag<float>::asFloat() const;
+
 
 
 /**
@@ -431,31 +450,16 @@ public:
     {
     }
 
-    virtual tg_type getType() const
-    {
-        return (m_type);
-    }
-
-    virtual bool is_equal(const base_tag* pt) const
-    {
-        if (base_tag::is_equal(pt))
-        {
-            return (m_strValue == (reinterpret_cast<const string_tag*>(pt))->m_strValue);
-        }
-
-        return (false);
-    }
+    virtual tg_type getType() const;
+    virtual bool is_equal(const base_tag* pt) const;
 
     operator std::string() const
     {
         return (m_strValue);
     }
 
-    virtual void dump() const
-    {
-        base_tag::dump();
-        DBG("value: " << m_strValue.c_str());
-    }
+    const std::string& asString() const;
+    virtual void dump() const;
 
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
@@ -465,6 +469,10 @@ protected:
 private:
     tg_type m_type;
     std::string m_strValue;
+
+    /**
+      * generate tag type by string length
+     */
     void length2type();
 };
 
@@ -514,6 +522,8 @@ public:
     {
         return (m_value);
     }
+
+    virtual const blob_type& asBlob() const;
 
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
@@ -765,6 +775,10 @@ bool operator==(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
 
     return (true);
 }
+
+//std::string asString(const base_tag* ptag);
+//boost::uint16_t asInt(const base_tag* ptag);
+//float asFloat
 
 }
 
