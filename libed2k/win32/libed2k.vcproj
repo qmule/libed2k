@@ -150,6 +150,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\src\base_socket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ctag.cpp"
 				>
 			</File>
@@ -203,6 +207,10 @@
 			</File>
 			<File
 				RelativePath="..\src\transfer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\util.cpp"
 				>
 			</File>
 		</Filter>

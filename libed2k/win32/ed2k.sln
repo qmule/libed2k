@@ -10,6 +10,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unittest", "unittest.vcproj
 		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conn", "conn.vcproj", "{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}"
+	ProjectSection(ProjectDependencies) = postProject
+		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -28,6 +33,10 @@ Global
 		{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}.Debug|Win32.Build.0 = Debug|Win32
 		{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}.Release|Win32.ActiveCfg = Release|Win32
 		{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}.Release|Win32.Build.0 = Release|Win32
+		{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}.Debug|Win32.Build.0 = Debug|Win32
+		{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}.Release|Win32.ActiveCfg = Release|Win32
+		{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
