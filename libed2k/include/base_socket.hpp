@@ -46,10 +46,21 @@ public:
 	 */
 	base_socket(boost::asio::io_service& io, int nTimeout);
 
+	~base_socket();
+
 	/**
 	  * get internal socket
 	 */
 	tcp::socket& socket();
+
+	void set_timeout(int nTimeout);
+
+	template<typename Handler>
+	void do_connect(tcp::endpoint target, Handler handler)
+	{
+	    m_deadline.expires_from_now(boost::posix_time::seconds(20));
+	    m_socket.async_connect(target, handler);
+	}
 
 	/**
 	  * do write your structure into socket
@@ -77,6 +88,10 @@ public:
             std::vector<boost::asio::const_buffer> buffers;
             buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
             buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+
+            // set deadline timer
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+
             boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, this,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
@@ -163,6 +178,7 @@ public:
 	void add_callback(proto_type ptype, socket_handler handler);
 	void set_unhandled_callback(socket_handler handler);
 	void set_error_callback(socket_handler handler);    //!< TODO - do we need it?
+	void set_timeout_callback(socket_handler handler);
 
 
 	/**
@@ -188,18 +204,19 @@ public:
 	}
 
 	/**
-	  * stop all operations
+	  * stop all operations and close socket
 	 */
-	void stop();
+	void close();
 private:
-	tcp::socket	                    m_socket;       //!< operation socket
+	tcp::socket	                    m_socket;           //!< operation socket
 	socket_handler                  m_unhandled_handler;
-	socket_handler                  m_handle_error; //!< on error
-	dtimer                          m_deadline;     //!< deadline timer for reading operations
-	int                             m_timeout;      //!< deadline timeout for reading operations
-    bool                            m_stopped;      //!< socket is stopped
-	libed2k_header					m_in_header;    //!< incoming message header
-	socket_buffer 				    m_in_container; //!< buffer for incoming messages
+	socket_handler                  m_handle_error;     //!< on error
+	socket_handler                  m_timeout_handler;  //!< on timeout
+	dtimer                          m_deadline;         //!< deadline timer for reading operations
+	int                             m_timeout;          //!< deadline timeout for reading operations
+    bool                            m_stopped;          //!< socket is stopped
+	libed2k_header					m_in_header;        //!< incoming message header
+	socket_buffer 				    m_in_container;     //!< buffer for incoming messages
 	callback_map                    m_callbacks;
 
 

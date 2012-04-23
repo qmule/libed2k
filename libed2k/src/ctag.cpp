@@ -110,6 +110,79 @@ tg_nid_type base_tag::getNameId() const
     return (m_nNameId);
 }
 
+bool base_tag::is_equal(const base_tag* pt) const
+{
+    return (pt->getType() == getType());
+}
+
+void base_tag::dump() const
+{
+    DBG("base_tag::dump");
+    DBG("type: " << tagTypetoString(getType()));
+    DBG("name: " << m_strName.c_str());
+}
+
+boost::uint64_t base_tag::asInt() const
+{
+    throw libed2k_exception(errors::incompatible_tag_getter);
+}
+
+const std::string& base_tag::asString() const
+{
+    throw libed2k_exception(errors::incompatible_tag_getter);
+}
+
+bool base_tag::asBool() const
+{
+    throw libed2k_exception(errors::incompatible_tag_getter);
+}
+
+float base_tag::asFloat() const
+{
+    throw libed2k_exception(errors::incompatible_tag_getter);
+}
+
+const blob_type& base_tag::asBlob() const
+{
+    throw libed2k_exception(errors::incompatible_tag_getter);
+}
+
+template<>
+boost::uint64_t typed_tag<boost::uint64_t>::asInt() const
+{
+    return (m_value);
+}
+
+template<>
+boost::uint64_t typed_tag<boost::uint32_t>::asInt() const
+{
+    return (static_cast<boost::uint32_t>(m_value));
+}
+
+template<>
+boost::uint64_t typed_tag<boost::uint16_t>::asInt() const
+{
+    return (static_cast<boost::uint16_t>(m_value));
+}
+
+template<>
+boost::uint64_t typed_tag<boost::uint8_t>::asInt() const
+{
+    return (static_cast<boost::uint8_t>(m_value));
+}
+
+template<>
+bool typed_tag<bool>::asBool() const
+{
+    return (m_value);
+}
+
+template<>
+float typed_tag<float>::asFloat() const
+{
+    return (m_value);
+}
+
 string_tag::string_tag(tg_types type, const std::string& strName, tg_nid_type nNameId) : base_tag(strName, nNameId), m_type(static_cast<tg_type>(type))
 {
 
@@ -159,8 +232,39 @@ void string_tag::length2type()
     }
 }
 
+tg_type string_tag::getType() const
+{
+    return (m_type);
+}
+
+bool string_tag::is_equal(const base_tag* pt) const
+{
+    if (base_tag::is_equal(pt))
+    {
+        return (m_strValue == (reinterpret_cast<const string_tag*>(pt))->m_strValue);
+    }
+
+    return (false);
+}
+
+void string_tag::dump() const
+{
+    base_tag::dump();
+    DBG("value: " << m_strValue.c_str());
+}
+
+const std::string& string_tag::asString() const
+{
+    return (m_strValue);
+}
+
 array_tag::array_tag(const std::string& strName, tg_nid_type nNameId) : base_tag(strName, nNameId)
 {
+}
+
+const blob_type& array_tag::asBlob() const
+{
+    return (m_value);
 }
 
 void array_tag::save(archive::ed2k_oarchive& ar)
@@ -231,5 +335,14 @@ boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::st
 	return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
 }
 
+/*
+std::string asString(const base_tag* ptag)
+{
+    if (ptag->getType() == TAGTYPE_STRING || (ptag->getType >= TAGTYPE_STR1 && ptag->getType <= TAGTYPE_STR16))
+    {
+        return *(static_cast<string_tag*>(ptag));
+    }
+}
+*/
 
 }

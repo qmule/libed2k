@@ -22,7 +22,7 @@ namespace libed2k
     {
         friend class aux::session_impl;
     public:
-        server_connection(const aux::session_impl& ses);
+        server_connection(aux::session_impl& ses);
 
         void start();
         void close();
@@ -38,11 +38,13 @@ namespace libed2k
          */
         bool is_initialized() const;
 
+        const tcp::endpoint& getServerEndpoint() const;
     private:
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
         void on_connection_complete(error_code const& e);                                   //!< connect to host name and go to start
         void on_unhandled_packet(const error_code& error);
+        void on_error(const error_code& error);
 
         //!< server message handlers
         void on_reject(const error_code& error);            //!< server reject last command
@@ -52,6 +54,8 @@ namespace libed2k
         void on_server_status(const error_code& error);     //!< server status
         void on_users_list(const error_code& error);        //!< users list from server
         void on_id_change(const error_code& error);         //!< our id changed message
+        void on_server_ident(const error_code& error);      //!< server identification message
+        void on_found_sources(const error_code& error);     //!< found sources message
 
         void handle_error(const error_code& error);
 
@@ -65,7 +69,7 @@ namespace libed2k
         boost::shared_ptr<base_socket>  m_socket;
         tcp::endpoint                   m_target;
 
-        const aux::session_impl& m_ses;
+        aux::session_impl&              m_ses;
     };
 }
 

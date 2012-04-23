@@ -13,7 +13,8 @@ namespace libed2k {
             server_port(4661),
             peer_port(4662),
             client_name("http://www.aMule.org"),
-            server_keep_alive_timeout(10)
+            server_keep_alive_timeout(20),
+            server_ip(0)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -45,6 +46,7 @@ namespace libed2k {
 
         std::string     client_name; // ed2k client name
         int             server_keep_alive_timeout;
+        unsigned long int server_ip;
 
         md4_hash client_hash;    // ed2k client hash
     };

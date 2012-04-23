@@ -174,8 +174,17 @@ namespace libed2k
 
     private:
 
+        /**
+          * initialize call back handlers
+         */
+        void init_handlers();
+
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
+
+        // protocol handlers
+        void on_unhandled_packet(const error_code& error);
+        void on_hello_packet(const error_code& error);
 
         // DRAFT
         enum state
