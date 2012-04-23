@@ -424,6 +424,151 @@ BOOST_AUTO_TEST_CASE(test_tags_mixed)
     BOOST_CHECK(src_list == dst_list);
 }
 
+BOOST_AUTO_TEST_CASE(test_tags_getters)
+{
+    boost::uint16_t n16 = 1000;
+    boost::uint64_t n64 = 32323267673UL;
+    boost::uint32_t n32 = 233332;
+    boost::uint8_t  n8 = '\x10';
+    bool bTag = true;
+    libed2k::blob_type vBlob;
+    float fTag = 1129.4;
+    libed2k::tag_list<boost::uint16_t> src_list;
+
+    bool stringTest[] = {true, true, false, false, false, false, false, false, false};
+    bool intTest[] = {false, false, true, true, true, true, false, false, false};
+    bool floatTest[] = {false, false, false, false, false, false, false, false, true};
+    bool boolTest[] = {false, false, false, false, false, false, true, false, false};
+    bool blobTest[] = {false, false, false, false, false, false, false, true, false};
+
+    src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"),          libed2k::CT_NAME,           true));         // 0
+    src_list.add_tag(libed2k::make_string_tag(std::string("IVANANDPLAN"),   libed2k::FT_FILEFORMAT,     false));        // 1
+    src_list.add_tag(libed2k::make_typed_tag(n8,                            libed2k::CT_SERVER_FLAGS,   false));        // 2
+    src_list.add_tag(libed2k::make_typed_tag(n16,                           libed2k::FT_FILESIZE,       true));         // 3
+    src_list.add_tag(libed2k::make_typed_tag(n32,                           libed2k::CT_EMULE_RESERVED13, false));      // 4
+    src_list.add_tag(libed2k::make_typed_tag(n64,                           libed2k::FT_ATREQUESTED,    true));         // 5
+    src_list.add_tag(libed2k::make_typed_tag(bTag,                          libed2k::FT_FLAGS,          true));         // 6
+    src_list.add_tag(libed2k::make_blob_tag(vBlob,                          libed2k::FT_DL_PREVIEW,     true));         // 7
+    src_list.add_tag(libed2k::make_typed_tag(fTag,                          libed2k::FT_AICH_HASH,      true));         // 8
+
+    BOOST_REQUIRE_EQUAL(src_list.count(), 9);
+
+    for (size_t n = 0; n < src_list.count(); n++)
+    {
+        if (stringTest[n])
+        {
+            BOOST_CHECK_NO_THROW(src_list[n]->asString());
+        }
+        else
+        {
+            BOOST_CHECK_THROW(src_list[n]->asString(), libed2k::libed2k_exception);
+        }
+
+        if (intTest[n])
+        {
+            BOOST_CHECK_NO_THROW(src_list[n]->asInt());
+        }
+        else
+        {
+            BOOST_CHECK_THROW(src_list[n]->asInt(), libed2k::libed2k_exception);
+        }
+
+        if (floatTest[n])
+        {
+            BOOST_CHECK_NO_THROW(src_list[n]->asFloat());
+        }
+        else
+        {
+            BOOST_CHECK_THROW(src_list[n]->asFloat(), libed2k::libed2k_exception);
+        }
+
+        if (boolTest[n])
+        {
+            BOOST_CHECK_NO_THROW(src_list[n]->asBool());
+        }
+        else
+        {
+            BOOST_CHECK_THROW(src_list[n]->asBool(), libed2k::libed2k_exception);
+        }
+
+        if (blobTest[n])
+        {
+            BOOST_CHECK_NO_THROW(src_list[n]->asBlob());
+        }
+        else
+        {
+            BOOST_CHECK_THROW(src_list[n]->asBlob(), libed2k::libed2k_exception);
+        }
+
+    }
+
+    size_t nCount = 0;
+    std::string strName;
+    std::string strFilename;
+    float fValue;
+    boost::uint64_t n_8     = 0;
+    boost::uint64_t n_16    = 0;
+    boost::uint64_t n_32    = 0;
+    boost::uint64_t n_64    = 0;
+    bool bDst = false;
+
+    for (size_t n = 0; n < src_list.count(); n++)
+    {
+        boost::shared_ptr<libed2k::base_tag> ptag = src_list[n];
+        switch(ptag->getNameId())
+        {
+            case libed2k::CT_NAME:
+                strName = ptag->asString();
+                nCount++;
+                break;
+            case libed2k::FT_FILEFORMAT:
+                strFilename = ptag->asString();
+                nCount++;
+                break;
+            case libed2k::FT_AICH_HASH:
+                fValue = ptag->asFloat();
+                nCount++;
+                break;
+            case libed2k::CT_SERVER_FLAGS:
+                n_8 = ptag->asInt();
+                nCount++;
+                break;
+
+            case libed2k::FT_FILESIZE:
+                n_16 = ptag->asInt();
+                nCount++;
+                break;
+            case libed2k::CT_EMULE_RESERVED13:
+                n_32 = ptag->asInt();
+                nCount++;
+                break;
+            case libed2k::FT_ATREQUESTED:
+                n_64 = ptag->asInt();
+                nCount++;
+                break;
+            case libed2k::FT_FLAGS:
+                bDst = ptag->asBool();
+                nCount++;
+                break;
+            case libed2k::FT_DL_PREVIEW:
+                nCount++;
+                break;
+            default:
+                break;
+        }
+    }
+
+    BOOST_REQUIRE_EQUAL(nCount, src_list.count());
+    BOOST_CHECK_EQUAL(strName, std::string("IVAN"));
+    BOOST_CHECK_EQUAL(strFilename, std::string("IVANANDPLAN"));
+    BOOST_CHECK_EQUAL(fValue, fTag);
+    BOOST_CHECK_EQUAL(n_8, n8);
+    BOOST_CHECK_EQUAL(n_16, n16);
+    BOOST_CHECK_EQUAL(n_32, n32);
+    BOOST_CHECK_EQUAL(n_64, n64);
+    BOOST_CHECK_EQUAL(bDst, bTag);
+}
+
 BOOST_AUTO_TEST_CASE(test_packets)
 {
     libed2k::shared_file_entry sh(libed2k::md4_hash::m_emptyMD4Hash, 100, 12);
@@ -453,8 +598,6 @@ BOOST_AUTO_TEST_CASE(test_packets)
     BOOST_CHECK(flist.m_collection[0].m_nPort == 2);
     BOOST_CHECK(flist.m_collection[1].m_nPort == 4);
     BOOST_CHECK(flist.m_collection[2].m_nPort == 5);
-
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -6,6 +6,7 @@ namespace libed2k{
         m_socket(io),
         m_unhandled_handler(NULL),
         m_handle_error(NULL),
+        m_timeout_handler(NULL),
         m_deadline(io),
         m_timeout(nTimeout),
         m_stopped(false)
@@ -50,7 +51,6 @@ namespace libed2k{
         return (m_in_header);
     }
 
-
     void base_socket::add_callback(proto_type ptype, socket_handler handler)
     {
         m_callbacks.insert(make_pair(ptype, handler));
@@ -64,6 +64,11 @@ namespace libed2k{
     void base_socket::set_error_callback(socket_handler handler)
     {
         m_handle_error = handler;
+    }
+
+    void base_socket::set_timeout_callback(socket_handler handler)
+    {
+        m_timeout_handler = handler;
     }
 
     void base_socket::close()
@@ -106,13 +111,12 @@ namespace libed2k{
     void base_socket::handle_error(const error_code& error)
     {
         ERR("base socket error: " << error.message());
+
+        m_socket.close();
+
         if (m_handle_error)
         {
             m_handle_error(error);
-        }
-        else
-        {
-            m_socket.close();
         }
     }
 
@@ -195,6 +199,12 @@ namespace libed2k{
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
             m_deadline.expires_at(boost::posix_time::pos_infin);
+            boost::system::error_code ignored_ec;
+
+            if (m_timeout_handler)
+            {
+                m_timeout_handler(ignored_ec);
+            }
         }
 
         // Put the actor back to sleep.
