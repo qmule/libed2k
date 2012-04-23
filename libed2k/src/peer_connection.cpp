@@ -44,6 +44,7 @@ peer_connection::peer_connection(aux::session_impl& ses,
 {
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
+    init_handlers();
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
@@ -66,6 +67,13 @@ peer_connection::peer_connection(aux::session_impl& ses,
 {
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
+    init_handlers();
+}
+
+void peer_connection::init_handlers()
+{
+    m_socket->set_unhandled_callback(boost::bind(&peer_connection::on_unhandled_packet, self(), _1));   //!< handler for unknown packets
+    m_socket->add_callback(OP_HELLO, boost::bind(&peer_connection::on_hello_packet,     self(), _1));
 }
 
 peer_connection::~peer_connection()
@@ -585,6 +593,7 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
+    m_socket->async_read();
 }
 
 bool peer_connection::can_write() const
@@ -613,4 +622,42 @@ void peer_connection::on_disk_write_complete(
     piece_block block_finished(r.piece, r.start / t->block_size());
     piece_picker& picker = t->picker();
     picker.mark_as_finished(block_finished, peer_info());
+}
+
+void peer_connection::on_unhandled_packet(const error_code& error)
+{
+    DBG("unhandled packet received: " << packetToString(m_socket->context().m_type));
+    m_socket->async_read(); // read next packet
+}
+
+void peer_connection::on_hello_packet(const error_code& error)
+{
+    DBG("hello packet received: " << packetToString(m_socket->context().m_type));
+    if (!error)
+    {
+        //TODO - replace this code
+        // prepare hello answer
+        client_hello_answer cha;
+        cha.m_hClient               = m_ses.settings().client_hash;
+        cha.m_sNetIdentifier.m_nIP  = 0;
+        cha.m_sNetIdentifier.m_nPort= m_ses.settings().peer_port;
+
+        boost::uint32_t nVersion = 0x3c;
+        boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+        boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
+        boost::uint32_t nUdpPort = 0;
+
+        cha.m_tlist.add_tag(make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
+        cha.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+        cha.m_tlist.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
+        cha.m_sServerIdentifier.m_nPort = m_ses.settings().server_port;
+        cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
+
+        m_socket->do_write(cha);
+        m_socket->async_read();
+    }
+    else
+    {
+        ERR("hello packet received error " << error.message());
+    }
 }

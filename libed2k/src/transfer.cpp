@@ -22,7 +22,8 @@ transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interfac
     m_net_interface(net_interface.address(), 0),
     m_file_path(p.file_path),
     m_storage_mode(p.storage_mode),
-    m_seed_mode(p.seed_mode)
+    m_seed_mode(p.seed_mode),
+    m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
 {
     // TODO: init here
 }
@@ -40,7 +41,6 @@ void transfer::start()
     }
 
     init();
-
 }
 
 void transfer::abort()
@@ -72,7 +72,7 @@ void transfer::abort()
 bool transfer::connect_to_peer(peer* peerinfo)
 {
     tcp::endpoint ip(peerinfo->ip());
-    boost::shared_ptr<base_socket> sock(new base_socket(m_ses.m_io_service));
+    boost::shared_ptr<base_socket> sock(new base_socket(m_ses.m_io_service, m_ses.settings().peer_timeout));
 
     m_ses.setup_socket_buffers(sock->socket());
 

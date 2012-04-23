@@ -63,6 +63,8 @@ namespace libed2k {
             bool is_paused() const { return m_paused; }
 
             transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
+            std::vector<transfer_handle> add_transfer_dir(
+                const fs::path& dir, error_code& ec);
 
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }

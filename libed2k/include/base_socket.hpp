@@ -4,13 +4,16 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <deque>
 #include <boost/cstdint.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include "types.hpp"
 #include "log.hpp"
 #include "archive.hpp"
 #include "packet_struct.hpp"
@@ -34,37 +37,88 @@ public:
 	  * @param read data buffer
 	  * @param error code
 	 */
-	typedef boost::function<void (const boost::system::error_code&)> socket_handler;
+	typedef boost::function<void (const error_code&)> socket_handler;
 	typedef std::map<proto_type, socket_handler> callback_map;                     //!< call backs storage type
 
-	base_socket(boost::asio::io_service& io) :
-	    m_socket(io),
-	    m_unhandled_handler(NULL),
-	    m_handle_error(NULL),
-	    out_stream(std::ios_base::binary)
-	{}
+	/**
+	  * @param io - operation io service
+	  * @param nTimeout - read operations timeout in seconds, 0 - means infinite
+	 */
+	base_socket(boost::asio::io_service& io, int nTimeout);
 
-	boost::asio::ip::tcp::socket& socket()
+	~base_socket();
+
+	/**
+	  * get internal socket
+	 */
+	tcp::socket& socket();
+
+	void set_timeout(int nTimeout);
+
+	template<typename Handler>
+	void do_connect(tcp::endpoint target, Handler handler)
 	{
-		return (m_socket);
+	    m_deadline.expires_from_now(boost::posix_time::seconds(20));
+	    m_socket.async_connect(target, handler);
 	}
 
-	 /**
+	/**
+	  * do write your structure into socket
+	  * structure must be serialisable
+	 */
+	template<typename T>
+	void do_write(T& t)
+	{
+	    bool bWriteInProgress = !m_write_order.empty();
+
+	    m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));
+
+        boost::iostreams::back_insert_device<std::string> inserter(m_write_order.back().second);
+        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
+
+        // Serialize the data first so we know how large it is.
+        archive::ed2k_oarchive oa(s);
+        oa << t;
+        s.flush();
+        m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
+        m_write_order.back().first.m_type     = packet_type<T>::value;
+
+        if (!bWriteInProgress)
+        {
+            std::vector<boost::asio::const_buffer> buffers;
+            buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
+            buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+
+            // set deadline timer
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+
+            boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, this,
+                    boost::asio::placeholders::error,
+                    boost::asio::placeholders::bytes_transferred));
+        }
+	}
+
+	/**
 	   * write structure into socket
 	   * structure must have serialization method
 	  */
+/*
+ *  replace by do_write
 	template <typename T, typename Handler>
 	void async_write(T& t, Handler handler)
 	{
-		out_stream.str("");
-		// Serialize the data first so we know how large it is.
-		archive::ed2k_oarchive oa(out_stream);
-		oa << t;
+	    m_strOutput.clear();
+	    boost::iostreams::back_insert_device<std::string> inserter(m_strOutput);
+	    boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
 
-		DBG("stream size: " << out_stream.str().size());
+		// Serialize the data first so we know how large it is.
+		archive::ed2k_oarchive oa(s);
+		oa << t;
+		s.flush();
+
 		// generate header
 		m_out_header.m_protocol = OP_EDONKEYPROT;
-		m_out_header.m_size     = out_stream.str().size() + 1;  // packet size without protocol type and packet body size field
+		m_out_header.m_size     = m_strOutput.size() + 1;  // packet size without protocol type and packet body size field
 		m_out_header.m_type     = packet_type<T>::value;
 		DBG("packet type: " <<  packetToString(packet_type<T>::value));
 
@@ -72,9 +126,10 @@ public:
 		// both the header and the data in a single write operation.
 		std::vector<boost::asio::const_buffer> buffers;
 		buffers.push_back(boost::asio::buffer(&m_out_header, header_size));
-		buffers.push_back(boost::asio::buffer(out_stream.str()));
+		buffers.push_back(boost::asio::buffer(m_strOutput));
 		boost::asio::async_write(m_socket, buffers, handler);
 	}
+	*/
 
 	/**
 	  * read packet body and serialize it into type T
@@ -110,41 +165,20 @@ public:
 	  * after reading completed - appropriate user callback will faired
 	  * or callback for unhandled packets if it set
 	 */
-	void async_read()
-	{
-	    boost::asio::async_read(m_socket,
-	            boost::asio::buffer(&m_in_header, header_size),
-	            boost::bind(&base_socket::handle_read_header, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-	}
+	void async_read();
 
 	/**
 	  * read packet header
 	 */
-	const libed2k_header& context() const
-	{
-		return (m_in_header);
-	}
+	const libed2k_header& context() const;
 
 	/**
-	  * add ordinary callback
+	  * add ordinary callbacks, set unhandled callback and error callback
 	 */
-	void add_callback(proto_type ptype, socket_handler handler)
-	{
-	    m_callbacks.insert(make_pair(ptype, handler));
-	}
+	void add_callback(proto_type ptype, socket_handler handler);
+	void set_unhandled_callback(socket_handler handler);
+	void set_error_callback(socket_handler handler);    //!< TODO - do we need it?
 
-	/**
-	  * add callback for unhandled operation
-	 */
-	void set_unhandled_callback(socket_handler handler)
-	{
-	    m_unhandled_handler = handler;
-	}
-
-	void set_error_callback(socket_handler handler)
-	{
-	    m_handle_error = handler;
-	}
 
 	/**
 	  * this method will call from external handlers for extract buffer into structure
@@ -168,81 +202,48 @@ public:
         return (true);
 	}
 
+	/**
+	  * stop all operations and close socket
+	 */
+	void close();
 private:
-	boost::asio::ip::tcp::socket	m_socket;       //!< operation socket
+	tcp::socket	                    m_socket;       //!< operation socket
 	socket_handler                  m_unhandled_handler;
 	socket_handler                  m_handle_error; //!< on error
-	std::ostringstream 				out_stream;     //!< output buffer
-	libed2k_header					m_out_header;   //!< output header
+	dtimer                          m_deadline;     //!< deadline timer for reading operations
+	int                             m_timeout;      //!< deadline timeout for reading operations
+    bool                            m_stopped;      //!< socket is stopped
 	libed2k_header					m_in_header;    //!< incoming message header
 	socket_buffer 				    m_in_container; //!< buffer for incoming messages
 	callback_map                    m_callbacks;
 
-	void handle_error(const error_code& error)
-	{
-	    if (m_handle_error)
-	    {
-	        m_handle_error(error);
-	    }
-	    else
-	    {
-	        m_socket.close();
-	    }
-	}
 
-	void handle_read_header(const boost::system::error_code& error, size_t nSize)
-	{
-	    if (!error)
-	    {
-	        // we must download body in any case
-            // increase internal buffer size if need
-            if (m_in_container.size() < m_in_header.m_size - 1)
-            {
-                m_in_container.resize(m_in_header.m_size - 1);
-            }
+	std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order
 
-            boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
-                    boost::bind(&base_socket::handle_read_packet, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-	    }
-	    else
-	    {
-	        handle_error(error);
-	    }
-	}
+	/**
+	  * order write handler - executed while message order not empty
+	 */
+    void handle_write(const error_code& error, size_t nSize);
 
-	void handle_read_packet(const boost::system::error_code& error, size_t nSize)
-	{
-	    if (!error)
-	    {
-	        //!< search appropriate dispatcher
-	        callback_map::iterator itr = m_callbacks.find(m_in_header.m_type);
+    /**
+      * common error handle and call user on error callback
+     */
+	void handle_error(const error_code& error);
 
-	        if (itr != m_callbacks.end())
-	        {
-                std::string strData = "ddfd";
-                DBG("call normal handler");
-                DBG(strData);
-                itr->second(error);
-	        }
-	        else
-	        {
-	            if (m_unhandled_handler)
-	            {
-	                DBG("call unhandled");
-	                m_unhandled_handler(error);
-	            }
-	            else
-	            {
-	                DBG("unhandled handler is null");
-	            }
-	        }
+	/**
+	  * call when socket got packets header
+	 */
+	void handle_read_header(const error_code& error, size_t nSize);
 
-	    }
-	    else
-	    {
-	        handle_error(error);
-	    }
-	}
+	/**
+	  * call when socket got packets body and call users call back
+	 */
+	void handle_read_packet(const error_code& error, size_t nSize);
+
+	/**
+	  * deadline timer handler
+	 */
+	void check_deadline();
 };
 
 }
