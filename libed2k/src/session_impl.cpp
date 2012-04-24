@@ -14,6 +14,7 @@
 #include "server_connection.hpp"
 #include "constants.hpp"
 #include "log.hpp"
+#include "alert_types.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -266,8 +267,8 @@ void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
             return;
         }
 #endif
-        if (m_alerts.should_post<listen_failed_alert>())
-            m_alerts.post_alert(listen_failed_alert(ep, e));
+        if (m_alerts.should_post<a_listen_failed_alert>())
+            m_alerts.post_alert(a_listen_failed_alert(ep, e));
         return;
     }
 
@@ -674,4 +675,34 @@ session_impl::listen_socket_t session_impl::setup_listener(
     DBG("listening on: " << ep << " external port: " << s.external_port);
 
     return s;
+}
+
+std::auto_ptr<alert> session_impl::pop_alert()
+{
+    if (m_alerts.pending())
+    {
+        return m_alerts.get();
+    }
+
+    return std::auto_ptr<alert>(0);
+}
+
+void session_impl::set_alert_dispatch(boost::function<void(alert const&)> const& fun)
+{
+    m_alerts.set_dispatch_function(fun);
+}
+
+alert const* session_impl::wait_for_alert(time_duration max_wait)
+{
+    return m_alerts.wait_for_alert(max_wait);
+}
+
+void session_impl::set_alert_mask(boost::uint32_t m)
+{
+    m_alerts.set_alert_mask(m);
+}
+
+size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
+{
+    return m_alerts.set_alert_queue_size_limit(queue_size_limit_);
 }

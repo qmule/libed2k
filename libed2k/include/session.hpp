@@ -12,6 +12,7 @@
 #include "md4_hash.hpp"
 #include "transfer_handle.hpp"
 #include "peer.hpp"
+#include "alert.hpp"
 
 namespace libed2k {
 
@@ -66,6 +67,12 @@ namespace libed2k {
         // all transfer_handles must be destructed before the session is destructed!
         transfer_handle add_transfer(const add_transfer_params& params);
         std::vector<transfer_handle> add_transfer_dir(const fs::path& dir);
+
+        std::auto_ptr<alert> pop_alert();
+        size_t set_alert_queue_size_limit(size_t queue_size_limit_);
+        void set_alert_mask(boost::uint32_t m);
+        alert const* wait_for_alert(time_duration max_wait);
+        void set_alert_dispatch(boost::function<void(alert const&)> const& fun);
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

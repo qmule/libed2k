@@ -4,7 +4,17 @@
 #define __LIBED2K_SESSION_IMPL__
 
 #include <string>
-#include <libtorrent/alert_types.hpp>
+
+#include <map>
+#include <set>
+
+#include "libtorrent/torrent_handle.hpp"
+#include "libtorrent/socket.hpp"
+#include "libtorrent/peer_connection.hpp"
+#include "libtorrent/config.hpp"
+#include "libtorrent/assert.hpp"
+#include "libtorrent/identify_client.hpp"
+#include "libtorrent/stat.hpp"
 
 #include "fingerprint.hpp"
 #include "md4_hash.hpp"
@@ -12,6 +22,7 @@
 #include "session_settings.hpp"
 #include "types.hpp"
 #include "util.hpp"
+#include "alert.hpp"
 
 namespace libed2k {
 
@@ -89,6 +100,16 @@ namespace libed2k {
 
             void setup_socket_buffers(tcp::socket& s);
 
+            /**
+              * alerts
+             */
+            std::auto_ptr<alert> pop_alert();
+            void set_alert_mask(boost::uint32_t m);
+            size_t set_alert_queue_size_limit(size_t queue_size_limit_);
+            void set_alert_dispatch(boost::function<void(alert const&)> const&);
+            alert const* wait_for_alert(time_duration max_wait);
+
+
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
@@ -116,7 +137,7 @@ namespace libed2k {
             mutable boost::asio::io_service m_io_service;
 
             // handles delayed alerts
-            libtorrent::alert_manager m_alerts;
+            alert_manager m_alerts;
 
             // handles disk io requests asynchronously
             // peers have pointers into the disk buffer

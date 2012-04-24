@@ -514,8 +514,8 @@ void peer_connection::on_piece(int received)
     if (recv_pos >= header_size) // read header
     {
         const char* ptr = recv_buffer.begin + 1;
-        p.piece = detail::read_int32(ptr);
-        p.start = detail::read_int32(ptr);
+        p.piece = libtorrent::detail::read_int32(ptr);
+        p.start = libtorrent::detail::read_int32(ptr);
         p.length = m_packet_size - header_size;
     }
 

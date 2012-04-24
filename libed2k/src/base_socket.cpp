@@ -17,7 +17,7 @@ namespace libed2k{
 
     base_socket::~base_socket()
     {
-        DBG("=== base_socket destruction ===");
+        DBG("base_socket::~base_socket()");
     }
 
     void base_socket::set_timeout(int nTimeout)
@@ -191,7 +191,7 @@ namespace libed2k{
 
         if (m_deadline.expires_at() <= dtimer::traits_type::now())
         {
-            DBG("deadline timer expired");
+            DBG("base_socket::check_deadline(): deadline timer expired");
 
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.

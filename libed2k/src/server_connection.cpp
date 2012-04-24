@@ -4,6 +4,7 @@
 #include "server_connection.hpp"
 #include "session_impl.hpp"
 #include "log.hpp"
+#include "alert_types.hpp"
 
 namespace libed2k{
 
@@ -11,7 +12,9 @@ server_connection::server_connection(aux::session_impl& ses):
     m_nClientId(0),
     m_name_lookup(ses.m_io_service),
     m_keep_alive(ses.m_io_service),
-    m_ses(ses)
+    m_ses(ses),
+    m_nFilesCount(0),
+    m_nUsersCount(0)
 {
 }
 
@@ -89,6 +92,8 @@ void server_connection::on_name_lookup(
 
 void server_connection::on_connection_complete(error_code const& error)
 {
+    DBG("server_connection::on_connection_complete");
+
     if (is_stopped())
     {
         DBG("socket was closed by timeout");
@@ -188,7 +193,16 @@ void server_connection::on_server_message(const error_code& error)
     if (!error)
     {
         server_message smsg;
-        m_socket->decode_packet(smsg);
+
+        if (m_socket->decode_packet(smsg))
+        {
+            if (m_ses.m_alerts.should_post<a_server_message>()) m_ses.m_alerts.post_alert(a_server_message(smsg.m_strMessage));
+        }
+        else
+        {
+            ERR("server_connection::on_server_message: parse error");
+        }
+
 
         DBG(smsg.m_strMessage);
         // TODO add alert there
@@ -226,7 +240,19 @@ void server_connection::on_server_status(const error_code& error)
     {
 
         server_status sss;
-        m_socket->decode_packet(sss);
+        if (m_socket->decode_packet(sss))
+        {
+            m_nFilesCount = sss.m_nFilesCount;
+            m_nUsersCount = sss.m_nUserCount;
+
+            if (m_nClientId != 0)
+            {
+                // we already got client id it means
+                // server connection initialized - post alert here
+                if (m_ses.m_alerts.should_post<a_server_connection_initialized>())
+                                m_ses.m_alerts.post_alert(a_server_connection_initialized(m_nClientId, m_nFilesCount, m_nUsersCount));
+            }
+        }
 
         DBG("users count: " << sss.m_nUserCount << " files count: " << sss.m_nFilesCount);
         m_socket->async_read();
@@ -260,6 +286,15 @@ void server_connection::on_id_change(const error_code& error)
         // simple read new id
         m_socket->decode_packet(m_nClientId);
         DBG("Client ID is: " << m_nClientId);
+
+        if (m_nUsersCount != 0)
+        {
+            // if we got users count != 0 - at least 1 user must exists on server(our connection)-
+            // server connection initialized - post alert here
+            if (m_ses.m_alerts.should_post<a_server_connection_initialized>())
+                m_ses.m_alerts.post_alert(a_server_connection_initialized(m_nClientId, m_nFilesCount, m_nUsersCount));
+        }
+
         m_socket->async_read();
     }
     else
