@@ -153,5 +153,5 @@ namespace libed2k
         return queue_size_limit_;
     }
 
-} // namespace libtorrent
+}
 

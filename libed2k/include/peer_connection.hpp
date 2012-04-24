@@ -29,8 +29,8 @@ namespace libed2k
     namespace aux{
         class session_impl;
     }
-    namespace detail = libtorrent::detail;
 
+    namespace detail = libtorrent::detail;
     class peer_connection : public libtorrent::intrusive_ptr_base<peer_connection>,
                             public boost::noncopyable
     {

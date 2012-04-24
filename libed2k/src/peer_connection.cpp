@@ -561,8 +561,8 @@ void peer_connection::on_piece(int received)
     if (recv_pos >= header_size) // read header
     {
         const char* ptr = recv_buffer.begin + 1;
-        p.piece = detail::read_int32(ptr);
-        p.start = detail::read_int32(ptr);
+        p.piece = libtorrent::detail::read_int32(ptr);
+        p.start = libtorrent::detail::read_int32(ptr);
         p.length = m_packet_size - header_size;
     }
 
@@ -640,7 +640,7 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
-    m_socket->async_read();
+    m_socket->start_read_cycle();
 }
 
 bool peer_connection::can_write() const
@@ -674,7 +674,6 @@ void peer_connection::on_disk_write_complete(
 void peer_connection::on_unhandled_packet(const error_code& error)
 {
     DBG("unhandled packet received: " << packetToString(m_socket->context().m_type));
-    m_socket->async_read(); // read next packet
 }
 
 void peer_connection::on_hello_packet(const error_code& error)
@@ -701,7 +700,6 @@ void peer_connection::on_hello_packet(const error_code& error)
         cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
 
         m_socket->do_write(cha);
-        m_socket->async_read();
     }
     else
     {

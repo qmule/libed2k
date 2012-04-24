@@ -42,4 +42,35 @@ std::vector<transfer_handle> session::add_transfer_dir(const fs::path& dir)
     return ret;
 }
 
+std::auto_ptr<alert> session::pop_alert()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->pop_alert();
+}
+
+void session::set_alert_dispatch(boost::function<void(alert const&)> const& fun)
+{
+    // this function deliberately doesn't acquire the mutex
+    return m_impl->set_alert_dispatch(fun);
+}
+
+alert const* session::wait_for_alert(time_duration max_wait)
+{
+    // this function deliberately doesn't acquire the mutex
+    return m_impl->wait_for_alert(max_wait);
+}
+
+void session::set_alert_mask(boost::uint32_t m)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->set_alert_mask(m);
+}
+
+size_t session::set_alert_queue_size_limit(size_t queue_size_limit_)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->set_alert_queue_size_limit(queue_size_limit_);
+}
+
+
 }

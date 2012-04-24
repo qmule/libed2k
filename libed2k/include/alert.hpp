@@ -99,13 +99,6 @@ namespace libed2k
         virtual char const* what() const = 0;
         virtual std::string message() const = 0;
         virtual int category() const = 0;
-
-        /*
-#ifndef TORRENT_NO_DEPRECATE
-        TORRENT_DEPRECATED_PREFIX
-        severity_t severity() const TORRENT_DEPRECATED { return warning; }
-#endif
-*/
         virtual std::auto_ptr<alert> clone() const = 0;
 
     private:
@@ -172,7 +165,8 @@ namespace libed2k
         unhandled_alert() {}
     };
 
-    namespace detail {
+    namespace libed2k_detail
+    {
 
         struct void_;
 
@@ -202,7 +196,7 @@ namespace libed2k
 
     } // namespace detail
 
-    template<BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT( LIBED2K_MAX_ALERT_TYPES, class T, detail::void_)>
+    template<BOOST_PP_ENUM_PARAMS_WITH_A_DEFAULT( LIBED2K_MAX_ALERT_TYPES, class T, libed2k_detail::void_)>
     struct handle_alert
     {
         template<class Handler>
@@ -211,14 +205,14 @@ namespace libed2k
         {
             #define ALERT_POINTER_TYPE(z, n, text) (BOOST_PP_CAT(T, n)*)0
 
-            detail::handle_alert_dispatch(alert_, handler, typeid(*alert_)
+                libed2k_detail::handle_alert_dispatch(alert_, handler, typeid(*alert_)
                 , BOOST_PP_ENUM(LIBED2K_MAX_ALERT_TYPES, ALERT_POINTER_TYPE, _));
 
             #undef ALERT_POINTER_TYPE
         }
     };
 
-} // namespace libtorrent
+}
 
 #endif // __LIBED2K_ALERT__
 

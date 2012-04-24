@@ -257,7 +257,7 @@ void array_tag::load(archive::ed2k_iarchive& ar)
 			{
                 ar.container().seekg(nSize, std::ios::cur);   // go to end of blob
 			}
-			catch(std::ios_base::failure& ex)
+			catch(std::ios_base::failure&)
 			{
 				throw libed2k::libed2k_exception(libed2k::errors::blob_tag_too_long);
 			}

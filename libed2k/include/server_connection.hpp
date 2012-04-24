@@ -34,6 +34,7 @@ namespace libed2k
         std::vector<peer_entry> peers;
     };
 
+
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
@@ -82,11 +83,12 @@ namespace libed2k
         tcp::resolver                   m_name_lookup;
         dtimer                          m_keep_alive;       //!< timer for ping server
         server_status                   m_server_status;    //!< server status info
+        aux::session_impl&              m_ses;
+        boost::uint32_t                 m_nFilesCount;
+        boost::uint32_t                 m_nUsersCount;
 
         boost::shared_ptr<base_socket>  m_socket;
         tcp::endpoint                   m_target;
-
-        aux::session_impl&              m_ses;
     };
 }
 

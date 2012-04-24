@@ -11,14 +11,14 @@ namespace boost{
 namespace libtorrent {
     class piece_manager;
     class piece_picker;
-    class piece_block;
-    class pending_block;
-    class peer_request;
-    class disk_io_job;
-    class disk_buffer_holder;
+    struct piece_block;
+    struct pending_block;
+    struct peer_request;
+    struct disk_io_job;
+    struct disk_buffer_holder;
     class buffer;
-    class logger;
-    class ptime;
+    struct logger;
+    struct ptime;
     class listen_failed_alert;
 
     namespace aux{
