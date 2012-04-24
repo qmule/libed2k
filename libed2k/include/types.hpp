@@ -42,6 +42,7 @@ namespace libed2k {
     typedef libtorrent::logger logger;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
+    typedef boost::posix_time::time_duration time_duration;
 
     namespace fs = boost::filesystem;
     namespace time = boost::posix_time;
