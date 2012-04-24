@@ -1,0 +1,91 @@
+#ifndef WIN32
+#define BOOST_TEST_DYN_LINK
+#endif
+
+#ifdef STAND_ALONE
+#   define BOOST_TEST_MODULE Main
+#endif
+
+#include <boost/test/unit_test.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include "alert.hpp"
+#include "alert_types.hpp"
+
+
+BOOST_AUTO_TEST_SUITE(test_alerts)
+
+std::auto_ptr<libed2k::alert> pop_alert(libed2k::alert_manager& al)
+{
+    if (al.pending())
+    {
+        return al.get();
+    }
+
+    return std::auto_ptr<libed2k::alert>(0);
+}
+
+bool bGlobal = false;
+
+void empty(const boost::system::error_code& /*e*/)
+{
+    bGlobal = true;
+}
+
+BOOST_AUTO_TEST_CASE(test_memory_archive)
+{
+    boost::asio::io_service io;
+    boost::asio::deadline_timer tm(io, boost::posix_time::seconds(5));  // run timer for service work
+    libed2k::alert_manager al(io);
+
+    tm.async_wait(&empty);
+    boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
+    al.set_alert_mask(libed2k::alert::error_notification);
+
+    al.post_alert(libed2k::server_alert(1));
+    al.post_alert(libed2k::server_alert(2));
+    al.post_alert(libed2k::server_alert(3));
+
+    std::auto_ptr<libed2k::alert> a;
+
+    a = pop_alert(al);
+    int nCount = 0;
+
+    while (a.get())
+    {
+        nCount++;
+        BOOST_REQUIRE(dynamic_cast<libed2k::server_alert*>(a.get()));   // we wait for server alert now
+        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::server_alert*>(a.get()))->m_nClientId, nCount);
+        a = pop_alert(al);
+    }
+
+    BOOST_CHECK_EQUAL(nCount, 3);
+
+    if (al.should_post<libed2k::server_alert>())
+    {
+        al.post_alert(libed2k::server_alert(300));
+    }
+
+    a = pop_alert(al);
+    BOOST_CHECK(!a.get());
+
+    al.set_alert_mask(libed2k::alert::server_notification);
+
+    if (al.should_post<libed2k::server_alert>())
+    {
+        al.post_alert(libed2k::server_alert(90));
+    }
+
+    a = pop_alert(al);
+
+    BOOST_REQUIRE(a.get());
+    BOOST_REQUIRE(dynamic_cast<libed2k::server_alert*>(a.get()));
+    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_alert*>(a.get())->m_nClientId, 90);
+
+    t.join();
+
+    BOOST_CHECK(bGlobal);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
