@@ -30,7 +30,7 @@ namespace libed2k{
         return (m_socket);
     }
 
-    void base_socket::async_read()
+    void base_socket::start_read_cycle()
     {
         if (m_stopped)
             return;
@@ -73,7 +73,7 @@ namespace libed2k{
 
     void base_socket::close()
     {
-        DBG("base socket close");
+        DBG("base_socket::close()");
         m_stopped = true;
         boost::system::error_code ignored_ec;
         m_socket.close(ignored_ec);
@@ -172,6 +172,8 @@ namespace libed2k{
                     LDBG_ << "unhandled handler is null";
                 }
             }
+
+            start_read_cycle();
 
         }
         else

@@ -134,8 +134,8 @@ void server_connection::on_connection_complete(error_code const& error)
     m_keep_alive.expires_from_now(boost::posix_time::seconds(settings.server_keep_alive_timeout));
     m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, this));
 
-    m_socket->async_read();     // wait incoming messages
-    m_socket->do_write(login);  // write login message
+    m_socket->start_read_cycle();   // wait incoming messages
+    m_socket->do_write(login);      // write login message
 }
 
 void server_connection::on_unhandled_packet(const error_code& error)
@@ -145,7 +145,7 @@ void server_connection::on_unhandled_packet(const error_code& error)
 
     if (!error)
     {
-        m_socket->async_read(); // read next packet
+
     }
     else
     {
@@ -164,7 +164,7 @@ void server_connection::on_reject(const error_code& error)
 
     if (!error)
     {
-        m_socket->async_read();
+
     }
     else
     {
@@ -178,7 +178,7 @@ void server_connection::on_disconnect(const error_code& error)
 
     if (!error)
     {
-        m_socket->async_read();
+
     }
     else
     {
@@ -206,8 +206,6 @@ void server_connection::on_server_message(const error_code& error)
 
         DBG(smsg.m_strMessage);
         // TODO add alert there
-        m_socket->async_read();
-
     }
     else
     {
@@ -224,7 +222,6 @@ void server_connection::on_server_list(const error_code& error)
         server_list slist;
         m_socket->decode_packet(slist);
         DBG("container size: " << slist.m_collection.size());
-        m_socket->async_read();
     }
     else
     {
@@ -255,7 +252,6 @@ void server_connection::on_server_status(const error_code& error)
         }
 
         DBG("users count: " << sss.m_nUserCount << " files count: " << sss.m_nFilesCount);
-        m_socket->async_read();
     }
     else
     {
@@ -269,7 +265,7 @@ void server_connection::on_users_list(const error_code& error)
 
     if (!error)
     {
-        m_socket->async_read();
+
     }
     else
     {
@@ -295,7 +291,6 @@ void server_connection::on_id_change(const error_code& error)
                 m_ses.m_alerts.post_alert(a_server_connection_initialized(m_nClientId, m_nFilesCount, m_nUsersCount));
         }
 
-        m_socket->async_read();
     }
     else
     {

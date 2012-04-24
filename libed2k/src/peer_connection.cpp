@@ -406,7 +406,7 @@ void peer_connection::on_timeout()
 
 void peer_connection::disconnect(error_code const& ec, int error)
 {
-    // TODO: implement
+    DBG("peer_connection::disconnect(" << ec.message() << ")" );
 }
 
 void peer_connection::on_connect(int ticket)
@@ -593,7 +593,7 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
-    m_socket->async_read();
+    m_socket->start_read_cycle();
 }
 
 bool peer_connection::can_write() const
@@ -627,7 +627,6 @@ void peer_connection::on_disk_write_complete(
 void peer_connection::on_unhandled_packet(const error_code& error)
 {
     DBG("unhandled packet received: " << packetToString(m_socket->context().m_type));
-    m_socket->async_read(); // read next packet
 }
 
 void peer_connection::on_hello_packet(const error_code& error)
@@ -654,7 +653,6 @@ void peer_connection::on_hello_packet(const error_code& error)
         cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
 
         m_socket->do_write(cha);
-        m_socket->async_read();
     }
     else
     {

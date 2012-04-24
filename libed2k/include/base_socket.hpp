@@ -165,7 +165,7 @@ public:
 	  * after reading completed - appropriate user callback will faired
 	  * or callback for unhandled packets if it set
 	 */
-	void async_read();
+	void start_read_cycle();
 
 	/**
 	  * read packet header
