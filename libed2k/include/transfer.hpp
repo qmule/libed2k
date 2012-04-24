@@ -20,11 +20,13 @@ namespace libtorrent {
 
 namespace libed2k {
 
-    struct add_transfer_params;
+    class add_transfer_params;
     namespace aux{
         class session_impl;
     }
     class peer;
+    class server_request;
+    class server_response;
 
 	// a transfer is a class that holds information
 	// for a specific download. It updates itself against
@@ -40,6 +42,8 @@ namespace libed2k {
         void start();
         void abort();
 
+        aux::session_impl& session() { return m_ses; }
+
         bool connect_to_peer(peer* peerinfo);
 
         bool want_more_peers() const;
@@ -49,21 +53,6 @@ namespace libed2k {
         // the number of peers that belong to this torrent
         int num_peers() const { return (int)m_connections.size(); }
         int num_seeds() const;
-
-        // piece_passed is called when a piece passes the hash check
-        // this will tell all peers that we just got his piece
-        // and also let the piece picker know that we have this piece
-        // so it wont pick it for download
-        void piece_passed(int index);
-
-        // piece_failed is called when a piece fails the hash check
-        void piece_failed(int index);
-
-        // this will restore the piece picker state for a piece
-        // by re marking all the requests to blocks in this piece
-        // that are still outstanding in peers' download queues.
-        // this is done when a piece fails
-        void restore_piece_state(int index);
 
         bool is_paused() const;
         bool is_seed() const
@@ -86,6 +75,20 @@ namespace libed2k {
 
         void second_tick();
 
+		// this is called wheh the transfer has completed
+		// the download. It will post an event, disconnect
+		// all seeds and let the tracker know we're finished.
+		void completed();
+
+        // this is called when the transfer has finished. i.e.
+        // all the pieces we have not filtered have been downloaded.
+        // If no pieces are filtered, this is called first and then
+        // completed() is called immediately after it.
+        void finished();
+
+        // --------------------------------------------
+        // PIECE MANAGEMENT
+
         void async_verify_piece(int piece_index, boost::function<void(int)> const&);
 
         // this is called from the peer_connection
@@ -97,9 +100,6 @@ namespace libed2k {
             return m_picker.get() != 0;
         }
         piece_picker& picker() { return *m_picker; }
-
-        // --------------------------------------------
-        // PIECE MANAGEMENT
 
         // returns true if we have downloaded the given piece
         bool have_piece(int index) const
@@ -118,18 +118,35 @@ namespace libed2k {
 
         int num_pieces() const;
 
-		// this is called wheh the transfer has completed
-		// the download. It will post an event, disconnect
-		// all seeds and let the tracker know we're finished.
-		void completed();
+        // piece_passed is called when a piece passes the hash check
+        // this will tell all peers that we just got his piece
+        // and also let the piece picker know that we have this piece
+        // so it wont pick it for download
+        void piece_passed(int index);
 
-        // this is called when the transfer has finished. i.e.
-        // all the pieces we have not filtered have been downloaded.
-        // If no pieces are filtered, this is called first and then
-        // completed() is called immediately after it.
-        void finished();
+        // piece_failed is called when a piece fails the hash check
+        void piece_failed(int index);
+
+        // this will restore the piece picker state for a piece
+        // by re marking all the requests to blocks in this piece
+        // that are still outstanding in peers' download queues.
+        // this is done when a piece fails
+        void restore_piece_state(int index);
 
         piece_manager& filesystem() { return *m_storage; }
+
+        // --------------------------------------------
+        // SERVER MANAGEMENT
+
+        void send_server_request(const server_request& req);
+
+        // these are callbacks called by the server_connection
+        // when this transfer got a response from its server request
+        // or when a failure occured
+        void on_server_response(const server_request& req, const server_response& res);
+        void on_server_request_timed_out(const server_request& req);
+        void on_server_request_error(server_request const& r, int response_code,
+                                     const std::string& str, int retry_interval);
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }
 

@@ -3,15 +3,16 @@
 
 namespace libed2k {
 
-    struct session_settings
+    class session_settings
     {
+    public:
         session_settings():
             peer_timeout(120),
             peer_connect_timeout(7),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
             server_port(4661),
-            peer_port(4662),
+            listen_port(4662),
             client_name("http://www.aMule.org"),
             server_keep_alive_timeout(20),
             server_ip(0)
@@ -42,13 +43,13 @@ namespace libed2k {
         // ed2k server port
         int server_port;
         // ed2k peer port for incoming peer connections
-        int peer_port;
+        int listen_port;
 
         std::string     client_name; // ed2k client name
         int             server_keep_alive_timeout;
-        unsigned long int server_ip;
+        unsigned long int server_ip; // todo: remove
 
-        md4_hash client_hash;    // ed2k client hash
+        md4_hash client_hash;    // ed2k client hash, todo: remove
     };
 
 }

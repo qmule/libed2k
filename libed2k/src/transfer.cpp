@@ -4,6 +4,7 @@
 #include "transfer.hpp"
 #include "peer.hpp"
 #include "peer_connection.hpp"
+#include "server_connection.hpp"
 #include "base_socket.hpp"
 #include "constants.hpp"
 #include "util.hpp"
@@ -23,6 +24,7 @@ transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interfac
     m_file_path(p.file_path),
     m_storage_mode(p.storage_mode),
     m_seed_mode(p.seed_mode),
+    m_policy(this, p.peer_list),
     m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
 {
     // TODO: init here
@@ -71,8 +73,9 @@ void transfer::abort()
 
 bool transfer::connect_to_peer(peer* peerinfo)
 {
-    tcp::endpoint ip(peerinfo->ip());
-    boost::shared_ptr<base_socket> sock(new base_socket(m_ses.m_io_service, m_ses.settings().peer_timeout));
+    tcp::endpoint ip(peerinfo->endpoint);
+    boost::shared_ptr<base_socket> sock(
+        new base_socket(m_ses.m_io_service, m_ses.settings().peer_timeout));
 
     m_ses.setup_socket_buffers(sock->socket());
 
@@ -107,7 +110,7 @@ bool transfer::connect_to_peer(peer* peerinfo)
 
 bool transfer::want_more_peers() const
 {
-    return !is_paused() && !m_abort;
+    return !is_paused() && m_policy.num_connect_candidates() > 0 && !m_abort;
 }
 
 bool transfer::try_connect_peer()
@@ -285,4 +288,21 @@ void transfer::piece_finished(int index, int passed_hash_check)
         m_picker->restore_piece(index);
         restore_piece_state(index);
     }
+}
+
+void transfer::send_server_request(const server_request& req)
+{
+}
+
+void transfer::on_server_response(const server_request& req, const server_response& res)
+{
+}
+
+void transfer::on_server_request_timed_out(const server_request& req)
+{
+}
+
+void transfer::on_server_request_error(server_request const& r, int response_code,
+                                       const std::string& str, int retry_interval)
+{
 }

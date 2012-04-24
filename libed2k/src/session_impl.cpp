@@ -21,7 +21,7 @@ namespace ip = boost::asio::ip;
 
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings):
-    m_ipv4_peer_pool(500),
+    m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
     m_io_service(),
@@ -43,7 +43,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
 
     error_code ec;
     m_listen_interface = tcp::endpoint(
-        libtorrent::address::from_string(listen_interface, ec), settings.peer_port);
+        libtorrent::address::from_string(listen_interface, ec), settings.listen_port);
     TORRENT_ASSERT(!ec);
 
 #ifdef WIN32

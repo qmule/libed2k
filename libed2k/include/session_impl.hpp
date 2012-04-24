@@ -15,7 +15,6 @@
 
 namespace libed2k {
 
-    class session;
     class peer_connection;
     class server_connection;
     class transfer;
@@ -27,11 +26,6 @@ namespace libed2k {
         class session_impl: boost::noncopyable
         {
         public:
-            friend class libed2k::session;
-            friend class libed2k::transfer;
-            friend class libed2k::peer_connection;
-            friend class libed2k::server_connection;
-
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
 
@@ -79,8 +73,6 @@ namespace libed2k {
             const session_settings& settings() const { return m_settings; }
             session_settings& settings() { return m_settings; }
 
-        private:
-
             void on_disk_queue();
 
             void on_tick(error_code const& e);
@@ -97,7 +89,7 @@ namespace libed2k {
 
             void setup_socket_buffers(tcp::socket& s);
 
-            boost::object_pool<libtorrent::policy::ipv4_peer> m_ipv4_peer_pool;
+            boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
             // objects pointed to by partial_piece_info returned

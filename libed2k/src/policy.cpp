@@ -2,16 +2,38 @@
 #include "policy.hpp"
 #include "peer.hpp"
 #include "session.hpp"
+#include "session_impl.hpp"
 #include "transfer.hpp"
 
 using namespace libed2k;
 
+policy::policy(transfer* t, const std::vector<peer_entry>& peer_list):
+    m_transfer(t), m_num_connect_candidates(0)
+{
+    for (std::vector<peer_entry>::const_iterator pi = peer_list.begin();
+         pi != peer_list.end(); ++pi)
+    {
+        add_peer(tcp::endpoint(libtorrent::address::from_string(pi->ip), pi->port));
+    }
+}
+
+peer* policy::add_peer(const tcp::endpoint& ep)
+{
+    peer* p = (peer*)m_transfer->session().m_peer_pool.malloc();
+    new (p) peer(ep);
+    m_peers.push_back(p);
+
+    if (is_connect_candidate(*p))
+        ++m_num_connect_candidates;
+
+    return p;
+}
+
 void policy::set_connection(peer* p, peer_connection* c)
 {
-    const bool was_conn_cand = is_connect_candidate(*p, m_finished);
+    const bool was_conn_cand = is_connect_candidate(*p);
     p->connection = c;
     if (was_conn_cand) --m_num_connect_candidates;
-
 }
 
 bool policy::connect_one_peer()
@@ -21,7 +43,7 @@ bool policy::connect_one_peer()
 }
 
 
-bool policy::is_connect_candidate(peer const& p, bool finished) const
+bool policy::is_connect_candidate(peer const& p) const
 {
     if (p.connection
 //        || p.banned

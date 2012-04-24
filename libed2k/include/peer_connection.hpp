@@ -293,8 +293,9 @@ namespace libed2k
         int m_disk_recv_buffer_size;
 
         template <std::size_t Size>
-        struct handler_storage
+        class handler_storage
         {
+        public:
             boost::aligned_storage<Size> bytes;
         };
 
@@ -302,8 +303,9 @@ namespace libed2k
         handler_storage<TORRENT_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
 
         template <class Handler, std::size_t Size>
-        struct allocating_handler
+        class allocating_handler
         {
+        public:
             allocating_handler(Handler const& h, handler_storage<Size>& s):
                 handler(h), storage(s)
             {}

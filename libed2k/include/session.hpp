@@ -11,14 +11,13 @@
 #include "fingerprint.hpp"
 #include "md4_hash.hpp"
 #include "transfer_handle.hpp"
+#include "peer.hpp"
 
 namespace libed2k {
 
     typedef libtorrent::storage_constructor_type storage_constructor_type;
 
-    namespace fs = boost::filesystem;
-
-    struct session_settings;
+    class session_settings;
     namespace aux {
         class session_impl;
     }
@@ -30,8 +29,9 @@ namespace libed2k {
         storage_mode_compact
     };
 
-    struct add_transfer_params
+    class add_transfer_params
     {
+    public:
         add_transfer_params():
             resume_data(0),
             storage_mode(storage_mode_sparse),
@@ -41,6 +41,7 @@ namespace libed2k {
 
         md4_hash info_hash;
         fs::path file_path;
+        std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;

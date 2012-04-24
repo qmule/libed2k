@@ -117,7 +117,7 @@ void server_connection::on_connection_complete(error_code const& error)
 
     login.m_hClient                 = settings.client_hash;
     login.m_sNetIdentifier.m_nIP    = 0;
-    login.m_sNetIdentifier.m_nPort  = settings.peer_port;
+    login.m_sNetIdentifier.m_nPort  = settings.listen_port;
 
     login.m_list.add_tag(make_string_tag(std::string(settings.client_name), CT_NAME, true));
     login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));

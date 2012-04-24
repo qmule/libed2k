@@ -12,10 +12,27 @@
 #include "packet_struct.hpp"
 #include "error_code.hpp"
 #include "base_socket.hpp"
+#include "peer.hpp"
 
 namespace libed2k
 {
     namespace aux { class session_impl; }
+
+    class server_request {
+    public:
+        server_request()
+        {}
+
+        std::string file;
+    };
+
+    class server_response {
+    public:
+        server_response()
+        {}
+
+        std::vector<peer_entry> peers;
+    };
 
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable

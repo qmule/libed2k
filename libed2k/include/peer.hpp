@@ -11,17 +11,27 @@ namespace libed2k {
     class peer
     {
     public:
-        tcp::endpoint ip() const { return tcp::endpoint(address, port); }
+        peer(const tcp::endpoint& ep):
+            endpoint(ep), connection(NULL)
+        {}
 
-        libed2k::address address;
-
-        // the port this peer is or was connected on
-        boost::uint16_t port;
+        tcp::endpoint endpoint;
 
         // if the peer is connected now, this
         // will refer to a valid peer_connection
         peer_connection* connection;
 
+    };
+
+    class peer_entry
+    {
+    public:
+        peer_entry(const std::string& _ip, int _port):
+            ip(_ip), port(_port)
+        {}
+
+        std::string ip;
+        int port;
     };
 
 }

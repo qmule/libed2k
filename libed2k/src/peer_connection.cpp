@@ -79,12 +79,11 @@ void peer_connection::init_handlers()
 peer_connection::~peer_connection()
 {
     m_disk_recv_buffer_size = 0;
-    DBG("*** CONNECTION CLOSED");
+    DBG("*** PEER CONNECTION CLOSED");
 }
 
 void peer_connection::second_tick()
 {
-    DBG("peer connection second tick");
 }
 
 void peer_connection::on_send_data(error_code const& error,
@@ -641,7 +640,7 @@ void peer_connection::on_hello_packet(const error_code& error)
         client_hello_answer cha;
         cha.m_hClient               = m_ses.settings().client_hash;
         cha.m_sNetIdentifier.m_nIP  = 0;
-        cha.m_sNetIdentifier.m_nPort= m_ses.settings().peer_port;
+        cha.m_sNetIdentifier.m_nPort= m_ses.settings().listen_port;
 
         boost::uint32_t nVersion = 0x3c;
         boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;

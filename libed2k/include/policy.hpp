@@ -2,6 +2,9 @@
 #define __LIBED2K_POLICY__
 
 #include <deque>
+#include <vector>
+
+#include "peer.hpp"
 
 namespace libed2k {
 
@@ -12,15 +15,19 @@ namespace libed2k {
     class policy
     {
     public:
+        policy(transfer* t, const std::vector<peer_entry>& peer_list);
+
+        peer* add_peer(const tcp::endpoint& ep);
         void set_connection(peer* p, peer_connection* c);
         bool connect_one_peer();
+        int num_connect_candidates() const { return m_num_connect_candidates; }
     private:
         typedef std::deque<peer*> peers_t;
 
+        bool is_connect_candidate(peer const& p) const;
+
         peers_t m_peers;
         transfer* m_transfer;
-
-        bool is_connect_candidate(peer const& p, bool finished) const;
 
         // The number of peers in our peer list
         // that are connect candidates. i.e. they're
