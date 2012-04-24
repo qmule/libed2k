@@ -704,7 +704,7 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
 			{
                 ar.container().seekg((nLength/8) + 1, std::ios::cur);
 			}
-			catch(std::ios_base::failure& f)
+			catch(std::ios_base::failure&)
 			{
 				throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
 			}

@@ -96,7 +96,7 @@ bool transfer::connect_to_peer(peer* peerinfo)
             boost::bind(&peer_connection::on_timeout, c),
             libtorrent::seconds(timeout));
     }
-    catch (std::exception& e)
+    catch (std::exception&)
     {
         std::set<peer_connection*>::iterator i =
             m_connections.find(boost::get_pointer(c));

@@ -178,6 +178,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\unit\test_alerts.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\unit\test_archive.cpp"
 				>
 			</File>
