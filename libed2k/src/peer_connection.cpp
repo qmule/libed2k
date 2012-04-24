@@ -401,12 +401,78 @@ size_t peer_connection::try_read(sync_t s, error_code& ec)
 
 void peer_connection::on_timeout()
 {
-    // TODO: implement
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+    error_code ec;
+    DBG("CONNECTION TIMED OUT: " << m_remote);
+
+    disconnect(errors::timed_out, 1);
 }
 
 void peer_connection::disconnect(error_code const& ec, int error)
 {
+    switch (error)
+    {
+    case 0:
+        DBG("*** CONNECTION CLOSED " << ec.message());
+        break;
+    case 1:
+        DBG("*** CONNECTION FAILED " << ec.message());
+        break;
+    case 2:
+        DBG("*** PEER ERROR " << ec.message());
+        break;
+    }
     // TODO: implement
+
+    //if (error > 0) m_failed = true;
+    if (m_disconnecting) return;
+    boost::intrusive_ptr<peer_connection> me(this);
+
+    if (m_connecting && m_connection_ticket >= 0)
+    {
+        m_ses.m_half_open.done(m_connection_ticket);
+        m_connection_ticket = -1;
+    }
+
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (t)
+    {
+        if (t->has_picker())
+        {
+            piece_picker& picker = t->picker();
+
+            while (!m_download_queue.empty())
+            {
+                pending_block& qe = m_download_queue.back();
+                if (!qe.timed_out && !qe.not_wanted) picker.abort_download(qe.block);
+                //m_outstanding_bytes -= t->to_req(qe.block).length;
+                //if (m_outstanding_bytes < 0) m_outstanding_bytes = 0;
+                m_download_queue.pop_back();
+            }
+            while (!m_request_queue.empty())
+            {
+                picker.abort_download(m_request_queue.back().block);
+                m_request_queue.pop_back();
+            }
+        }
+        else
+        {
+            m_download_queue.clear();
+            m_request_queue.clear();
+            //m_outstanding_bytes = 0;
+        }
+        //m_queued_time_critical = 0;
+
+        t->remove_peer(this);
+        m_transfer.reset();
+    }
+
+    m_disconnecting = true;
+    error_code e;
+    m_socket->close(/*e*/);
+    m_ses.close_connection(this, ec);
 }
 
 void peer_connection::on_connect(int ticket)
@@ -418,34 +484,11 @@ void peer_connection::on_connect(int ticket)
     boost::shared_ptr<transfer> t = m_transfer.lock();
     error_code ec;
 
+    DBG("CONNECTING: " << m_remote);
+
     if (!t)
     {
-        disconnect(libtorrent::errors::torrent_aborted);
-        return;
-    }
-
-    m_socket->socket().open(m_remote.protocol(), ec);
-    if (ec)
-    {
-        disconnect(ec);
-        return;
-    }
-
-    tcp::endpoint bind_interface = t->get_interface();
-
-    m_socket->socket().set_option(tcp::acceptor::reuse_address(true), ec);
-    if (ec)
-    {
-        disconnect(ec);
-        return;
-    }
-
-    bind_interface.port(m_ses.listen_port());
-
-    m_socket->socket().bind(bind_interface, ec);
-    if (ec)
-    {
-        disconnect(ec);
+        disconnect(errors::transfer_aborted);
         return;
     }
 
@@ -466,11 +509,15 @@ void peer_connection::on_connection_complete(error_code const& e)
     error_code ec;
     if (e)
     {
+        DBG("CONNECTION FAILED: " << m_remote << ": " << e.message());
+
         disconnect(e, 1);
         return;
     }
 
     if (m_disconnecting) return;
+
+    DBG("COMPLETED: " << m_remote);
 
     setup_send();
     setup_receive();

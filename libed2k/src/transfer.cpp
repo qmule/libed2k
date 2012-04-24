@@ -73,14 +73,14 @@ void transfer::abort()
 
 bool transfer::connect_to_peer(peer* peerinfo)
 {
-    tcp::endpoint ip(peerinfo->endpoint);
+    tcp::endpoint ep(peerinfo->endpoint);
     boost::shared_ptr<base_socket> sock(
         new base_socket(m_ses.m_io_service, m_ses.settings().peer_timeout));
 
     m_ses.setup_socket_buffers(sock->socket());
 
     boost::intrusive_ptr<peer_connection> c(
-        new peer_connection(m_ses, shared_from_this(), sock, ip, peerinfo));
+        new peer_connection(m_ses, shared_from_this(), sock, ep, peerinfo));
 
     // add the newly connected peer to this torrent's peer list
     m_connections.insert(boost::get_pointer(c));
@@ -106,6 +106,12 @@ bool transfer::connect_to_peer(peer* peerinfo)
     }
 
     return peerinfo->connection;
+}
+
+void transfer::remove_peer(peer_connection* p)
+{
+    // TODO: implement
+    m_connections.erase(p);
 }
 
 bool transfer::want_more_peers() const

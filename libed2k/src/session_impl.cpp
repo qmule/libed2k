@@ -340,6 +340,15 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
+void session_impl::close_connection(const peer_connection* p, const error_code& ec)
+{
+    DBG("CLOSING CONNECTION " << p->remote() << " : " << ec.message());
+    connection_map::iterator i =
+        std::find_if(m_connections.begin(), m_connections.end(),
+                     boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p);
+    if (i != m_connections.end()) m_connections.erase(i);
+}
+
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {

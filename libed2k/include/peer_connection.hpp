@@ -59,6 +59,8 @@ namespace libed2k
 
         peer* peer_info() const { return m_peer_info; }
 
+        const tcp::endpoint& remote() const { return m_remote; }
+
         // is called once every second by the main loop
         void second_tick();
 
@@ -249,6 +251,14 @@ namespace libed2k
         // until the some info??? is received. Then it's
         // set to the transfer it belongs to.
         boost::weak_ptr<transfer> m_transfer;
+
+        // the blocks we have reserved in the piece
+        // picker and will request from this peer.
+        std::vector<pending_block> m_request_queue;
+
+        // the queue of blocks we have requested
+        // from this peer
+        std::vector<pending_block> m_download_queue;
 
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming

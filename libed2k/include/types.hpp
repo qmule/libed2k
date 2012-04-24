@@ -12,6 +12,7 @@ namespace libtorrent {
     class piece_manager;
     class piece_picker;
     class piece_block;
+    class pending_block;
     class peer_request;
     class disk_io_job;
     class disk_buffer_holder;
@@ -35,6 +36,7 @@ namespace libed2k {
     typedef libtorrent::piece_manager piece_manager;
     typedef libtorrent::piece_picker piece_picker;
     typedef libtorrent::piece_block piece_block;
+    typedef libtorrent::pending_block pending_block;
     typedef libtorrent::disk_io_job disk_io_job;
     typedef libtorrent::disk_buffer_holder disk_buffer_holder;
     typedef libtorrent::buffer buffer;

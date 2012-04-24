@@ -32,7 +32,9 @@ namespace libed2k
             session_is_closing,
             duplicate_transfer,
             transfer_finished,
+            transfer_aborted,
             stopping_transfer,
+            timed_out,
 
             num_errors
         };

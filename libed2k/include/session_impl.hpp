@@ -50,6 +50,8 @@ namespace libed2k {
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
 
+            void close_connection(const peer_connection* p, const error_code& ec);
+
             unsigned short listen_port() const;
 
             void abort();

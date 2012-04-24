@@ -26,7 +26,9 @@ namespace libed2k
             "session is closing",
             "duplicate transfer",
             "transfer finished",
-            "stopping transfer"
+            "transfer aborted",
+            "stopping transfer",
+            "timed out"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

@@ -46,6 +46,11 @@ namespace libed2k {
 
         bool connect_to_peer(peer* peerinfo);
 
+        // this will remove the peer and make sure all
+        // the pieces it had have their reference counter
+        // decreased in the piece_picker
+        void remove_peer(peer_connection* p);
+
         bool want_more_peers() const;
         bool try_connect_peer();
         void give_connect_points(int points);
