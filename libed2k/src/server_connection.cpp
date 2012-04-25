@@ -86,6 +86,7 @@ void server_connection::on_name_lookup(
     m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1));
     m_socket->add_callback(OP_SERVERIDENT,  boost::bind(&server_connection::on_server_ident,    this, _1));
     m_socket->add_callback(OP_FOUNDSOURCES, boost::bind(&server_connection::on_found_sources,   this, _1));
+    m_socket->add_callback(OP_SEARCHRESULT, boost::bind(&server_connection::on_search_result,   this, _1));
 
     m_socket->do_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
@@ -334,6 +335,25 @@ void server_connection::on_found_sources(const error_code& error)
         else
         {
             ERR("Unable to parse server info entry");
+        }
+    }
+}
+
+void server_connection::on_search_result(const error_code& error)
+{
+    DBG("server_connection::on_search_result(" << error.message() << ")");
+
+    if (!error)
+    {
+        search_file_list sfl;
+
+        if (m_socket->decode_packet(sfl))
+        {
+            DBG("search file list");
+        }
+        else
+        {
+            ERR("unable to parse search file list");
         }
     }
 }

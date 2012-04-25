@@ -74,6 +74,7 @@ namespace libed2k
         void on_id_change(const error_code& error);         //!< our id changed message
         void on_server_ident(const error_code& error);      //!< server identification message
         void on_found_sources(const error_code& error);     //!< found sources message
+        void on_search_result(const error_code& error);     //!< search result message
 
         void handle_error(const error_code& error);
 

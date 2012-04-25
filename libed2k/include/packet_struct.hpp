@@ -86,6 +86,48 @@ namespace libed2k
 	};
 
 	/**
+	  * common search request structure
+	 */
+	class search_request_entry
+	{
+	    enum SRE_Operation
+	    {
+	        SRE_AND     = 0,
+	        SRE_OR      = 1,
+	        SRE_NOT     = 2
+	    };
+	public:
+	    search_request_entry(SRE_Operation soper);
+	    search_request_entry(const std::string& strValue);
+	    search_request_entry(tg_type nMetaTagId, const std::string& strValue);
+	    search_request_entry(const std::string strMetaTagName, const std::string& strValue);
+	    search_request_entry(tg_type nMetaTagId, boost::uint32_t nOperator, boost::uint64_t nValue);
+	    search_request_entry(const std::string& strMetaTagName, boost::uint32_t nOperator, boost::uint64_t nValue);
+
+	    void load(archive::ed2k_iarchive& ar)
+	    {
+	        // do nothing - we never load this structure
+	    }
+
+	    void save(archive::ed2k_oarchive& ar);
+
+	    LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+	private:
+	    tg_type         m_type;
+	    boost::uint8_t  m_operator;     //!< operator
+	    std::string     m_strValue;     //!< string value
+
+	    union
+	    {
+	        boost::uint64_t m_nValue64;       //!< numeric value
+	        boost::uint32_t m_nValue32;
+	    };
+
+	    tg_type         m_meta_type;    //!< meta type
+	    std::string     m_strMetaName;  //!< meta name
+	};
+
+	/**
 	  * supported protocols
 	 */
 	const proto_type    OP_EDONKEYHEADER        = '\xE3';
@@ -269,14 +311,21 @@ namespace libed2k
     };
 
     /**
-      * structure contain one entry in searh result list
+      * structure contains one entry in search result list
      */
     struct search_file_entry
     {
     	md4_hash					m_hFile;		//!< file hash
-    	boost::uint32_t				m_nClientId;	//!< client id/ip
-    	boost::uint16_t				m_nPort;		//!< port
+    	net_identifier              m_adress;       //!< client network identification
     	tag_list<boost::uint32_t>	m_list;			//!< tag list with additional data - file name,size,sources ...
+
+    	template<typename Archive>
+    	void serialize(Archive& ar)
+    	{
+    	    ar & m_hFile;
+    	    ar & m_adress;
+    	    ar & m_list;
+    	}
     };
 
     typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
