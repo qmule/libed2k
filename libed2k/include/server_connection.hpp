@@ -45,6 +45,9 @@ namespace libed2k
         void start();
         void close();
 
+        void announce(const std::string& filename, const md4_hash& filehash,
+                      size_t filesize);
+
         /**
           * connection stopped when his socket is not opened
          */

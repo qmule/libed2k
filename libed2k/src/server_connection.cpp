@@ -35,6 +35,23 @@ void server_connection::close()
     m_keep_alive.cancel();
 }
 
+void server_connection::announce(
+    const std::string& filename, const md4_hash& filehash, size_t filesize)
+{
+    DBG("announcing file: " << filename << ", hash: " << filehash 
+        << ", size: " << filesize);
+
+    const session_settings& settings = m_ses.settings();
+    boost::uint32_t nSize(filesize);
+    shared_file_entry entry(filehash, m_nClientId, settings.listen_port);
+    entry.m_list.add_tag(make_typed_tag(nSize, FT_FILESIZE, true));
+
+    offer_files_list offer_list;
+    offer_list.m_collection.push_back(entry);
+
+    m_socket->do_write(offer_list);
+}
+
 bool server_connection::is_stopped() const
 {
     return (!m_socket->socket().is_open());
@@ -196,7 +213,8 @@ void server_connection::on_server_message(const error_code& error)
 
         if (m_socket->decode_packet(smsg))
         {
-            if (m_ses.m_alerts.should_post<a_server_message>()) m_ses.m_alerts.post_alert(a_server_message(smsg.m_strMessage));
+            if (m_ses.m_alerts.should_post<a_server_message>())
+                m_ses.m_alerts.post_alert(a_server_message(smsg.m_strMessage));
         }
         else
         {
@@ -245,9 +263,9 @@ void server_connection::on_server_status(const error_code& error)
             if (m_nClientId != 0)
             {
                 // we already got client id it means
-                // server connection initialized - post alert here
-                if (m_ses.m_alerts.should_post<a_server_connection_initialized>())
-                                m_ses.m_alerts.post_alert(a_server_connection_initialized(m_nClientId, m_nFilesCount, m_nUsersCount));
+                // server connection initialized
+                // notyfy session
+                m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
             }
         }
 
@@ -285,12 +303,11 @@ void server_connection::on_id_change(const error_code& error)
 
         if (m_nUsersCount != 0)
         {
-            // if we got users count != 0 - at least 1 user must exists on server(our connection)-
-            // server connection initialized - post alert here
-            if (m_ses.m_alerts.should_post<a_server_connection_initialized>())
-                m_ses.m_alerts.post_alert(a_server_connection_initialized(m_nClientId, m_nFilesCount, m_nUsersCount));
+            // if we got users count != 0 - at least 1 user must exists on server
+            // (our connection) - server connection initialized
+            // notyfy session
+            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
         }
-
     }
     else
     {
