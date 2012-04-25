@@ -13,6 +13,7 @@
 #include "transfer_handle.hpp"
 #include "peer.hpp"
 #include "alert.hpp"
+#include "packet_struct.hpp"
 
 namespace libed2k {
 
@@ -76,6 +77,10 @@ namespace libed2k {
         alert const* wait_for_alert(time_duration max_wait);
         void set_alert_dispatch(boost::function<void(alert const&)> const& fun);
 
+        /**
+          * execute search file on server
+         */
+        void post_search_request(search_request& sr);
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);

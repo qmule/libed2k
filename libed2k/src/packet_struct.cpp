@@ -117,6 +117,18 @@ namespace libed2k
     }
 
 
+    const char* toString(search_request_entry::SRE_Operation so)
+    {
+        static const char* chOperations[] =
+                {
+                        "AND",
+                        "OR",
+                        "NOT"
+                };
+
+        return (chOperations[so]);
+    }
+
     shared_file_entry::shared_file_entry()
     {
     }
@@ -161,7 +173,7 @@ namespace libed2k
         m_strMetaName   = strMetaTagName;
     }
 
-    search_request_entry::search_request_entry(tg_type nMetaTagId, boost::uint32_t nOperator, boost::uint64_t nValue)
+    search_request_entry::search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue)
     {
         m_meta_type = nMetaTagId;
         m_operator  = nOperator;
@@ -178,7 +190,7 @@ namespace libed2k
         }
     }
 
-    search_request_entry::search_request_entry(const std::string& strMetaTagName, boost::uint32_t nOperator, boost::uint64_t nValue)
+    search_request_entry::search_request_entry(const std::string& strMetaTagName, boost::uint8_t nOperator, boost::uint64_t nValue)
     {
         m_strValue  = strMetaTagName;
         m_operator  = nOperator;
@@ -201,6 +213,7 @@ namespace libed2k
 
         if (m_type == SEARCH_TYPE_BOOL)
         {
+            DBG("write: " << toString(static_cast<search_request_entry::SRE_Operation>(m_operator)));
             // it is bool operator
             ar & m_operator;
             return;
@@ -208,6 +221,7 @@ namespace libed2k
 
         if (m_type == SEARCH_TYPE_STR || m_type == SEARCH_TYPE_STR_TAG)
         {
+            DBG("write string: " << m_strValue);
             // it is string value
             boost::uint16_t nSize = static_cast<boost::uint16_t>(m_strValue.size());
             ar & nSize;
@@ -216,17 +230,17 @@ namespace libed2k
             boost::uint16_t nMetaTagSize;
 
             // write meta tag if it exists
-            if (!m_strMetaName.empty())
+            if (m_strMetaName.is_initialized())
             {
-                nMetaTagSize = m_strMetaName.size();
+                nMetaTagSize = m_strMetaName.get().size();
                 ar & nMetaTagSize;
-                ar & m_strMetaName;
+                ar & m_strMetaName.get();
             }
-            else if (m_meta_type != 0)
+            else if (m_meta_type.is_initialized())
             {
-                nMetaTagSize = sizeof(m_meta_type);
+                nMetaTagSize = sizeof(m_meta_type.get());
                 ar & nMetaTagSize;
-                ar & m_meta_type;
+                ar & m_meta_type.get();
             }
 
             return;
@@ -241,22 +255,27 @@ namespace libed2k
             boost::uint16_t nMetaTagSize;
 
             // write meta tag if it exists
-            if (!m_strMetaName.empty())
+            if (m_strMetaName.is_initialized())
             {
-                nMetaTagSize = m_strMetaName.size();
+                nMetaTagSize = m_strMetaName.get().size();
                 ar & nMetaTagSize;
-                ar & m_strMetaName;
+                ar & m_strMetaName.get();
             }
-            else if (m_meta_type != 0)
+            else if (m_meta_type.is_initialized())
             {
-                nMetaTagSize = sizeof(m_meta_type);
+                nMetaTagSize = sizeof(m_meta_type.get());
                 ar & nMetaTagSize;
-                ar & m_meta_type;
+                ar & m_meta_type.get();
             }
 
             return;
         }
 
+    }
+
+    void search_request::add_entry(const search_request_entry& entry)
+    {
+        m_entries.push_back(entry);
     }
 
 }

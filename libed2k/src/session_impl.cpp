@@ -707,6 +707,11 @@ alert const* session_impl::wait_for_alert(time_duration max_wait)
     return m_alerts.wait_for_alert(max_wait);
 }
 
+void session_impl::post_search_request(search_request& sr)
+{
+    m_server_connection->post_search_request(sr);
+}
+
 void session_impl::set_alert_mask(boost::uint32_t m)
 {
     m_alerts.set_alert_mask(m);

@@ -60,6 +60,8 @@ namespace libed2k
         bool is_initialized() const;
 
         const tcp::endpoint& getServerEndpoint() const;
+
+        void post_search_request(search_request& sr);
     private:
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
