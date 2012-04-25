@@ -34,14 +34,16 @@ namespace libed2k {
     {
     public:
         add_transfer_params():
+            file_size(0),
             resume_data(0),
             storage_mode(storage_mode_sparse),
             duplicate_is_error(false),
             seed_mode(false)
         {}
 
-        md4_hash info_hash;
+        md4_hash file_hash;
         fs::path file_path;
+        size_t file_size;
         std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;

@@ -334,7 +334,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
 
 boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
 {
-    std::map<md4_hash, boost::shared_ptr<transfer> >::iterator i = m_transfers.find(hash);
+    transfer_map::iterator i = m_transfers.find(hash);
 
     if (i != m_transfers.end()) return i->second;
 
@@ -353,7 +353,7 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {
-    DBG("add transfer: " << params.file_path << ", hash: " << params.info_hash);
+    DBG("add transfer: " << params.file_path << ", hash: " << params.file_hash);
     if (is_aborted())
     {
         ec = errors::session_is_closing;
@@ -361,7 +361,7 @@ transfer_handle session_impl::add_transfer(
     }
 
     // is the transfer already active?
-    boost::shared_ptr<transfer> transfer_ptr = find_transfer(params.info_hash).lock();
+    boost::shared_ptr<transfer> transfer_ptr = find_transfer(params.file_hash).lock();
     if (transfer_ptr)
     {
         if (!params.duplicate_is_error) {
@@ -385,7 +385,7 @@ transfer_handle session_impl::add_transfer(
     transfer_ptr.reset(new transfer(*this, m_listen_interface, queue_pos, params));
     transfer_ptr->start();
 
-    m_transfers.insert(std::make_pair(params.info_hash, transfer_ptr));
+    m_transfers.insert(std::make_pair(params.file_hash, transfer_ptr));
 
     return transfer_handle(transfer_ptr);
 }
@@ -401,8 +401,9 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
         if (fs::is_regular_file(i->path()))
         {
             add_transfer_params params;
-            params.info_hash = hash_md4(i->path().filename());
+            params.file_hash = hash_md4(i->path().filename());
             params.file_path = i->path();
+            params.file_size = fs::file_size(i->path());
             params.seed_mode = true;
             transfer_handle handle = add_transfer(params, ec);
             if (ec) break;
@@ -714,4 +715,22 @@ void session_impl::set_alert_mask(boost::uint32_t m)
 size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
 {
     return m_alerts.set_alert_queue_size_limit(queue_size_limit_);
+}
+
+void session_impl::server_ready(
+    boost::uint32_t client_id, boost::uint32_t file_count, boost::uint32_t user_count)
+{
+    // server connection initialized - post alert here
+    if (m_alerts.should_post<a_server_connection_initialized>())
+        m_alerts.post_alert(
+            a_server_connection_initialized(client_id, file_count, user_count));
+
+    // announce files on server
+    for (transfer_map::iterator i = m_transfers.begin();
+         i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        t.announce();
+    }
+
 }

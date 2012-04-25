@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
         {
             libed2k::add_transfer_params params;
             params.file_path = dir / vm["file"].as<fs::path>();
-            params.info_hash = libed2k::hash_md4(params.file_path.filename());
+            params.file_hash = libed2k::hash_md4(params.file_path.filename());
             params.peer_list.push_back(
                 libed2k::peer_entry(vm["peer_ip"].as<std::string>(),
                                     vm["peer_port"].as<int>()));

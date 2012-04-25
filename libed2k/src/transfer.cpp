@@ -21,7 +21,9 @@ transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interfac
     m_sequential_download(false),
     m_sequence_number(seq),
     m_net_interface(net_interface.address(), 0),
-    m_file_path(p.file_path),
+    m_filehash(p.file_hash),
+    m_filepath(p.file_path),
+    m_filesize(p.file_size),
     m_storage_mode(p.storage_mode),
     m_seed_mode(p.seed_mode),
     m_policy(this, p.peer_list),
@@ -32,6 +34,8 @@ transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interfac
 
 transfer::~transfer()
 {
+    if (!m_connections.empty())
+        disconnect_all(errors::transfer_aborted);
 }
 
 void transfer::start()
@@ -117,6 +121,20 @@ void transfer::remove_peer(peer_connection* p)
 bool transfer::want_more_peers() const
 {
     return !is_paused() && m_policy.num_connect_candidates() > 0 && !m_abort;
+}
+
+void transfer::disconnect_all(const error_code& ec)
+{
+    while (!m_connections.empty())
+    {
+        peer_connection* p = *m_connections.begin();
+        DBG("*** CLOSING CONNECTION: " << ec.message());
+
+        if (p->is_disconnecting())
+            m_connections.erase(m_connections.begin());
+        else
+            p->disconnect(ec);
+    }
 }
 
 bool transfer::try_connect_peer()
@@ -224,7 +242,7 @@ void transfer::init()
     // the shared_from_this() will create an intentional
     // cycle of ownership, see the hpp file for description.
     m_owning_storage = new libtorrent::piece_manager(
-        shared_from_this(), m_info, m_file_path.parent_path(), m_ses.m_filepool,
+        shared_from_this(), m_info, m_filepath.parent_path(), m_ses.m_filepool,
         m_ses.m_disk_thread, libtorrent::default_storage_constructor,
         static_cast<libtorrent::storage_mode_t>(m_storage_mode));
     m_storage = m_owning_storage.get();
@@ -296,6 +314,15 @@ void transfer::piece_finished(int index, int passed_hash_check)
     }
 }
 
+void transfer::announce()
+{
+    if (is_seed())
+    {
+        m_ses.m_server_connection->announce(
+            m_filepath.filename(), m_filehash, m_filesize);
+    }
+}
+
 void transfer::send_server_request(const server_request& req)
 {
 }
@@ -308,7 +335,7 @@ void transfer::on_server_request_timed_out(const server_request& req)
 {
 }
 
-void transfer::on_server_request_error(server_request const& r, int response_code,
+void transfer::on_server_request_error(const server_request& req, int response_code,
                                        const std::string& str, int retry_interval)
 {
 }

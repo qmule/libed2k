@@ -111,6 +111,10 @@ namespace libed2k {
             void set_alert_dispatch(boost::function<void(alert const&)> const&);
             alert const* wait_for_alert(time_duration max_wait);
 
+            // called when server connection is initialized
+            void server_ready(
+                boost::uint32_t client_id, boost::uint32_t file_count,
+                boost::uint32_t user_count);
 
             boost::object_pool<peer> m_peer_pool;
 

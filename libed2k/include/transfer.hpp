@@ -52,6 +52,7 @@ namespace libed2k {
         void remove_peer(peer_connection* p);
 
         bool want_more_peers() const;
+        void disconnect_all(const error_code& ec);
         bool try_connect_peer();
         void give_connect_points(int points);
 
@@ -143,6 +144,8 @@ namespace libed2k {
         // --------------------------------------------
         // SERVER MANAGEMENT
 
+        void announce();
+
         void send_server_request(const server_request& req);
 
         // these are callbacks called by the server_connection
@@ -185,8 +188,8 @@ namespace libed2k {
         // are opened through
         tcp::endpoint m_net_interface;
 
-        fs::path m_file_path;
-
+        md4_hash m_filehash;
+        fs::path m_filepath;
         size_t m_filesize;
 
         storage_mode_t m_storage_mode;
