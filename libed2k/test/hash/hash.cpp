@@ -1,0 +1,117 @@
+#include <iostream>
+#include <boost/iostreams/device/mapped_file.hpp>
+#include <boost/filesystem.hpp>
+
+#include <cryptopp/md4.h>
+#include "constants.hpp"
+#include "log.hpp"
+#include "md4_hash.hpp"
+
+const size_t nPieceCount = 10;
+
+namespace bio = boost::iostreams;
+using namespace libed2k;
+
+int main(int argc, char* argv[])
+{
+    init_logs();
+
+    if (argc < 2)
+    {
+        std::cerr << "set filename for hashing" << std::endl;
+        return 1;
+    }
+
+
+    std::vector<libed2k::md4_hash> vH;
+    // calculate hash
+    bool    bPartial = false;
+    uintmax_t nFileSize = boost::filesystem::file_size(argv[1]);
+    int nPartCount  = nFileSize / PIECE_SIZE + 1;
+    vH.reserve(nPartCount);
+    int nAlignment = bio::mapped_file::alignment();
+
+    bio::mapped_file_params mf_param;
+
+    mf_param.flags  = bio::mapped_file_base::readonly; //std::ios_base::openmode::
+    mf_param.path   = argv[1];
+    mf_param.length = 0;
+
+
+    bio::mapped_file_source fsource;
+    DBG("System alignment: " << bio::mapped_file::alignment());
+    uintmax_t nCurrentOffset = 0;
+
+    CryptoPP::Weak1::MD4 md4_hasher;
+
+    while(nCurrentOffset < nFileSize)
+    {
+        uintmax_t nMapPosition = (nCurrentOffset / nAlignment) * nAlignment;    // calculate appropriate mapping start position
+        uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
+
+        // calculate map size
+        uintmax_t nMapLength = PIECE_SIZE*nPieceCount;
+
+        // correct map length
+        if (nMapLength > (nFileSize - nCurrentOffset))
+        {
+            nMapLength = nFileSize - nCurrentOffset + nDataCorrection;
+        }
+        else
+        {
+            nMapLength += nDataCorrection;
+        }
+
+        mf_param.offset = nMapPosition;
+        mf_param.length = nMapLength;
+        fsource.open(mf_param);
+
+        uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
+
+        DBG("Map position   : " << nMapPosition);
+        DBG("Data correction: " << nDataCorrection);
+        DBG("Map length     : " << nMapLength);
+        DBG("Map piece count: " << nMapLength / PIECE_SIZE);
+
+        while(nLocalOffset < nMapLength)
+        {
+            // calculate current part size size
+            uintmax_t nLength = PIECE_SIZE;
+
+            if (PIECE_SIZE > nMapLength - nLocalOffset)
+            {
+                nLength = nMapLength-nLocalOffset;
+                bPartial = true;
+            }
+
+            DBG("         local piece: " << nLength);
+
+            libed2k::md4_hash hash;
+            md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
+            vH.push_back(hash);
+            // generate hash
+            nLocalOffset    += nLength;
+            nCurrentOffset  += nLength;
+        }
+
+        fsource.close();
+
+    }
+
+    if (bPartial)
+    {
+        std::cout << "we have partial piece" << std::endl;
+    }
+    else
+    {
+        vH.push_back(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
+    }
+
+    for(int n = 0; n < vH.size(); n++)
+    {
+        DBG("HASH Part: " << vH[n].toString());
+    }
+
+
+    return 0;
+}

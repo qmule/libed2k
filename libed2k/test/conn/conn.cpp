@@ -29,6 +29,18 @@ int main(int argc, char* argv[])
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
+    libed2k::search_request sr;
+
+    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
+    sr.add_entry(libed2k::search_request_entry("song"));
+    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
+    sr.add_entry(libed2k::search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, 300));
+    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
+    //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_OR));
+    //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
+    sr.add_entry(libed2k::search_request_entry("ice"));
+    sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
+
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
@@ -45,6 +57,8 @@ int main(int argc, char* argv[])
                         << p->m_nClientId
                         << " fc: " << p->m_nFilesCount
                         << " uc: " << p->m_nUsersCount << std::endl;
+                DBG("send search request");
+                ses.post_search_request(sr);
             }
             else if (dynamic_cast<a_server_message*>(a.get()))
             {

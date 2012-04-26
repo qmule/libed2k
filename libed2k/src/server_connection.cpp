@@ -50,6 +50,14 @@ const tcp::endpoint& server_connection::getServerEndpoint() const
     return (m_target);
 }
 
+void server_connection::post_search_request(search_request& sr)
+{
+    if (!is_stopped())
+    {
+        m_socket->do_write(sr);
+    }
+}
+
 void server_connection::on_name_lookup(
     const error_code& error, tcp::resolver::iterator i)
 {
@@ -349,7 +357,7 @@ void server_connection::on_search_result(const error_code& error)
 
         if (m_socket->decode_packet(sfl))
         {
-            DBG("search file list");
+            DBG("search file list size is: " << sfl.m_collection.size());
         }
         else
         {

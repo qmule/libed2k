@@ -23,6 +23,7 @@
 #include "types.hpp"
 #include "util.hpp"
 #include "alert.hpp"
+#include "packet_struct.hpp"
 
 namespace libed2k {
 
@@ -110,6 +111,8 @@ namespace libed2k {
             size_t set_alert_queue_size_limit(size_t queue_size_limit_);
             void set_alert_dispatch(boost::function<void(alert const&)> const&);
             alert const* wait_for_alert(time_duration max_wait);
+
+            void post_search_request(search_request& sr);
 
             // called when server connection is initialized
             void server_ready(

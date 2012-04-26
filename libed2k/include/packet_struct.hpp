@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <boost/cstdint.hpp>
+#include <boost/optional.hpp>
 #include "ctag.hpp"
 
 namespace libed2k
@@ -85,24 +86,31 @@ namespace libed2k
 	    OP_ASKSHAREDDENIEDANS       = 0x61  // (null)
 	};
 
+	const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
+	const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
+	const boost::uint8_t ED2K_SEARCH_OP_LESS            = 2;
+	const boost::uint8_t ED2K_SEARCH_OP_GREATER_EQUAL   = 3;
+	const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
+	const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
+
 	/**
 	  * common search request structure
 	 */
 	class search_request_entry
 	{
-	    enum SRE_Operation
-	    {
-	        SRE_AND     = 0,
-	        SRE_OR      = 1,
-	        SRE_NOT     = 2
-	    };
 	public:
+        enum SRE_Operation
+        {
+            SRE_AND     = 0,
+            SRE_OR      = 1,
+            SRE_NOT     = 2
+        };
 	    search_request_entry(SRE_Operation soper);
 	    search_request_entry(const std::string& strValue);
 	    search_request_entry(tg_type nMetaTagId, const std::string& strValue);
 	    search_request_entry(const std::string strMetaTagName, const std::string& strValue);
-	    search_request_entry(tg_type nMetaTagId, boost::uint32_t nOperator, boost::uint64_t nValue);
-	    search_request_entry(const std::string& strMetaTagName, boost::uint32_t nOperator, boost::uint64_t nValue);
+	    search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue);
+	    search_request_entry(const std::string& strMetaTagName, boost::uint8_t nOperator, boost::uint64_t nValue);
 
 	    void load(archive::ed2k_iarchive& ar)
 	    {
@@ -123,8 +131,8 @@ namespace libed2k
 	        boost::uint32_t m_nValue32;
 	    };
 
-	    tg_type         m_meta_type;    //!< meta type
-	    std::string     m_strMetaName;  //!< meta name
+	    boost::optional<tg_type>         m_meta_type;    //!< meta type
+	    boost::optional<std::string>     m_strMetaName;  //!< meta name
 	};
 
 	/**
@@ -334,9 +342,20 @@ namespace libed2k
       * this structure holds search requests to eDonkey server
       *
      */
-    struct search_tree
+    struct search_request
     {
+        void add_entry(const search_request_entry& entry);
 
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            for (size_t n = 0; n < m_entries.size(); n++)
+            {
+                ar & m_entries[n];
+            }
+        }
+    private:
+        std::vector<search_request_entry> m_entries;
     };
 
     /**
@@ -435,7 +454,7 @@ namespace libed2k
     //OP_REJECT                   = 0x05
     //OP_GETSERVERLIST            = 0x14
     template<> struct packet_type<offer_files_list>     { static const proto_type value = OP_OFFERFILES;    };
-    template<> struct packet_type<search_tree>          { static const proto_type value = OP_SEARCHREQUEST; };
+    template<> struct packet_type<search_request>       { static const proto_type value = OP_SEARCHREQUEST; };
     //OP_DISCONNECT               = 0x18, // (not verified)
     template<> struct packet_type<get_sources_struct>   { static const proto_type value = OP_GETSOURCES;    };
     //OP_SEARCH_USER              = 0x1A, // <Query_Tree>

@@ -72,5 +72,11 @@ size_t session::set_alert_queue_size_limit(size_t queue_size_limit_)
     return m_impl->set_alert_queue_size_limit(queue_size_limit_);
 }
 
+void session::post_search_request(search_request& sr)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->post_search_request(sr);
+}
+
 
 }

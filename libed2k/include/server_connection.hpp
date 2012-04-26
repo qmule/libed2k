@@ -61,6 +61,8 @@ namespace libed2k
         void write_announce(const std::string& filename, const md4_hash& filehash,
                             size_t filesize);
 
+        void post_search_request(search_request& sr);
+
     private:
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
