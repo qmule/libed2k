@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
 
@@ -12,6 +14,20 @@ const size_t nPieceCount = 10;
 namespace bio = boost::iostreams;
 using namespace libed2k;
 
+void generate_file(size_t nSize, const char* pchFilename)
+{
+    std::ofstream of(pchFilename, std::ios_base::binary);
+
+    if (of)
+    {
+        // generate small file
+        for (int i = 0; i < nSize; i++)
+        {
+            of << 'X';
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
     init_logs();
@@ -21,6 +37,13 @@ int main(int argc, char* argv[])
         std::cerr << "set filename for hashing" << std::endl;
         return 1;
     }
+
+    generate_file(100, "./test1.bin");
+    generate_file(libed2k::PIECE_SIZE, "./test2.bin");
+    generate_file(libed2k::PIECE_SIZE+1, "./test3.bin");
+    generate_file(libed2k::PIECE_SIZE*4, "./test4.bin");
+    generate_file(libed2k::PIECE_SIZE+4566, "./test5.bin");
+
 
 
     std::vector<libed2k::md4_hash> vH;
@@ -112,6 +135,16 @@ int main(int argc, char* argv[])
         DBG("HASH Part: " << vH[n].toString());
     }
 
+    libed2k::md4_hash hResult;
+    if (vH.size() > 1)
+    {
+        md4_hasher.CalculateDigest(hResult.getContainer(), reinterpret_cast<const unsigned char*>(&vH[0]), vH.size()*libed2k::MD4_HASH_SIZE);
+    }
+    else
+    {
+        hResult = vH[0];
+    }
 
+    DBG("Result hash: " << hResult.toString());
     return 0;
 }

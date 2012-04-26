@@ -28,7 +28,9 @@ namespace libed2k
             "transfer finished",
             "transfer aborted",
             "stopping transfer",
-            "timed out"
+            "timed out",
+            "file size is zero",
+            "file not exists or is not regular file"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

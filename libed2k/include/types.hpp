@@ -3,6 +3,7 @@
 #define __LIBED2K_TYPES__
 
 #include <boost/asio.hpp>
+#include <boost/iostreams/device/mapped_file.hpp>
 
 namespace boost{
     namespace filesystem{}
@@ -47,6 +48,7 @@ namespace libed2k {
     typedef boost::posix_time::time_duration time_duration;
 
     namespace fs = boost::filesystem;
+    namespace bio = boost::iostreams;
     namespace time = boost::posix_time;
     typedef time::ptime ptime;
 
