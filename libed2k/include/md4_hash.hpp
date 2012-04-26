@@ -52,6 +52,11 @@ namespace libed2k{
     		memcpy(m_hash, container, MD4_HASH_SIZE);
     	}
 
+    	unsigned char* getContainer()
+    	{
+    	    return &m_hash[0];
+    	}
+
     	bool operator==(const md4_hash& hash) const
         {
     	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == 0);
