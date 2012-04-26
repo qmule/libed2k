@@ -34,6 +34,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_transfers(),
     m_next_connect_transfer(m_transfers),
     m_settings(settings),
+    m_client_id(0),
     m_abort(false),
     m_paused(false),
     m_max_connections(200),
@@ -720,6 +721,8 @@ size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
 void session_impl::server_ready(
     boost::uint32_t client_id, boost::uint32_t file_count, boost::uint32_t user_count)
 {
+    m_client_id = client_id;
+
     // server connection initialized - post alert here
     if (m_alerts.should_post<a_server_connection_initialized>())
         m_alerts.post_alert(

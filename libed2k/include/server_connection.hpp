@@ -45,9 +45,6 @@ namespace libed2k
         void start();
         void close();
 
-        void announce(const std::string& filename, const md4_hash& filehash,
-                      size_t filesize);
-
         /**
           * connection stopped when his socket is not opened
          */
@@ -60,6 +57,10 @@ namespace libed2k
         bool is_initialized() const;
 
         const tcp::endpoint& getServerEndpoint() const;
+
+        void write_announce(const std::string& filename, const md4_hash& filehash,
+                            size_t filesize);
+
     private:
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect

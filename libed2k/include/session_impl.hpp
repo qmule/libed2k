@@ -197,6 +197,8 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
+            // ed2k client identifier, issued by server
+            boost::uint32_t m_client_id;
 
             // set to true when the session object
             // is being destructed and the thread
