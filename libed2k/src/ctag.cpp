@@ -120,6 +120,49 @@ void base_tag::dump() const
     DBG("base_tag::dump");
     DBG("type: " << tagTypetoString(getType()));
     DBG("name: " << m_strName.c_str());
+
+    switch (getType())
+    {
+        case TAGTYPE_UINT64:
+        case TAGTYPE_UINT32:
+        case TAGTYPE_UINT16:
+        case TAGTYPE_UINT8:
+            DBG("VALUE: " << asInt());
+            break;
+        case TAGTYPE_FLOAT32:
+            DBG("VALUE: " << asFloat());
+            break;
+        case TAGTYPE_BOOL:
+            DBG("VALUE: " << asBool()?"true":"false");
+            break;
+        case TAGTYPE_HASH16:
+            DBG("VALUE: " << asHash().toString());
+            break;
+        case TAGTYPE_BLOB:
+            break;
+        case TAGTYPE_STRING:
+        case TAGTYPE_STR1:
+        case TAGTYPE_STR2:
+        case TAGTYPE_STR3:
+        case TAGTYPE_STR4:
+        case TAGTYPE_STR5:
+        case TAGTYPE_STR6:
+        case TAGTYPE_STR7:
+        case TAGTYPE_STR8:
+        case TAGTYPE_STR9:
+        case TAGTYPE_STR10:
+        case TAGTYPE_STR11:
+        case TAGTYPE_STR12:
+        case TAGTYPE_STR13:
+        case TAGTYPE_STR14:
+        case TAGTYPE_STR15:
+        case TAGTYPE_STR16:
+            DBG("VALUE" << asString());
+            break;
+        default:
+            DBG("Unknown type");
+            break;
+    }
 }
 
 boost::uint64_t base_tag::asInt() const
@@ -146,6 +189,12 @@ const blob_type& base_tag::asBlob() const
 {
     throw libed2k_exception(errors::incompatible_tag_getter);
 }
+
+const md4_hash& base_tag::asHash() const
+{
+    throw libed2k_exception(errors::incompatible_tag_getter);
+}
+
 
 string_tag::string_tag(tg_types type, const std::string& strName, tg_nid_type nNameId) : base_tag(strName, nNameId), m_type(static_cast<tg_type>(type))
 {
@@ -209,12 +258,6 @@ bool string_tag::is_equal(const base_tag* pt) const
     }
 
     return (false);
-}
-
-void string_tag::dump() const
-{
-    base_tag::dump();
-    DBG("value: " << m_strValue.c_str());
 }
 
 const std::string& string_tag::asString() const
@@ -298,15 +341,5 @@ boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::st
 {
 	return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
 }
-
-/*
-std::string asString(const base_tag* ptag)
-{
-    if (ptag->getType() == TAGTYPE_STRING || (ptag->getType >= TAGTYPE_STR1 && ptag->getType <= TAGTYPE_STR16))
-    {
-        return *(static_cast<string_tag*>(ptag));
-    }
-}
-*/
 
 }

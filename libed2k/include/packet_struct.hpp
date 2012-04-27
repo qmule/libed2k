@@ -181,6 +181,14 @@ namespace libed2k
             }
         }
 
+        void dump() const
+        {
+            DBG("container_holder::dump");
+            DBG("collection size factor: " << sizeof(size_type));
+            DBG("items: " << m_collection.size());
+            std::for_each(m_collection.begin(), m_collection.end(), std::mem_fun_ref(&elem::dump));
+        }
+
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
@@ -221,12 +229,17 @@ namespace libed2k
         boost::uint32_t m_nIP;          //!< client id or ip
         boost::uint16_t m_nPort;        //!< port
 
+        net_identifier();
+        net_identifier(boost::uint32_t nIP, boost::uint16_t nPort);
+
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_nIP;
             ar & m_nPort;
         }
+
+        void dump() const;
     };
 
     /**
@@ -234,10 +247,9 @@ namespace libed2k
      */
     struct shared_file_entry
     {
-        md4_hash                    m_hFile;    //!< md4 file hash
-        boost::uint32_t             m_nFileId;  //!< client id for HighID
-        boost::uint16_t             m_nPort;    //!< client port for HighID
-        tag_list<boost::uint16_t>   m_list;     //!< file information list
+        md4_hash                    m_hFile;            //!< md4 file hash
+        net_identifier              m_network_point;    //!< network identification
+        tag_list<boost::uint16_t>   m_list;             //!< file information list
 
 
         shared_file_entry();
@@ -247,10 +259,11 @@ namespace libed2k
         void serialize(Archive& ar)
         {
             ar & m_hFile;
-            ar & m_nFileId;
-            ar & m_nPort;
+            ar & m_network_point;
             ar & m_list;
         }
+
+        void dump() const;
     };
 
     //!< client <-> server messages
@@ -323,17 +336,19 @@ namespace libed2k
      */
     struct search_file_entry
     {
-    	md4_hash					m_hFile;		//!< file hash
-    	net_identifier              m_adress;       //!< client network identification
-    	tag_list<boost::uint32_t>	m_list;			//!< tag list with additional data - file name,size,sources ...
+    	md4_hash					m_hFile;		    //!< file hash
+    	net_identifier              m_network_point;    //!< client network identification
+    	tag_list<boost::uint32_t>	m_list;			    //!< tag list with additional data - file name,size,sources ...
 
     	template<typename Archive>
     	void serialize(Archive& ar)
     	{
     	    ar & m_hFile;
-    	    ar & m_adress;
+    	    ar & m_network_point;
     	    ar & m_list;
     	}
+
+    	void dump() const;
     };
 
     typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
@@ -437,6 +452,8 @@ namespace libed2k
             ar & m_hFile;
             ar & m_sources;
         }
+
+        void dump() const;
     };
 
 
@@ -444,11 +461,7 @@ namespace libed2k
     /**
       * structure for get packet opcode from structure type
      */
-    template<typename T>
-    struct packet_type
-    {
-        static const proto_type value = 0;
-    };
+    template<typename T> struct packet_type;
 
     template<> struct packet_type<cs_login_request>     { static const proto_type value = OP_LOGINREQUEST; };
     //OP_REJECT                   = 0x05

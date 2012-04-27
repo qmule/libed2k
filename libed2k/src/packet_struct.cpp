@@ -129,15 +129,49 @@ namespace libed2k
         return (chOperations[so]);
     }
 
+    net_identifier::net_identifier() : m_nIP(0), m_nPort(0)
+    {
+
+    }
+
+    net_identifier::net_identifier(boost::uint32_t nIP, boost::uint16_t nPort) : m_nIP(nIP), m_nPort(nPort)
+    {
+
+    }
+
+    void net_identifier::dump() const
+    {
+        DBG("net_identifier::dump(IP=" << m_nIP << " port=" << m_nPort << ")");
+    }
+
+    void search_file_entry::dump() const
+    {
+        DBG("search_file_entry::dump");
+        m_hFile.dump();
+        m_network_point.dump();
+        m_list.dump();
+    }
+
     shared_file_entry::shared_file_entry()
     {
     }
 
     shared_file_entry::shared_file_entry(const md4_hash& hFile, boost::uint32_t nFileId, boost::uint16_t nPort) :
             m_hFile(hFile),
-            m_nFileId(nFileId),
-            m_nPort(nPort)
+            m_network_point(nFileId, nPort)
     {
+    }
+
+    void shared_file_entry::dump() const
+    {
+        m_hFile.dump();
+        m_network_point.dump();
+    }
+
+    void found_sources::dump() const
+    {
+        m_hFile.dump();
+        m_sources.dump();
     }
 
     // special meta tag types
