@@ -435,11 +435,13 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     float fTag = 1129.4;
     libed2k::tag_list<boost::uint16_t> src_list;
 
-    bool stringTest[] = {true, true, false, false, false, false, false, false, false};
-    bool intTest[] = {false, false, true, true, true, true, false, false, false};
-    bool floatTest[] = {false, false, false, false, false, false, false, false, true};
-    bool boolTest[] = {false, false, false, false, false, false, true, false, false};
-    bool blobTest[] = {false, false, false, false, false, false, false, true, false};
+
+    bool stringTest[]   = {true,  true,  false, false, false, false, false, false, false, false};
+    bool intTest[]      = {false, false, true,  true,  true,  true,  false, false, false, false};
+    bool floatTest[]    = {false, false, false, false, false, false, false, false, true,  false};
+    bool boolTest[]     = {false, false, false, false, false, false, true,  false, false, false};
+    bool blobTest[]     = {false, false, false, false, false, false, false, true,  false, false};
+    bool hashTest[]     = {false, false, false, false, false, false, false, false, false, true};
 
     src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"),          libed2k::CT_NAME,           true));         // 0
     src_list.add_tag(libed2k::make_string_tag(std::string("IVANANDPLAN"),   libed2k::FT_FILEFORMAT,     false));        // 1
@@ -449,9 +451,11 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     src_list.add_tag(libed2k::make_typed_tag(n64,                           libed2k::FT_ATREQUESTED,    true));         // 5
     src_list.add_tag(libed2k::make_typed_tag(bTag,                          libed2k::FT_FLAGS,          true));         // 6
     src_list.add_tag(libed2k::make_blob_tag(vBlob,                          libed2k::FT_DL_PREVIEW,     true));         // 7
-    src_list.add_tag(libed2k::make_typed_tag(fTag,                          libed2k::FT_AICH_HASH,      true));         // 8
+    src_list.add_tag(libed2k::make_typed_tag(fTag,                          libed2k::FT_MEDIA_ALBUM,    true));         // 8
+    src_list.add_tag(libed2k::make_typed_tag(libed2k::md4_hash(libed2k::md4_hash::m_emptyMD4Hash), libed2k::FT_AICH_HASH,  true));         // 9
 
-    BOOST_REQUIRE_EQUAL(src_list.count(), 9);
+
+    BOOST_REQUIRE_EQUAL(src_list.count(), 10);
 
     for (size_t n = 0; n < src_list.count(); n++)
     {
@@ -500,6 +504,14 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
             BOOST_CHECK_THROW(src_list[n]->asBlob(), libed2k::libed2k_exception);
         }
 
+        if (hashTest[n])
+        {
+            BOOST_CHECK_NO_THROW(src_list[n]->asHash());
+        }
+        else
+        {
+            BOOST_CHECK_THROW(src_list[n]->asHash(), libed2k::libed2k_exception);
+        }
     }
 
     size_t nCount = 0;
@@ -511,6 +523,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     boost::uint64_t n_32    = 0;
     boost::uint64_t n_64    = 0;
     bool bDst = false;
+    libed2k::md4_hash hRes;
 
     for (size_t n = 0; n < src_list.count(); n++)
     {
@@ -526,6 +539,10 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
                 nCount++;
                 break;
             case libed2k::FT_AICH_HASH:
+                hRes = ptag->asHash();
+                nCount++;
+                break;
+            case libed2k::FT_MEDIA_ALBUM:
                 fValue = ptag->asFloat();
                 nCount++;
                 break;
@@ -567,6 +584,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     BOOST_CHECK_EQUAL(n_32, n32);
     BOOST_CHECK_EQUAL(n_64, n64);
     BOOST_CHECK_EQUAL(bDst, bTag);
+    BOOST_CHECK(hRes == libed2k::md4_hash(libed2k::md4_hash::m_emptyMD4Hash));
 }
 
 BOOST_AUTO_TEST_CASE(test_packets)
@@ -592,12 +610,12 @@ BOOST_AUTO_TEST_CASE(test_packets)
     BOOST_CHECK(sh.m_hFile == dsh.m_hFile);
     BOOST_REQUIRE(flist.m_size == flist2.m_size);
 
-    BOOST_CHECK(flist.m_collection[0].m_nFileId == 1);
-    BOOST_CHECK(flist.m_collection[1].m_nFileId == 3);
-    BOOST_CHECK(flist.m_collection[2].m_nFileId == 4);
-    BOOST_CHECK(flist.m_collection[0].m_nPort == 2);
-    BOOST_CHECK(flist.m_collection[1].m_nPort == 4);
-    BOOST_CHECK(flist.m_collection[2].m_nPort == 5);
+    BOOST_CHECK(flist.m_collection[0].m_network_point.m_nIP == 1);
+    BOOST_CHECK(flist.m_collection[1].m_network_point.m_nIP == 3);
+    BOOST_CHECK(flist.m_collection[2].m_network_point.m_nIP == 4);
+    BOOST_CHECK(flist.m_collection[0].m_network_point.m_nPort == 2);
+    BOOST_CHECK(flist.m_collection[1].m_network_point.m_nPort == 4);
+    BOOST_CHECK(flist.m_collection[2].m_network_point.m_nPort == 5);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

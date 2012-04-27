@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <typeinfo>
 #include <vector>
+#include "log.hpp"
 #include "archive.hpp"
 #include "error_code.hpp"
 
@@ -159,6 +160,11 @@ namespace libed2k{
     	    {
     	        ar & m_hash[n];
     	    }
+    	}
+
+    	void dump() const
+    	{
+    	    DBG("md2_hash::dump " << toString());
     	}
 
     	/**

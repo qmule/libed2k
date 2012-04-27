@@ -137,6 +137,15 @@ namespace libed2k
             return (m_alert_mask & T::static_category) != 0;
         }
 
+        template<class T>
+        void post_alert_should(const T& alert)
+        {
+            if (should_post<T>())
+            {
+                post_alert(alert);
+            }
+        }
+
         alert const* wait_for_alert(time_duration max_wait);
 
         void set_alert_mask(boost::uint32_t m)

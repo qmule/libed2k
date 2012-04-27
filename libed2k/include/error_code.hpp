@@ -35,6 +35,8 @@ namespace libed2k
             transfer_aborted,
             stopping_transfer,
             timed_out,
+            filesize_is_zero,
+            file_unavaliable,
 
             num_errors
         };

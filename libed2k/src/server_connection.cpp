@@ -358,6 +358,7 @@ void server_connection::on_search_result(const error_code& error)
         if (m_socket->decode_packet(sfl))
         {
             DBG("search file list size is: " << sfl.m_collection.size());
+            sfl.dump();
         }
         else
         {

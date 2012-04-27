@@ -204,11 +204,7 @@ enum tg_types
 
 const char* tagTypetoString(tg_type ttp);
 
-template<typename T>
-struct tag_type_number
-{
-    static const tg_type value = 0;
-};
+template<typename T> struct tag_type_number;
 
 template<> struct tag_type_number<boost::uint8_t>   { static const tg_type value = TAGTYPE_UINT8;   };
 template<> struct tag_type_number<boost::uint16_t>  { static const tg_type value = TAGTYPE_UINT16;  };
@@ -274,11 +270,15 @@ public:
     virtual bool is_equal(const base_tag* pt) const;
     virtual void dump() const;
 
+    /**
+      * values extractors
+     */
     virtual boost::uint64_t     asInt() const;
     virtual const std::string&  asString() const;
     virtual bool                asBool() const;
     virtual float               asFloat() const;
     virtual const blob_type&    asBlob() const;
+    virtual const md4_hash&     asHash() const;
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 protected:
@@ -356,14 +356,14 @@ public:
         return (base_tag::asFloat());
     }
 
+    virtual const md4_hash& asHash() const
+    {
+        return (base_tag::asHash());
+    }
+
     operator T() const
     {
         return (m_value);
-    }
-
-    virtual void dump() const
-    {
-        base_tag::dump();
     }
 
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
@@ -411,7 +411,11 @@ inline float typed_tag<float>::asFloat() const
     return (m_value);
 }
 
-
+template<>
+inline const md4_hash& typed_tag<md4_hash>::asHash() const
+{
+    return (m_value);
+}
 
 /**
   * all string data handler
@@ -488,7 +492,6 @@ public:
     }
 
     const std::string& asString() const;
-    virtual void dump() const;
 
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
