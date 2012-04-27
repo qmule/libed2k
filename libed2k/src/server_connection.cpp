@@ -35,23 +35,6 @@ void server_connection::close()
     m_keep_alive.cancel();
 }
 
-void server_connection::announce(
-    const std::string& filename, const md4_hash& filehash, size_t filesize)
-{
-    DBG("announcing file: " << filename << ", hash: " << filehash 
-        << ", size: " << filesize);
-
-    const session_settings& settings = m_ses.settings();
-    boost::uint32_t nSize(filesize);
-    shared_file_entry entry(filehash, m_nClientId, settings.listen_port);
-    entry.m_list.add_tag(make_typed_tag(nSize, FT_FILESIZE, true));
-
-    offer_files_list offer_list;
-    offer_list.m_collection.push_back(entry);
-
-    m_socket->do_write(offer_list);
-}
-
 bool server_connection::is_stopped() const
 {
     return (!m_socket->socket().is_open());
@@ -445,4 +428,22 @@ void server_connection::write_server_keep_alive()
     m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, this));
 
 }
+
+void server_connection::write_announce(
+    const std::string& filename, const md4_hash& filehash, size_t filesize)
+{
+    DBG("announcing file: " << filename << ", hash: " << filehash
+        << ", size: " << filesize);
+
+    const session_settings& settings = m_ses.settings();
+    boost::uint32_t nSize(filesize);
+    shared_file_entry entry(filehash, m_nClientId, settings.listen_port);
+    entry.m_list.add_tag(make_typed_tag(nSize, FT_FILESIZE, true));
+
+    offer_files_list offer_list;
+    offer_list.m_collection.push_back(entry);
+
+    m_socket->do_write(offer_list);
+}
+
 }

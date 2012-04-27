@@ -26,6 +26,8 @@ namespace libed2k
     class peer;
     class transfer;
     class base_socket;
+    class md4_hash;
+    class known_file;
     namespace aux{
         class session_impl;
     }
@@ -51,7 +53,7 @@ namespace libed2k
                         const tcp::endpoint& remote, peer* peerinfo);
 
         // with this constructor we have been contacted and we still don't
-        // know which torrent the connection belongs to
+        // know which transfer the connection belongs to
         peer_connection(aux::session_impl& ses, boost::shared_ptr<base_socket> s,
                         const tcp::endpoint& remote, peer* peerinfo);
 
@@ -127,12 +129,19 @@ namespace libed2k
         // the following functions appends messages
         // to the send buffer
         // DRAFT
-        void write_interested();
-        void write_not_interested();
-        void write_request(peer_request const& r);
-        void write_cancel(peer_request const& r);
+        void write_hello();
+        void write_hello_answer();
+        void write_file_request(const md4_hash& file_hash);
+        void write_no_file(const md4_hash& file_hash);
+        void write_file_status(const md4_hash& file_hash, const bitfield& status);
+        void write_hashset_request(const md4_hash& file_hash);
+        void write_hashset_answer(const known_file& file);
+        void write_start_upload(const md4_hash& file_hash);
+        void write_queue_ranking(boost::uint16_t rank);
+        void write_accept_upload();
+        void write_cancel_transfer();
         void write_have(int index);
-        void write_piece(peer_request const& r, disk_buffer_holder& buffer);
+        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
         void write_handshake();
 
         enum message_type_flags { message_type_request = 1 };
@@ -187,6 +196,7 @@ namespace libed2k
         // protocol handlers
         void on_unhandled_packet(const error_code& error);
         void on_hello_packet(const error_code& error);
+        void on_hello_answer(const error_code& error);
 
         // DRAFT
         enum state

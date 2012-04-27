@@ -21,7 +21,7 @@ namespace libed2k
         void init();
 
         const md4_hash& getFileHash() const;
-        const md4_hash& getPieceHash(unsigned int nPart) const;
+        const md4_hash& getPieceHash(size_t nPart) const;
         size_t          getPiecesCount() const;
     private:
         std::string             m_strFilename;

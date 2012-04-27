@@ -21,6 +21,7 @@ namespace libtorrent {
     struct logger;
     struct ptime;
     class listen_failed_alert;
+    struct bitfield;
 
     namespace aux{
         class eh_initializer;
@@ -33,6 +34,7 @@ namespace libed2k {
     typedef boost::asio::ip::tcp tcp;
     typedef boost::asio::ip::address address;
     typedef boost::asio::deadline_timer dtimer;
+    typedef boost::posix_time::time_duration time_duration;
 
     typedef libtorrent::piece_manager piece_manager;
     typedef libtorrent::piece_picker piece_picker;
@@ -45,13 +47,12 @@ namespace libed2k {
     typedef libtorrent::logger logger;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
-    typedef boost::posix_time::time_duration time_duration;
+    typedef libtorrent::bitfield bitfield;
 
     namespace fs = boost::filesystem;
     namespace bio = boost::iostreams;
     namespace time = boost::posix_time;
     typedef time::ptime ptime;
-
 }
 
 #endif

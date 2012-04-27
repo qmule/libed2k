@@ -76,19 +76,19 @@ int main(int argc, char* argv[])
 
                 }
 */
-                int nIndex = p->m_list.m_collection.size();
+                int nIndex = p->m_list.m_collection.size()/2;
 
                 if (nIndex)
                 {
-                    search_file_entry& e = p->m_list.m_collection[nIndex];
-                    const boost::shared_ptr<base_tag> src = e.m_list.getTagByNameId(FT_COMPLETE_SOURCES);
-                    const boost::shared_ptr<base_tag> sz = e.m_list.getTagByNameId(FT_FILESIZE);
+
+                    const boost::shared_ptr<base_tag> src = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_COMPLETE_SOURCES);
+                    const boost::shared_ptr<base_tag> sz = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_FILESIZE);
 
                     if (src.get() && sz.get())
                     {
                         DBG("Complete sources: " << src.get()->asInt());
                         DBG("Size: " << sz.get()->asInt());
-                        ses.post_sources_request(e.m_hFile, sz.get()->asInt());
+                        ses.post_sources_request(p->m_list.m_collection[nIndex].m_hFile, sz.get()->asInt());
                         // request sources
 
                     }

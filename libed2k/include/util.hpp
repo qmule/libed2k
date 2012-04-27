@@ -13,6 +13,12 @@ namespace libed2k {
         return A(a/b + bool(a%b));
     }
 
+    template <typename A>
+    A bits2bytes(A bits)
+    {
+        return (bits + 7) / 8;
+    }
+
     inline int round_up8(int v)
     {
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));

@@ -7,6 +7,7 @@
 #include "session.hpp"
 #include "transfer.hpp"
 #include "base_socket.hpp"
+#include "file.hpp"
 #include "util.hpp"
 
 using namespace libed2k;
@@ -68,12 +69,21 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
     init_handlers();
+    // connection is already established
+    m_socket->start_read_cycle();
 }
 
 void peer_connection::init_handlers()
 {
-    m_socket->set_unhandled_callback(boost::bind(&peer_connection::on_unhandled_packet, self(), _1));   //!< handler for unknown packets
-    m_socket->add_callback(OP_HELLO, boost::bind(&peer_connection::on_hello_packet,     self(), _1));
+    // handler for unknown packets
+    m_socket->set_unhandled_callback(
+        boost::bind(&peer_connection::on_unhandled_packet, self(), _1));
+    // hello handler
+    m_socket->add_callback(
+        OP_HELLO, boost::bind(&peer_connection::on_hello_packet, self(), _1));
+    // hello answer handler
+    m_socket->add_callback(
+        OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, self(), _1));
 }
 
 peer_connection::~peer_connection()
@@ -519,8 +529,12 @@ void peer_connection::on_connection_complete(error_code const& e)
 
     DBG("COMPLETED: " << m_remote);
 
-    setup_send();
-    setup_receive();
+    // connection is already established
+    m_socket->start_read_cycle();
+
+    write_hello();
+    //setup_send();
+    //setup_receive();
 }
 
 void peer_connection::on_interested(int received)
@@ -640,7 +654,6 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
-    m_socket->start_read_cycle();
 }
 
 bool peer_connection::can_write() const
@@ -681,28 +694,131 @@ void peer_connection::on_hello_packet(const error_code& error)
     DBG("hello packet received: " << packetToString(m_socket->context().m_type));
     if (!error)
     {
-        //TODO - replace this code
-        // prepare hello answer
-        client_hello_answer cha;
-        cha.m_hClient               = m_ses.settings().client_hash;
-        cha.m_sNetIdentifier.m_nIP  = 0;
-        cha.m_sNetIdentifier.m_nPort= m_ses.settings().listen_port;
-
-        boost::uint32_t nVersion = 0x3c;
-        boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
-        boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
-        boost::uint32_t nUdpPort = 0;
-
-        cha.m_tlist.add_tag(make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
-        cha.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-        cha.m_tlist.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
-        cha.m_sServerIdentifier.m_nPort = m_ses.settings().server_port;
-        cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
-
-        m_socket->do_write(cha);
+        write_hello_answer();
     }
     else
     {
         ERR("hello packet received error " << error.message());
     }
+}
+
+void peer_connection::on_hello_answer(const error_code& error)
+{
+    DBG("hello answer <== " << m_remote);
+    if (!error)
+    {
+    }
+    else
+    {
+        ERR("hello answer received error " << error.message());
+    }
+}
+
+void peer_connection::write_hello()
+{
+    DBG("hello ==> " << m_remote);
+
+    const session_settings& settings = m_ses.settings();
+    boost::uint32_t nVersion = 0x3c;
+    client_hello hello;
+    hello.m_nHashLength = MD4_HASH_SIZE;
+    hello.m_hClient = settings.client_hash;
+    hello.m_sNetIdentifier.m_nIP = m_ses.m_client_id;
+    hello.m_sNetIdentifier.m_nPort = settings.listen_port;
+    hello.m_tlist.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
+    hello.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+
+    m_socket->do_write(hello);
+}
+
+void peer_connection::write_hello_answer()
+{
+    DBG("hello answer ==> " << m_remote);
+    //TODO - replace this code
+    // prepare hello answer
+    client_hello_answer cha;
+    cha.m_hClient               = m_ses.settings().client_hash;
+    cha.m_sNetIdentifier.m_nIP  = 0;
+    cha.m_sNetIdentifier.m_nPort= m_ses.settings().listen_port;
+
+    boost::uint32_t nVersion = 0x3c;
+    boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | 
+        CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+    boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
+    boost::uint32_t nUdpPort = 0;
+
+    cha.m_tlist.add_tag(
+        make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
+    cha.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+    cha.m_tlist.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
+    cha.m_sServerIdentifier.m_nPort = m_ses.settings().server_port;
+    cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
+
+    m_socket->do_write(cha);
+}
+
+void peer_connection::write_file_request(const md4_hash& file_hash)
+{
+    client_file_request fr;
+    fr.m_hFile = file_hash;
+    m_socket->do_write(fr);
+}
+
+void peer_connection::write_no_file(const md4_hash& file_hash)
+{
+    client_no_file nf;
+    nf.m_hFile = file_hash;
+    m_socket->do_write(nf);
+}
+
+void peer_connection::write_file_status(
+    const md4_hash& file_hash, const bitfield& status)
+{
+    client_file_status fs;
+    fs.m_hFile = file_hash;
+    fs.m_vcStatus.m_collection.assign(
+        status.bytes(), status.bytes() + bits2bytes(status.size()));
+    m_socket->do_write(fs);
+}
+
+void peer_connection::write_hashset_request(const md4_hash& file_hash)
+{
+    client_hashset_request hr;
+    hr.m_hFile = file_hash;
+    m_socket->do_write(hr);
+}
+
+void peer_connection::write_hashset_answer(const known_file& file)
+{
+    client_hashset_answer ha;
+    ha.m_hFile = file.getFileHash();
+    for (size_t part = 0; part < file.getPiecesCount(); ++part)
+        ha.m_vhParts.m_collection.push_back(file.getPieceHash(part));
+    m_socket->do_write(ha);
+}
+
+void peer_connection::write_start_upload(const md4_hash& file_hash)
+{
+    client_start_upload su;
+    su.m_hFile = file_hash;
+    m_socket->do_write(su);
+}
+
+void peer_connection::write_queue_ranking(boost::uint16_t rank)
+{
+    client_queue_ranking qr;
+    qr.m_nRank = rank;
+    m_socket->do_write(qr);
+}
+
+void peer_connection::write_accept_upload()
+{
+    client_accept_upload au;
+    m_socket->do_write(au);
+}
+
+void peer_connection::write_cancel_transfer()
+{
+    client_cancel_transfer ct;
+    m_socket->do_write(ct);
 }

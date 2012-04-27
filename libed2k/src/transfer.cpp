@@ -86,7 +86,7 @@ bool transfer::connect_to_peer(peer* peerinfo)
     boost::intrusive_ptr<peer_connection> c(
         new peer_connection(m_ses, shared_from_this(), sock, ep, peerinfo));
 
-    // add the newly connected peer to this torrent's peer list
+    // add the newly connected peer to this transfer's peer list
     m_connections.insert(boost::get_pointer(c));
     m_ses.m_connections.insert(c);
     m_policy.set_connection(peerinfo, c.get());
@@ -318,7 +318,7 @@ void transfer::announce()
 {
     if (is_seed())
     {
-        m_ses.m_server_connection->announce(
+        m_ses.m_server_connection->write_announce(
             m_filepath.filename(), m_filehash, m_filesize);
     }
 }
