@@ -7,6 +7,7 @@
 #include "session.hpp"
 #include "transfer.hpp"
 #include "base_socket.hpp"
+#include "file.hpp"
 #include "util.hpp"
 
 using namespace libed2k;
@@ -756,6 +757,68 @@ void peer_connection::write_hello_answer()
     m_socket->do_write(cha);
 }
 
-void peer_connection::write_request(const peer_request& r)
+void peer_connection::write_file_request(const md4_hash& file_hash)
 {
+    client_file_request fr;
+    fr.m_hFile = file_hash;
+    m_socket->do_write(fr);
+}
+
+void peer_connection::write_no_file(const md4_hash& file_hash)
+{
+    client_no_file nf;
+    nf.m_hFile = file_hash;
+    m_socket->do_write(nf);
+}
+
+void peer_connection::write_file_status(
+    const md4_hash& file_hash, const bitfield& status)
+{
+    client_file_status fs;
+    fs.m_hFile = file_hash;
+    fs.m_vcStatus.m_collection.assign(
+        status.bytes(), status.bytes() + bits2bytes(status.size()));
+    m_socket->do_write(fs);
+}
+
+void peer_connection::write_hashset_request(const md4_hash& file_hash)
+{
+    client_hashset_request hr;
+    hr.m_hFile = file_hash;
+    m_socket->do_write(hr);
+}
+
+void peer_connection::write_hashset_answer(const known_file& file)
+{
+    client_hashset_answer ha;
+    ha.m_hFile = file.getFileHash();
+    for (size_t part = 0; part < file.getPiecesCount(); ++part)
+        ha.m_vhParts.m_collection.push_back(file.getPieceHash(part));
+    m_socket->do_write(ha);
+}
+
+void peer_connection::write_start_upload(const md4_hash& file_hash)
+{
+    client_start_upload su;
+    su.m_hFile = file_hash;
+    m_socket->do_write(su);
+}
+
+void peer_connection::write_queue_ranking(boost::uint16_t rank)
+{
+    client_queue_ranking qr;
+    qr.m_nRank = rank;
+    m_socket->do_write(qr);
+}
+
+void peer_connection::write_accept_upload()
+{
+    client_accept_upload au;
+    m_socket->do_write(au);
+}
+
+void peer_connection::write_cancel_transfer()
+{
+    client_cancel_transfer ct;
+    m_socket->do_write(ct);
 }

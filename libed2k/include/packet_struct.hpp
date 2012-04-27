@@ -4,6 +4,7 @@
 #include <vector>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
+
 #include "ctag.hpp"
 
 namespace libed2k
@@ -83,8 +84,53 @@ namespace libed2k
 	    OP_ASKSHAREDFILESDIR        = 0x5E, // <len 2><Directory len>
 	    OP_ASKSHAREDDIRSANS         = 0x5F, // <count 4>(<len 2><Directory len>)[count]
 	    OP_ASKSHAREDFILESDIRANS     = 0x60, // <len 2><Directory len><count 4>(<HASH 16><ID 4><PORT 2><1 T
-	    OP_ASKSHAREDDENIEDANS       = 0x61  // (null)
+  	    OP_ASKSHAREDDENIEDANS       = 0x61  // (null)
 	};
+
+    // Extended prot client <-> Extended prot client
+    enum ED2KExtendedClientTCP {
+        OP_EMULEINFO                = 0x01, //
+        OP_EMULEINFOANSWER          = 0x02, //
+        OP_COMPRESSEDPART           = 0x40, //
+        OP_QUEUERANKING             = 0x60, // <RANG 2>
+        OP_FILEDESC                 = 0x61, // <len 2><NAME len>
+        OP_VERIFYUPSREQ             = 0x71, // (never used)
+        OP_VERIFYUPSANSWER          = 0x72, // (never used)
+        OP_UDPVERIFYUPREQ           = 0x73, // (never used)
+        OP_UDPVERIFYUPA             = 0x74, // (never used)
+        OP_REQUESTSOURCES           = 0x81, // <HASH 16>
+        OP_ANSWERSOURCES            = 0x82, //
+        OP_REQUESTSOURCES2          = 0x83, // <HASH 16>
+        OP_ANSWERSOURCES2           = 0x84, //
+        OP_PUBLICKEY                = 0x85, // <len 1><pubkey len>
+        OP_SIGNATURE                = 0x86, // v1: <len 1><signature len>
+        // v2:<len 1><signature len><sigIPused 1>
+        OP_SECIDENTSTATE            = 0x87, // <state 1><rndchallenge 4>
+        OP_REQUESTPREVIEW           = 0x90, // <HASH 16> // Never used for sending on aMule
+        OP_PREVIEWANSWER            = 0x91, // <HASH 16><frames 1>{frames * <len 4><frame len>} // Never used for sending on aMule
+        OP_MULTIPACKET              = 0x92,
+        OP_MULTIPACKETANSWER        = 0x93,
+        // OP_PEERCACHE_QUERY       = 0x94, // Unused on aMule - no PeerCache
+        // OP_PEERCACHE_ANSWER      = 0x95, // Unused on aMule - no PeerCache
+        // OP_PEERCACHE_ACK         = 0x96, // Unused on aMule - no PeerCache
+        OP_PUBLICIP_REQ             = 0x97,
+        OP_PUBLICIP_ANSWER          = 0x98,
+        OP_CALLBACK                 = 0x99, // <HASH 16><HASH 16><uint 16>
+        OP_REASKCALLBACKTCP         = 0x9A,
+        OP_AICHREQUEST              = 0x9B, // <HASH 16><uint16><HASH aichhashlen>
+        OP_AICHANSWER               = 0x9C, // <HASH 16><uint16><HASH aichhashlen> <data>
+        OP_AICHFILEHASHANS          = 0x9D,
+        OP_AICHFILEHASHREQ          = 0x9E,
+        OP_BUDDYPING                = 0x9F,
+        OP_BUDDYPONG                = 0xA0,
+        OP_COMPRESSEDPART_I64       = 0xA1, // <HASH 16><von 8><size 4><Data len:size>
+        OP_SENDINGPART_I64          = 0xA2, // <HASH 16><start 8><end 8><Data len:(end-start)>
+        OP_REQUESTPARTS_I64         = 0xA3, // <HASH 16><start[3] 8*3><end[3] 8*3>
+        OP_MULTIPACKET_EXT          = 0xA4,
+        OP_CHATCAPTCHAREQ           = 0xA5,
+        OP_CHATCAPTCHARES           = 0xA6,
+    };
+
 
 	const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
 	const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
@@ -526,9 +572,136 @@ namespace libed2k
         }
     };
 
+    struct client_file_request
+    {
+        md4_hash m_hFile;
 
-    template<> struct packet_type<client_hello>         { static const proto_type value = OP_HELLO; };
-    template<> struct packet_type<client_hello_answer>  { static const proto_type value = OP_HELLOANSWER; };
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+        }
+    };
+
+    struct client_no_file
+    {
+        md4_hash m_hFile;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+        }
+    };
+
+    struct client_file_status
+    {
+        md4_hash m_hFile;
+        container_holder<boost::uint16_t, std::vector<unsigned char> > m_vcStatus;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_vcStatus;
+        }
+    };
+
+    struct client_hashset_request
+    {
+        md4_hash m_hFile;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+        }
+    };
+
+    struct client_hashset_answer
+    {
+        md4_hash m_hFile;
+        container_holder<boost::uint16_t, std::vector<md4_hash> > m_vhParts;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_vhParts;
+        }
+    };
+
+    struct client_start_upload
+    {
+        md4_hash m_hFile;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+        }
+    };
+
+    struct client_queue_ranking
+    {
+        boost::uint16_t m_nRank;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nRank;
+        }
+    };
+
+    struct client_accept_upload
+    {
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+        }
+    };
+
+    struct client_cancel_transfer
+    {
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+        }
+    };
+
+    template<> struct packet_type<client_hello> {
+        static const proto_type value = OP_HELLO;
+    };
+    template<> struct packet_type<client_hello_answer> {
+        static const proto_type value = OP_HELLOANSWER;
+    };
+    template<> struct packet_type<client_file_request> {
+        static const proto_type value = OP_SETREQFILEID;
+    };
+    template<> struct packet_type<client_no_file> {
+        static const proto_type value = OP_FILEREQANSNOFIL;
+    };
+    template<> struct packet_type<client_file_status> {
+        static const proto_type value = OP_FILESTATUS;
+    };
+    template<> struct packet_type<client_hashset_request> {
+        static const proto_type value = OP_HASHSETREQUEST;
+    };
+    template<> struct packet_type<client_hashset_answer> {
+        static const proto_type value = OP_HASHSETANSWER;
+    };
+    template<> struct packet_type<client_start_upload> {
+        static const proto_type value = OP_STARTUPLOADREQ;
+    };
+    template<> struct packet_type<client_queue_ranking> {
+        static const proto_type value = OP_QUEUERANKING;
+    };
+    template<> struct packet_type<client_accept_upload> {
+        static const proto_type value = OP_ACCEPTUPLOADREQ;
+    };
+    template<> struct packet_type<client_cancel_transfer> {
+        static const proto_type value = OP_CANCELTRANSFER;
+    };
 }
 
 

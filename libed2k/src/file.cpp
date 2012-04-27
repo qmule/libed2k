@@ -1,5 +1,6 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
+#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
 #include "constants.hpp"
@@ -21,7 +22,7 @@ namespace libed2k
         return (m_hFile);
     }
 
-    const md4_hash& known_file::getPieceHash(unsigned int nPart) const
+    const md4_hash& known_file::getPieceHash(size_t nPart) const
     {
         assert(!m_vHash.empty());
 

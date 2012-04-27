@@ -26,6 +26,8 @@ namespace libed2k
     class peer;
     class transfer;
     class base_socket;
+    class md4_hash;
+    class known_file;
     namespace aux{
         class session_impl;
     }
@@ -129,8 +131,15 @@ namespace libed2k
         // DRAFT
         void write_hello();
         void write_hello_answer();
-        void write_request(const peer_request& r);
-        void write_cancel(const peer_request& r);
+        void write_file_request(const md4_hash& file_hash);
+        void write_no_file(const md4_hash& file_hash);
+        void write_file_status(const md4_hash& file_hash, const bitfield& status);
+        void write_hashset_request(const md4_hash& file_hash);
+        void write_hashset_answer(const known_file& file);
+        void write_start_upload(const md4_hash& file_hash);
+        void write_queue_ranking(boost::uint16_t rank);
+        void write_accept_upload();
+        void write_cancel_transfer();
         void write_have(int index);
         void write_piece(const peer_request& r, disk_buffer_holder& buffer);
         void write_handshake();
