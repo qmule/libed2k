@@ -81,6 +81,11 @@ namespace libed2k {
           * execute search file on server
          */
         void post_search_request(search_request& sr);
+
+        /**
+          * search sources for file
+         */
+        void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);

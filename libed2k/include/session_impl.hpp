@@ -113,6 +113,7 @@ namespace libed2k {
             alert const* wait_for_alert(time_duration max_wait);
 
             void post_search_request(search_request& sr);
+            void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
             // called when server connection is initialized
             void server_ready(

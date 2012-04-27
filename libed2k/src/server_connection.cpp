@@ -75,6 +75,18 @@ void server_connection::post_search_request(search_request& sr)
     }
 }
 
+void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
+{
+    if (!is_stopped())
+    {
+        DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
+        get_file_sources gfs;
+        gfs.m_hFile = hFile;
+        gfs.m_file_size.nQuadPart = nSize;
+        m_socket->do_write(gfs);
+    }
+}
+
 void server_connection::on_name_lookup(
     const error_code& error, tcp::resolver::iterator i)
 {
@@ -112,6 +124,8 @@ void server_connection::on_name_lookup(
     m_socket->add_callback(OP_SERVERIDENT,  boost::bind(&server_connection::on_server_ident,    this, _1));
     m_socket->add_callback(OP_FOUNDSOURCES, boost::bind(&server_connection::on_found_sources,   this, _1));
     m_socket->add_callback(OP_SEARCHRESULT, boost::bind(&server_connection::on_search_result,   this, _1));
+    m_socket->add_callback(OP_CALLBACKREQUESTED, boost::bind(&server_connection::on_callback_request,   this, _1));
+
 
     m_socket->do_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
@@ -204,7 +218,6 @@ void server_connection::on_disconnect(const error_code& error)
 
     if (!error)
     {
-
     }
     else
     {
@@ -222,8 +235,8 @@ void server_connection::on_server_message(const error_code& error)
 
         if (m_socket->decode_packet(smsg))
         {
-            if (m_ses.m_alerts.should_post<a_server_message>())
-                m_ses.m_alerts.post_alert(a_server_message(smsg.m_strMessage));
+            if (m_ses.m_alerts.should_post<server_message_alert>())
+                m_ses.m_alerts.post_alert(server_message_alert(smsg.m_strMessage));
         }
         else
         {
@@ -350,11 +363,12 @@ void server_connection::on_found_sources(const error_code& error)
     DBG("receive " << packetToString(m_socket->context().m_type));
     if (!error)
     {
-        found_sources fs;
+        found_file_sources fs;
 
         if (m_socket->decode_packet(fs))
         {
             DBG("Server info entry was parsed");
+            fs.dump();
 
         }
         else
@@ -376,11 +390,35 @@ void server_connection::on_search_result(const error_code& error)
         {
             DBG("search file list size is: " << sfl.m_collection.size());
             sfl.dump();
+
+            m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
+
+            if (sfl.m_collection.size() > 0)
+            {
+                //DBG("request additional search results");
+                //search_more_result sm;
+                //m_socket->do_write(sm);
+            }
+            else
+            {
+                DBG("result list is empty, stop");
+            }
         }
         else
         {
             ERR("unable to parse search file list");
         }
+    }
+}
+
+void server_connection::on_callback_request(const error_code& error)
+{
+    DBG("server_connection::on_callback_request(" << error.message() << ")");
+
+    if (!error)
+    {
+        // ignore this request
+        DBG("We ignore all callback requests!");
     }
 }
 

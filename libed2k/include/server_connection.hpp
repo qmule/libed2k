@@ -62,6 +62,7 @@ namespace libed2k
         const tcp::endpoint& getServerEndpoint() const;
 
         void post_search_request(search_request& sr);
+        void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
     private:
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
@@ -80,6 +81,7 @@ namespace libed2k
         void on_server_ident(const error_code& error);      //!< server identification message
         void on_found_sources(const error_code& error);     //!< found sources message
         void on_search_result(const error_code& error);     //!< search result message
+        void on_callback_request(const error_code& error);  //!< callback requested
 
         void handle_error(const error_code& error);
 

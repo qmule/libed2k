@@ -78,5 +78,11 @@ void session::post_search_request(search_request& sr)
     m_impl->post_search_request(sr);
 }
 
+void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->post_sources_request(hFile, nSize);
+}
+
 
 }

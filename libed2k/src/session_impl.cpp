@@ -267,8 +267,8 @@ void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
             return;
         }
 #endif
-        if (m_alerts.should_post<a_listen_failed_alert>())
-            m_alerts.post_alert(a_listen_failed_alert(ep, e));
+        if (m_alerts.should_post<mule_listen_failed_alert>())
+            m_alerts.post_alert(mule_listen_failed_alert(ep, e));
         return;
     }
 
@@ -712,6 +712,11 @@ void session_impl::post_search_request(search_request& sr)
     m_server_connection->post_search_request(sr);
 }
 
+void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
+{
+    m_server_connection->post_sources_request(hFile, nSize);
+}
+
 void session_impl::set_alert_mask(boost::uint32_t m)
 {
     m_alerts.set_alert_mask(m);
@@ -726,9 +731,9 @@ void session_impl::server_ready(
     boost::uint32_t client_id, boost::uint32_t file_count, boost::uint32_t user_count)
 {
     // server connection initialized - post alert here
-    if (m_alerts.should_post<a_server_connection_initialized>())
+    if (m_alerts.should_post<server_connection_initialized_alert>())
         m_alerts.post_alert(
-            a_server_connection_initialized(client_id, file_count, user_count));
+            server_connection_initialized_alert(client_id, file_count, user_count));
 
     // announce files on server
     for (transfer_map::iterator i = m_transfers.begin();

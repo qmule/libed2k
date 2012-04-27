@@ -168,7 +168,7 @@ namespace libed2k
         m_network_point.dump();
     }
 
-    void found_sources::dump() const
+    void found_file_sources::dump() const
     {
         m_hFile.dump();
         m_sources.dump();

@@ -203,6 +203,7 @@ enum tg_types
 };
 
 const char* tagTypetoString(tg_type ttp);
+const std::string& tagIdtoString(tg_nid_type tid);
 
 template<typename T> struct tag_type_number;
 
@@ -603,6 +604,7 @@ public:
     size_t count() const;
     void clear();
     const boost::shared_ptr<base_tag> operator[](size_t n) const;
+    const boost::shared_ptr<base_tag> getTagByNameId(tg_nid_type nId) const;
     
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
@@ -645,6 +647,20 @@ const boost::shared_ptr<base_tag> tag_list<size_type>::operator[](size_t n) cons
     }
 
     return (m_container[n]);
+}
+
+template<typename size_type>
+const boost::shared_ptr<base_tag> tag_list<size_type>::getTagByNameId(tg_nid_type nId) const
+{
+    for (size_t n = 0; n < m_container.size(); n++)
+    {
+        if (m_container[n]->getNameId() == nId)
+        {
+            return (m_container[n]);
+        }
+    }
+
+    return (boost::shared_ptr<base_tag>());
 }
 
 template<typename size_type>
