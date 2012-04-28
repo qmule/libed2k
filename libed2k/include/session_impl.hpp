@@ -112,8 +112,25 @@ namespace libed2k {
             void set_alert_dispatch(boost::function<void(alert const&)> const&);
             alert const* wait_for_alert(time_duration max_wait);
 
+            /**
+              * search file on server
+             */
             void post_search_request(search_request& sr);
+
+            /**
+              * request sources for file
+             */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
+
+            /**
+              * announce single entry
+             */
+            void announce(shared_file_entry& entry);
+
+            /**
+              * announce all transfers entries
+             */
+            void announce_all();
 
             // called when server connection is initialized
             void server_ready(

@@ -83,6 +83,8 @@ public:
         m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
         m_write_order.back().first.m_type     = packet_type<T>::value;
 
+        DBG("base_socket::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
+
         if (!bWriteInProgress)
         {
             std::vector<boost::asio::const_buffer> buffers;

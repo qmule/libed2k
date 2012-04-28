@@ -155,21 +155,19 @@ namespace libed2k{
 
             if (itr != m_callbacks.end())
             {
-                std::string strData = "ddfd";
-                LDBG_ << "call normal handler";
-                LDBG_ << strData;
+                DBG("call normal handler");
                 itr->second(error);
             }
             else
             {
                 if (m_unhandled_handler)
                 {
-                    LDBG_ << "call unhandled ";
+                    DBG("call unhandled ");
                     m_unhandled_handler(error);
                 }
                 else
                 {
-                    LDBG_ << "unhandled handler is null";
+                    DBG("unhandled handler is null");
                 }
             }
 

@@ -58,11 +58,9 @@ namespace libed2k
 
         const tcp::endpoint& getServerEndpoint() const;
 
-        void write_announce(const std::string& filename, const md4_hash& filehash,
-                            size_t filesize);
-
         void post_search_request(search_request& sr);
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
+        void post_announce(offer_files_list& offer_list);
     private:
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect

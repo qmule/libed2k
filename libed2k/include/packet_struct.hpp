@@ -131,7 +131,7 @@ namespace libed2k
         OP_REQUESTPARTS_I64         = 0xA3, // <HASH 16><start[3] 8*3><end[3] 8*3>
         OP_MULTIPACKET_EXT          = 0xA4,
         OP_CHATCAPTCHAREQ           = 0xA5,
-        OP_CHATCAPTCHARES           = 0xA6,
+        OP_CHATCAPTCHARES           = 0xA6
     };
 
 
@@ -187,6 +187,14 @@ namespace libed2k
             {
                 ar & m_collection[i];
             }
+        }
+
+        /**
+          * small helper
+         */
+        void add(const elem& e)
+        {
+            m_collection.push_back(e);
         }
 
         void dump() const

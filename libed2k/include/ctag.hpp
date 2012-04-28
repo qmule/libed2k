@@ -824,10 +824,6 @@ bool operator==(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
     return (true);
 }
 
-//std::string asString(const base_tag* ptag);
-//boost::uint16_t asInt(const base_tag* ptag);
-//float asFloat
-
 }
 
 #endif // __CTAG__

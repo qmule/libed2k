@@ -208,6 +208,7 @@ void session_impl::operator()()
 void session_impl::open_listen_port()
 {
     // close the open listen sockets
+    DBG("session_impl::open_listen_port()");
     m_listen_sockets.clear();
 
     // we should only open a single listen socket, that
@@ -236,9 +237,18 @@ void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
     boost::shared_ptr<tcp::acceptor> listener = listen_socket.lock();
     if (!listener) return;
 
-    if (e == boost::asio::error::operation_aborted) return;
+    if (e == boost::asio::error::operation_aborted)
+    {
+        s->close();
+        DBG("session_impl::on_accept_connection: abort operation" );
+        return;
+    }
 
-    if (m_abort) return;
+    if (m_abort)
+    {
+        DBG("session_impl::on_accept_connection: abort set");
+        return;
+    }
 
     error_code ec;
     if (e)
@@ -305,7 +315,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
 
     // do not check transfers when edonkey server come to us
     // compare only by address
-    if (m_server_connection->m_target.address() != endp.address())
+    //if (m_server_connection->m_target.address() != endp.address())
     {
         // check if we have any active transfers
         // if we don't reject the connection
@@ -458,10 +468,12 @@ void session_impl::abort()
     error_code ec;
     m_timer.cancel(ec);
 
+
     // close the listen sockets
     for (std::list<listen_socket_t>::iterator i = m_listen_sockets.begin(),
              end(m_listen_sockets.end()); i != end; ++i)
     {
+        DBG("session_impl::abort: close listen socket" );
         i->sock->close(ec);
     }
 
@@ -641,6 +653,7 @@ void session_impl::setup_socket_buffers(ip::tcp::socket& s)
 session_impl::listen_socket_t session_impl::setup_listener(
     ip::tcp::endpoint ep, bool v6_only)
 {
+    DBG("session_impl::setup_listener");
     error_code ec;
     listen_socket_t s;
     s.sock.reset(new tcp::acceptor(m_io_service));
@@ -718,6 +731,29 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
     m_server_connection->post_sources_request(hFile, nSize);
 }
 
+void session_impl::announce(shared_file_entry& entry)
+{
+    offer_files_list offer_list;
+    offer_list.add(entry);
+    m_server_connection->post_announce(offer_list);
+}
+
+void session_impl::announce_all()
+{
+    DBG("session_impl::announce_all()");
+    offer_files_list offer_list;
+
+    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        offer_list.add(t.getAnnounce());
+    }
+
+    DBG("offer list size: " << offer_list.m_collection.size());
+
+    m_server_connection->post_announce(offer_list);
+}
+
 void session_impl::set_alert_mask(boost::uint32_t m)
 {
     m_alerts.set_alert_mask(m);
@@ -731,6 +767,7 @@ size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
 void session_impl::server_ready(
     boost::uint32_t client_id, boost::uint32_t file_count, boost::uint32_t user_count)
 {
+    DBG("session_impl::server_ready");
     m_client_id = client_id;
 
     // server connection initialized - post alert here
@@ -738,12 +775,5 @@ void session_impl::server_ready(
         m_alerts.post_alert(
             server_connection_initialized_alert(client_id, file_count, user_count));
 
-    // announce files on server
-    for (transfer_map::iterator i = m_transfers.begin();
-         i != m_transfers.end(); ++i)
-    {
-        transfer& t = *i->second;
-        t.announce();
-    }
-
+    announce_all();
 }
