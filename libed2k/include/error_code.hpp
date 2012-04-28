@@ -18,6 +18,7 @@ namespace libed2k
         enum error_code_enum
         {
             no_error = 0,
+            no_memory,
             // protocol errors
             md4_hash_index_error,
             md4_hash_convert_error,

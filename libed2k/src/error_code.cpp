@@ -12,6 +12,7 @@ namespace libed2k
         static const char* msgs[errors::num_errors] =
         {
             "no error",
+            "no memory",
             // protocol errors
             "md4_hash index error",
             "md4_hash convert error",

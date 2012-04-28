@@ -9,7 +9,8 @@ namespace libed2k{
         m_timeout_handler(NULL),
         m_deadline(io),
         m_timeout(nTimeout),
-        m_stopped(false)
+        m_stopped(false),
+        m_write_in_progress(false)
     {
         m_deadline.expires_at(boost::posix_time::pos_infin);
         check_deadline();
@@ -85,27 +86,13 @@ namespace libed2k{
         if (m_stopped)
             return;
 
-        if (!error)
-        {
-            m_write_order.pop_front();
-
-            if (!m_write_order.empty())
-            {
-                // set deadline timer
-                m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
-
-                std::vector<boost::asio::const_buffer> buffers;
-                buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
-                buffers.push_back(boost::asio::buffer(m_write_order.front().second));
-                boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, this,
-                                    boost::asio::placeholders::error,
-                                    boost::asio::placeholders::bytes_transferred));
-            }
+        if (!error) {
+            m_send_buffer.pop_front(nSize);
+            m_write_in_progress = false;
+            setup_send();
         }
         else
-        {
             handle_error(error);
-        }
     }
 
     void base_socket::handle_error(const error_code& error)
@@ -156,20 +143,20 @@ namespace libed2k{
             if (itr != m_callbacks.end())
             {
                 std::string strData = "ddfd";
-                LDBG_ << "call normal handler";
-                LDBG_ << strData;
+                DBG("call normal handler");
+                DBG(strData);
                 itr->second(error);
             }
             else
             {
                 if (m_unhandled_handler)
                 {
-                    LDBG_ << "call unhandled ";
+                    DBG("call unhandled ");
                     m_unhandled_handler(error);
                 }
                 else
                 {
-                    LDBG_ << "unhandled handler is null";
+                    DBG("unhandled handler is null");
                 }
             }
 
@@ -213,4 +200,60 @@ namespace libed2k{
         m_deadline.async_wait(boost::bind(&base_socket::check_deadline, this));
     }
 
+    void base_socket::copy_send_buffer(char const* buf, int size)
+    {
+        int free_space = m_send_buffer.space_in_last_buffer();
+        if (free_space > size) free_space = size;
+        if (free_space > 0)
+        {
+            m_send_buffer.append(buf, free_space);
+            size -= free_space;
+            buf += free_space;
+        }
+        if (size <= 0) return;
+
+        std::pair<char*, int> buffer = allocate_buffer(size);
+        if (buffer.first == 0)
+        {
+            handle_error(errors::no_memory);
+            return;
+        }
+
+        std::memcpy(buffer.first, buf, size);
+        // TODO: possible bad reference counting here
+        m_send_buffer.append_buffer(
+            buffer.first, buffer.second, size,
+            boost::bind(&base_socket::free_buffer, this, _1, buffer.second));
+    }
+
+    void base_socket::setup_send()
+    {
+        // send the actual buffer
+        if (!m_write_in_progress && !m_send_buffer.empty())
+        {
+            // check quota here
+            int amount_to_send = m_send_buffer.size();
+
+            // set deadline timer
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+
+            const std::list<boost::asio::const_buffer>& buffers =
+                m_send_buffer.build_iovec(amount_to_send);
+            // TODO: possible bad reference counting here
+            boost::asio::async_write(
+                m_socket, buffers,
+                boost::bind(&base_socket::handle_write, this, _1, _2));
+            m_write_in_progress = true;
+        }
+    }
+
+    std::pair<char*, int> base_socket::allocate_buffer(int size)
+    {
+        return std::make_pair(new char[size], size);
+    }
+
+    void base_socket::free_buffer(char* buf, int size)
+    {
+        delete[] buf;
+    }
 }
