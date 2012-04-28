@@ -316,11 +316,17 @@ void transfer::piece_finished(int index, int passed_hash_check)
 
 void transfer::announce()
 {
-    if (is_seed())
-    {
-        m_ses.m_server_connection->write_announce(
-            m_filepath.filename(), m_filehash, m_filesize);
-    }
+    // announce always now
+    shared_file_entry entry = getAnnounce();
+    m_ses.announce(entry);
+}
+
+shared_file_entry transfer::getAnnounce() const
+{
+    shared_file_entry entry;
+    // generate file entry from transfer here
+
+    return entry;
 }
 
 void transfer::send_server_request(const server_request& req)

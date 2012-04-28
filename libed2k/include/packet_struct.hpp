@@ -12,6 +12,9 @@ namespace libed2k
     // protocol type
     typedef boost::uint8_t  proto_type;
 
+    //client id or ip type
+    typedef boost::uint32_t client_id_type;
+
     /**
       * print protocol type
      */
@@ -34,7 +37,7 @@ namespace libed2k
 		//  OP_QUERY_CHATS          = 0x1D, // (deprecated, not supported by server any longer)
 		//  OP_CHAT_MESSAGE         = 0x1E, // (deprecated, not supported by server any longer)
 		//  OP_JOIN_ROOM            = 0x1F, // (deprecated, not supported by server any longer)
-		OP_QUERY_MORE_RESULT        = 0x21, // (null)
+		OP_QUERY_MORE_RESULT        = 0x21, // ?
 		OP_GETSOURCES_OBFU          = 0x23,
 		OP_SERVERLIST               = 0x32, // <count 1>(<IP 4><PORT 2>)[count] server->client
 		OP_SEARCHRESULT             = 0x33, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
@@ -128,7 +131,7 @@ namespace libed2k
         OP_REQUESTPARTS_I64         = 0xA3, // <HASH 16><start[3] 8*3><end[3] 8*3>
         OP_MULTIPACKET_EXT          = 0xA4,
         OP_CHATCAPTCHAREQ           = 0xA5,
-        OP_CHATCAPTCHARES           = 0xA6,
+        OP_CHATCAPTCHARES           = 0xA6
     };
 
 
@@ -139,47 +142,6 @@ namespace libed2k
 	const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
 	const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
 
-	/**
-	  * common search request structure
-	 */
-	class search_request_entry
-	{
-	public:
-        enum SRE_Operation
-        {
-            SRE_AND     = 0,
-            SRE_OR      = 1,
-            SRE_NOT     = 2
-        };
-	    search_request_entry(SRE_Operation soper);
-	    search_request_entry(const std::string& strValue);
-	    search_request_entry(tg_type nMetaTagId, const std::string& strValue);
-	    search_request_entry(const std::string strMetaTagName, const std::string& strValue);
-	    search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue);
-	    search_request_entry(const std::string& strMetaTagName, boost::uint8_t nOperator, boost::uint64_t nValue);
-
-	    void load(archive::ed2k_iarchive& ar)
-	    {
-	        // do nothing - we never load this structure
-	    }
-
-	    void save(archive::ed2k_oarchive& ar);
-
-	    LIBED2K_SERIALIZATION_SPLIT_MEMBER()
-	private:
-	    tg_type         m_type;
-	    boost::uint8_t  m_operator;     //!< operator
-	    std::string     m_strValue;     //!< string value
-
-	    union
-	    {
-	        boost::uint64_t m_nValue64;       //!< numeric value
-	        boost::uint32_t m_nValue32;
-	    };
-
-	    boost::optional<tg_type>         m_meta_type;    //!< meta type
-	    boost::optional<std::string>     m_strMetaName;  //!< meta name
-	};
 
 	/**
 	  * supported protocols
@@ -227,6 +189,14 @@ namespace libed2k
             }
         }
 
+        /**
+          * small helper
+         */
+        void add(const elem& e)
+        {
+            m_collection.push_back(e);
+        }
+
         void dump() const
         {
             DBG("container_holder::dump");
@@ -266,13 +236,44 @@ namespace libed2k
     const boost::uint32_t FILE_INCOMPLETE_ID    = 0xfcfcfcfcU;
     const boost::uint16_t FILE_INCOMPLETE_PORT  = 0xfcfcU;
 
+    struct __file_size
+    {
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & nLowPart;
+
+            if (nHighPart > 0)
+            {
+                ar & nHighPart;
+            }
+        }
+
+        union
+        {
+            struct
+            {
+                boost::uint32_t nLowPart;
+                boost::uint32_t nHighPart;
+            };
+
+            struct
+            {
+                boost::uint32_t nLowPart;
+                boost::uint32_t nHighPart;
+            } u;
+            boost::uint64_t     nQuadPart;
+        };
+    };
+
     /**
       * common network object identifier in ed2k network
       *
      */
     struct net_identifier
     {
-        boost::uint32_t m_nIP;          //!< client id or ip
+        client_id_type  m_nIP;          //!< client id or ip
         boost::uint16_t m_nPort;        //!< port
 
         net_identifier();
@@ -377,8 +378,126 @@ namespace libed2k
         }
     };
 
+    struct id_change
+    {
+        client_id_type  m_nClientId;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nClientId;
+        }
+    };
+
     /**
-      * structure contains one entry in search result list
+      * callback request from server to client
+     */
+    struct callback_request_in
+    {
+        net_identifier  m_network_point;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_network_point;
+        }
+    };
+
+    /**
+      * callback request failed
+     */
+    struct callback_req_fail
+    {
+        boost::uint32_t m_nClientId;
+    };
+
+    /**
+      * callback request from client to server
+     */
+    struct callback_request_out
+    {
+        client_id_type      m_nClientId;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nClientId;
+        }
+    };
+
+    /**
+      * server status structure
+     */
+    struct server_status
+    {
+        boost::uint32_t m_nUserCount;
+        boost::uint32_t m_nFilesCount;
+
+        template<typename Archive>
+        void serialize(Archive & ar)
+        {
+            ar & m_nUserCount;
+            ar & m_nFilesCount;
+        }
+    };
+
+    /**
+      * common search request structure
+     */
+    class search_request_entry
+    {
+    public:
+        enum SRE_Operation
+        {
+            SRE_AND     = 0,
+            SRE_OR      = 1,
+            SRE_NOT     = 2
+        };
+        search_request_entry(SRE_Operation soper);
+        search_request_entry(const std::string& strValue);
+        search_request_entry(tg_type nMetaTagId, const std::string& strValue);
+        search_request_entry(const std::string strMetaTagName, const std::string& strValue);
+        search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue);
+        search_request_entry(const std::string& strMetaTagName, boost::uint8_t nOperator, boost::uint64_t nValue);
+
+        void load(archive::ed2k_iarchive& ar)
+        {
+            // do nothing - we never load this structure
+        }
+
+        void save(archive::ed2k_oarchive& ar);
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    private:
+        tg_type         m_type;
+        boost::uint8_t  m_operator;     //!< operator
+        std::string     m_strValue;     //!< string value
+
+        union
+        {
+            boost::uint64_t m_nValue64;       //!< numeric value
+            boost::uint32_t m_nValue32;
+        };
+
+        boost::optional<tg_type>         m_meta_type;    //!< meta type
+        boost::optional<std::string>     m_strMetaName;  //!< meta name
+    };
+
+    /**
+      * request more search result from server  - it is empty structure
+     */
+    struct search_more_result
+    {
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            // do nothing
+        }
+    };
+
+
+    /**
+      * structure contains one entry in search result list - it is server answer
      */
     struct search_file_entry
     {
@@ -422,64 +541,24 @@ namespace libed2k
     /**
       * request sources for file
      */
-    struct get_sources_struct
+    struct get_file_sources
     {
         md4_hash        m_hFile;        //!< file hash
-        boost::uint32_t m_nSize;        //!< file size if file is not large file, otherwise is zero
-        boost::uint16_t m_nLargeSize;   //!< file size if file is large file
+        __file_size     m_file_size;    //!< file size
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hFile;
 
-            if (m_nLargeSize != 0)
+            // ugly eDonkey protocol need empty 32-bit part before 64-bit file size record
+            if (m_file_size.nHighPart > 0)
             {
-                m_nSize = 0;
-                ar & m_nSize;
-                ar & m_nLargeSize;
+                boost::uint32_t nZeroSize = 0;
+                ar & nZeroSize;
             }
-            else
-            {
-                ar & m_nSize;
-            }
-        }
-    };
 
-    struct callback_req_struct
-    {
-        boost::uint32_t m_nUserId;
-    };
-
-    /**
-      * server status structure
-     */
-    struct server_status
-    {
-        boost::uint32_t m_nUserCount;
-        boost::uint32_t m_nFilesCount;
-
-        template<typename Archive>
-        void serialize(Archive & ar)
-        {
-            ar & m_nUserCount;
-            ar & m_nFilesCount;
-        }
-    };
-
-    /**
-      * incoming callback request structure
-     */
-    struct callback_req_in
-    {
-        boost::uint32_t m_nIP;
-        boost::uint32_t m_nPort;
-        boost::uint8_t  m_nCryptOptions;
-        md4_hash        m_hUser;
-
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
+            ar & m_file_size;
 
         }
     };
@@ -487,7 +566,7 @@ namespace libed2k
     /**
       * file sources found structure
      */
-    struct found_sources
+    struct found_file_sources
     {
         md4_hash    m_hFile;
         container_holder<boost::uint8_t, std::vector<net_identifier> > m_sources;
@@ -503,40 +582,38 @@ namespace libed2k
     };
 
 
-
     /**
       * structure for get packet opcode from structure type
      */
     template<typename T> struct packet_type;
 
-    template<> struct packet_type<cs_login_request>     { static const proto_type value = OP_LOGINREQUEST; };
     //OP_REJECT                   = 0x05
     //OP_GETSERVERLIST            = 0x14
-    template<> struct packet_type<offer_files_list>     { static const proto_type value = OP_OFFERFILES;    };
-    template<> struct packet_type<search_request>       { static const proto_type value = OP_SEARCHREQUEST; };
     //OP_DISCONNECT               = 0x18, // (not verified)
-    template<> struct packet_type<get_sources_struct>   { static const proto_type value = OP_GETSOURCES;    };
     //OP_SEARCH_USER              = 0x1A, // <Query_Tree>
-    template<> struct packet_type<callback_req_struct>  { static const proto_type value = OP_CALLBACKREQUEST;};
-
-    //  OP_QUERY_CHATS              = 0x1D, // (deprecated, not supported by server any longer)
-    //  OP_CHAT_MESSAGE             = 0x1E, // (deprecated, not supported by server any longer)
-    //  OP_JOIN_ROOM                = 0x1F, // (deprecated, not supported by server any longer)
-
-    //        OP_QUERY_MORE_RESULT        = 0x21, // (null) // do not use
-    //        OP_GETSOURCES_OBFU          = 0x23,           // do not use
-    template<> struct packet_type<server_list>          { static const proto_type value = OP_SERVERLIST;    };
-    template<> struct packet_type<search_file_list>     { static const proto_type value = OP_SEARCHRESULT;  };
-    template<> struct packet_type<server_status>        { static const proto_type value = OP_SERVERSTATUS;  };
-    template<> struct packet_type<callback_req_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };
-
-//            OP_CALLBACK_FAIL            = 0x36, // (null notverified)
-    template<> struct packet_type<server_message>       { static const proto_type value = OP_SERVERMESSAGE; };
-    //template<> struct packet_type<id_change>            { static const proto_type value = OP_IDCHANGE;    };
-    template<> struct packet_type<server_info_entry>    { static const proto_type value = OP_SERVERIDENT; };
-    template<> struct packet_type<found_sources>        { static const proto_type value = OP_FOUNDSOURCES;};
-    //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
     //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
+    //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
+
+    template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
+    template<> struct packet_type<offer_files_list>         { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
+
+    template<> struct packet_type<search_request>           { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
+    template<> struct packet_type<search_file_list>         { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
+    template<> struct packet_type<search_more_result>       { static const proto_type value = OP_QUERY_MORE_RESULT;  }; //!< search result from server
+
+    template<> struct packet_type<get_file_sources>         { static const proto_type value = OP_GETSOURCES;    };      //!< file sources request to server
+    template<> struct packet_type<found_file_sources>       { static const proto_type value = OP_FOUNDSOURCES;  };      //!< file sources answer
+
+    template<> struct packet_type<callback_request_out>     { static const proto_type value = OP_CALLBACKREQUEST;};     //!< callback request to server - do not use
+    template<> struct packet_type<callback_request_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };  //!< callback request from server - we reject it
+    template<> struct packet_type<callback_req_fail>        { static const proto_type value = OP_CALLBACK_FAIL; };      //!< callback request answer from server
+
+    template<> struct packet_type<server_list>              { static const proto_type value = OP_SERVERLIST;    };      //!< server list from server
+    template<> struct packet_type<server_status>            { static const proto_type value = OP_SERVERSTATUS;  };      //!< server status
+    template<> struct packet_type<id_change>                { static const proto_type value = OP_IDCHANGE;      };      //!< new our id from server
+    template<> struct packet_type<server_message>           { static const proto_type value = OP_SERVERMESSAGE; };      //!< some server message
+    template<> struct packet_type<server_info_entry>        { static const proto_type value = OP_SERVERIDENT;   };      //!< server info
+
 
     // Client to Client structures
     struct client_hello

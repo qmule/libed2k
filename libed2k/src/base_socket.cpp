@@ -13,7 +13,6 @@ namespace libed2k{
         m_write_in_progress(false)
     {
         m_deadline.expires_at(boost::posix_time::pos_infin);
-        check_deadline();
     }
 
     base_socket::~base_socket()
@@ -36,13 +35,14 @@ namespace libed2k{
         if (m_stopped)
             return;
 
+        check_deadline();
         // set deadline timer
         m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
 
         boost::asio::async_read(m_socket,
                 boost::asio::buffer(&m_in_header, header_size),
                 boost::bind(&base_socket::handle_read_header,
-                        this,
+                        shared_from_this(),
                         boost::asio::placeholders::error,
                         boost::asio::placeholders::bytes_transferred));
     }
@@ -122,7 +122,7 @@ namespace libed2k{
             }
 
             boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
-                    boost::bind(&base_socket::handle_read_packet, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                    boost::bind(&base_socket::handle_read_packet, shared_from_this(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
         }
         else
         {
@@ -142,9 +142,7 @@ namespace libed2k{
 
             if (itr != m_callbacks.end())
             {
-                std::string strData = "ddfd";
                 DBG("call normal handler");
-                DBG(strData);
                 itr->second(error);
             }
             else
@@ -197,7 +195,7 @@ namespace libed2k{
         }
 
         // Put the actor back to sleep.
-        m_deadline.async_wait(boost::bind(&base_socket::check_deadline, this));
+        m_deadline.async_wait(boost::bind(&base_socket::check_deadline, shared_from_this()));
     }
 
     void base_socket::copy_send_buffer(char const* buf, int size)
@@ -220,10 +218,10 @@ namespace libed2k{
         }
 
         std::memcpy(buffer.first, buf, size);
-        // TODO: possible bad reference counting here
         m_send_buffer.append_buffer(
             buffer.first, buffer.second, size,
-            boost::bind(&base_socket::free_buffer, this, _1, buffer.second));
+            boost::bind(
+                &base_socket::free_buffer, shared_from_this(), _1, buffer.second));
     }
 
     void base_socket::setup_send()
@@ -242,7 +240,7 @@ namespace libed2k{
             // TODO: possible bad reference counting here
             boost::asio::async_write(
                 m_socket, buffers,
-                boost::bind(&base_socket::handle_write, this, _1, _2));
+                boost::bind(&base_socket::handle_write, shared_from_this(), _1, _2));
             m_write_in_progress = true;
         }
     }

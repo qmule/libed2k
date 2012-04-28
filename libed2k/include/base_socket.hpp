@@ -13,6 +13,8 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 #include <libtorrent/assert.hpp>
 #include <libtorrent/chained_buffer.hpp>
@@ -28,7 +30,7 @@ namespace libed2k{
   * base socket class for in-place handle protocol type(compression/decompression), write data with serialization and vice versa
   *
  */
-class base_socket
+class base_socket : public boost::enable_shared_from_this<base_socket>
 {
 public:
     enum{ header_size = sizeof( libed2k_header) };
@@ -101,68 +103,6 @@ public:
 
     void setup_send();
 
-    /**
-     * write structure into socket
-     * structure must have serialization method
-     */
-/*
- *  replace by do_write
-    template <typename T, typename Handler>
-    void async_write(T& t, Handler handler)
-    {
-        m_strOutput.clear();
-        boost::iostreams::back_insert_device<std::string> inserter(m_strOutput);
-        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
-
-        // Serialize the data first so we know how large it is.
-        archive::ed2k_oarchive oa(s);
-        oa << t;
-        s.flush();
-
-        // generate header
-        m_out_header.m_protocol = OP_EDONKEYPROT;
-        m_out_header.m_size     = m_strOutput.size() + 1;  // packet size without protocol type and packet body size field
-        m_out_header.m_type     = packet_type<T>::value;
-        DBG("packet type: " <<  packetToString(packet_type<T>::value));
-
-        // Write the serialized data to the socket. We use "gather-write" to send
-        // both the header and the data in a single write operation.
-        std::vector<boost::asio::const_buffer> buffers;
-        buffers.push_back(boost::asio::buffer(&m_out_header, header_size));
-        buffers.push_back(boost::asio::buffer(m_strOutput));
-        boost::asio::async_write(m_socket, buffers, handler);
-    }
-    */
-
-    /**
-     * read packet body and serialize it into type T
-     */
-    // example code
-/*
-    template<typename T, typename Handler>
-    void handle_read_body(const boost::system::error_code& error, T& t, boost::tuple<Handler> handler)
-    {
-        if (error)
-        {
-            boost::get<0>(handler)(error);
-            return;
-        }
-
-        try
-        {
-            boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_header.m_size - 1);
-            std::istream in_array_stream(&buffer);
-            archive::ed2k_iarchive ia(in_array_stream);
-
-            ia >> t;
-            boost::get<0>(handler)(error);
-        }
-        catch(std::exception& e)
-        {
-            boost::get<0>(handler)(error);
-        }
-    }
-*/
     /**
      * start async read
      * after reading completed - appropriate user callback will faired

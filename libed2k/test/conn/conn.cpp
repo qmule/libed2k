@@ -32,13 +32,13 @@ int main(int argc, char* argv[])
     libed2k::search_request sr;
 
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
-    sr.add_entry(libed2k::search_request_entry("song"));
+    sr.add_entry(libed2k::search_request_entry("dead"));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     sr.add_entry(libed2k::search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, 300));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_OR));
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
-    sr.add_entry(libed2k::search_request_entry("ice"));
+    sr.add_entry(libed2k::search_request_entry("dead"));
     sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
 
     std::cout << "---- libed2k_client started\n"
@@ -50,9 +50,9 @@ int main(int argc, char* argv[])
 
         while(a.get())
         {
-            if (dynamic_cast<a_server_connection_initialized*>(a.get()))
+            if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
             {
-                a_server_connection_initialized* p = dynamic_cast<a_server_connection_initialized*>(a.get());
+                server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
                 std::cout << "server initalized: cid: "
                         << p->m_nClientId
                         << " fc: " << p->m_nFilesCount
@@ -60,10 +60,39 @@ int main(int argc, char* argv[])
                 DBG("send search request");
                 ses.post_search_request(sr);
             }
-            else if (dynamic_cast<a_server_message*>(a.get()))
+            else if (dynamic_cast<server_message_alert*>(a.get()))
             {
-                a_server_message* p = dynamic_cast<a_server_message*>(a.get());
+                server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
                 std::cout << "msg: " << p->m_strMessage << std::endl;
+            }
+            else if (dynamic_cast<search_result_alert*>(a.get()))
+            {
+                search_result_alert* p = dynamic_cast<search_result_alert*>(a.get());
+                // ok, prepare to get sources
+                DBG("Results count: " << p->m_list.m_collection.size());
+                /*
+                for (int n = 0; n < p->m_list.m_collection.size(); n++)
+                {
+
+                }
+*/
+                int nIndex = p->m_list.m_collection.size()/2;
+
+                if (nIndex)
+                {
+
+                    const boost::shared_ptr<base_tag> src = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_COMPLETE_SOURCES);
+                    const boost::shared_ptr<base_tag> sz = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_FILESIZE);
+
+                    if (src.get() && sz.get())
+                    {
+                        DBG("Complete sources: " << src.get()->asInt());
+                        DBG("Size: " << sz.get()->asInt());
+                        ses.post_sources_request(p->m_list.m_collection[nIndex].m_hFile, sz.get()->asInt());
+                        // request sources
+
+                    }
+                }
             }
             else
             {
@@ -76,4 +105,6 @@ int main(int argc, char* argv[])
 
     return 0;
 }
+
+
 

@@ -144,7 +144,15 @@ namespace libed2k {
         // --------------------------------------------
         // SERVER MANAGEMENT
 
+        /**
+          * announce file by session call
+         */
         void announce();
+
+        /**
+          * convert transfer info into announce
+         */
+        shared_file_entry getAnnounce() const;
 
         void send_server_request(const server_request& req);
 

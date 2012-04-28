@@ -30,7 +30,14 @@ void server_connection::start()
 
 void server_connection::close()
 {
-    m_socket->close();
+    DBG("server_connection::close()");
+
+    if (m_socket.get())
+    {
+        DBG("server_connection::close(): close socket ");
+        m_socket->close();
+    }
+
     m_name_lookup.cancel();
     m_keep_alive.cancel();
 }
@@ -58,12 +65,43 @@ void server_connection::post_search_request(search_request& sr)
     }
 }
 
+void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
+{
+    if (!is_stopped())
+    {
+        DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
+        get_file_sources gfs;
+        gfs.m_hFile = hFile;
+        gfs.m_file_size.nQuadPart = nSize;
+        m_socket->do_write(gfs);
+    }
+}
+
+void server_connection::post_announce(offer_files_list& offer_list)
+{
+    /*
+    const session_settings& settings = m_ses.settings();
+    boost::uint32_t nSize(filesize);
+    shared_file_entry entry(filehash, m_nClientId, settings.listen_port);
+    entry.m_list.add_tag(make_typed_tag(nSize, FT_FILESIZE, true));
+
+    offer_files_list offer_list;
+    offer_list.m_collection.push_back(entry);
+*/
+    if (!is_stopped())
+    {
+        DBG("server_connection::post_announce: " << offer_list.m_collection.size());
+        m_socket->do_write(offer_list);
+    }
+}
+
 void server_connection::on_name_lookup(
     const error_code& error, tcp::resolver::iterator i)
 {
     const session_settings& settings = m_ses.settings();
 
     if (error == boost::asio::error::operation_aborted) return;
+
     if (error || i == tcp::resolver::iterator())
     {
         ERR("server name: " << settings.server_hostname
@@ -95,10 +133,13 @@ void server_connection::on_name_lookup(
     m_socket->add_callback(OP_SERVERIDENT,  boost::bind(&server_connection::on_server_ident,    this, _1));
     m_socket->add_callback(OP_FOUNDSOURCES, boost::bind(&server_connection::on_found_sources,   this, _1));
     m_socket->add_callback(OP_SEARCHRESULT, boost::bind(&server_connection::on_search_result,   this, _1));
+    m_socket->add_callback(OP_CALLBACKREQUESTED, boost::bind(&server_connection::on_callback_request,   this, _1));
+
 
     m_socket->do_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
 
+// private callback methods
 void server_connection::on_connection_complete(error_code const& error)
 {
     DBG("server_connection::on_connection_complete");
@@ -187,7 +228,6 @@ void server_connection::on_disconnect(const error_code& error)
 
     if (!error)
     {
-
     }
     else
     {
@@ -205,8 +245,8 @@ void server_connection::on_server_message(const error_code& error)
 
         if (m_socket->decode_packet(smsg))
         {
-            if (m_ses.m_alerts.should_post<a_server_message>())
-                m_ses.m_alerts.post_alert(a_server_message(smsg.m_strMessage));
+            if (m_ses.m_alerts.should_post<server_message_alert>())
+                m_ses.m_alerts.post_alert(server_message_alert(smsg.m_strMessage));
         }
         else
         {
@@ -295,9 +335,10 @@ void server_connection::on_id_change(const error_code& error)
 
         if (m_nUsersCount != 0)
         {
+            DBG("users count " << m_nUsersCount);
             // if we got users count != 0 - at least 1 user must exists on server
             // (our connection) - server connection initialized
-            // notyfy session
+            // notify session
             m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
         }
     }
@@ -333,11 +374,12 @@ void server_connection::on_found_sources(const error_code& error)
     DBG("receive " << packetToString(m_socket->context().m_type));
     if (!error)
     {
-        found_sources fs;
+        found_file_sources fs;
 
         if (m_socket->decode_packet(fs))
         {
             DBG("Server info entry was parsed");
+            fs.dump();
 
         }
         else
@@ -359,11 +401,35 @@ void server_connection::on_search_result(const error_code& error)
         {
             DBG("search file list size is: " << sfl.m_collection.size());
             sfl.dump();
+
+            m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
+
+            if (sfl.m_collection.size() > 0)
+            {
+                //DBG("request additional search results");
+                //search_more_result sm;
+                //m_socket->do_write(sm);
+            }
+            else
+            {
+                DBG("result list is empty, stop");
+            }
         }
         else
         {
             ERR("unable to parse search file list");
         }
+    }
+}
+
+void server_connection::on_callback_request(const error_code& error)
+{
+    DBG("server_connection::on_callback_request(" << error.message() << ")");
+
+    if (!error)
+    {
+        // ignore this request
+        DBG("We ignore all callback requests!");
     }
 }
 
@@ -391,21 +457,5 @@ void server_connection::write_server_keep_alive()
 
 }
 
-void server_connection::write_announce(
-    const std::string& filename, const md4_hash& filehash, size_t filesize)
-{
-    DBG("announcing file: " << filename << ", hash: " << filehash
-        << ", size: " << filesize);
-
-    const session_settings& settings = m_ses.settings();
-    boost::uint32_t nSize(filesize);
-    shared_file_entry entry(filehash, m_nClientId, settings.listen_port);
-    entry.m_list.add_tag(make_typed_tag(nSize, FT_FILESIZE, true));
-
-    offer_files_list offer_list;
-    offer_list.m_collection.push_back(entry);
-
-    m_socket->do_write(offer_list);
-}
 
 }

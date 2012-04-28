@@ -58,6 +58,104 @@ const char* tagTypetoString(tg_type ttp)
     return (chUnknown);
 }
 
+std::string taggIdtoString(tg_nid_type tid)
+{
+    const std::string strUnknown = "TID not found";
+    const std::pair<tg_nid_type, std::string> stypes[] =
+            {
+                    std::make_pair(FT_FILENAME,             std::string("FT_FILENAME")),
+                    std::make_pair(FT_FILESIZE,             std::string("FT_FILESIZE")),
+                    std::make_pair(FT_FILESIZE_HI,          std::string("FT_FILESIZE_HI")),
+                    std::make_pair(FT_FILETYPE,             std::string("FT_FILETYPE")),
+                    std::make_pair(FT_FILEFORMAT,           std::string("FT_FILEFORMAT")),
+                    std::make_pair(FT_LASTSEENCOMPLETE,     std::string("FT_LASTSEENCOMPLETE")),
+                    std::make_pair(FT_TRANSFERRED,          std::string("FT_TRANSFERRED")),
+                    std::make_pair(FT_GAPSTART,             std::string("FT_GAPSTART")),
+                    std::make_pair(FT_GAPEND,               std::string("FT_GAPEND")),
+                    std::make_pair(FT_PARTFILENAME,         std::string("FT_PARTFILENAME")),
+                    std::make_pair(FT_OLDDLPRIORITY,        std::string("FT_OLDDLPRIORITY")),
+                    std::make_pair(FT_STATUS,               std::string("FT_STATUS")),
+                    std::make_pair(FT_SOURCES,              std::string("FT_SOURCES")),
+                    std::make_pair(FT_PERMISSIONS,          std::string("FT_PERMISSIONS")),
+                    std::make_pair(FT_OLDULPRIORITY,        std::string("FT_PERMISSIONS")),
+                    std::make_pair(FT_DLPRIORITY,           std::string("FT_DLPRIORITY")),
+                    std::make_pair(FT_ULPRIORITY,           std::string("FT_ULPRIORITY")),
+                    std::make_pair(FT_KADLASTPUBLISHKEY,    std::string("FT_KADLASTPUBLISHKEY")),
+                    std::make_pair(FT_KADLASTPUBLISHSRC,    std::string("FT_KADLASTPUBLISHSRC")),
+                    std::make_pair(FT_FLAGS,                std::string("FT_FLAGS")),
+                    std::make_pair(FT_DL_ACTIVE_TIME,       std::string("FT_DL_ACTIVE_TIME")),
+                    std::make_pair(FT_CORRUPTEDPARTS,       std::string("FT_CORRUPTEDPARTS")),
+                    std::make_pair(FT_DL_PREVIEW,           std::string("FT_DL_PREVIEW")),
+                    std::make_pair(FT_KADLASTPUBLISHNOTES,  std::string("FT_KADLASTPUBLISHNOTES")),
+                    std::make_pair(FT_AICH_HASH,            std::string("FT_AICH_HASH")),
+                    std::make_pair(FT_COMPLETE_SOURCES,     std::string("FT_COMPLETE_SOURCES")),
+                    std::make_pair(FT_PUBLISHINFO,          std::string("FT_PUBLISHINFO")),
+                    std::make_pair(FT_ATTRANSFERRED,        std::string("FT_ATTRANSFERRED")),
+                    std::make_pair(FT_ATREQUESTED,          std::string("FT_ATREQUESTED")),
+                    std::make_pair(FT_ATACCEPTED,           std::string("FT_ATACCEPTED")),
+                    std::make_pair(FT_CATEGORY,             std::string("FT_CATEGORY")),
+                    std::make_pair(FT_ATTRANSFERREDHI,      std::string("FT_ATTRANSFERREDHI")),
+                    std::make_pair(FT_MEDIA_ARTIST,         std::string("FT_MEDIA_ARTIST")),
+                    std::make_pair(FT_MEDIA_ALBUM,          std::string("FT_MEDIA_ALBUM")),
+                    std::make_pair(FT_MEDIA_TITLE,          std::string("FT_MEDIA_TITLE")),
+                    std::make_pair(FT_MEDIA_LENGTH,         std::string("FT_MEDIA_LENGTH")),
+                    std::make_pair(FT_MEDIA_BITRATE,        std::string("FT_MEDIA_BITRATE")),
+                    std::make_pair(FT_MEDIA_CODEC,          std::string("FT_MEDIA_CODEC")),
+                    std::make_pair(FT_FILERATING,           std::string("FT_FILERATING")),
+                    std::make_pair(ST_SERVERNAME,           std::string("ST_SERVERNAME")),
+                    std::make_pair(ST_DESCRIPTION,          std::string("ST_DESCRIPTION")),
+                    std::make_pair(ST_PING,                 std::string("ST_PING")),
+                    std::make_pair(ST_FAIL,                 std::string("ST_FAIL")),
+                    std::make_pair(ST_PREFERENCE,           std::string("ST_PREFERENCE")),
+                    std::make_pair(ST_DYNIP,                std::string("ST_DYNIP")),
+                    std::make_pair(ST_LASTPING_DEPRECATED,  std::string("ST_LASTPING_DEPRECATED")),
+                    std::make_pair(ST_MAXUSERS,             std::string("ST_MAXUSERS")),
+                    std::make_pair(ST_SOFTFILES,            std::string("ST_SOFTFILES")),
+                    std::make_pair(ST_HARDFILES,            std::string("ST_HARDFILES")),
+                    std::make_pair(ST_LASTPING,             std::string("ST_LASTPING")),
+                    std::make_pair(ST_VERSION,              std::string("ST_VERSION")),
+                    std::make_pair(ST_UDPFLAGS,             std::string("ST_UDPFLAGS")),
+                    std::make_pair(ST_AUXPORTSLIST,         std::string("ST_AUXPORTSLIST")),
+                    std::make_pair(ST_LOWIDUSERS,           std::string("ST_LOWIDUSERS")),
+                    std::make_pair(ST_UDPKEY,               std::string("ST_UDPKEY")),
+                    std::make_pair(ST_UDPKEYIP,             std::string("ST_UDPKEYIP")),
+                    std::make_pair(ST_TCPPORTOBFUSCATION,   std::string("ST_TCPPORTOBFUSCATION")),
+                    std::make_pair(ST_UDPPORTOBFUSCATION,   std::string("ST_UDPPORTOBFUSCATION")),
+                    std::make_pair(CT_NAME,                 std::string("CT_NAME")),
+                    std::make_pair(CT_SERVER_UDPSEARCH_FLAGS,std::string("CT_SERVER_UDPSEARCH_FLAGS")),
+                    std::make_pair(CT_PORT,                 std::string("CT_PORT")),
+                    std::make_pair(CT_VERSION,              std::string("CT_VERSION")),
+                    std::make_pair(CT_SERVER_FLAGS,         std::string("CT_SERVER_FLAGS")),
+                    std::make_pair(CT_EMULECOMPAT_OPTIONS,  std::string("CT_EMULECOMPAT_OPTIONS")),
+                    std::make_pair(CT_EMULE_RESERVED1,      std::string("CT_EMULE_RESERVED1")),
+                    std::make_pair(CT_EMULE_RESERVED2,      std::string("CT_EMULE_RESERVED2")),
+                    std::make_pair(CT_EMULE_RESERVED3,      std::string("CT_EMULE_RESERVED3")),
+                    std::make_pair(CT_EMULE_RESERVED4,      std::string("CT_EMULE_RESERVED4")),
+                    std::make_pair(CT_EMULE_RESERVED5,      std::string("CT_EMULE_RESERVED5")),
+                    std::make_pair(CT_EMULE_RESERVED6,      std::string("CT_EMULE_RESERVED6")),
+                    std::make_pair(CT_EMULE_RESERVED7,      std::string("CT_EMULE_RESERVED7")),
+                    std::make_pair(CT_EMULE_RESERVED8,      std::string("CT_EMULE_RESERVED8")),
+                    std::make_pair(CT_EMULE_RESERVED9,      std::string("CT_EMULE_RESERVED9")),
+                    std::make_pair(CT_EMULE_UDPPORTS,       std::string("CT_EMULE_UDPPORTS")),
+                    std::make_pair(CT_EMULE_MISCOPTIONS1,   std::string("CT_EMULE_MISCOPTIONS1")),
+                    std::make_pair(CT_EMULE_VERSION,        std::string("CT_EMULE_VERSION")),
+                    std::make_pair(CT_EMULE_BUDDYIP,        std::string("CT_EMULE_BUDDYIP")),
+                    std::make_pair(CT_EMULE_BUDDYUDP,       std::string("CT_EMULE_BUDDYUDP")),
+                    std::make_pair(CT_EMULE_MISCOPTIONS2,   std::string("CT_EMULE_MISCOPTIONS2")),
+                    std::make_pair(CT_EMULE_RESERVED13,     std::string("CT_EMULE_RESERVED13"))
+            };
+
+    for (size_t n = 0; n < sizeof(stypes)/sizeof(stypes[0]); n++)
+    {
+        if (stypes[n].first == tid)
+        {
+            return (stypes[n].second);
+        }
+    }
+
+    return (strUnknown);
+}
+
 // base tag
 base_tag::base_tag(const std::string& strName, tg_nid_type nNameId) : m_strName(strName), m_nNameId(nNameId)
 {
@@ -119,7 +217,7 @@ void base_tag::dump() const
 {
     DBG("base_tag::dump");
     DBG("type: " << tagTypetoString(getType()));
-    DBG("name: " << m_strName.c_str());
+    DBG("name: " << m_strName.c_str() << " tag id: " << taggIdtoString(m_nNameId));
 
     switch (getType())
     {
