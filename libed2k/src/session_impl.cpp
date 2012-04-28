@@ -315,7 +315,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
 
     // do not check transfers when edonkey server come to us
     // compare only by address
-    //if (m_server_connection->m_target.address() != endp.address())
+    if (m_server_connection->m_target.address() != endp.address())
     {
         // check if we have any active transfers
         // if we don't reject the connection

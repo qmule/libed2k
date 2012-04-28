@@ -13,6 +13,8 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include "types.hpp"
 #include "log.hpp"
 #include "archive.hpp"
@@ -24,7 +26,7 @@ namespace libed2k{
   * base socket class for in-place handle protocol type(compression/decompression), write data with serialization and vice versa
   *
  */
-class base_socket
+class base_socket : public boost::enable_shared_from_this<base_socket>
 {
 public:
 	enum{ header_size = sizeof( libed2k_header) };
@@ -94,7 +96,7 @@ public:
             // set deadline timer
             m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
 
-            boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, this,
+            boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, shared_from_this(),
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
         }

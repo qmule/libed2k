@@ -58,10 +58,10 @@ const char* tagTypetoString(tg_type ttp)
     return (chUnknown);
 }
 
- const std::string& taggIdtoString(tg_nid_type tid)
+std::string taggIdtoString(tg_nid_type tid)
 {
-    static const std::string strUnknown = "TID not found";
-    static std::pair<tg_nid_type, std::string> stypes[] =
+    const std::string strUnknown = "TID not found";
+    const std::pair<tg_nid_type, std::string> stypes[] =
             {
                     std::make_pair(FT_FILENAME,             std::string("FT_FILENAME")),
                     std::make_pair(FT_FILESIZE,             std::string("FT_FILESIZE")),
