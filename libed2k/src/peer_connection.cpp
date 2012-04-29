@@ -70,11 +70,10 @@ void peer_connection::init()
 
     // hello handler
     add_handler(OP_HELLO, boost::bind(
-                    &peer_connection::on_hello, self_as<peer_connection>(), _1));
+                    &peer_connection::on_hello, this, _1));
     // hello answer handler
-    add_handler(
-        OP_HELLOANSWER, boost::bind(
-            &peer_connection::on_hello_answer, self_as<peer_connection>(), _1));
+    add_handler(OP_HELLOANSWER, boost::bind(
+                    &peer_connection::on_hello_answer, this, _1));
 }
 
 peer_connection::~peer_connection()
@@ -214,9 +213,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
 
     DBG("peer_connection::disconnect: close");
     m_disconnecting = true;
-    error_code e;
-    m_socket->close(/*e*/);
-    m_socket.reset();
+    close();
     m_ses.close_connection(this, ec);
 }
 
