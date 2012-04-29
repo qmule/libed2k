@@ -13,6 +13,7 @@
 #include "error_code.hpp"
 #include "base_socket.hpp"
 #include "peer.hpp"
+#include "session_impl.hpp"
 
 namespace libed2k
 {
@@ -38,6 +39,8 @@ namespace libed2k
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
+        typedef std::vector<char> socket_buffer;
+
         friend class aux::session_impl;
     public:
         server_connection(aux::session_impl& ses);
@@ -65,25 +68,37 @@ namespace libed2k
 
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
         void on_connection_complete(error_code const& e);                                   //!< connect to host name and go to start
-        void on_unhandled_packet(const error_code& error);
-        void on_error(const error_code& error);
-
-        //!< server message handlers
-        void on_reject(const error_code& error);            //!< server reject last command
-        void on_disconnect(const error_code& error);        //!< disconnect signal received
-        void on_server_message(const error_code& error);    //!< server message received
-        void on_server_list(const error_code& error);       //!< server list received
-        void on_server_status(const error_code& error);     //!< server status
-        void on_users_list(const error_code& error);        //!< users list from server
-        void on_id_change(const error_code& error);         //!< our id changed message
-        void on_server_ident(const error_code& error);      //!< server identification message
-        void on_found_sources(const error_code& error);     //!< found sources message
-        void on_search_result(const error_code& error);     //!< search result message
-        void on_callback_request(const error_code& error);  //!< callback requested
 
         void handle_error(const error_code& error);
 
         void write_server_keep_alive();
+
+        void do_read();
+
+
+        /**
+          * call when socket got packets header
+         */
+        void handle_read_header(const error_code& error, size_t nSize);
+
+        /**
+          * call when socket got packets body and call users call back
+         */
+        void handle_read_packet(const error_code& error, size_t nSize);
+
+
+        template<typename T>
+        void do_write(T& t);
+
+        /**
+          * order write handler - executed while message order not empty
+         */
+        void handle_write(const error_code& error, size_t nSize);
+
+        /**
+          * deadline timer handler
+         */
+        void check_deadline();
 
         boost::uint32_t                 m_nClientId;
         tcp::resolver                   m_name_lookup;
@@ -93,9 +108,50 @@ namespace libed2k
         boost::uint32_t                 m_nFilesCount;
         boost::uint32_t                 m_nUsersCount;
 
-        boost::shared_ptr<base_socket>  m_socket;
+        tcp::socket                     m_socket;
+        dtimer                          m_deadline;         //!< deadline timer for reading operations
+        int                             m_timeout;          //!< deadline timeout for reading operations
+        libed2k_header                  m_in_header;        //!< incoming message header
+        socket_buffer                   m_in_container;     //!< buffer for incoming messages
         tcp::endpoint                   m_target;
+        std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order
+
     };
+
+    template<typename T>
+    void server_connection::do_write(T& t)
+    {
+        bool bWriteInProgress = !m_write_order.empty();
+
+        m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));
+
+        boost::iostreams::back_insert_device<std::string> inserter(m_write_order.back().second);
+        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
+
+        // Serialize the data first so we know how large it is.
+        archive::ed2k_oarchive oa(s);
+        oa << t;
+        s.flush();
+        m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
+        m_write_order.back().first.m_type     = packet_type<T>::value;
+
+        DBG("server_connection::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
+
+        if (!bWriteInProgress)
+        {
+            std::vector<boost::asio::const_buffer> buffers;
+            buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
+            buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+
+            // set deadline timer
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
+
+            boost::asio::async_write(m_socket, buffers, boost::bind(&server_connection::handle_write, self(),
+                    boost::asio::placeholders::error,
+                    boost::asio::placeholders::bytes_transferred));
+        }
+    }
+
 }
 
 #endif

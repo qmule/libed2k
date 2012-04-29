@@ -115,6 +115,7 @@ bool transfer::connect_to_peer(peer* peerinfo)
 void transfer::remove_peer(peer_connection* p)
 {
     // TODO: implement
+    DBG("transfer::remove_peer(" << p << ")");
     m_connections.erase(p);
 }
 

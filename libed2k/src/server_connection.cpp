@@ -14,14 +14,18 @@ server_connection::server_connection(aux::session_impl& ses):
     m_keep_alive(ses.m_io_service),
     m_ses(ses),
     m_nFilesCount(0),
-    m_nUsersCount(0)
+    m_nUsersCount(0),
+    m_socket(ses.m_io_service),
+    m_deadline(ses.m_io_service)
 {
+    m_deadline.expires_at(boost::posix_time::pos_infin);
 }
 
 void server_connection::start()
 {
     const session_settings& settings = m_ses.settings();
 
+    check_deadline();
     tcp::resolver::query q(settings.server_hostname,
                            boost::lexical_cast<std::string>(settings.server_port));
     m_name_lookup.async_resolve(
@@ -31,20 +35,15 @@ void server_connection::start()
 void server_connection::close()
 {
     DBG("server_connection::close()");
-
-    if (m_socket.get())
-    {
-        DBG("server_connection::close(): close socket ");
-        m_socket->close();
-    }
-
+    m_socket.close();
+    m_deadline.cancel();
     m_name_lookup.cancel();
     m_keep_alive.cancel();
 }
 
 bool server_connection::is_stopped() const
 {
-    return (!m_socket->socket().is_open());
+    return (!m_socket.is_open());
 }
 
 bool server_connection::is_initialized() const
@@ -61,7 +60,7 @@ void server_connection::post_search_request(search_request& sr)
 {
     if (!is_stopped())
     {
-        m_socket->do_write(sr);
+        do_write(sr);
     }
 }
 
@@ -73,25 +72,16 @@ void server_connection::post_sources_request(const md4_hash& hFile, boost::uint6
         get_file_sources gfs;
         gfs.m_hFile = hFile;
         gfs.m_file_size.nQuadPart = nSize;
-        m_socket->do_write(gfs);
+        do_write(gfs);
     }
 }
 
 void server_connection::post_announce(offer_files_list& offer_list)
 {
-    /*
-    const session_settings& settings = m_ses.settings();
-    boost::uint32_t nSize(filesize);
-    shared_file_entry entry(filehash, m_nClientId, settings.listen_port);
-    entry.m_list.add_tag(make_typed_tag(nSize, FT_FILESIZE, true));
-
-    offer_files_list offer_list;
-    offer_list.m_collection.push_back(entry);
-*/
     if (!is_stopped())
     {
         DBG("server_connection::post_announce: " << offer_list.m_collection.size());
-        m_socket->do_write(offer_list);
+        do_write(offer_list);
     }
 }
 
@@ -113,30 +103,11 @@ void server_connection::on_name_lookup(
 
     DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
 
-    error_code ec;
-
-    /**
-      * do not use timeout on server connection
-     */
-    m_socket.reset(new base_socket(m_ses.m_io_service, settings.peer_timeout));
-
-    m_socket->set_unhandled_callback(boost::bind(&server_connection::on_unhandled_packet, this, _1));   //!< handler for unknown packets
-    m_socket->set_error_callback(boost::bind(&server_connection::on_error, this, _1));                  //!< handler for unknown packets
-
-    m_socket->add_callback(OP_REJECT,       boost::bind(&server_connection::on_reject,          this, _1));
-    m_socket->add_callback(OP_DISCONNECT,   boost::bind(&server_connection::on_disconnect,      this, _1));
-    m_socket->add_callback(OP_SERVERMESSAGE,boost::bind(&server_connection::on_server_message,  this, _1));
-    m_socket->add_callback(OP_SERVERLIST,   boost::bind(&server_connection::on_server_list,     this, _1));
-    m_socket->add_callback(OP_SERVERSTATUS, boost::bind(&server_connection::on_server_status,   this, _1));
-    m_socket->add_callback(OP_USERS_LIST,   boost::bind(&server_connection::on_users_list,      this, _1));
-    m_socket->add_callback(OP_IDCHANGE,     boost::bind(&server_connection::on_id_change,       this, _1));
-    m_socket->add_callback(OP_SERVERIDENT,  boost::bind(&server_connection::on_server_ident,    this, _1));
-    m_socket->add_callback(OP_FOUNDSOURCES, boost::bind(&server_connection::on_found_sources,   this, _1));
-    m_socket->add_callback(OP_SEARCHRESULT, boost::bind(&server_connection::on_search_result,   this, _1));
-    m_socket->add_callback(OP_CALLBACKREQUESTED, boost::bind(&server_connection::on_callback_request,   this, _1));
-
-
-    m_socket->do_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
+    // prepare for connect
+    // set timeout
+    // execute connect
+    m_deadline.expires_from_now(boost::posix_time::seconds(settings.peer_connect_timeout));
+    m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
 }
 
 // private callback methods
@@ -154,10 +125,12 @@ void server_connection::on_connection_complete(error_code const& error)
     {
         ERR("connection to: " << libtorrent::print_endpoint(m_target)
             << ", failed: " << error);
+        close();
         return;
     }
 
-    m_socket->set_timeout(boost::posix_time::pos_infin);
+    //m_socket->set_timeout(boost::posix_time::pos_infin);
+
     m_ses.settings().server_ip = m_target.address().to_v4().to_ulong();
 
     DBG("connect to server:" << libtorrent::print_endpoint(m_target) << ", successfully");
@@ -182,261 +155,16 @@ void server_connection::on_connection_complete(error_code const& error)
 
     // prepare server ping
     m_keep_alive.expires_from_now(boost::posix_time::seconds(settings.server_keep_alive_timeout));
-    m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, this));
+    m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
 
-    m_socket->start_read_cycle();   // wait incoming messages
-    m_socket->do_write(login);      // write login message
-}
-
-void server_connection::on_unhandled_packet(const error_code& error)
-{
-
-    DBG("receive handle less  packet: " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_error(const error_code& error)
-{
-    DBG("server_connection::on_error " << error.message());
-}
-
-void server_connection::on_reject(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_disconnect(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_server_message(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-        server_message smsg;
-
-        if (m_socket->decode_packet(smsg))
-        {
-            if (m_ses.m_alerts.should_post<server_message_alert>())
-                m_ses.m_alerts.post_alert(server_message_alert(smsg.m_strMessage));
-        }
-        else
-        {
-            ERR("server_connection::on_server_message: parse error");
-        }
-
-
-        DBG(smsg.m_strMessage);
-        // TODO add alert there
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_server_list(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-        server_list slist;
-        m_socket->decode_packet(slist);
-        DBG("container size: " << slist.m_collection.size());
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_server_status(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-
-        server_status sss;
-        if (m_socket->decode_packet(sss))
-        {
-            m_nFilesCount = sss.m_nFilesCount;
-            m_nUsersCount = sss.m_nUserCount;
-
-            if (m_nClientId != 0)
-            {
-                // we already got client id it means
-                // server connection initialized
-                // notyfy session
-                m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
-            }
-        }
-
-        DBG("users count: " << sss.m_nUserCount << " files count: " << sss.m_nFilesCount);
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_users_list(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-
-    }
-    else
-    {
-        handle_error(error);
-    }
-}
-
-void server_connection::on_id_change(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-
-    if (!error)
-    {
-        // simple read new id
-        m_socket->decode_packet(m_nClientId);
-        DBG("Client ID is: " << m_nClientId);
-
-        if (m_nUsersCount != 0)
-        {
-            DBG("users count " << m_nUsersCount);
-            // if we got users count != 0 - at least 1 user must exists on server
-            // (our connection) - server connection initialized
-            // notify session
-            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
-        }
-    }
-    else
-    {
-        handle_error(error);
-    }
-
-}
-
-void server_connection::on_server_ident(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-    if (!error)
-    {
-        server_info_entry se;
-
-        if (m_socket->decode_packet(se))
-        {
-            DBG("Server info entry was parsed");
-            DBG("Info: " << se.m_hServer << " addr " << se.m_address.m_nIP << ":" << se.m_address.m_nPort);
-            DBG("Tag list size: " << se.m_list.count());
-        }
-        else
-        {
-            ERR("Unable to parse server info entry");
-        }
-    }
-}
-
-void server_connection::on_found_sources(const error_code& error)
-{
-    DBG("receive " << packetToString(m_socket->context().m_type));
-    if (!error)
-    {
-        found_file_sources fs;
-
-        if (m_socket->decode_packet(fs))
-        {
-            DBG("Server info entry was parsed");
-            fs.dump();
-
-        }
-        else
-        {
-            ERR("Unable to parse server info entry");
-        }
-    }
-}
-
-void server_connection::on_search_result(const error_code& error)
-{
-    DBG("server_connection::on_search_result(" << error.message() << ")");
-
-    if (!error)
-    {
-        search_file_list sfl;
-
-        if (m_socket->decode_packet(sfl))
-        {
-            DBG("search file list size is: " << sfl.m_collection.size());
-            sfl.dump();
-
-            m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
-
-            if (sfl.m_collection.size() > 0)
-            {
-                //DBG("request additional search results");
-                //search_more_result sm;
-                //m_socket->do_write(sm);
-            }
-            else
-            {
-                DBG("result list is empty, stop");
-            }
-        }
-        else
-        {
-            ERR("unable to parse search file list");
-        }
-    }
-}
-
-void server_connection::on_callback_request(const error_code& error)
-{
-    DBG("server_connection::on_callback_request(" << error.message() << ")");
-
-    if (!error)
-    {
-        // ignore this request
-        DBG("We ignore all callback requests!");
-    }
+    do_read();
+    do_write(login);      // write login message
 }
 
 void server_connection::handle_error(const error_code& error)
 {
     ERR("Error " << error.message());
-    m_socket->socket().close();
+    m_socket.close();
 }
 
 void server_connection::write_server_keep_alive()
@@ -451,11 +179,208 @@ void server_connection::write_server_keep_alive()
     offer_files_list empty_list;
     DBG("send server ping");
 
-    m_socket->do_write(empty_list);
+    do_write(empty_list);
     m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
-    m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, this));
-
+    m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
 }
 
+void server_connection::handle_write(const error_code& error, size_t nSize)
+{
+    if (is_stopped()) return;
 
+    if (!error)
+    {
+        m_write_order.pop_front();
+
+        if (!m_write_order.empty())
+        {
+            // set deadline timer
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+
+            std::vector<boost::asio::const_buffer> buffers;
+            buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
+            buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+            boost::asio::async_write(m_socket, buffers, boost::bind(&server_connection::handle_write, self(),
+                                boost::asio::placeholders::error,
+                                boost::asio::placeholders::bytes_transferred));
+        }
+    }
+    else
+    {
+        handle_error(error);
+    }
+}
+
+    void server_connection::do_read()
+    {
+        m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
+        boost::asio::async_read(m_socket,
+                       boost::asio::buffer(&m_in_header, header_size),
+                       boost::bind(&server_connection::handle_read_header,
+                               self(),
+                               boost::asio::placeholders::error,
+                               boost::asio::placeholders::bytes_transferred));
+    }
+
+    void server_connection::handle_read_header(const error_code& error, size_t nSize)
+    {
+        if (is_stopped()) return;
+
+        if (!error)
+        {
+            // we must download body in any case
+            // increase internal buffer size if need
+            if (m_in_container.size() < m_in_header.m_size - 1)
+            {
+                m_in_container.resize(m_in_header.m_size - 1);
+            }
+
+            boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                    boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+        }
+        else
+        {
+            handle_error(error);
+        }
+    }
+
+    void server_connection::handle_read_packet(const error_code& error, size_t nSize)
+    {
+        typedef boost::iostreams::basic_array_source<char> Device;
+
+        if (is_stopped()) return;
+
+        if (!error)
+        {
+            DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
+            boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_header.m_size - 1);
+            std::istream in_array_stream(&buffer);
+            archive::ed2k_iarchive ia(in_array_stream);
+
+            try
+            {
+                // dispatch message
+                switch (m_in_header.m_type)
+                {
+                    case OP_REJECT:
+                        DBG("ignore");
+                        break;
+                    case OP_DISCONNECT:
+                        DBG("ignore");
+                        break;
+                    case OP_SERVERMESSAGE:
+                    {
+                        server_message smsg;
+                        ia >> smsg;
+                        if (m_ses.m_alerts.should_post<server_message_alert>())
+                                m_ses.m_alerts.post_alert(server_message_alert(smsg.m_strMessage));
+                        break;
+                    }
+                    case OP_SERVERLIST:
+                    {
+                        server_list slist;
+                        ia >> slist;
+
+                        break;
+                    }
+                    case OP_SERVERSTATUS:
+                    {
+                        server_status sss;
+                        ia >> sss;
+                        m_nFilesCount = sss.m_nFilesCount;
+                        m_nUsersCount = sss.m_nUserCount;
+
+                        if (m_nClientId != 0)
+                        {
+                            // we already got client id it means
+                            // server connection initialized
+                            // notyfy session
+                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
+                        }
+                        break;
+                    }
+                    case OP_USERS_LIST:
+                        DBG("ignore");
+                        break;
+                    case OP_IDCHANGE:
+                    {
+                        ia >> m_nClientId;
+
+                        if (m_nUsersCount != 0)
+                        {
+                            DBG("users count " << m_nUsersCount);
+                            // if we got users count != 0 - at least 1 user must exists on server
+                            // (our connection) - server connection initialized
+                            // notify session
+                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
+                        }
+                        break;
+                    }
+                    case OP_SERVERIDENT:
+                    {
+                        server_info_entry se;
+                        ia >> se;
+                        break;
+                    }
+                    case OP_FOUNDSOURCES:
+                    {
+                        found_file_sources fs;
+                        ia >> fs;
+                        fs.dump();
+                        break;
+                    }
+                    case OP_SEARCHRESULT:
+                    {
+                        search_file_list sfl;
+                        ia >> sfl;
+                        m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
+                        break;
+                    }
+                    case OP_CALLBACKREQUESTED:
+                        break;
+                    default:
+                        DBG("ignore unhandled packet");
+                        break;
+                }
+
+            }
+            catch(libed2k_exception& e)
+            {
+                ERR("packet parse error");
+            }
+
+            do_read();
+        }
+        else
+        {
+            handle_error(error);
+        }
+    }
+
+
+   void server_connection::check_deadline()
+   {
+       if (is_stopped())
+           return;
+
+       // Check whether the deadline has passed. We compare the deadline against
+       // the current time since a new asynchronous operation may have moved the
+       // deadline before this actor had a chance to run.
+
+       if (m_deadline.expires_at() <= dtimer::traits_type::now())
+       {
+           DBG("server_connection::check_deadline(): deadline timer expired");
+
+           // The deadline has passed. The socket is closed so that any outstanding
+           // asynchronous operations are cancelled.
+           m_socket.close();
+           // There is no longer an active deadline. The expiry is set to positive
+           // infinity so that the actor takes no action until a new deadline is set.
+           m_deadline.expires_at(boost::posix_time::pos_infin);
+           boost::system::error_code ignored_ec;
+       }
+
+       // Put the actor back to sleep.
+       m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
+   }
 }

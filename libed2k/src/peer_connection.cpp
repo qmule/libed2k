@@ -43,6 +43,7 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
+    m_disconnecting = false;
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
     init_handlers();
@@ -66,11 +67,10 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
+    m_disconnecting = false;
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
     init_handlers();
-    // connection is already established
-    m_socket->start_read_cycle();
 }
 
 void peer_connection::init_handlers()
@@ -78,6 +78,8 @@ void peer_connection::init_handlers()
     // handler for unknown packets
     m_socket->set_unhandled_callback(
         boost::bind(&peer_connection::on_unhandled_packet, self(), _1));
+
+    m_socket->set_error_callback(boost::bind(&peer_connection::on_error, self(), _1));
     // hello handler
     m_socket->add_callback(
         OP_HELLO, boost::bind(&peer_connection::on_hello_packet, self(), _1));
@@ -436,7 +438,12 @@ void peer_connection::disconnect(error_code const& ec, int error)
     // TODO: implement
 
     //if (error > 0) m_failed = true;
-    if (m_disconnecting) return;
+    if (m_disconnecting)
+    {
+        DBG("peer_connection::disconnect: return because disconnecting");
+        return;
+    }
+
     boost::intrusive_ptr<peer_connection> me(this);
 
     if (m_connecting && m_connection_ticket >= 0)
@@ -479,9 +486,11 @@ void peer_connection::disconnect(error_code const& ec, int error)
         m_transfer.reset();
     }
 
+    DBG("peer_connection::disconnect: close");
     m_disconnecting = true;
     error_code e;
     m_socket->close(/*e*/);
+    m_socket.reset();
     m_ses.close_connection(this, ec);
 }
 
@@ -654,6 +663,13 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
+    // connection is already established
+    m_socket->start_read_cycle();
+}
+
+void peer_connection::on_error(const error_code& error)
+{
+    disconnect(error);
 }
 
 bool peer_connection::can_write() const

@@ -33,8 +33,7 @@ namespace libed2k
     }
 
     namespace detail = libtorrent::detail;
-    class peer_connection : public libtorrent::intrusive_ptr_base<peer_connection>,
-                            public boost::noncopyable
+    class peer_connection : public libtorrent::intrusive_ptr_base<peer_connection>, public boost::noncopyable
     {
     public:
 
@@ -174,6 +173,8 @@ namespace libed2k
         // and schedule events with references to itself (that is not safe to
         // do in the constructor).
         void start();
+
+        void on_error(const error_code& error);
 
         // tells if this connection has data it want to send
         // and has enough upload bandwidth quota left to send it.

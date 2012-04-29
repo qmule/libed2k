@@ -51,6 +51,15 @@ namespace libed2k{
         return (m_in_header);
     }
 
+    void base_socket::clear_callbacks()
+    {
+        DBG("base_socket::clear_callbacks");
+        m_callbacks.clear();
+        m_unhandled_handler = NULL;
+        m_handle_error      = NULL;
+        m_timeout_handler   = NULL;
+    }
+
     void base_socket::add_callback(proto_type ptype, socket_handler handler)
     {
         m_callbacks.insert(make_pair(ptype, handler));
@@ -112,7 +121,7 @@ namespace libed2k{
     {
         ERR("base socket error: " << error.message());
 
-        m_socket.close();
+        //close();
 
         if (m_handle_error)
         {

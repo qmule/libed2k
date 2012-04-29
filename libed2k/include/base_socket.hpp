@@ -22,11 +22,14 @@
 
 namespace libed2k{
 
+
+    enum{ header_size = sizeof( libed2k_header) };
+
 /**
   * base socket class for in-place handle protocol type(compression/decompression), write data with serialization and vice versa
   *
  */
-class base_socket : public boost::enable_shared_from_this<base_socket>
+class base_socket : public boost::enable_shared_from_this<base_socket>, public boost::noncopyable
 {
 public:
 	enum{ header_size = sizeof( libed2k_header) };
@@ -176,6 +179,9 @@ public:
 	 */
 	const libed2k_header& context() const;
 
+
+	void clear_callbacks();
+
 	/**
 	  * add ordinary callbacks, set unhandled callback and error callback
 	 */
@@ -252,6 +258,81 @@ private:
 	 */
 	void check_deadline();
 };
+/*
+    struct base_connection
+    {
+        enum{ header_size = sizeof( libed2k_header) };
+
+        typedef std::vector<char> socket_buffer;
+        typedef boost::iostreams::basic_array_source<char> Device;
+
+        base_connection(boost::asio::io_service& io) : m_socket(io)
+        {}
+
+
+        template<typename T, typename Handler>
+        void do_write(T& t, Handler handler)
+        {
+            bool bWriteInProgress = !m_write_order.empty();
+
+            m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));
+
+            boost::iostreams::back_insert_device<std::string> inserter(m_write_order.back().second);
+            boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
+
+            // Serialize the data first so we know how large it is.
+            archive::ed2k_oarchive oa(s);
+            oa << t;
+            s.flush();
+            m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
+            m_write_order.back().first.m_type     = packet_type<T>::value;
+
+            DBG("base_socket::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
+
+            if (!bWriteInProgress)
+            {
+                std::vector<boost::asio::const_buffer> buffers;
+                buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
+                buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+
+                boost::asio::async_write(m_socket, buffers, boost::bind(&base_socket::handle_write, shared_from_this(),
+                        boost::asio::placeholders::error,
+                        boost::asio::placeholders::bytes_transferred));
+            }
+        }
+
+        template<typename Handler>
+        void do_read()
+        {
+
+        }
+
+        tcp::socket                     m_socket;           //!< operation socket
+        dtimer                          m_deadline;         //!< deadline timer for reading operations
+        libed2k_header                  m_in_header;        //!< incoming message header
+        socket_buffer                   m_in_container;     //!< buffer for incoming messages
+        std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order
+    };
+*/
+
+    template<typename T>
+    bool decode_packet(const char* pchData, size_t nSize, T& t)
+    {
+        try
+        {
+            boost::iostreams::stream_buffer<base_socket::Device> buffer(pchData, nSize);
+            std::istream in_array_stream(&buffer);
+            archive::ed2k_iarchive ia(in_array_stream);
+            ia >> t;
+        }
+        catch(libed2k_exception& e)
+        {
+            DBG("Error on conversion " << e.what());
+            return (false);
+        }
+
+        return (true);
+    }
 
 }
 #endif

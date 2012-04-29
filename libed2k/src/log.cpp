@@ -2,6 +2,8 @@
 #include <boost/logging/writer/ts_write.hpp>
 #include "log.hpp"
 
+#ifndef _RELEASE
+
 using namespace boost::logging;
 
 // Step 6: Define the filters and loggers you'll use
@@ -26,3 +28,5 @@ void init_logs()
     g_l()->turn_cache_off();
 
 }
+
+#endif
