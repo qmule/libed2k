@@ -110,7 +110,6 @@ namespace libed2k
 
         tcp::socket                     m_socket;
         dtimer                          m_deadline;         //!< deadline timer for reading operations
-        int                             m_timeout;          //!< deadline timeout for reading operations
         libed2k_header                  m_in_header;        //!< incoming message header
         socket_buffer                   m_in_container;     //!< buffer for incoming messages
         tcp::endpoint                   m_target;

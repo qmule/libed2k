@@ -164,7 +164,7 @@ void server_connection::on_connection_complete(error_code const& error)
 void server_connection::handle_error(const error_code& error)
 {
     ERR("Error " << error.message());
-    m_socket.close();
+    close();
 }
 
 void server_connection::write_server_keep_alive()
@@ -195,7 +195,7 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
         if (!m_write_order.empty())
         {
             // set deadline timer
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_timeout));
+            m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
 
             std::vector<boost::asio::const_buffer> buffers;
             buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
@@ -343,13 +343,14 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
                         break;
                 }
 
+                do_read();
+
             }
             catch(libed2k_exception& e)
             {
                 ERR("packet parse error");
+                handle_error(errors::decode_packet_error);
             }
-
-            do_read();
         }
         else
         {
@@ -373,7 +374,7 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
 
            // The deadline has passed. The socket is closed so that any outstanding
            // asynchronous operations are cancelled.
-           m_socket.close();
+           close();
            // There is no longer an active deadline. The expiry is set to positive
            // infinity so that the actor takes no action until a new deadline is set.
            m_deadline.expires_at(boost::posix_time::pos_infin);
