@@ -8,8 +8,10 @@
 #include "base_socket.hpp"
 #include "constants.hpp"
 #include "util.hpp"
+#include "file.hpp"
 
-using namespace libed2k;
+namespace libed2k
+{
 namespace ip = boost::asio::ip;
 
 
@@ -325,24 +327,57 @@ void transfer::announce()
 shared_file_entry transfer::getAnnounce() const
 {
     shared_file_entry entry;
-    // generate file entry from transfer here
+    // TODO - implement generate file entry from transfer here
+    entry.m_hFile = m_filehash;
+    entry.m_network_point.m_nIP     = m_ses.m_client_id;
+    entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
+    entry.m_list.add_tag(make_string_tag(m_filepath.string(), FT_FILENAME, true));
+
+    __file_size fs;
+    fs.nQuadPart = m_filesize;
+    entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
+
+    if (fs.nHighPart > 0)
+    {
+        entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
+    }
+
+    bool bFileTypeAdded = false;
+
+    if (m_ses.m_tcp_flags & SRV_TCPFLG_TYPETAGINTEGER)
+    {
+        // Send integer file type tags to newer servers
+        boost::uint32_t eFileType = GetED2KFileTypeSearchID(GetED2KFileTypeID(m_filepath.string()));
+
+        if (eFileType >= ED2KFT_AUDIO && eFileType <= ED2KFT_EMULECOLLECTION)
+        {
+            entry.m_list.add_tag(make_typed_tag(eFileType, FT_FILETYPE, true));
+            bFileTypeAdded = true;
+        }
+    }
+
+    if (!bFileTypeAdded)
+    {
+        // Send string file type tags to:
+        //  - newer servers, in case there is no integer type available for the file type (e.g. emulecollection)
+        //  - older servers
+        //  - all clients
+        std::string strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(m_filepath.string())));
+
+        if (!strED2KFileType.empty())
+        {
+            entry.m_list.add_tag(make_string_tag(strED2KFileType, FT_FILETYPE, true));
+        }
+    }
+
+    // TODO - need additional information about server for making correct tags
 
     return entry;
 }
 
-void transfer::send_server_request(const server_request& req)
+void transfer::set_sources(const found_file_sources& file_sources)
 {
+    // TODO - implement new sources utilization
 }
 
-void transfer::on_server_response(const server_request& req, const server_response& res)
-{
-}
-
-void transfer::on_server_request_timed_out(const server_request& req)
-{
-}
-
-void transfer::on_server_request_error(const server_request& req, int response_code,
-                                       const std::string& str, int retry_interval)
-{
 }

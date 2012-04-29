@@ -43,9 +43,9 @@ BOOST_AUTO_TEST_CASE(test_alerts)
     boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
     al.set_alert_mask(0);
 
-    al.post_alert(libed2k::server_connection_initialized_alert(1,1,1));
-    al.post_alert(libed2k::server_connection_initialized_alert(2,2,1));
-    al.post_alert(libed2k::server_connection_initialized_alert(3,2,3));
+    al.post_alert(libed2k::server_connection_initialized_alert(1,1,1,2,2));
+    al.post_alert(libed2k::server_connection_initialized_alert(2,2,1,2,2));
+    al.post_alert(libed2k::server_connection_initialized_alert(3,2,3,2,2));
 
     std::auto_ptr<libed2k::alert> a;
 
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(test_alerts)
 
     if (al.should_post<libed2k::server_connection_initialized_alert>())
     {
-        al.post_alert(libed2k::server_connection_initialized_alert(300,23,4));
+        al.post_alert(libed2k::server_connection_initialized_alert(300,23,4,56,66));
     }
 
     a = pop_alert(al);
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(test_alerts)
 
     if (al.should_post<libed2k::server_connection_initialized_alert>())
     {
-        al.post_alert(libed2k::server_connection_initialized_alert(90, 1, 2));
+        al.post_alert(libed2k::server_connection_initialized_alert(90, 1, 2,56,66));
     }
 
     a = pop_alert(al);

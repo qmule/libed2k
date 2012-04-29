@@ -57,6 +57,14 @@ namespace libed2k
 		OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
 	};
 
+    #define SRV_TCPFLG_COMPRESSION          0x00000001
+    #define SRV_TCPFLG_NEWTAGS              0x00000008
+    #define SRV_TCPFLG_UNICODE              0x00000010
+    #define SRV_TCPFLG_RELATEDSEARCH        0x00000040
+    #define SRV_TCPFLG_TYPETAGINTEGER       0x00000080
+    #define SRV_TCPFLG_LARGEFILES           0x00000100
+    #define SRV_TCPFLG_TCPOBFUSCATION       0x00000400
+
 
 	// Client <-> Client
 	enum ED2KStandardClientTCP
@@ -378,14 +386,40 @@ namespace libed2k
         }
     };
 
+    /**
+      * this is variable size structure contains client id and some impotant information about server
+     */
     struct id_change
     {
         client_id_type  m_nClientId;
+        boost::uint32_t m_nTCPFlags;
+        boost::uint32_t m_nAuxPort;
+        int             m_nMaxSize;
+
+        id_change(int nMaxSize) : m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0), m_nMaxSize(nMaxSize)
+        {
+        }
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
+            int nCounter = m_nMaxSize;
+            // always read/write client id;
             ar & m_nClientId;
+            nCounter -= sizeof(m_nClientId);
+
+            if (nCounter >= sizeof(m_nTCPFlags))
+            {
+                ar & m_nTCPFlags;
+                nCounter -= sizeof(m_nTCPFlags);
+            }
+
+            if (nCounter >= sizeof(m_nAuxPort))
+            {
+                ar & m_nAuxPort;
+                nCounter -= sizeof(m_nAuxPort);
+            }
+
         }
     };
 

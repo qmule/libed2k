@@ -771,15 +771,21 @@ size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
 }
 
 void session_impl::server_ready(
-    boost::uint32_t client_id, boost::uint32_t file_count, boost::uint32_t user_count)
+    boost::uint32_t client_id,
+    boost::uint32_t file_count,
+    boost::uint32_t user_count,
+    boost::uint32_t tcp_flags,
+    boost::uint32_t aux_port)
 {
     DBG("session_impl::server_ready");
     m_client_id = client_id;
+    m_tcp_flags = tcp_flags;
+    m_aux_port  = aux_port;
 
     // server connection initialized - post alert here
     if (m_alerts.should_post<server_connection_initialized_alert>())
         m_alerts.post_alert(
-            server_connection_initialized_alert(client_id, file_count, user_count));
+            server_connection_initialized_alert(client_id, file_count, user_count, tcp_flags, aux_port));
 
     announce_all();
 }

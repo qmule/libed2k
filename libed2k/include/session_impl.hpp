@@ -134,8 +134,11 @@ namespace libed2k {
 
             // called when server connection is initialized
             void server_ready(
-                boost::uint32_t client_id, boost::uint32_t file_count,
-                boost::uint32_t user_count);
+                boost::uint32_t client_id,
+                boost::uint32_t file_count,
+                boost::uint32_t user_count,
+                boost::uint32_t tcp_flags,
+                boost::uint32_t aux_port);
 
             boost::object_pool<peer> m_peer_pool;
 
@@ -220,6 +223,8 @@ namespace libed2k {
             session_settings m_settings;
             // ed2k client identifier, issued by server
             boost::uint32_t m_client_id;
+            boost::uint32_t m_tcp_flags;
+            boost::uint32_t m_aux_port;
 
             // set to true when the session object
             // is being destructed and the thread

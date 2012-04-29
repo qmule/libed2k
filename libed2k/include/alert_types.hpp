@@ -19,8 +19,14 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification;
 
-        server_connection_initialized_alert(boost::uint32_t nClientId, boost::uint32_t nFilesCount, boost::uint32_t nUsersCount) :
-            m_nClientId(nClientId), m_nFilesCount(nFilesCount), m_nUsersCount(nUsersCount)
+        server_connection_initialized_alert(boost::uint32_t nClientId,
+                boost::uint32_t nFilesCount, boost::uint32_t nUsersCount,
+                boost::uint32_t nTCPFlags, boost::uint32_t nAuxPort) :
+                    m_nClientId(nClientId),
+                    m_nFilesCount(nFilesCount),
+                    m_nUsersCount(nUsersCount),
+                    m_nTCPFlags(nTCPFlags),
+                    m_nAuxPort(nAuxPort)
         {}
         virtual int category() const { return static_category; }
 
@@ -35,6 +41,8 @@ namespace libed2k
         boost::uint32_t m_nClientId;
         boost::uint32_t m_nFilesCount;
         boost::uint32_t m_nUsersCount;
+        boost::uint32_t m_nTCPFlags;
+        boost::uint32_t m_nAuxPort;
     };
 
     /**

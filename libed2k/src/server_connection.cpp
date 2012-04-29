@@ -2,214 +2,218 @@
 #include <boost/lexical_cast.hpp>
 
 #include "server_connection.hpp"
+#include "transfer.hpp"
 #include "session_impl.hpp"
 #include "log.hpp"
 #include "alert_types.hpp"
 
-namespace libed2k{
-
-server_connection::server_connection(aux::session_impl& ses):
-    m_nClientId(0),
-    m_name_lookup(ses.m_io_service),
-    m_keep_alive(ses.m_io_service),
-    m_ses(ses),
-    m_nFilesCount(0),
-    m_nUsersCount(0),
-    m_socket(ses.m_io_service),
-    m_deadline(ses.m_io_service)
+namespace libed2k
 {
-    m_deadline.expires_at(boost::posix_time::pos_infin);
-}
 
-void server_connection::start()
-{
-    const session_settings& settings = m_ses.settings();
-
-    check_deadline();
-    tcp::resolver::query q(settings.server_hostname,
-                           boost::lexical_cast<std::string>(settings.server_port));
-    m_name_lookup.async_resolve(
-        q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
-}
-
-void server_connection::close()
-{
-    DBG("server_connection::close()");
-    m_socket.close();
-    m_deadline.cancel();
-    m_name_lookup.cancel();
-    m_keep_alive.cancel();
-}
-
-bool server_connection::is_stopped() const
-{
-    return (!m_socket.is_open());
-}
-
-bool server_connection::is_initialized() const
-{
-    return (m_nClientId != 0);
-}
-
-const tcp::endpoint& server_connection::getServerEndpoint() const
-{
-    return (m_target);
-}
-
-void server_connection::post_search_request(search_request& sr)
-{
-    if (!is_stopped())
+    server_connection::server_connection(aux::session_impl& ses):
+        m_nClientId(0),
+        m_name_lookup(ses.m_io_service),
+        m_keep_alive(ses.m_io_service),
+        m_ses(ses),
+        m_nFilesCount(0),
+        m_nUsersCount(0),
+        m_nTCPFlags(0),
+        m_nAuxPort(0),
+        m_socket(ses.m_io_service),
+        m_deadline(ses.m_io_service)
     {
-        do_write(sr);
-    }
-}
-
-void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
-{
-    if (!is_stopped())
-    {
-        DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
-        get_file_sources gfs;
-        gfs.m_hFile = hFile;
-        gfs.m_file_size.nQuadPart = nSize;
-        do_write(gfs);
-    }
-}
-
-void server_connection::post_announce(offer_files_list& offer_list)
-{
-    if (!is_stopped())
-    {
-        DBG("server_connection::post_announce: " << offer_list.m_collection.size());
-        do_write(offer_list);
-    }
-}
-
-void server_connection::on_name_lookup(
-    const error_code& error, tcp::resolver::iterator i)
-{
-    const session_settings& settings = m_ses.settings();
-
-    if (error == boost::asio::error::operation_aborted) return;
-
-    if (error || i == tcp::resolver::iterator())
-    {
-        ERR("server name: " << settings.server_hostname
-            << ", resolve failed: " << error);
-        return;
+        m_deadline.expires_at(boost::posix_time::pos_infin);
     }
 
-    m_target = *i;
-
-    DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
-
-    // prepare for connect
-    // set timeout
-    // execute connect
-    m_deadline.expires_from_now(boost::posix_time::seconds(settings.peer_connect_timeout));
-    m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
-}
-
-// private callback methods
-void server_connection::on_connection_complete(error_code const& error)
-{
-    DBG("server_connection::on_connection_complete");
-
-    if (is_stopped())
+    void server_connection::start()
     {
-        DBG("socket was closed by timeout");
-        return;
+        const session_settings& settings = m_ses.settings();
+
+        check_deadline();
+        tcp::resolver::query q(settings.server_hostname,
+                               boost::lexical_cast<std::string>(settings.server_port));
+        m_name_lookup.async_resolve(
+            q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
     }
 
-    if (error)
+    void server_connection::close()
     {
-        ERR("connection to: " << libtorrent::print_endpoint(m_target)
-            << ", failed: " << error);
-        close();
-        return;
+        DBG("server_connection::close()");
+        m_socket.close();
+        m_deadline.cancel();
+        m_name_lookup.cancel();
+        m_keep_alive.cancel();
     }
 
-    //m_socket->set_timeout(boost::posix_time::pos_infin);
-
-    m_ses.settings().server_ip = m_target.address().to_v4().to_ulong();
-
-    DBG("connect to server:" << libtorrent::print_endpoint(m_target) << ", successfully");
-
-    const session_settings& settings = m_ses.settings();
-
-    cs_login_request    login;
-    //!< generate initial packet to server
-    boost::uint32_t nVersion = 0x3c;
-    boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
-    boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
-
-    login.m_hClient                 = settings.client_hash;
-    login.m_sNetIdentifier.m_nIP    = 0;
-    login.m_sNetIdentifier.m_nPort  = settings.listen_port;
-
-    login.m_list.add_tag(make_string_tag(std::string(settings.client_name), CT_NAME, true));
-    login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    login.m_list.add_tag(make_typed_tag(nCapability, CT_SERVER_FLAGS, true));
-    login.m_list.add_tag(make_typed_tag(nClientVersion, CT_EMULE_VERSION, true));
-    login.m_list.dump();
-
-    // prepare server ping
-    m_keep_alive.expires_from_now(boost::posix_time::seconds(settings.server_keep_alive_timeout));
-    m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
-
-    do_read();
-    do_write(login);      // write login message
-}
-
-void server_connection::handle_error(const error_code& error)
-{
-    ERR("Error " << error.message());
-    close();
-}
-
-void server_connection::write_server_keep_alive()
-{
-    // do nothing when server connection stopped
-    if (is_stopped())
+    bool server_connection::is_stopped() const
     {
-        DBG("stopped");
-        return;
+        return (!m_socket.is_open());
     }
 
-    offer_files_list empty_list;
-    DBG("send server ping");
-
-    do_write(empty_list);
-    m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
-    m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
-}
-
-void server_connection::handle_write(const error_code& error, size_t nSize)
-{
-    if (is_stopped()) return;
-
-    if (!error)
+    bool server_connection::is_initialized() const
     {
-        m_write_order.pop_front();
+        return (m_nClientId != 0);
+    }
 
-        if (!m_write_order.empty())
+    const tcp::endpoint& server_connection::getServerEndpoint() const
+    {
+        return (m_target);
+    }
+
+    void server_connection::post_search_request(search_request& sr)
+    {
+        if (!is_stopped())
         {
-            // set deadline timer
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
-
-            std::vector<boost::asio::const_buffer> buffers;
-            buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
-            buffers.push_back(boost::asio::buffer(m_write_order.front().second));
-            boost::asio::async_write(m_socket, buffers, boost::bind(&server_connection::handle_write, self(),
-                                boost::asio::placeholders::error,
-                                boost::asio::placeholders::bytes_transferred));
+            do_write(sr);
         }
     }
-    else
+
+    void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     {
-        handle_error(error);
+        if (!is_stopped())
+        {
+            DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
+            get_file_sources gfs;
+            gfs.m_hFile = hFile;
+            gfs.m_file_size.nQuadPart = nSize;
+            do_write(gfs);
+        }
     }
-}
+
+    void server_connection::post_announce(offer_files_list& offer_list)
+    {
+        if (!is_stopped())
+        {
+            DBG("server_connection::post_announce: " << offer_list.m_collection.size());
+            do_write(offer_list);
+        }
+    }
+
+    void server_connection::on_name_lookup(
+        const error_code& error, tcp::resolver::iterator i)
+    {
+        const session_settings& settings = m_ses.settings();
+
+        if (error == boost::asio::error::operation_aborted) return;
+
+        if (error || i == tcp::resolver::iterator())
+        {
+            ERR("server name: " << settings.server_hostname
+                << ", resolve failed: " << error);
+            return;
+        }
+
+        m_target = *i;
+
+        DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
+
+        // prepare for connect
+        // set timeout
+        // execute connect
+        m_deadline.expires_from_now(boost::posix_time::seconds(settings.peer_connect_timeout));
+        m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
+    }
+
+    // private callback methods
+    void server_connection::on_connection_complete(error_code const& error)
+    {
+        DBG("server_connection::on_connection_complete");
+
+        if (is_stopped())
+        {
+            DBG("socket was closed by timeout");
+            return;
+        }
+
+        if (error)
+        {
+            ERR("connection to: " << libtorrent::print_endpoint(m_target)
+                << ", failed: " << error);
+            close();
+            return;
+        }
+
+        //m_socket->set_timeout(boost::posix_time::pos_infin);
+
+        m_ses.settings().server_ip = m_target.address().to_v4().to_ulong();
+
+        DBG("connect to server:" << libtorrent::print_endpoint(m_target) << ", successfully");
+
+        const session_settings& settings = m_ses.settings();
+
+        cs_login_request    login;
+        //!< generate initial packet to server
+        boost::uint32_t nVersion = 0x3c;
+        boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+        boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
+
+        login.m_hClient                 = settings.client_hash;
+        login.m_sNetIdentifier.m_nIP    = 0;
+        login.m_sNetIdentifier.m_nPort  = settings.listen_port;
+
+        login.m_list.add_tag(make_string_tag(std::string(settings.client_name), CT_NAME, true));
+        login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+        login.m_list.add_tag(make_typed_tag(nCapability, CT_SERVER_FLAGS, true));
+        login.m_list.add_tag(make_typed_tag(nClientVersion, CT_EMULE_VERSION, true));
+        login.m_list.dump();
+
+        // prepare server ping
+        m_keep_alive.expires_from_now(boost::posix_time::seconds(settings.server_keep_alive_timeout));
+        m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
+
+        do_read();
+        do_write(login);      // write login message
+    }
+
+    void server_connection::handle_error(const error_code& error)
+    {
+        ERR("Error " << error.message());
+        close();
+    }
+
+    void server_connection::write_server_keep_alive()
+    {
+        // do nothing when server connection stopped
+        if (is_stopped())
+        {
+            DBG("stopped");
+            return;
+        }
+
+        offer_files_list empty_list;
+        DBG("send server ping");
+
+        do_write(empty_list);
+        m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
+        m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
+    }
+
+    void server_connection::handle_write(const error_code& error, size_t nSize)
+    {
+        if (is_stopped()) return;
+
+        if (!error)
+        {
+            m_write_order.pop_front();
+
+            if (!m_write_order.empty())
+            {
+                // set deadline timer
+                m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
+
+                std::vector<boost::asio::const_buffer> buffers;
+                buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
+                buffers.push_back(boost::asio::buffer(m_write_order.front().second));
+                boost::asio::async_write(m_socket, buffers, boost::bind(&server_connection::handle_write, self(),
+                                    boost::asio::placeholders::error,
+                                    boost::asio::placeholders::bytes_transferred));
+            }
+        }
+        else
+        {
+            handle_error(error);
+        }
+    }
 
     void server_connection::do_read()
     {
@@ -295,7 +299,7 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
                             // we already got client id it means
                             // server connection initialized
                             // notyfy session
-                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
+                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount, m_nTCPFlags, m_nAuxPort);
                         }
                         break;
                     }
@@ -304,7 +308,14 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
                         break;
                     case OP_IDCHANGE:
                     {
-                        ia >> m_nClientId;
+                        id_change idc(m_in_header.m_size - 1);
+                        ia >> idc;
+
+                        m_nClientId = idc.m_nClientId;
+                        m_nTCPFlags = idc.m_nTCPFlags;
+                        m_nAuxPort  = idc.m_nAuxPort;
+
+                        DBG("Client id: " << m_nClientId << " tcp flags: " << idc.m_nTCPFlags << " aux port " << idc.m_nAuxPort);
 
                         if (m_nUsersCount != 0)
                         {
@@ -312,7 +323,7 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
                             // if we got users count != 0 - at least 1 user must exists on server
                             // (our connection) - server connection initialized
                             // notify session
-                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
+                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount, m_nTCPFlags, m_nAuxPort);
                         }
                         break;
                     }
@@ -327,6 +338,13 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
                         found_file_sources fs;
                         ia >> fs;
                         fs.dump();
+
+                        // ok, search appropriate transfer
+                        if (boost::shared_ptr<transfer> p = m_ses.find_transfer(fs.m_hFile).lock())
+                        {
+                            p->set_sources(fs);
+                        }
+
                         break;
                     }
                     case OP_SEARCHRESULT:

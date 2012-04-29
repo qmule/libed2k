@@ -19,23 +19,6 @@ namespace libed2k
 {
     namespace aux { class session_impl; }
 
-    class server_request {
-    public:
-        server_request()
-        {}
-
-        std::string file;
-    };
-
-    class server_response {
-    public:
-        server_response()
-        {}
-
-        std::vector<peer_entry> peers;
-    };
-
-
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
@@ -45,7 +28,14 @@ namespace libed2k
     public:
         server_connection(aux::session_impl& ses);
 
+        /**
+          * start working
+         */
         void start();
+
+        /**
+          * close socket and cancel all deadline timers
+         */
         void close();
 
         /**
@@ -75,7 +65,6 @@ namespace libed2k
 
         void do_read();
 
-
         /**
           * call when socket got packets header
          */
@@ -86,7 +75,9 @@ namespace libed2k
          */
         void handle_read_packet(const error_code& error, size_t nSize);
 
-
+        /**
+          * write structures into socket
+         */
         template<typename T>
         void do_write(T& t);
 
@@ -103,13 +94,14 @@ namespace libed2k
         boost::uint32_t                 m_nClientId;
         tcp::resolver                   m_name_lookup;
         dtimer                          m_keep_alive;       //!< timer for ping server
-        server_status                   m_server_status;    //!< server status info
         aux::session_impl&              m_ses;
         boost::uint32_t                 m_nFilesCount;
         boost::uint32_t                 m_nUsersCount;
-
+        boost::uint32_t                 m_nTCPFlags;
+        boost::uint32_t                 m_nAuxPort;
         tcp::socket                     m_socket;
         dtimer                          m_deadline;         //!< deadline timer for reading operations
+
         libed2k_header                  m_in_header;        //!< incoming message header
         socket_buffer                   m_in_container;     //!< buffer for incoming messages
         tcp::endpoint                   m_target;
