@@ -73,6 +73,7 @@ int main(int argc, char* argv[])
             {
                 search_result_alert* p = dynamic_cast<search_result_alert*>(a.get());
                 // ok, prepare to get sources
+                p->m_list.dump();
                 DBG("Results count: " << p->m_list.m_collection.size());
                 /*
                 for (int n = 0; n < p->m_list.m_collection.size(); n++)
