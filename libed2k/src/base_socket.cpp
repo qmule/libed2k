@@ -99,7 +99,7 @@ namespace libed2k{
     {
         ERR("base socket error: " << error.message());
 
-        m_socket.close();
+        //close();
 
         if (m_handle_error)
         {

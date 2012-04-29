@@ -29,6 +29,7 @@ namespace libed2k
             blob_tag_too_long,
             incompatible_tag_getter,
             tag_list_index_error,
+            decode_packet_error,
             // transport errors
             session_is_closing,
             duplicate_transfer,

@@ -12,6 +12,8 @@ BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 #include <boost/logging/writer/ts_write.hpp>
 #endif
 
+#ifndef __RELEASE
+
 using namespace boost::logging;
 
 // Step 3 : Specify your logging class(es)
@@ -32,12 +34,17 @@ BOOST_DECLARE_LOG(g_l, logger_type)
 #define DBG(x) LDBG_ << x
 #define APP(x) LAPP_ << x
 #define ERR(x) LERR_ << x
-
-
-//#define DBG(x)
-//#define APP(x)
-//#define ERR(x)
+#define LOGGER_INIT() init_logs();
 
 void init_logs();
+
+#else
+
+#define DBG(x)
+#define APP(x)
+#define ERR(x)
+#define LOGGER_INIT()
+
+#endif
 
 #endif //__LOG__

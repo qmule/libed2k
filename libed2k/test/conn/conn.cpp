@@ -13,7 +13,7 @@ using namespace libed2k;
 
 int main(int argc, char* argv[])
 {
-    init_logs();
+    LOGGER_INIT()
 
     if (argc < 3)
     {
@@ -31,15 +31,19 @@ int main(int argc, char* argv[])
 
     libed2k::search_request sr;
 
+    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
+    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     sr.add_entry(libed2k::search_request_entry("dead"));
-    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
+    sr.add_entry(libed2k::search_request_entry("walking"));
     sr.add_entry(libed2k::search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, 300));
-    sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
+    sr.add_entry(libed2k::search_request_entry("HD"));
+
+    //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_OR));
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
-    sr.add_entry(libed2k::search_request_entry("dead"));
-    sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
+    //sr.add_entry(libed2k::search_request_entry("dead"));
+    //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
@@ -69,6 +73,7 @@ int main(int argc, char* argv[])
             {
                 search_result_alert* p = dynamic_cast<search_result_alert*>(a.get());
                 // ok, prepare to get sources
+                p->m_list.dump();
                 DBG("Results count: " << p->m_list.m_collection.size());
                 /*
                 for (int n = 0; n < p->m_list.m_collection.size(); n++)

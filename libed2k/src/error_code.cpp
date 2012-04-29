@@ -23,6 +23,7 @@ namespace libed2k
             "blob tag too long",
             "incompatible tag getter",
             "tag list index error",
+            "decode packet error",
             // transport errors
             "session is closing",
             "duplicate transfer",

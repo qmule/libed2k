@@ -330,6 +330,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
             DBG("There are no active transfers, disconnect");
             return;
         }
+
     }
 
     setup_socket_buffers(s->socket());
@@ -338,7 +339,12 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
 
     if (!c->is_disconnecting())
     {
-        m_connections.insert(c);
+        // store connection in map only for real peers
+        if (m_server_connection->m_target.address() != endp.address())
+        {
+            m_connections.insert(c);
+        }
+
         c->start();
     }
 }
