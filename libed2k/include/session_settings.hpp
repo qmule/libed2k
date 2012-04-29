@@ -7,6 +7,7 @@ namespace libed2k {
     {
     public:
         session_settings():
+            server_timeout(120),
             peer_timeout(120),
             peer_connect_timeout(7),
             recv_socket_buffer_size(0),
@@ -24,9 +25,13 @@ namespace libed2k {
         }
 
         // the number of seconds to wait for any activity on
+        // the server wire before closing the connection due
+        // to time out.
+        int server_timeout;
+
+        // the number of seconds to wait for any activity on
         // the peer wire before closing the connection due
         // to time out.
-        // TODO: rename
         int peer_timeout;
 
         // this is the timeout for a connection attempt. If
