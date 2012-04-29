@@ -10,7 +10,6 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/aligned_storage.hpp>
 
-#include <libtorrent/intrusive_ptr_base.hpp>
 #include <libtorrent/error_code.hpp>
 #include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/buffer.hpp>
@@ -18,6 +17,7 @@
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 
+#include "base_socket.hpp"
 #include "types.hpp"
 #include "error_code.hpp"
 
@@ -25,7 +25,6 @@ namespace libed2k
 {
     class peer;
     class transfer;
-    class base_socket;
     class md4_hash;
     class known_file;
     namespace aux{
@@ -33,7 +32,7 @@ namespace libed2k
     }
 
     namespace detail = libtorrent::detail;
-    class peer_connection : public libtorrent::intrusive_ptr_base<peer_connection>, public boost::noncopyable
+    class peer_connection : public base_connection
     {
     public:
 
@@ -48,19 +47,17 @@ namespace libed2k
         // The peer_conenction should handshake and verify that the
         // other end has the correct id
         peer_connection(aux::session_impl& ses, boost::weak_ptr<transfer>,
-                        boost::shared_ptr<base_socket> s,
+                        boost::shared_ptr<tcp::socket> s,
                         const tcp::endpoint& remote, peer* peerinfo);
 
         // with this constructor we have been contacted and we still don't
         // know which transfer the connection belongs to
-        peer_connection(aux::session_impl& ses, boost::shared_ptr<base_socket> s,
+        peer_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s,
                         const tcp::endpoint& remote, peer* peerinfo);
 
         ~peer_connection();
 
         peer* peer_info() const { return m_peer_info; }
-
-        const tcp::endpoint& remote() const { return m_remote; }
 
         // is called once every second by the main loop
         void second_tick();
@@ -77,15 +74,6 @@ namespace libed2k
 
             num_supported_messages
         };
-
-        // called from the main loop when this connection has any
-        // work to do.
-        void on_send_data(error_code const& error, std::size_t bytes_transferred);
-        void on_receive_data(error_code const& error, std::size_t bytes_transferred);
-        void on_receive_data_nolock(error_code const& error,
-                                    std::size_t bytes_transferred);
-        void on_sent(error_code const& error, std::size_t bytes_transferred);
-        void on_receive(error_code const& error, std::size_t bytes_transferred);
 
         buffer::const_interval receive_buffer() const
         {
@@ -127,7 +115,6 @@ namespace libed2k
 
         // the following functions appends messages
         // to the send buffer
-        // DRAFT
         void write_hello();
         void write_hello_answer();
         void write_file_request(const md4_hash& file_hash);
@@ -141,16 +128,6 @@ namespace libed2k
         void write_cancel_transfer();
         void write_have(int index);
         void write_piece(const peer_request& r, disk_buffer_holder& buffer);
-        void write_handshake();
-
-        enum message_type_flags { message_type_request = 1 };
-        void send_buffer(char const* buf, int size, int flags = 0);
-        void setup_send();
-
-        enum sync_t { read_async, read_sync };
-        void setup_receive(sync_t sync = read_sync);
-
-        size_t try_read(sync_t s, error_code& ec);
 
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
@@ -160,21 +137,20 @@ namespace libed2k
         // this is called when the connection attempt has succeeded
         // and the peer_connection is supposed to set m_connecting
         // to false, and stop monitor writability
-        void on_connection_complete(error_code const& e);
+        void on_connect(const error_code& e);
+        void on_error(const error_code& e);
 
         // called when it's time for this peer_conncetion to actually
         // initiate the tcp connection. This may be postponed until
         // the library isn't using up the limitation of half-open
         // tcp connections.
-        void on_connect(int ticket);
+        void connect(int ticket);
 
         // this function is called after it has been constructed and properly
         // reference counted. It is safe to call self() in this function
         // and schedule events with references to itself (that is not safe to
         // do in the constructor).
         void start();
-
-        void on_error(const error_code& error);
 
         // tells if this connection has data it want to send
         // and has enough upload bandwidth quota left to send it.
@@ -186,17 +162,14 @@ namespace libed2k
 
     private:
 
-        /**
-          * initialize call back handlers
-         */
-        void init_handlers();
+        // constructor method
+        void init();
 
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
 
         // protocol handlers
-        void on_unhandled_packet(const error_code& error);
-        void on_hello_packet(const error_code& error);
+        void on_hello(const error_code& error);
         void on_hello_answer(const error_code& error);
 
         // DRAFT
@@ -225,12 +198,6 @@ namespace libed2k
 
         static const message_handler m_message_handler[num_supported_messages];
 
-        bool dispatch_message(int received);
-
-        // a back reference to the session
-        // the peer belongs to.
-        aux::session_impl& m_ses;
-
         // keep the io_service running as long as we
         // have peer connections
         boost::asio::io_service::work m_work;
@@ -246,15 +213,6 @@ namespace libed2k
         // read into. This eliminates a memcopy from
         // the receive buffer into the disk buffer
         disk_buffer_holder m_disk_recv_buffer;
-
-        libtorrent::chained_buffer m_send_buffer;
-
-        boost::shared_ptr<base_socket> m_socket;
-
-        // this is the peer we're actually talking to
-        // it may not necessarily be the peer we're
-        // connected to, in case we use a proxy
-        tcp::endpoint m_remote;
 
         // this is the transfer this connection is
         // associated with. If the connection is an

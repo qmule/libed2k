@@ -78,10 +78,9 @@ void transfer::abort()
 bool transfer::connect_to_peer(peer* peerinfo)
 {
     tcp::endpoint ep(peerinfo->endpoint);
-    boost::shared_ptr<base_socket> sock(
-        new base_socket(m_ses.m_io_service, m_ses.settings().peer_timeout));
+    boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_ses.m_io_service));
 
-    m_ses.setup_socket_buffers(sock->socket());
+    m_ses.setup_socket_buffers(*sock);
 
     boost::intrusive_ptr<peer_connection> c(
         new peer_connection(m_ses, shared_from_this(), sock, ep, peerinfo));
@@ -96,7 +95,7 @@ bool transfer::connect_to_peer(peer* peerinfo)
 
     try {
         m_ses.m_half_open.enqueue(
-            boost::bind(&peer_connection::on_connect, c, _1),
+            boost::bind(&peer_connection::connect, c, _1),
             boost::bind(&peer_connection::on_timeout, c),
             libtorrent::seconds(timeout));
     }

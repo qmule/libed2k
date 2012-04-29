@@ -224,13 +224,13 @@ void session_impl::open_listen_port()
 
 void session_impl::async_accept(boost::shared_ptr<ip::tcp::acceptor> const& listener)
 {
-    boost::shared_ptr<base_socket> c(new base_socket(m_io_service, m_settings.peer_timeout));
-    listener->async_accept(c->socket(),
-                           bind(&session_impl::on_accept_connection, this, c,
-                                boost::weak_ptr<tcp::acceptor>(listener), _1));
+    boost::shared_ptr<tcp::socket> c(new tcp::socket(m_io_service));
+    listener->async_accept(
+        *c, bind(&session_impl::on_accept_connection, this, c,
+                 boost::weak_ptr<tcp::acceptor>(listener), _1));
 }
 
-void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
+void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
                                         boost::weak_ptr<ip::tcp::acceptor> listen_socket,
                                         error_code const& e)
 {
@@ -287,11 +287,11 @@ void session_impl::on_accept_connection(boost::shared_ptr<base_socket> const& s,
     incoming_connection(s);
 }
 
-void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
+void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 {
     error_code ec;
     // we got a connection request!
-    tcp::endpoint endp = s->socket().remote_endpoint(ec);
+    tcp::endpoint endp = s->remote_endpoint(ec);
 
     if (ec)
     {
@@ -333,7 +333,7 @@ void session_impl::incoming_connection(boost::shared_ptr<base_socket> const& s)
 
     }
 
-    setup_socket_buffers(s->socket());
+    setup_socket_buffers(*s);
 
     boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, s, endp, NULL));
 

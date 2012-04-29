@@ -26,6 +26,7 @@ namespace libed2k {
         // the number of seconds to wait for any activity on
         // the peer wire before closing the connection due
         // to time out.
+        // TODO: rename
         int peer_timeout;
 
         // this is the timeout for a connection attempt. If
