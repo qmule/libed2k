@@ -36,13 +36,6 @@ namespace libed2k
     {
     public:
 
-        enum channels
-        {
-            upload_channel,
-            download_channel,
-            num_channels
-        };
-
         // this is the constructor where the we are the active part.
         // The peer_conenction should handshake and verify that the
         // other end has the correct id
@@ -88,30 +81,9 @@ namespace libed2k
         void reset_recv_buffer(int packet_size);
         void cut_receive_buffer(int size, int packet_size);
 
-        // the message handlers are called
-        // each time a recv() returns some new
-        // data, the last time it will be called
-        // is when the entire packet has been
-        // received, then it will no longer
-        // be called. i.e. most handlers need
-        // to check how much of the packet they
-        // have received before any processing
-        // DRAFT
-        void on_keepalive();
-        void on_interested(int received);
-        void on_not_interested(int received);
-        void on_have(int received);
-        void on_request(int received);
-        void on_piece(int received);
-        void on_cancel(int received);
-
         void incoming_piece(peer_request const& p, disk_buffer_holder& data);
         void incoming_piece_fragment(int bytes);
         void start_receive_piece(peer_request const& r);
-
-        void send_block_requests();
-
-        typedef void (peer_connection::*message_handler)(int received);
 
         // the following functions appends messages
         // to the send buffer
@@ -171,32 +143,9 @@ namespace libed2k
         // protocol handlers
         void on_hello(const error_code& error);
         void on_hello_answer(const error_code& error);
-
-        // DRAFT
-        enum state
-        {
-            read_packet_size,
-            read_packet
-        };
-
-        // bw_idle: the channel is not used
-        // bw_limit: the channel is waiting for quota
-        // bw_network: the channel is waiting for an async write
-        //   for read operation to complete
-        // bw_disk: the peer is waiting for the disk io thread
-        //   to catch up
-        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
-
-        // state of on_receive
-        state m_state;
+        void on_piece(int received);
 
         bool packet_finished() const { return m_packet_size <= m_recv_pos; }
-
-        // upload and download channel state
-        // enum from peer_info::bw_state
-        char m_channel_state[2];
-
-        static const message_handler m_message_handler[num_supported_messages];
 
         // keep the io_service running as long as we
         // have peer connections
@@ -271,72 +220,6 @@ namespace libed2k
 
         int m_disk_recv_buffer_size;
 
-        template <std::size_t Size>
-        class handler_storage
-        {
-        public:
-            boost::aligned_storage<Size> bytes;
-        };
-
-        handler_storage<TORRENT_READ_HANDLER_MAX_SIZE> m_read_handler_storage;
-        handler_storage<TORRENT_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
-
-        template <class Handler, std::size_t Size>
-        class allocating_handler
-        {
-        public:
-            allocating_handler(Handler const& h, handler_storage<Size>& s):
-                handler(h), storage(s)
-            {}
-
-            template <class A0>
-            void operator()(A0 const& a0) const
-            {
-                handler(a0);
-            }
-
-            template <class A0, class A1>
-            void operator()(A0 const& a0, A1 const& a1) const
-            {
-                handler(a0, a1);
-            }
-
-            template <class A0, class A1, class A2>
-            void operator()(A0 const& a0, A1 const& a1, A2 const& a2) const
-            {
-                handler(a0, a1, a2);
-            }
-
-            friend void* asio_handler_allocate(
-                std::size_t size, allocating_handler<Handler, Size>* ctx)
-            {
-                return &ctx->storage.bytes;
-            }
-
-            friend void asio_handler_deallocate(
-                void*, std::size_t, allocating_handler<Handler, Size>* ctx)
-            {
-            }
-
-            Handler handler;
-            handler_storage<Size>& storage;
-        };
-
-        template <class Handler>
-        allocating_handler<Handler, TORRENT_READ_HANDLER_MAX_SIZE>
-        make_read_handler(Handler const& handler)
-        {
-            return allocating_handler<Handler, TORRENT_READ_HANDLER_MAX_SIZE>(
-                handler, m_read_handler_storage);
-        }
-
-        template <class Handler>
-        allocating_handler<Handler, TORRENT_WRITE_HANDLER_MAX_SIZE>
-        make_write_handler(Handler const& handler)
-        {
-            return allocating_handler<Handler, TORRENT_WRITE_HANDLER_MAX_SIZE>(
-                handler, m_write_handler_storage);
-        }
     };
 
 }

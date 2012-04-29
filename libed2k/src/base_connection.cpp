@@ -62,8 +62,8 @@ namespace libed2k
             const std::list<boost::asio::const_buffer>& buffers =
                 m_send_buffer.build_iovec(amount_to_send);
             boost::asio::async_write(
-                *m_socket, buffers,
-                boost::bind(&base_connection::on_write, self(), _1, _2));
+                *m_socket, buffers, make_write_handler(
+                    boost::bind(&base_connection::on_write, self(), _1, _2)));
             m_write_in_progress = true;
         }
     }

@@ -12,17 +12,6 @@
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-const libed2k::peer_connection::message_handler
-libed2k::peer_connection::m_message_handler[] =
-{
-    &peer_connection::on_interested,
-    &peer_connection::on_not_interested,
-    &peer_connection::on_have,
-    &peer_connection::on_request,
-    &peer_connection::on_piece,
-    &peer_connection::on_cancel
-};
-
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
@@ -34,7 +23,6 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_disk_recv_buffer(ses.m_disk_thread, 0),
     m_transfer(transfer),
     m_peer_info(peerinfo),
-    m_connection_ticket(-1),
     m_connecting(true),
     m_packet_size(0),
     m_recv_pos(0),
@@ -53,7 +41,6 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
     m_peer_info(peerinfo),
-    m_connection_ticket(-1),
     m_connecting(false),
     m_packet_size(0),
     m_recv_pos(0),
@@ -65,8 +52,7 @@ peer_connection::peer_connection(aux::session_impl& ses,
 void peer_connection::init()
 {
     m_disconnecting = false;
-    m_channel_state[upload_channel] = bw_idle;
-    m_channel_state[download_channel] = bw_idle;
+    m_connection_ticket = -1;
 
     // hello handler
     add_handler(OP_HELLO, boost::bind(
@@ -267,22 +253,6 @@ void peer_connection::on_connect(error_code const& e)
     write_hello();
 }
 
-void peer_connection::on_interested(int received)
-{
-}
-
-void peer_connection::on_not_interested(int received)
-{
-}
-
-void peer_connection::on_have(int received)
-{
-}
-
-void peer_connection::on_request(int received)
-{
-}
-
 // -----------------------------
 // ----------- PIECE -----------
 // -----------------------------
@@ -341,10 +311,6 @@ void peer_connection::on_piece(int received)
 
     disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
     incoming_piece(p, holder);
-}
-
-void peer_connection::on_cancel(int received)
-{
 }
 
 void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& data)

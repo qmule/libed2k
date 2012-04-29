@@ -16,7 +16,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-
 #include <libtorrent/assert.hpp>
 #include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
@@ -25,6 +24,7 @@
 #include "log.hpp"
 #include "archive.hpp"
 #include "packet_struct.hpp"
+#include "constants.hpp"
 
 namespace libed2k{
 
@@ -130,6 +130,77 @@ namespace libed2k{
         tcp::endpoint m_remote;
         bool m_write_in_progress; //!< write indicator
         handler_map m_handlers;
+
+        //
+        // Custom memory allocation for asynchronous operations
+        //
+        template <std::size_t Size>
+        class handler_storage
+        {
+        public:
+            boost::aligned_storage<Size> bytes;
+        };
+
+        handler_storage<READ_HANDLER_MAX_SIZE> m_read_handler_storage;
+        handler_storage<WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
+
+        template <class Handler, std::size_t Size>
+        class allocating_handler
+        {
+        public:
+            allocating_handler(Handler const& h, handler_storage<Size>& s):
+                handler(h), storage(s)
+            {}
+
+            template <class A0>
+            void operator()(A0 const& a0) const
+            {
+                handler(a0);
+            }
+
+            template <class A0, class A1>
+            void operator()(A0 const& a0, A1 const& a1) const
+            {
+                handler(a0, a1);
+            }
+
+            template <class A0, class A1, class A2>
+            void operator()(A0 const& a0, A1 const& a1, A2 const& a2) const
+            {
+                handler(a0, a1, a2);
+            }
+
+            friend void* asio_handler_allocate(
+                std::size_t size, allocating_handler<Handler, Size>* ctx)
+            {
+                return &ctx->storage.bytes;
+            }
+
+            friend void asio_handler_deallocate(
+                void*, std::size_t, allocating_handler<Handler, Size>* ctx)
+            {
+            }
+
+            Handler handler;
+            handler_storage<Size>& storage;
+        };
+
+        template <class Handler>
+        allocating_handler<Handler, READ_HANDLER_MAX_SIZE>
+        make_read_handler(Handler const& handler)
+        {
+            return allocating_handler<Handler, READ_HANDLER_MAX_SIZE>(
+                handler, m_read_handler_storage);
+        }
+
+        template <class Handler>
+        allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>
+        make_write_handler(Handler const& handler)
+        {
+            return allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>(
+                handler, m_write_handler_storage);
+        }
+
     };
 
     template<typename T>
