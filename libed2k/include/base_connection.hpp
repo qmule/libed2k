@@ -1,5 +1,5 @@
-#ifndef __BASE_SOCKET__
-#define __BASE_SOCKET__
+#ifndef __BASE_CONNECTION__
+#define __BASE_CONNECTION__
 
 #include <string>
 #include <sstream>

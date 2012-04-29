@@ -17,7 +17,7 @@
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 
-#include "base_socket.hpp"
+#include "base_connection.hpp"
 #include "types.hpp"
 #include "error_code.hpp"
 

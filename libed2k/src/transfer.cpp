@@ -5,7 +5,6 @@
 #include "peer.hpp"
 #include "peer_connection.hpp"
 #include "server_connection.hpp"
-#include "base_socket.hpp"
 #include "constants.hpp"
 #include "util.hpp"
 

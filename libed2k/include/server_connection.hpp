@@ -11,7 +11,7 @@
 #include "types.hpp"
 #include "packet_struct.hpp"
 #include "error_code.hpp"
-#include "base_socket.hpp"
+#include "base_connection.hpp"
 #include "peer.hpp"
 #include "session_impl.hpp"
 
