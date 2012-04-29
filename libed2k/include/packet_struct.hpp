@@ -746,6 +746,33 @@ namespace libed2k
         }
     };
 
+    template <typename size_type>
+    struct client_request_parts
+    {
+        md4_hash  m_hFile;
+        size_type m_begin_offset_1;
+        size_type m_begin_offset_2;
+        size_type m_begin_offset_3;
+        size_type m_end_offset_1;
+        size_type m_end_offset_2;
+        size_type m_end_offset_3;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_begin_offset_1;
+            ar & m_begin_offset_2;
+            ar & m_begin_offset_3;
+            ar & m_end_offset_1;
+            ar & m_end_offset_2;
+            ar & m_end_offset_3;
+        }
+    };
+
+    typedef client_request_parts<boost::uint32_t> client_request_parts_32;
+    typedef client_request_parts<boost::uint64_t> client_request_parts_64;
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
     };
@@ -778,6 +805,12 @@ namespace libed2k
     };
     template<> struct packet_type<client_cancel_transfer> {
         static const proto_type value = OP_CANCELTRANSFER;
+    };
+    template<> struct packet_type<client_request_parts_32> {
+        static const proto_type value = OP_REQUESTPARTS;
+    };
+    template<> struct packet_type<client_request_parts_64> {
+        static const proto_type value = OP_REQUESTPARTS_I64;
     };
 }
 
