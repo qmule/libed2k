@@ -6,86 +6,60 @@
 #include "session_impl.hpp"
 #include "session.hpp"
 #include "transfer.hpp"
-#include "base_socket.hpp"
 #include "file.hpp"
 #include "util.hpp"
 
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-const libed2k::peer_connection::message_handler
-libed2k::peer_connection::m_message_handler[] =
-{
-    &peer_connection::on_interested,
-    &peer_connection::on_not_interested,
-    &peer_connection::on_have,
-    &peer_connection::on_request,
-    &peer_connection::on_piece,
-    &peer_connection::on_cancel
-};
-
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
-                                 boost::shared_ptr<base_socket> s,
+                                 boost::shared_ptr<tcp::socket> s,
                                  const ip::tcp::endpoint& remote, peer* peerinfo):
-    m_ses(ses),
+    base_connection(ses, s, remote),
     m_work(ses.m_io_service),
     m_last_receive(time_now()),
     m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
-    m_socket(s),
-    m_remote(remote),
     m_transfer(transfer),
     m_peer_info(peerinfo),
-    m_connection_ticket(-1),
     m_connecting(true),
     m_packet_size(0),
     m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
-    m_disconnecting = false;
-    m_channel_state[upload_channel] = bw_idle;
-    m_channel_state[download_channel] = bw_idle;
-    init_handlers();
+    init();
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
-                                 boost::shared_ptr<base_socket> s,
+                                 boost::shared_ptr<tcp::socket> s,
                                  const ip::tcp::endpoint& remote,
                                  peer* peerinfo):
-    m_ses(ses),
+    base_connection(ses, s, remote),
     m_work(ses.m_io_service),
     m_last_receive(time_now()),
     m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
-    m_socket(s),
-    m_remote(remote),
     m_peer_info(peerinfo),
-    m_connection_ticket(-1),
     m_connecting(false),
     m_packet_size(0),
     m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
-    m_disconnecting = false;
-    m_channel_state[upload_channel] = bw_idle;
-    m_channel_state[download_channel] = bw_idle;
-    init_handlers();
+    init();
 }
 
-void peer_connection::init_handlers()
+void peer_connection::init()
 {
-    // handler for unknown packets
-    m_socket->set_unhandled_callback(
-        boost::bind(&peer_connection::on_unhandled_packet, self(), _1));
+    m_disconnecting = false;
+    m_connection_ticket = -1;
 
-    m_socket->set_error_callback(boost::bind(&peer_connection::on_error, self(), _1));
     // hello handler
-    m_socket->add_callback(
-        OP_HELLO, boost::bind(&peer_connection::on_hello_packet, self(), _1));
+    add_handler(OP_HELLO, boost::bind(
+                    &peer_connection::on_hello, this, _1));
     // hello answer handler
-    m_socket->add_callback(
-        OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, self(), _1));
+    add_handler(OP_HELLOANSWER, boost::bind(
+                    &peer_connection::on_hello_answer, this, _1));
 }
 
 peer_connection::~peer_connection()
@@ -96,105 +70,6 @@ peer_connection::~peer_connection()
 
 void peer_connection::second_tick()
 {
-}
-
-void peer_connection::on_send_data(error_code const& error,
-                                   std::size_t bytes_transferred)
-{
-}
-
-void peer_connection::on_receive_data(error_code const& error,
-                                      std::size_t bytes_transferred)
-{
-    boost::mutex::scoped_lock l(m_ses.m_mutex);
-    on_receive_data_nolock(error, bytes_transferred);
-}
-
-void peer_connection::on_receive_data_nolock(
-    error_code const& error, std::size_t bytes_transferred)
-{
-    // keep ourselves alive in until this function exits in
-    // case we disconnect
-    boost::intrusive_ptr<peer_connection> me(self());
-
-    m_channel_state[download_channel] = bw_idle;
-
-    int bytes_in_loop = bytes_transferred;
-
-    if (error)
-    {
-        on_receive(error, bytes_transferred);
-        disconnect(error);
-        return;
-    }
-
-    int num_loops = 0;
-    do
-    {
-        // correct the dl quota usage, if not all of the buffer was actually read
-        //m_quota[download_channel] -= bytes_transferred;
-
-        if (m_disconnecting)
-        {
-            return;
-        }
-
-        m_last_receive = time_now();
-        m_recv_pos += bytes_transferred;
-
-        on_receive(error, bytes_transferred);
-
-        if (m_disconnecting) return;
-
-        //if (m_recv_pos >= m_soft_packet_size) m_soft_packet_size = 0;
-
-        if (num_loops > 20) break;
-
-        error_code ec;
-        bytes_transferred = try_read(read_sync, ec);
-        if (ec && ec != boost::asio::error::would_block)
-        {
-            disconnect(ec);
-            return;
-        }
-
-        if (ec == boost::asio::error::would_block) break;
-        bytes_in_loop += bytes_transferred;
-        ++num_loops;
-    }
-    while (bytes_transferred > 0);
-
-    setup_receive(read_async);
-}
-
-void peer_connection::on_sent(error_code const& error, std::size_t bytes_transferred)
-{
-}
-
-void peer_connection::on_receive(error_code const& error, std::size_t bytes_transferred)
-{
-    if (error) return;
-
-    //buffer::const_interval recv_buffer = receive_buffer();
-
-    if (m_state == read_packet)
-    {
-        dispatch_message(bytes_transferred);
-        return;
-    }
-
-}
-
-bool peer_connection::dispatch_message(int received)
-{
-    buffer::const_interval recv_buffer = receive_buffer();
-
-    int packet_type = (unsigned char)recv_buffer[0];
-
-    // call the correct handler for this packet type
-    (this->*m_message_handler[packet_type])(received);
-
-    return packet_finished();
 }
 
 bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
@@ -245,170 +120,6 @@ void peer_connection::cut_receive_buffer(int size, int packet_size)
 
     m_recv_pos -= size;
     m_packet_size = packet_size;
-}
-
-void peer_connection::send_buffer(char const* buf, int size, int flags)
-{
-    if (flags == message_type_request)
-        m_requests_in_buffer.push_back(m_send_buffer.size() + size);
-
-    int free_space = m_send_buffer.space_in_last_buffer();
-    if (free_space > size) free_space = size;
-    if (free_space > 0)
-    {
-        m_send_buffer.append(buf, free_space);
-        size -= free_space;
-        buf += free_space;
-    }
-    if (size <= 0) return;
-
-    std::pair<char*, int> buffer = m_ses.allocate_buffer(size);
-    if (buffer.first == 0)
-    {
-
-        disconnect(libtorrent::errors::no_memory);
-        return;
-    }
-    TORRENT_ASSERT(buffer.second >= size);
-    std::memcpy(buffer.first, buf, size);
-    m_send_buffer.append_buffer(buffer.first, buffer.second, size,
-                                boost::bind(&aux::session_impl::free_buffer,
-                                            boost::ref(m_ses), _1, buffer.second));
-
-    setup_send();
-}
-
-void peer_connection::setup_send()
-{
-    if (m_channel_state[upload_channel] != bw_idle) return;
-
-    if (!can_write())
-    {
-        return;
-    }
-
-    // send the actual buffer
-    if (!m_send_buffer.empty())
-    {
-        // check quota here
-        int amount_to_send = m_send_buffer.size();
-
-        std::list<boost::asio::const_buffer> const& vec =
-            m_send_buffer.build_iovec(amount_to_send);
-        m_socket->socket().async_write_some(
-            vec, make_write_handler(boost::bind(&peer_connection::on_send_data,
-                                                self(), _1, _2)));
-    }
-
-    m_channel_state[upload_channel] = bw_network;
-}
-
-void peer_connection::setup_receive(sync_t sync)
-{
-    if (m_channel_state[download_channel] != bw_idle
-        && m_channel_state[download_channel] != bw_disk) return;
-
-    // check quota here
-
-    if (!can_read(&m_channel_state[download_channel]))
-    {
-        // if we block reading, waiting for the disk, we will wake up
-        // by the disk_io_thread posting a message every time it drops
-        // from being at or exceeding the limit down to below the limit
-
-        return;
-    }
-
-    error_code ec;
-
-    if (sync == read_sync)
-    {
-        size_t bytes_transferred = try_read(read_sync, ec);
-
-        if (ec != boost::asio::error::would_block)
-        {
-            m_channel_state[download_channel] = bw_network;
-            on_receive_data_nolock(ec, bytes_transferred);
-
-            return;
-        }
-    }
-
-    try_read(read_async, ec);
-}
-
-size_t peer_connection::try_read(sync_t s, error_code& ec)
-{
-    int max_receive = m_packet_size - m_recv_pos;
-
-    // check quota here
-
-    if (max_receive == 0 || !can_read())
-    {
-        ec = boost::asio::error::would_block;
-        return 0;
-    }
-
-    int regular_buffer_size = m_packet_size - m_disk_recv_buffer_size;
-
-    if (int(m_recv_buffer.size()) < regular_buffer_size)
-        m_recv_buffer.resize(round_up8(regular_buffer_size));
-
-    boost::array<boost::asio::mutable_buffer, 2> vec;
-    int num_bufs = 0;
-    if (!m_disk_recv_buffer || regular_buffer_size >= m_recv_pos + max_receive)
-    {
-        // only receive into regular buffer
-        vec[0] = boost::asio::buffer(&m_recv_buffer[m_recv_pos], max_receive);
-        num_bufs = 1;
-    }
-    else if (m_recv_pos >= regular_buffer_size)
-    {
-        // only receive into disk buffer
-        vec[0] = boost::asio::buffer(
-            m_disk_recv_buffer.get() + m_recv_pos - regular_buffer_size, max_receive);
-        num_bufs = 1;
-    }
-    else
-    {
-        // receive into both regular and disk buffer
-        vec[0] = boost::asio::buffer(&m_recv_buffer[m_recv_pos],
-                                     regular_buffer_size - m_recv_pos);
-        vec[1] = boost::asio::buffer(m_disk_recv_buffer.get(),
-                                     max_receive - regular_buffer_size + m_recv_pos);
-        num_bufs = 2;
-    }
-
-    if (s == read_async)
-    {
-        m_channel_state[download_channel] = bw_network;
-
-        if (num_bufs == 1)
-        {
-            m_socket->socket().async_read_some(
-                boost::asio::mutable_buffers_1(vec[0]), make_read_handler(
-                    boost::bind(&peer_connection::on_receive_data, self(), _1, _2)));
-        }
-        else
-        {
-            m_socket->socket().async_read_some(
-                vec, make_read_handler(
-                    boost::bind(&peer_connection::on_receive_data, self(), _1, _2)));
-        }
-        return 0;
-    }
-
-    size_t ret = 0;
-    if (num_bufs == 1)
-    {
-        ret = m_socket->socket().read_some(boost::asio::mutable_buffers_1(vec[0]), ec);
-    }
-    else
-    {
-        ret = m_socket->socket().read_some(vec, ec);
-    }
-
-    return ret;
 }
 
 void peer_connection::on_timeout()
@@ -488,13 +199,11 @@ void peer_connection::disconnect(error_code const& ec, int error)
 
     DBG("peer_connection::disconnect: close");
     m_disconnecting = true;
-    error_code e;
-    m_socket->close(/*e*/);
-    m_socket.reset();
+    close();
     m_ses.close_connection(this, ec);
 }
 
-void peer_connection::on_connect(int ticket)
+void peer_connection::connect(int ticket)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
@@ -511,12 +220,13 @@ void peer_connection::on_connect(int ticket)
         return;
     }
 
-    m_socket->socket().async_connect(
-        m_remote, boost::bind(&peer_connection::on_connection_complete, self(), _1));
+    m_socket->async_connect(
+        m_remote, boost::bind(&peer_connection::on_connect,
+                              self_as<peer_connection>(), _1));
 
 }
 
-void peer_connection::on_connection_complete(error_code const& e)
+void peer_connection::on_connect(error_code const& e)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
@@ -539,27 +249,8 @@ void peer_connection::on_connection_complete(error_code const& e)
     DBG("COMPLETED: " << m_remote);
 
     // connection is already established
-    m_socket->start_read_cycle();
-
+    do_read();
     write_hello();
-    //setup_send();
-    //setup_receive();
-}
-
-void peer_connection::on_interested(int received)
-{
-}
-
-void peer_connection::on_not_interested(int received)
-{
-}
-
-void peer_connection::on_have(int received)
-{
-}
-
-void peer_connection::on_request(int received)
-{
 }
 
 // -----------------------------
@@ -622,10 +313,6 @@ void peer_connection::on_piece(int received)
     incoming_piece(p, holder);
 }
 
-void peer_connection::on_cancel(int received)
-{
-}
-
 void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& data)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -638,7 +325,7 @@ void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& 
     piece_block block_finished(p.piece, p.start / t->block_size());
 
     fs.async_write(p, data, boost::bind(&peer_connection::on_disk_write_complete,
-                                        self(), _1, _2, p, t));
+                                        self_as<peer_connection>(), _1, _2, p, t));
 
     bool was_finished = picker.is_piece_finished(p.piece);
     picker.mark_as_writing(block_finished, peer_info());
@@ -663,8 +350,8 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
-    // connection is already established
-    m_socket->start_read_cycle();
+    // REALLY? : connection is already established
+    do_read();
 }
 
 void peer_connection::on_error(const error_code& error)
@@ -691,7 +378,7 @@ void peer_connection::on_disk_write_complete(
 
     // in case the outstanding bytes just dropped down
     // to allow to receive more data
-    setup_receive();
+    do_read();
 
     if (t->is_seed()) return;
 
@@ -700,14 +387,9 @@ void peer_connection::on_disk_write_complete(
     picker.mark_as_finished(block_finished, peer_info());
 }
 
-void peer_connection::on_unhandled_packet(const error_code& error)
+void peer_connection::on_hello(const error_code& error)
 {
-    DBG("unhandled packet received: " << packetToString(m_socket->context().m_type));
-}
-
-void peer_connection::on_hello_packet(const error_code& error)
-{
-    DBG("hello packet received: " << packetToString(m_socket->context().m_type));
+    DBG("hello packet <== " << m_remote);
     if (!error)
     {
         write_hello_answer();
@@ -744,7 +426,7 @@ void peer_connection::write_hello()
     hello.m_tlist.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
     hello.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
 
-    m_socket->do_write(hello);
+    do_write(hello);
 }
 
 void peer_connection::write_hello_answer()
@@ -758,9 +440,9 @@ void peer_connection::write_hello_answer()
     cha.m_sNetIdentifier.m_nPort= m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
-    boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | 
-        CAPABLE_UNICODE | CAPABLE_LARGEFILES;
-    boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
+    //boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | 
+    //    CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+    //boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
     boost::uint32_t nUdpPort = 0;
 
     cha.m_tlist.add_tag(
@@ -770,21 +452,21 @@ void peer_connection::write_hello_answer()
     cha.m_sServerIdentifier.m_nPort = m_ses.settings().server_port;
     cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
 
-    m_socket->do_write(cha);
+    do_write(cha);
 }
 
 void peer_connection::write_file_request(const md4_hash& file_hash)
 {
     client_file_request fr;
     fr.m_hFile = file_hash;
-    m_socket->do_write(fr);
+    do_write(fr);
 }
 
 void peer_connection::write_no_file(const md4_hash& file_hash)
 {
     client_no_file nf;
     nf.m_hFile = file_hash;
-    m_socket->do_write(nf);
+    do_write(nf);
 }
 
 void peer_connection::write_file_status(
@@ -794,14 +476,14 @@ void peer_connection::write_file_status(
     fs.m_hFile = file_hash;
     fs.m_vcStatus.m_collection.assign(
         status.bytes(), status.bytes() + bits2bytes(status.size()));
-    m_socket->do_write(fs);
+    do_write(fs);
 }
 
 void peer_connection::write_hashset_request(const md4_hash& file_hash)
 {
     client_hashset_request hr;
     hr.m_hFile = file_hash;
-    m_socket->do_write(hr);
+    do_write(hr);
 }
 
 void peer_connection::write_hashset_answer(const known_file& file)
@@ -810,31 +492,31 @@ void peer_connection::write_hashset_answer(const known_file& file)
     ha.m_hFile = file.getFileHash();
     for (size_t part = 0; part < file.getPiecesCount(); ++part)
         ha.m_vhParts.m_collection.push_back(file.getPieceHash(part));
-    m_socket->do_write(ha);
+    do_write(ha);
 }
 
 void peer_connection::write_start_upload(const md4_hash& file_hash)
 {
     client_start_upload su;
     su.m_hFile = file_hash;
-    m_socket->do_write(su);
+    do_write(su);
 }
 
 void peer_connection::write_queue_ranking(boost::uint16_t rank)
 {
     client_queue_ranking qr;
     qr.m_nRank = rank;
-    m_socket->do_write(qr);
+    do_write(qr);
 }
 
 void peer_connection::write_accept_upload()
 {
     client_accept_upload au;
-    m_socket->do_write(au);
+    do_write(au);
 }
 
 void peer_connection::write_cancel_transfer()
 {
     client_cancel_transfer ct;
-    m_socket->do_write(ct);
+    do_write(ct);
 }

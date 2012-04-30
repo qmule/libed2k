@@ -236,7 +236,7 @@ namespace libed2k
             if (!m_write_order.empty())
             {
                 // set deadline timer
-                m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
+                m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_timeout));
 
                 std::vector<boost::asio::const_buffer> buffers;
                 buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
@@ -280,7 +280,8 @@ namespace libed2k
 
     void server_connection::do_read()
     {
-        m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
+        m_deadline.expires_from_now(boost::posix_time::seconds(
+                                        m_ses.settings().server_timeout));
         boost::asio::async_read(m_socket,
                        boost::asio::buffer(&m_in_header, header_size),
                        boost::bind(&server_connection::handle_read_header,

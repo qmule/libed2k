@@ -11,7 +11,7 @@
 #include "types.hpp"
 #include "packet_struct.hpp"
 #include "error_code.hpp"
-#include "base_socket.hpp"
+#include "base_connection.hpp"
 #include "peer.hpp"
 #include "session_impl.hpp"
 
@@ -164,7 +164,8 @@ namespace libed2k
             buffers.push_back(boost::asio::buffer(m_write_order.front().second));
 
             // set deadline timer
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().peer_timeout));
+            m_deadline.expires_from_now(boost::posix_time::seconds(
+                                            m_ses.settings().server_timeout));
 
             boost::asio::async_write(m_socket, buffers, boost::bind(&server_connection::handle_write, self(),
                     boost::asio::placeholders::error,
