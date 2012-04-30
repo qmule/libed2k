@@ -9,6 +9,17 @@
 
 namespace libed2k
 {
+
+#define DECREMENT_READ(n, x) if (n >= sizeof(x))\
+{\
+    ar & x; \
+    n -= sizeof(x);\
+}\
+else\
+{\
+    return;\
+}
+
     // protocol type
     typedef boost::uint8_t  proto_type;
 
@@ -64,6 +75,38 @@ namespace libed2k
     #define SRV_TCPFLG_TYPETAGINTEGER       0x00000080
     #define SRV_TCPFLG_LARGEFILES           0x00000100
     #define SRV_TCPFLG_TCPOBFUSCATION       0x00000400
+
+	enum OP_ClientToServerUDP
+	{
+	    OP_GLOBSEARCHREQ3           = 0x90, // <1 tag set><search_tree>
+	    OP_GLOBSEARCHREQ2           = 0x92, // <search_tree>
+	    OP_GLOBGETSOURCES2          = 0x94, // <HASH 16><FILESIZE 4>
+	                                        // largefiles only: <HASH 16><FILESIZE 4(0)><FILESIZE 8> (17.8)
+	    OP_GLOBSERVSTATREQ          = 0x96, // (null)
+	    OP_GLOBSERVSTATRES          = 0x97, // <USER 4><FILES 4>
+	    OP_GLOBSEARCHREQ            = 0x98, // <search_tree>
+	    OP_GLOBSEARCHRES            = 0x99, //
+	    OP_GLOBGETSOURCES           = 0x9A, // <HASH 16>
+	    OP_GLOBFOUNDSOURCES         = 0x9B, //
+	    OP_GLOBCALLBACKREQ          = 0x9C, // <IP 4><PORT 2><client_ID 4>
+	    OP_INVALID_LOWID            = 0x9E, // <ID 4>
+	    OP_SERVER_LIST_REQ          = 0xA0, // <IP 4><PORT 2>
+	    OP_SERVER_LIST_RES          = 0xA1, // <count 1> (<ip 4><port 2>)[count]
+	    OP_SERVER_DESC_REQ          = 0xA2, // (null)
+	    OP_SERVER_DESC_RES          = 0xA3, // <name_len 2><name name_len><desc_len 2 desc_en>
+	    OP_SERVER_LIST_REQ2         = 0xA4  // (null)
+	};
+
+	// Server UDP flags
+	#define SRV_UDPFLG_EXT_GETSOURCES   0x00000001
+	#define SRV_UDPFLG_EXT_GETFILES     0x00000002
+	#define SRV_UDPFLG_NEWTAGS      0x00000008
+	#define SRV_UDPFLG_UNICODE      0x00000010
+	#define SRV_UDPFLG_EXT_GETSOURCES2  0x00000020
+	#define SRV_UDPFLG_LARGEFILES       0x00000100
+	#define SRV_UDPFLG_UDPOBFUSCATION   0x00000200
+	#define SRV_UDPFLG_TCPOBFUSCATION   0x00000400
+
 
 
 	// Client <-> Client
@@ -142,6 +185,15 @@ namespace libed2k
         OP_CHATCAPTCHARES           = 0xA6
     };
 
+    enum ED2KExtendedClientUDP
+    {
+        OP_REASKFILEPING            = 0x90, // <HASH 16>
+        OP_REASKACK                 = 0x91, // <RANG 2>
+        OP_FILENOTFOUND             = 0x92, // (null)
+        OP_QUEUEFULL                = 0x93, // (null)
+        OP_REASKCALLBACKUDP         = 0x94,
+        OP_PORTTEST                 = 0xFE  // Connection Test
+    };
 
 	const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
 	const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
@@ -408,18 +460,8 @@ namespace libed2k
             ar & m_nClientId;
             nCounter -= sizeof(m_nClientId);
 
-            if (nCounter >= sizeof(m_nTCPFlags))
-            {
-                ar & m_nTCPFlags;
-                nCounter -= sizeof(m_nTCPFlags);
-            }
-
-            if (nCounter >= sizeof(m_nAuxPort))
-            {
-                ar & m_nAuxPort;
-                nCounter -= sizeof(m_nAuxPort);
-            }
-
+            DECREMENT_READ(nCounter, m_nTCPFlags);
+            DECREMENT_READ(nCounter, m_nAuxPort);
         }
     };
 
@@ -616,6 +658,61 @@ namespace libed2k
     };
 
 
+    // UDP client - server structures
+    struct global_server_state_req
+    {
+        boost::uint32_t m_nChallendge;
+
+        global_server_state_req()
+        {
+            // generate random number
+            m_nChallendge = 0x55AA0000 + rand();
+        }
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nChallendge;
+        }
+    };
+
+    struct global_server_state_res
+    {
+        global_server_state_res(int nMaxSize);
+        boost::uint32_t m_nChallenge;
+        boost::uint32_t m_nUsersCount;
+        boost::uint32_t m_nFilesCount;
+        boost::uint32_t m_nCurrentMaxUsers;
+        boost::uint32_t m_nSoftFiles;
+        boost::uint32_t m_nHardFiles;
+        boost::uint32_t m_nUDPFlags;
+        boost::uint32_t m_nLowIdUsers;
+        boost::uint16_t m_nUDPObfuscationPort;
+        boost::uint16_t m_nTCPObfuscationPort;
+        boost::uint32_t m_nServerUDPKey;
+        int             m_nMaxSize;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            int nCounter = m_nMaxSize;
+            ar & m_nChallenge;
+            ar & m_nUsersCount;
+            ar & m_nFilesCount;
+            nCounter -= sizeof(m_nChallenge) - sizeof(m_nUsersCount) - sizeof(m_nFilesCount);
+
+            DECREMENT_READ(nCounter, m_nCurrentMaxUsers)
+            DECREMENT_READ(nCounter, m_nSoftFiles);
+            DECREMENT_READ(nCounter, m_nHardFiles);
+            DECREMENT_READ(nCounter, m_nUDPFlags);
+            DECREMENT_READ(nCounter, m_nLowIdUsers);
+            DECREMENT_READ(nCounter, m_nUDPObfuscationPort);
+            DECREMENT_READ(nCounter, m_nTCPObfuscationPort);
+            DECREMENT_READ(nCounter, m_nServerUDPKey);
+        }
+    };
+
+
     /**
       * structure for get packet opcode from structure type
      */
@@ -647,6 +744,11 @@ namespace libed2k
     template<> struct packet_type<id_change>                { static const proto_type value = OP_IDCHANGE;      };      //!< new our id from server
     template<> struct packet_type<server_message>           { static const proto_type value = OP_SERVERMESSAGE; };      //!< some server message
     template<> struct packet_type<server_info_entry>        { static const proto_type value = OP_SERVERIDENT;   };      //!< server info
+
+
+    // UDP types
+    template<> struct packet_type<global_server_state_req>  { static const proto_type value = OP_GLOBSERVSTATREQ;   };      //!< server info request
+    template<> struct packet_type<global_server_state_res>  { static const proto_type value = OP_GLOBSERVSTATRES;   };      //!< server info answer
 
 
     // Client to Client structures

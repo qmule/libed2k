@@ -32,6 +32,7 @@ namespace libtorrent {
 namespace libed2k {
 
     typedef boost::asio::ip::tcp tcp;
+    typedef boost::asio::ip::udp udp;
     typedef boost::asio::ip::address address;
     typedef boost::asio::deadline_timer dtimer;
     typedef boost::posix_time::time_duration time_duration;
