@@ -44,10 +44,9 @@ namespace libed2k
         bool is_stopped() const;
 
         /**
-          * after connect to server we read some messages from it
-          * when we get new client id - it means connection accepted and initialized
+          * return true when connection in initialization process
          */
-        bool is_initialized() const;
+        bool initializing() const;
 
         const tcp::endpoint& getServerEndpoint() const;
 
@@ -116,6 +115,7 @@ namespace libed2k
         boost::uint32_t                 m_nUsersCount;
         boost::uint32_t                 m_nTCPFlags;
         boost::uint32_t                 m_nAuxPort;
+        bool                            m_bInitialization;  //!< set true when we wait for connect
         tcp::socket                     m_socket;
         dtimer                          m_deadline;         //!< deadline timer for reading operations
 

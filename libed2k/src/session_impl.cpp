@@ -28,9 +28,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_io_service(),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool, BLOCK_SIZE), // TODO - check it!
+                  m_filepool, BLOCK_SIZE),
     m_half_open(m_io_service),
-    m_server_connection(new server_connection(*this)), // TODO - check it
+    m_server_connection(new server_connection(*this)),
     m_transfers(),
     m_next_connect_transfer(m_transfers),
     m_settings(settings),
@@ -39,7 +39,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_paused(false),
     m_max_connections(200),
     m_last_second_tick(time_now()),
-    m_timer(m_io_service)
+    m_timer(m_io_service),
+    m_reconnect_counter(-1)
 {
     DBG("*** create ed2k session ***");
 
@@ -184,6 +185,9 @@ void session_impl::operator()()
     }
 
     m_server_connection->start();
+
+    error_code ec;
+    on_tick(ec);
 
     bool stop_loop = false;
     while (!stop_loop)
@@ -568,6 +572,27 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+
+    // --------------------------------------------------------------
+    // check server connection
+    // --------------------------------------------------------------
+
+    if (m_reconnect_counter == 0)
+    {
+        DBG("session_impl::on_tick: reconnect server connection");
+        // execute server connection restart
+        if (m_server_connection->is_stopped() && !m_server_connection->initializing())
+        {
+            m_server_connection->start();
+        }
+    }
+
+    // decrement counter while it great than zero
+    if (m_reconnect_counter >= 0)
+    {
+        --m_reconnect_counter;
+    }
+
 }
 
 void session_impl::connect_new_peers()
@@ -788,4 +813,19 @@ void session_impl::server_ready(
             server_connection_initialized_alert(client_id, file_count, user_count, tcp_flags, aux_port));
 
     announce_all();
+}
+
+void session_impl::server_stopped()
+{
+    DBG("session_impl::server_stopped");
+    m_client_id   = 0;
+    m_tcp_flags   = 0;
+    m_aux_port    = 0;
+
+    // set reconnect counter
+    if (m_settings.server_reconnect_timeout > -1)
+    {
+        m_reconnect_counter = (m_settings.server_reconnect_timeout); // we check it every 1 s
+        DBG("session_impl::server_stopped(restart from " <<  m_reconnect_counter << ")");
+    }
 }

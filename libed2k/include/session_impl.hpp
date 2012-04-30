@@ -139,6 +139,9 @@ namespace libed2k {
                 boost::uint32_t tcp_flags,
                 boost::uint32_t aux_port);
 
+            // called when server stopped
+            void server_stopped();
+
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
@@ -241,9 +244,14 @@ namespace libed2k {
             // the timer used to fire the tick
             boost::asio::deadline_timer m_timer;
 
+            //!< server connection restart hops
+            int m_reconnect_counter;
+
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
+
+
 
         };
     }
