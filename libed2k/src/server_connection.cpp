@@ -228,10 +228,10 @@ namespace libed2k
             return;
         }
 
-        offer_files_list empty_list;
+        server_get_list sgl;
         DBG("server_connection::write_server_keep_alive: send server ping");
 
-        do_write(empty_list);
+        do_write(sgl);
         m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
         m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
     }

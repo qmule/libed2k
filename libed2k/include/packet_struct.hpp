@@ -394,6 +394,19 @@ else\
     };
 
     /**
+      * structure for get server list
+      * used to ping eDonkey server
+     */
+    struct server_get_list
+    {
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+
+        }
+    };
+
+    /**
       * server text message
      */
     struct server_message
@@ -719,7 +732,7 @@ else\
     template<typename T> struct packet_type;
 
     //OP_REJECT                   = 0x05
-    //OP_GETSERVERLIST            = 0x14
+    //
     //OP_DISCONNECT               = 0x18, // (not verified)
     //OP_SEARCH_USER              = 0x1A, // <Query_Tree>
     //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
@@ -739,6 +752,7 @@ else\
     template<> struct packet_type<callback_request_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };  //!< callback request from server - we reject it
     template<> struct packet_type<callback_req_fail>        { static const proto_type value = OP_CALLBACK_FAIL; };      //!< callback request answer from server
 
+    template<> struct packet_type<server_get_list>          { static const proto_type value = OP_GETSERVERLIST; };
     template<> struct packet_type<server_list>              { static const proto_type value = OP_SERVERLIST;    };      //!< server list from server
     template<> struct packet_type<server_status>            { static const proto_type value = OP_SERVERSTATUS;  };      //!< server status
     template<> struct packet_type<id_change>                { static const proto_type value = OP_IDCHANGE;      };      //!< new our id from server

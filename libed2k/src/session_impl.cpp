@@ -15,6 +15,8 @@
 #include "constants.hpp"
 #include "log.hpp"
 #include "alert_types.hpp"
+// for test
+//#include "file.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -808,7 +810,31 @@ void session_impl::server_ready(
     if (m_alerts.should_post<server_connection_initialized_alert>())
         m_alerts.post_alert(
             server_connection_initialized_alert(client_id, file_count, user_count, tcp_flags, aux_port));
+/*
+     // test code - for offer tests
+    offer_files_list olist;
+    shared_file_entry sf;
+    sf.m_hFile = md4_hash("49EC2B5DEF507DEA73E106FEDB9697EE");
+    boost::uint32_t nFileSize = libed2k::PIECE_SIZE+1;
 
+    sf.m_network_point.m_nIP     = client_id;
+    sf.m_network_point.m_nPort   = settings().listen_port;
+    sf.m_list.add_tag(libed2k::make_string_tag("file.txt", FT_FILENAME, false));
+    sf.m_list.add_tag(libed2k::make_typed_tag(nFileSize, FT_FILESIZE, false));
+
+    std::string strED2KFileType(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("file.txt")));
+
+    DBG("ed2k file type: " << strED2KFileType);
+
+    if (!strED2KFileType.empty())
+    {
+        sf.m_list.add_tag(make_string_tag(strED2KFileType, FT_FILETYPE, true));
+    }
+
+    olist.m_collection.push_back(sf);
+
+    m_server_connection->post_announce(olist);
+*/
     announce_all();
 }
 
