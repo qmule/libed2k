@@ -24,7 +24,7 @@ namespace libed2k
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
         m_seed_mode(p.seed_mode),
-        m_policy(this),
+        m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
     {
         // TODO: init here

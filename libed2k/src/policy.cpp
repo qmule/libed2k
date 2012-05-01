@@ -7,9 +7,14 @@
 
 using namespace libed2k;
 
-policy::policy(transfer* t):
+policy::policy(transfer* t, const std::vector<peer_entry>& peer_list):
     m_transfer(t), m_num_connect_candidates(0)
 {
+    for (std::vector<peer_entry>::const_iterator pi = peer_list.begin();
+         pi != peer_list.end(); ++pi)
+    {
+        add_peer(tcp::endpoint(ip::address::from_string(pi->ip), pi->port));
+    }
 }
 
 peer* policy::add_peer(const tcp::endpoint& ep)

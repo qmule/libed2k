@@ -15,7 +15,7 @@ namespace libed2k {
     class policy
     {
     public:
-        policy(transfer* t);
+        policy(transfer* t, const std::vector<peer_entry>& peer_list);
 
         peer* add_peer(const tcp::endpoint& ep);
         size_t num_peers() const { return m_peers.size(); }
