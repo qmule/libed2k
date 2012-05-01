@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/cstdint.hpp>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
@@ -13,6 +14,8 @@
 
 namespace libed2k
 {
+
+    using boost::uintmax_t;
 
     typedef std::map<std::string, EED2KFileType> SED2KFileTypeMap;
     typedef SED2KFileTypeMap::value_type SED2KFileTypeMapElement;
