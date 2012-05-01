@@ -587,6 +587,18 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     BOOST_CHECK(hRes == libed2k::md4_hash(libed2k::md4_hash::m_emptyMD4Hash));
 }
 
+BOOST_AUTO_TEST_CASE(test_some_methods)
+{
+    boost::uint32_t n32 = 23;
+    libed2k::tag_list<boost::uint16_t> src_list;
+    src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::CT_NAME, true));
+    src_list.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ATACCEPTED, true));
+
+    BOOST_CHECK_EQUAL(src_list.getStringTagByNameId(libed2k::CT_NAME), std::string("IVAN"));
+    BOOST_CHECK_EQUAL(src_list.getStringTagByNameId(libed2k::FT_ATACCEPTED), std::string(""));  // incorrect type
+    BOOST_CHECK_EQUAL(src_list.getStringTagByNameId(libed2k::FT_FILESIZE), std::string(""));    // tag not exists
+}
+
 BOOST_AUTO_TEST_CASE(test_packets)
 {
     libed2k::shared_file_entry sh(libed2k::md4_hash::m_emptyMD4Hash, 100, 12);

@@ -449,6 +449,8 @@ else\
             ar & m_address;
             ar & m_list;
         }
+
+        void dump() const;
     };
 
     /**

@@ -144,6 +144,14 @@ namespace libed2k
         DBG("net_identifier::dump(IP=" << m_nIP << " port=" << m_nPort << ")");
     }
 
+    void server_info_entry::dump() const
+    {
+        DBG("server_info_entry::dump");
+        m_hServer.dump();
+        m_address.dump();
+        m_list.dump();
+    }
+
     void search_file_entry::dump() const
     {
         DBG("search_file_entry::dump");

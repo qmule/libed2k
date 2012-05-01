@@ -113,8 +113,6 @@ namespace libed2k
         tcp::resolver                   m_name_lookup;
         dtimer                          m_keep_alive;       //!< timer for ping server
         aux::session_impl&              m_ses;
-        boost::uint32_t                 m_nFilesCount;
-        boost::uint32_t                 m_nUsersCount;
         boost::uint32_t                 m_nTCPFlags;
         boost::uint32_t                 m_nAuxPort;
         bool                            m_bInitialization;  //!< set true when we wait for connect

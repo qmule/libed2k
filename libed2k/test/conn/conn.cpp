@@ -63,15 +63,24 @@ int main(int argc, char* argv[])
                 server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
                 std::cout << "server initalized: cid: "
                         << p->m_nClientId
-                        << " fc: " << p->m_nFilesCount
-                        << " uc: " << p->m_nUsersCount << std::endl;
+                        << std::endl;
                 DBG("send search request");
                 ses.post_search_request(sr);
+            }
+            else if (dynamic_cast<server_status_alert*>(a.get()))
+            {
+                server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
+                DBG("server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
             }
             else if (dynamic_cast<server_message_alert*>(a.get()))
             {
                 server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
                 std::cout << "msg: " << p->m_strMessage << std::endl;
+            }
+            else if (dynamic_cast<server_identity_alert*>(a.get()))
+            {
+                server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
+                DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
             }
             else if (dynamic_cast<search_result_alert*>(a.get()))
             {

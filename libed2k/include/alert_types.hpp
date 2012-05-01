@@ -20,14 +20,12 @@ namespace libed2k
         const static int static_category = alert::status_notification;
 
         server_connection_initialized_alert(boost::uint32_t nClientId,
-                boost::uint32_t nFilesCount, boost::uint32_t nUsersCount,
                 boost::uint32_t nTCPFlags, boost::uint32_t nAuxPort) :
                     m_nClientId(nClientId),
-                    m_nFilesCount(nFilesCount),
-                    m_nUsersCount(nUsersCount),
                     m_nTCPFlags(nTCPFlags),
                     m_nAuxPort(nAuxPort)
         {}
+
         virtual int category() const { return static_category; }
 
         virtual std::auto_ptr<alert> clone() const
@@ -39,10 +37,63 @@ namespace libed2k
         virtual char const* what() const { return "server notification"; }
 
         boost::uint32_t m_nClientId;
-        boost::uint32_t m_nFilesCount;
-        boost::uint32_t m_nUsersCount;
         boost::uint32_t m_nTCPFlags;
         boost::uint32_t m_nAuxPort;
+    };
+
+    /**
+      * emit on OP_SERVERSTATUS
+     */
+    struct server_status_alert : alert
+    {
+        const static int static_category = alert::status_notification | alert::server_notification;
+
+        server_status_alert(boost::uint32_t nFilesCount, boost::uint32_t nUsersCount) :
+            m_nFilesCount(nFilesCount), m_nUsersCount(nUsersCount)
+        {
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new server_status_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("server status information"); }
+        virtual char const* what() const { return "server status information"; }
+
+        boost::uint32_t m_nFilesCount;
+        boost::uint32_t m_nUsersCount;
+    };
+
+    /**
+      * emit on OP_SERVERIDENT
+     */
+
+    struct server_identity_alert : alert
+    {
+        const static int static_category = alert::status_notification | alert::server_notification;
+
+        server_identity_alert(const md4_hash& hServer , net_identifier address, const std::string& strName, const std::string& strDescr) :
+            m_hServer(hServer), m_address(address), m_strName(strName), m_strDescr(strDescr)
+        {
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new server_identity_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("server identity information"); }
+        virtual char const* what() const { return "server identity information"; }
+
+        md4_hash        m_hServer;
+        net_identifier  m_address;
+        std::string     m_strName;
+        std::string     m_strDescr;
     };
 
     /**
