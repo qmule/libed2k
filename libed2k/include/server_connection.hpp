@@ -22,11 +22,10 @@ namespace libed2k
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
-        typedef std::vector<char> socket_buffer;
-
         friend class aux::session_impl;
     public:
         server_connection(aux::session_impl& ses);
+        ~server_connection();
 
         /**
           * start working
@@ -36,7 +35,7 @@ namespace libed2k
         /**
           * close socket and cancel all deadline timers
          */
-        void close();
+        void close(const error_code& ec);
 
         /**
           * connection stopped when his socket is not opened
@@ -44,10 +43,9 @@ namespace libed2k
         bool is_stopped() const;
 
         /**
-          * after connect to server we read some messages from it
-          * when we get new client id - it means connection accepted and initialized
+          * return true when connection in initialization process
          */
-        bool is_initialized() const;
+        bool initializing() const;
 
         const tcp::endpoint& getServerEndpoint() const;
 
@@ -64,8 +62,6 @@ namespace libed2k
         void on_connection_complete(error_code const& e);
         // file owners were found
         void on_found_peers(const found_file_sources& sources);
-
-        void handle_error(const error_code& error);
 
         void write_server_keep_alive();
 
@@ -121,6 +117,7 @@ namespace libed2k
         boost::uint32_t                 m_nUsersCount;
         boost::uint32_t                 m_nTCPFlags;
         boost::uint32_t                 m_nAuxPort;
+        bool                            m_bInitialization;  //!< set true when we wait for connect
         tcp::socket                     m_socket;
         dtimer                          m_deadline;         //!< deadline timer for reading operations
 
@@ -130,8 +127,9 @@ namespace libed2k
         socket_buffer                   m_in_udp_container;     //!< buffer for incoming messages
         udp::endpoint                   m_udp_target;
 
-        libed2k_header                  m_in_header;        //!< incoming message header
-        socket_buffer                   m_in_container;     //!< buffer for incoming messages
+        libed2k_header                  m_in_header;            //!< incoming message header
+        socket_buffer                   m_in_container;         //!< buffer for incoming messages
+        socket_buffer                   m_in_gzip_container;    //!< special container for compressed data
         tcp::endpoint                   m_target;
 
         std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order

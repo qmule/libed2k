@@ -4,6 +4,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <boost/pool/pool_alloc.hpp>
 
 namespace boost{
     namespace filesystem{}
@@ -48,6 +49,7 @@ namespace libed2k {
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
+    typedef std::vector<char, boost::pool_allocator<char> > socket_buffer;
 
     namespace ip = boost::asio::ip;
     namespace fs = boost::filesystem;

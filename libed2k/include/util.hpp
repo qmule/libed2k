@@ -68,6 +68,13 @@ namespace libed2k {
     {
         return (nId < HIGHEST_LOWID_ED2K);
     }
+
+    /**
+      * @param vSrc     - incoming data buffer
+      * @param vDst     - outgoing data buffer
+      * @param nMaxSize - max size for incoming data
+     */
+    extern int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst, int nMaxSize);
 }
 
 #endif

@@ -353,7 +353,7 @@ namespace libed2k
 
         if (fs.nHighPart > 0)
         {
-            entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
+            entry.m_list.add_tag(make_typed_tag(fs.nHighPart, FT_FILESIZE_HI, true));
         }
 
         bool bFileTypeAdded = false;
@@ -383,8 +383,6 @@ namespace libed2k
                 entry.m_list.add_tag(make_string_tag(strED2KFileType, FT_FILETYPE, true));
             }
         }
-
-        // TODO - need additional information about server for making correct tags
 
         return entry;
     }

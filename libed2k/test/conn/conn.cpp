@@ -30,6 +30,10 @@ int main(int argc, char* argv[])
 
     libed2k::search_request sr;
 
+
+    sr.add_entry(libed2k::search_request_entry("file1"));
+
+    /*
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
@@ -37,7 +41,7 @@ int main(int argc, char* argv[])
     sr.add_entry(libed2k::search_request_entry("walking"));
     sr.add_entry(libed2k::search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, 300));
     sr.add_entry(libed2k::search_request_entry("HD"));
-
+*/
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_OR));
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
@@ -47,6 +51,7 @@ int main(int argc, char* argv[])
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
+
     while (std::cin.get() != 'q')
     {
         std::auto_ptr<alert> a = ses.pop_alert();

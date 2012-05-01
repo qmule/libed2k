@@ -16,7 +16,8 @@ namespace libed2k {
             listen_port(4662),
             client_name("http://www.aMule.org"),
             server_keep_alive_timeout(20),
-            server_ip(0)
+            server_ip(0),
+            server_reconnect_timeout(5)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -54,6 +55,7 @@ namespace libed2k {
         std::string     client_name; // ed2k client name
         int             server_keep_alive_timeout;
         unsigned long int server_ip; // todo: remove
+        int             server_reconnect_timeout;   //!< reconnect to server after fail, -1 - do nothing
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
     };
