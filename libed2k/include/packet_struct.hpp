@@ -356,7 +356,7 @@ else\
     {
         md4_hash                    m_hFile;            //!< md4 file hash
         net_identifier              m_network_point;    //!< network identification
-        tag_list<boost::uint16_t>   m_list;             //!< file information list
+        tag_list<boost::uint32_t>   m_list;             //!< file information list
 
 
         shared_file_entry();
