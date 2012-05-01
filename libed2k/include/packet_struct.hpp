@@ -296,7 +296,7 @@ namespace libed2k
     {
         md4_hash                    m_hFile;            //!< md4 file hash
         net_identifier              m_network_point;    //!< network identification
-        tag_list<boost::uint16_t>   m_list;             //!< file information list
+        tag_list<boost::uint32_t>   m_list;             //!< file information list
 
 
         shared_file_entry();
@@ -773,6 +773,49 @@ namespace libed2k
     typedef client_request_parts<boost::uint32_t> client_request_parts_32;
     typedef client_request_parts<boost::uint64_t> client_request_parts_64;
 
+    template <typename size_type>
+    struct client_sending_part
+    {
+        md4_hash m_hFile;
+        size_type m_begin_offset;
+        size_type m_end_offset;
+        // user_data[end-begin]
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_begin_offset;
+            ar & m_end_offset;
+            // user_data[end-begin]
+        }
+
+    };
+
+    typedef client_sending_part<boost::uint32_t> client_sending_part_32;
+    typedef client_sending_part<boost::uint64_t> client_sending_part_64;
+
+    template <typename size_type>
+    struct client_compressed_part
+    {
+        md4_hash m_hFile;
+        size_type m_begin_offset;
+        boost::uint32_t m_compressed_size;
+        // user_data[compressed_size]
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_begin_offset;
+            ar & m_compressed_size;
+            // compressed_user_data[compressed_size]
+        }
+    };
+
+    typedef client_compressed_part<boost::uint32_t> client_compressed_part_32;
+    typedef client_compressed_part<boost::uint64_t> client_compressed_part_64;
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
     };
@@ -811,6 +854,18 @@ namespace libed2k
     };
     template<> struct packet_type<client_request_parts_64> {
         static const proto_type value = OP_REQUESTPARTS_I64;
+    };
+    template<> struct packet_type<client_sending_part_32> {
+        static const proto_type value = OP_SENDINGPART;
+    };
+    template<> struct packet_type<client_sending_part_64> {
+        static const proto_type value = OP_SENDINGPART_I64;
+    };
+    template<> struct packet_type<client_compressed_part_32> {
+        static const proto_type value = OP_COMPRESSEDPART;
+    };
+    template<> struct packet_type<client_compressed_part_64> {
+        static const proto_type value = OP_COMPRESSEDPART_I64;
     };
 }
 

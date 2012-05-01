@@ -3,6 +3,8 @@
 
 #include "server_connection.hpp"
 #include "session_impl.hpp"
+#include "session.hpp"
+#include "transfer.hpp"
 #include "log.hpp"
 #include "alert_types.hpp"
 
@@ -161,6 +163,21 @@ void server_connection::on_connection_complete(error_code const& error)
     do_write(login);      // write login message
 }
 
+void server_connection::on_found_peers(const found_file_sources& sources)
+{
+    APP("found peers for hash: " << sources.m_hFile);
+    boost::shared_ptr<transfer> t = m_ses.find_transfer(sources.m_hFile).lock();
+
+    for (std::vector<net_identifier>::const_iterator i =
+             sources.m_sources.m_collection.begin();
+         i != sources.m_sources.m_collection.end(); ++i)
+    {
+        tcp::endpoint peer(ip::address::from_string(int2ipstr(i->m_nIP)), i->m_nPort);
+        APP("found peer: " << peer);
+        t->add_peer(peer);
+    }
+}
+
 void server_connection::handle_error(const error_code& error)
 {
     ERR("Error " << error.message());
@@ -310,8 +327,8 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
 
                         if (m_nUsersCount != 0)
                         {
-                            DBG("users count " << m_nUsersCount);
-                            // if we got users count != 0 - at least 1 user must exists on server
+                            // if we got users count != 0 - at least 1 user must
+                            // exists on server
                             // (our connection) - server connection initialized
                             // notify session
                             m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount);
@@ -329,6 +346,7 @@ void server_connection::handle_write(const error_code& error, size_t nSize)
                         found_file_sources fs;
                         ia >> fs;
                         fs.dump();
+                        on_found_peers(fs);
                         break;
                     }
                     case OP_SEARCHRESULT:

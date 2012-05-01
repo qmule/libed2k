@@ -25,7 +25,7 @@ transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interfac
     m_filesize(p.file_size),
     m_storage_mode(p.storage_mode),
     m_seed_mode(p.seed_mode),
-    m_policy(this, p.peer_list),
+    m_policy(this),
     m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
 {
     // TODO: init here
@@ -74,6 +74,22 @@ void transfer::abort()
     m_owning_storage = 0;
 }
 
+bool transfer::want_more_peers() const
+{
+    return !is_finished() && m_policy.num_peers() == 0;
+}
+
+void transfer::request_peers()
+{
+    APP("request peers by hash: " << m_filehash << ", size: " << m_filesize);
+    m_ses.m_server_connection->post_sources_request(m_filehash, m_filesize);
+}
+
+void transfer::add_peer(const tcp::endpoint& peer)
+{
+    m_policy.add_peer(peer);
+}
+
 bool transfer::connect_to_peer(peer* peerinfo)
 {
     tcp::endpoint ep(peerinfo->endpoint);
@@ -117,9 +133,9 @@ void transfer::remove_peer(peer_connection* p)
     m_connections.erase(p);
 }
 
-bool transfer::want_more_peers() const
+bool transfer::want_more_connections() const
 {
-    return !is_paused() && m_policy.num_connect_candidates() > 0 && !m_abort;
+    return !m_abort && !is_paused() && m_policy.num_connect_candidates() > 0;
 }
 
 void transfer::disconnect_all(const error_code& ec)
@@ -259,6 +275,8 @@ void transfer::init()
 
 void transfer::second_tick()
 {
+    if (want_more_peers()) request_peers();
+
     for (std::set<peer_connection*>::iterator i = m_connections.begin();
          i != m_connections.end(); ++i)
     {

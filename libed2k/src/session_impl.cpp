@@ -15,6 +15,7 @@
 #include "constants.hpp"
 #include "log.hpp"
 #include "alert_types.hpp"
+#include "file.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -45,8 +46,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
 
     error_code ec;
     m_listen_interface = tcp::endpoint(
-        libtorrent::address::from_string(listen_interface, ec), settings.listen_port);
-    TORRENT_ASSERT(!ec);
+        ip::address::from_string(listen_interface, ec), settings.listen_port);
+    assert(!ec);
 
 #ifdef WIN32
     // windows XP has a limit on the number of
@@ -370,7 +371,8 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {
-    DBG("add transfer: " << params.file_path << ", hash: " << params.file_hash);
+    APP("add transfer: " << params.file_path << ", hash: " << params.file_hash <<
+        ", size: " << params.file_size);
     if (is_aborted())
     {
         ec = errors::session_is_closing;
@@ -417,8 +419,10 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
     {
         if (fs::is_regular_file(i->path()))
         {
+            known_file kfile(i->path().string());
+            kfile.init();
             add_transfer_params params;
-            params.file_hash = hash_md4(i->path().filename());
+            params.file_hash = kfile.getFileHash();
             params.file_path = i->path();
             params.file_size = fs::file_size(i->path());
             params.seed_mode = true;
@@ -589,7 +593,7 @@ void session_impl::connect_new_peers()
         for (;;)
         {
             transfer& t = *m_next_connect_transfer->second;
-            if (t.want_more_peers())
+            if (t.want_more_connections())
             {
                 try
                 {
@@ -773,7 +777,8 @@ size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
 void session_impl::server_ready(
     boost::uint32_t client_id, boost::uint32_t file_count, boost::uint32_t user_count)
 {
-    DBG("session_impl::server_ready");
+    APP("server_ready: client_id=" << client_id << ", file_count=" << file_count <<
+        ", user_count=" << user_count);
     m_client_id = client_id;
 
     // server connection initialized - post alert here

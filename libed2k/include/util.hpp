@@ -4,6 +4,7 @@
 
 #include "md4_hash.hpp"
 #include "types.hpp"
+#include "constants.hpp"
 
 namespace libed2k {
 
@@ -17,6 +18,14 @@ namespace libed2k {
     A bits2bytes(A bits)
     {
         return (bits + 7) / 8;
+    }
+
+    inline std::string int2ipstr(int ip)
+    {
+        std::stringstream ss;
+        ss << ((ip >> 24) & 0xFF) << "." << ((ip >> 16) & 0xFF) << "."
+           << ((ip >> 8) & 0xFF)  << "." << (ip & 0xFF);
+        return ss.str();
     }
 
     inline int round_up8(int v)
@@ -54,10 +63,6 @@ namespace libed2k {
             if (m_it == m_cont.end()) m_it = m_cont.begin();
         }
     };
-
-    md4_hash hash_md4(const std::string& str);
-
-    #define HIGHEST_LOWID_ED2K      16777216
 
     inline bool isLowId(boost::uint32_t nId)
     {
