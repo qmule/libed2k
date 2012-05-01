@@ -23,6 +23,7 @@ namespace libed2k
     base_connection::~base_connection()
     {
         DBG("~base_connection");
+        boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
     void base_connection::init()
@@ -31,7 +32,7 @@ namespace libed2k
         m_write_in_progress = false;
     }
 
-    void base_connection::close()
+    void base_connection::close(const error_code& ec)
     {
         DBG("base_connection::close()");
         m_socket->close();
@@ -83,7 +84,7 @@ namespace libed2k
         std::pair<char*, int> buffer = m_ses.allocate_buffer(size);
         if (buffer.first == 0)
         {
-            on_error(errors::no_memory);
+            close(errors::no_memory);
             return;
         }
 
@@ -92,12 +93,6 @@ namespace libed2k
             buffer.first, buffer.second, size,
             boost::bind(&aux::session_impl::free_buffer,
                         boost::ref(m_ses), _1, buffer.second));
-    }
-
-    void base_connection::on_error(const error_code& error)
-    {
-        ERR("Error " << error.message());
-        close();
     }
 
     void base_connection::on_timeout(const error_code& e)
@@ -110,21 +105,31 @@ namespace libed2k
 
         if (!error)
         {
-            // we must download body in any case
-            // increase internal buffer size if need
-            if (m_in_container.size() < m_in_header.m_size - 1)
+            switch(m_in_header.m_protocol)
             {
-                m_in_container.resize(m_in_header.m_size - 1);
+                case OP_EDONKEYPROT:
+                case OP_EMULEPROT:
+                {
+                    m_in_container.resize(m_in_header.m_size - 1);
+                    boost::asio::async_read(*m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                            boost::bind(&base_connection::on_read_packet, self(), _1, _2));
+                    break;
+                }
+                case OP_PACKEDPROT:
+                {
+                    m_in_gzip_container.resize(m_in_header.m_size - 1);
+                    boost::asio::async_read(*m_socket, boost::asio::buffer(&m_in_gzip_container[0], m_in_header.m_size - 1),
+                            boost::bind(&base_connection::on_read_packet, self(), _1, _2));
+                    break;
+                }
+                default:
+                    close(errors::invalid_protocol_type);
+                    break;
             }
-
-            boost::asio::async_read(
-                *m_socket,
-                boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
-                boost::bind(&base_connection::on_read_packet, self(), _1, _2));
         }
         else
         {
-            on_error(error);
+            close(error);
         }
 
     }
@@ -135,6 +140,19 @@ namespace libed2k
 
         if (!error)
         {
+            if (m_in_header.m_protocol == OP_PACKEDPROT)
+            {
+                // unzip data
+                int nRet = inflate_gzip(m_in_gzip_container, m_in_container, LIBED2K_SERVER_CONN_MAX_SIZE);
+
+                if (nRet != Z_STREAM_END)
+                {
+                    //unpack error - pass packet
+                    do_read();
+                    return;
+                }
+            }
+
             //!< search appropriate dispatcher
             handler_map::iterator itr = m_handlers.find(m_in_header.m_type);
 
@@ -148,11 +166,14 @@ namespace libed2k
                 DBG("ignore unhandled packet");
             }
 
+            m_in_gzip_container.clear();
+            m_in_container.clear();
+
             do_read();
         }
         else
         {
-            on_error(error);
+            close(error);
         }
     }
 
@@ -166,7 +187,7 @@ namespace libed2k
             do_write();
         }
         else
-            on_error(error);
+            close(error);
     }
 
     void base_connection::check_deadline()
@@ -182,7 +203,7 @@ namespace libed2k
 
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
-            close();
+            close(errors::timed_out);
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
             m_deadline.expires_at(boost::posix_time::pos_infin);

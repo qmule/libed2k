@@ -42,7 +42,7 @@ namespace libed2k{
                         const tcp::endpoint& remote);
         virtual ~base_connection();
 
-        void close();
+        void close(const error_code& ec);
 
         /**
          * connection closed when his socket is not opened
@@ -69,7 +69,6 @@ namespace libed2k{
         void append_send_buffer(char* buffer, int size, Destructor const& destructor)
         { m_send_buffer.append_buffer(buffer, size, size, destructor); }
 
-        virtual void on_error(const error_code& e);
         virtual void on_timeout(const error_code& e);
 
         typedef libtorrent::chained_buffer chained_buffer;
@@ -125,6 +124,7 @@ namespace libed2k{
         dtimer m_deadline;     //!< deadline timer for reading operations
         libed2k_header m_in_header;    //!< incoming message header
         socket_buffer m_in_container; //!< buffer for incoming messages
+        socket_buffer m_in_gzip_container; //!< buffer for compressed data
         chained_buffer m_send_buffer;  //!< buffer for outgoing messages
         tcp::endpoint m_remote;
         bool m_write_in_progress; //!< write indicator

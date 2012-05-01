@@ -199,7 +199,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
 
     DBG("peer_connection::disconnect: close");
     m_disconnecting = true;
-    close();
+    close(ec);
     m_ses.close_connection(this, ec);
 }
 
