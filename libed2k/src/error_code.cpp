@@ -24,6 +24,7 @@ namespace libed2k
             "incompatible tag getter",
             "tag list index error",
             "decode packet error",
+            "invalid protocol type",
             // transport errors
             "session is closing",
             "duplicate transfer",

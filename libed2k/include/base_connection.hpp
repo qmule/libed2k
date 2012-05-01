@@ -72,7 +72,6 @@ namespace libed2k{
         virtual void on_error(const error_code& e);
         virtual void on_timeout(const error_code& e);
 
-        typedef std::vector<char> socket_buffer;
         typedef libtorrent::chained_buffer chained_buffer;
 
         /**

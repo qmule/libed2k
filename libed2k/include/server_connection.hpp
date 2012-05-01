@@ -17,16 +17,16 @@
 
 namespace libed2k
 {
+
     namespace aux { class session_impl; }
 
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
-        typedef std::vector<char> socket_buffer;
-
         friend class aux::session_impl;
     public:
         server_connection(aux::session_impl& ses);
+        ~server_connection();
 
         /**
           * start working
@@ -36,7 +36,7 @@ namespace libed2k
         /**
           * close socket and cancel all deadline timers
          */
-        void close();
+        void close(const error_code& ec);
 
         /**
           * connection stopped when his socket is not opened
@@ -58,8 +58,6 @@ namespace libed2k
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
         void on_udp_name_lookup(const error_code& error, udp::resolver::iterator i);        //!< resolve udp host name go to connect
         void on_connection_complete(error_code const& e);                                   //!< connect to host name and go to start
-
-        void handle_error(const error_code& error);
 
         void write_server_keep_alive();
 
@@ -125,8 +123,9 @@ namespace libed2k
         socket_buffer                   m_in_udp_container;     //!< buffer for incoming messages
         udp::endpoint                   m_udp_target;
 
-        libed2k_header                  m_in_header;        //!< incoming message header
-        socket_buffer                   m_in_container;     //!< buffer for incoming messages
+        libed2k_header                  m_in_header;            //!< incoming message header
+        socket_buffer                   m_in_container;         //!< buffer for incoming messages
+        socket_buffer                   m_in_gzip_container;    //!< special container for compressed data
         tcp::endpoint                   m_target;
 
         std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order

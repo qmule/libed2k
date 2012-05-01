@@ -30,6 +30,7 @@ namespace libed2k
             incompatible_tag_getter,
             tag_list_index_error,
             decode_packet_error,
+            invalid_protocol_type,
             // transport errors
             session_is_closing,
             duplicate_transfer,

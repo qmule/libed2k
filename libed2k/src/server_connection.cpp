@@ -30,6 +30,11 @@ namespace libed2k
         m_deadline.expires_at(boost::posix_time::pos_infin);
     }
 
+    server_connection::~server_connection()
+    {
+        boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
+    }
+
     void server_connection::start()
     {
         m_bInitialization = true; // start connecting
@@ -52,7 +57,7 @@ namespace libed2k
         //    uq, boost::bind(&server_connection::on_udp_name_lookup, self(), _1, _2));
     }
 
-    void server_connection::close()
+    void server_connection::close(const error_code& ec)
     {
         DBG("server_connection::close()");
         m_bInitialization = false;
@@ -62,6 +67,7 @@ namespace libed2k
         m_keep_alive.cancel();
         m_udp_socket.close();
         m_ses.server_stopped(); // inform session
+        m_ses.m_alerts.post_alert_should(server_connection_failed(ec));
     }
 
     bool server_connection::is_stopped() const
@@ -115,7 +121,7 @@ namespace libed2k
 
         if (error == boost::asio::error::operation_aborted)
         {
-            close();
+            close(error);
             return;
         }
 
@@ -123,7 +129,7 @@ namespace libed2k
         {
             ERR("server name: " << settings.server_hostname
                 << ", resolve failed: " << error);
-            close();
+            close(error);
             return;
         }
 
@@ -159,7 +165,7 @@ namespace libed2k
         // start udp socket on out host
         m_udp_socket.open(udp::v4());
 
-        DBG("udp socket status: " << m_udp_socket.is_open()?"opened":"closed");
+        //DBG("udp socket status: " << (m_udp_socket.is_open())?"opened":"closed");
     }
 
     // private callback methods
@@ -171,7 +177,7 @@ namespace libed2k
 
         if (is_stopped())
         {
-            DBG("socket was closed by timeout");
+            DBG("socket was closed");
             return;
         }
 
@@ -179,7 +185,7 @@ namespace libed2k
         {
             ERR("connection to: " << libtorrent::print_endpoint(m_target)
                 << ", failed: " << error);
-            close();
+            close(error);
             return;
         }
 
@@ -213,24 +219,17 @@ namespace libed2k
         do_write(login);      // write login message
     }
 
-    void server_connection::handle_error(const error_code& error)
-    {
-        ERR("Error " << error.message());
-        m_ses.m_alerts.post_alert_should(server_connection_failed(error));
-        close();
-    }
-
     void server_connection::write_server_keep_alive()
     {
         // do nothing when server connection stopped
         if (is_stopped())
         {
-            DBG("stopped");
+            DBG("server_connection::write_server_keep_alive: stopped");
             return;
         }
 
         offer_files_list empty_list;
-        DBG("send server ping");
+        DBG("server_connection::write_server_keep_alive: send server ping");
 
         do_write(empty_list);
         m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
@@ -260,7 +259,7 @@ namespace libed2k
         }
         else
         {
-            handle_error(error);
+            close(error);
         }
     }
 
@@ -282,19 +281,32 @@ namespace libed2k
 
         if (!error)
         {
-            // we must download body in any case
-            // increase internal buffer size if need
-            if (m_in_container.size() < m_in_header.m_size - 1)
+            switch(m_in_header.m_protocol)
+            {
+            case OP_EDONKEYPROT:
+            case OP_EMULEPROT:
             {
                 m_in_container.resize(m_in_header.m_size - 1);
+                boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                        boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                break;
+            }
+            case OP_PACKEDPROT:
+            {
+                m_in_gzip_container.resize(m_in_header.m_size - 1);
+                boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_gzip_container[0], m_in_header.m_size - 1),
+                        boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                break;
+            }
+            default:
+                close(errors::invalid_protocol_type);
+                break;
             }
 
-            boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
-                    boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
         }
         else
         {
-            handle_error(error);
+            close(error);
         }
     }
 
@@ -305,7 +317,21 @@ namespace libed2k
         if (!error)
         {
             DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
-            boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_header.m_size - 1);
+
+            if (m_in_header.m_protocol == OP_PACKEDPROT)
+            {
+                // unzip data
+                int nRet = inflate_gzip(m_in_gzip_container, m_in_container, LIBED2K_SERVER_CONN_MAX_SIZE);
+
+                if (nRet != Z_STREAM_END)
+                {
+                    //unpack error - pass packet
+                    do_read();
+                    return;
+                }
+            }
+
+            boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_container.size());
             std::istream in_array_stream(&buffer);
             archive::ed2k_iarchive ia(in_array_stream);
 
@@ -417,18 +443,21 @@ namespace libed2k
                         break;
                 }
 
+                m_in_gzip_container.clear();
+                m_in_container.clear();
+
                 do_read();
 
             }
             catch(libed2k_exception& e)
             {
                 ERR("packet parse error");
-                handle_error(errors::decode_packet_error);
+                close(errors::decode_packet_error);
             }
         }
         else
         {
-            handle_error(error);
+            close(error);
         }
     }
 
@@ -448,7 +477,7 @@ namespace libed2k
 
            // The deadline has passed. The socket is closed so that any outstanding
            // asynchronous operations are cancelled.
-           close();
+           close(errors::timed_out);
            // There is no longer an active deadline. The expiry is set to positive
            // infinity so that the actor takes no action until a new deadline is set.
            m_deadline.expires_at(boost::posix_time::pos_infin);
@@ -480,7 +509,7 @@ namespace libed2k
        }
        else
        {
-           //handle_error(error);
+           close(error);
 
        }
    }
@@ -517,7 +546,7 @@ namespace libed2k
        }
        else
        {
-           //handle_error(error);
+           close(error);
        }
    }
 

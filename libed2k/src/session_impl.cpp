@@ -186,9 +186,6 @@ void session_impl::operator()()
 
     m_server_connection->start();
 
-    error_code ec;
-    on_tick(ec);
-
     bool stop_loop = false;
     while (!stop_loop)
     {
@@ -497,7 +494,7 @@ void session_impl::abort()
 
     DBG("aborting all server requests");
     //m_server_connection.abort_all_requests();
-    m_server_connection->close();
+    m_server_connection->close(errors::session_is_closing);
 
     for (transfer_map::iterator i = m_transfers.begin();
          i != m_transfers.end(); ++i)

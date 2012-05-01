@@ -10,7 +10,7 @@
 namespace libed2k
 {
 
-#define DECREMENT_READ(n, x) if (n >= sizeof(x))\
+#define DECREMENT_READ(n, x) if ((unsigned)n >= sizeof(x))\
 {\
     ar & x; \
     n -= sizeof(x);\
