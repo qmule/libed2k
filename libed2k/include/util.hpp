@@ -23,8 +23,8 @@ namespace libed2k {
     inline std::string int2ipstr(int ip)
     {
         std::stringstream ss;
-        ss << ((ip >> 24) & 0xFF) << "." << ((ip >> 16) & 0xFF) << "."
-           << ((ip >> 8) & 0xFF)  << "." << (ip & 0xFF);
+        ss << (ip & 0xFF) << "." << ((ip >> 8) & 0xFF) << "." 
+           << ((ip >> 16) & 0xFF) << "." << ((ip >> 24) & 0xFF);
         return ss.str();
     }
 

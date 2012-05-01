@@ -756,7 +756,8 @@ void session_impl::announce_all()
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
-        offer_list.add(t.getAnnounce());
+        if (t.is_finished())
+            offer_list.add(t.getAnnounce());
     }
 
     DBG("offer list size: " << offer_list.m_collection.size());

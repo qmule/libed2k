@@ -345,7 +345,7 @@ namespace libed2k
         entry.m_hFile = m_filehash;
         entry.m_network_point.m_nIP     = m_ses.m_client_id;
         entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
-        entry.m_list.add_tag(make_string_tag(m_filepath.string(), FT_FILENAME, true));
+        entry.m_list.add_tag(make_string_tag(m_filepath.filename(), FT_FILENAME, true));
 
         __file_size fs;
         fs.nQuadPart = m_filesize;
