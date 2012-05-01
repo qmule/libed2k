@@ -45,7 +45,7 @@ namespace libed2k {
         md4_hash file_hash;
         fs::path file_path;
         size_t file_size;
-        std::vector<peer_entry> peer_list;
+        std::vector<md4_hash> hash_set;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;

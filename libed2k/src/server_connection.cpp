@@ -4,6 +4,8 @@
 #include "server_connection.hpp"
 #include "transfer.hpp"
 #include "session_impl.hpp"
+#include "session.hpp"
+#include "transfer.hpp"
 #include "log.hpp"
 #include "alert_types.hpp"
 
@@ -219,6 +221,22 @@ namespace libed2k
         do_write(login);      // write login message
     }
 
+    void server_connection::on_found_peers(const found_file_sources& sources)
+    {
+        APP("found peers for hash: " << sources.m_hFile);
+        boost::shared_ptr<transfer> t = m_ses.find_transfer(sources.m_hFile).lock();
+
+        for (std::vector<net_identifier>::const_iterator i =
+                 sources.m_sources.m_collection.begin();
+             i != sources.m_sources.m_collection.end(); ++i)
+        {
+            tcp::endpoint peer(
+                ip::address::from_string(int2ipstr(i->m_nIP)), i->m_nPort);
+            APP("found peer: " << peer);
+            t->add_peer(peer);
+        }
+    }
+
     void server_connection::write_server_keep_alive()
     {
         // do nothing when server connection stopped
@@ -351,7 +369,9 @@ namespace libed2k
                         server_message smsg;
                         ia >> smsg;
                         if (m_ses.m_alerts.should_post<server_message_alert>())
-                                m_ses.m_alerts.post_alert(server_message_alert(smsg.m_strMessage));
+                            m_ses.m_alerts.post_alert(
+                                server_message_alert(smsg.m_strMessage));
+                        APP("server message: " << smsg.m_strMessage);
                         break;
                     }
                     case OP_SERVERLIST:
@@ -397,8 +417,8 @@ namespace libed2k
 
                         if (m_nUsersCount != 0)
                         {
-                            DBG("users count " << m_nUsersCount);
-                            // if we got users count != 0 - at least 1 user must exists on server
+                            // if we got users count != 0 - at least 1 user must
+                            // exists on server
                             // (our connection) - server connection initialized
                             // notify session
                             m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount, m_nTCPFlags, m_nAuxPort);
@@ -420,13 +440,7 @@ namespace libed2k
                         found_file_sources fs;
                         ia >> fs;
                         fs.dump();
-
-                        // ok, search appropriate transfer
-                        if (boost::shared_ptr<transfer> p = m_ses.find_transfer(fs.m_hFile).lock())
-                        {
-                            p->set_sources(fs);
-                        }
-
+                        on_found_peers(fs);
                         break;
                     }
                     case OP_SEARCHRESULT:

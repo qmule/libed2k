@@ -17,7 +17,6 @@
 
 namespace libed2k
 {
-
     namespace aux { class session_impl; }
 
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
@@ -55,9 +54,14 @@ namespace libed2k
         void post_announce(offer_files_list& offer_list);
     private:
 
-        void on_name_lookup(const error_code& error, tcp::resolver::iterator i);            //!< resolve host name go to connect
-        void on_udp_name_lookup(const error_code& error, udp::resolver::iterator i);        //!< resolve udp host name go to connect
-        void on_connection_complete(error_code const& e);                                   //!< connect to host name and go to start
+        // resolve host name go to connect
+        void on_name_lookup(const error_code& error, tcp::resolver::iterator i);
+        // resolve udp host name go to connect
+        void on_udp_name_lookup(const error_code& error, udp::resolver::iterator i);
+        // connect to host name and go to start
+        void on_connection_complete(error_code const& e);
+        // file owners were found
+        void on_found_peers(const found_file_sources& sources);
 
         void write_server_keep_alive();
 

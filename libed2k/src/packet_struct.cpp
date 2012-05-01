@@ -312,7 +312,7 @@ namespace libed2k
         m_entries.push_back(entry);
     }
 
-    global_server_state_res::global_server_state_res(int nMaxSize) :
+    global_server_state_res::global_server_state_res(size_t nMaxSize) :
             m_nChallenge(0),
             m_nUsersCount(0),
             m_nFilesCount(0),

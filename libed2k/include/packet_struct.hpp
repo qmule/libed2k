@@ -10,7 +10,7 @@
 namespace libed2k
 {
 
-#define DECREMENT_READ(n, x) if ((unsigned)n >= sizeof(x))\
+#define DECREMENT_READ(n, x) if (n >= sizeof(x))\
 {\
     ar & x; \
     n -= sizeof(x);\
@@ -459,16 +459,17 @@ else\
         client_id_type  m_nClientId;
         boost::uint32_t m_nTCPFlags;
         boost::uint32_t m_nAuxPort;
-        int             m_nMaxSize;
+        size_t          m_nMaxSize;
 
-        id_change(int nMaxSize) : m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0), m_nMaxSize(nMaxSize)
+        id_change(size_t nMaxSize) :
+            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0), m_nMaxSize(nMaxSize)
         {
         }
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
-            int nCounter = m_nMaxSize;
+            size_t nCounter = m_nMaxSize;
             // always read/write client id;
             ar & m_nClientId;
             nCounter -= sizeof(m_nClientId);
@@ -691,7 +692,7 @@ else\
 
     struct global_server_state_res
     {
-        global_server_state_res(int nMaxSize);
+        global_server_state_res(size_t nMaxSize);
         boost::uint32_t m_nChallenge;
         boost::uint32_t m_nUsersCount;
         boost::uint32_t m_nFilesCount;
@@ -703,12 +704,12 @@ else\
         boost::uint16_t m_nUDPObfuscationPort;
         boost::uint16_t m_nTCPObfuscationPort;
         boost::uint32_t m_nServerUDPKey;
-        int             m_nMaxSize;
+        size_t          m_nMaxSize;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
-            int nCounter = m_nMaxSize;
+            size_t nCounter = m_nMaxSize;
             ar & m_nChallenge;
             ar & m_nUsersCount;
             ar & m_nFilesCount;
@@ -923,6 +924,49 @@ else\
     typedef client_request_parts<boost::uint32_t> client_request_parts_32;
     typedef client_request_parts<boost::uint64_t> client_request_parts_64;
 
+    template <typename size_type>
+    struct client_sending_part
+    {
+        md4_hash m_hFile;
+        size_type m_begin_offset;
+        size_type m_end_offset;
+        // user_data[end-begin]
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_begin_offset;
+            ar & m_end_offset;
+            // user_data[end-begin]
+        }
+
+    };
+
+    typedef client_sending_part<boost::uint32_t> client_sending_part_32;
+    typedef client_sending_part<boost::uint64_t> client_sending_part_64;
+
+    template <typename size_type>
+    struct client_compressed_part
+    {
+        md4_hash m_hFile;
+        size_type m_begin_offset;
+        boost::uint32_t m_compressed_size;
+        // user_data[compressed_size]
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_begin_offset;
+            ar & m_compressed_size;
+            // compressed_user_data[compressed_size]
+        }
+    };
+
+    typedef client_compressed_part<boost::uint32_t> client_compressed_part_32;
+    typedef client_compressed_part<boost::uint64_t> client_compressed_part_64;
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
     };
@@ -961,6 +1005,18 @@ else\
     };
     template<> struct packet_type<client_request_parts_64> {
         static const proto_type value = OP_REQUESTPARTS_I64;
+    };
+    template<> struct packet_type<client_sending_part_32> {
+        static const proto_type value = OP_SENDINGPART;
+    };
+    template<> struct packet_type<client_sending_part_64> {
+        static const proto_type value = OP_SENDINGPART_I64;
+    };
+    template<> struct packet_type<client_compressed_part_32> {
+        static const proto_type value = OP_COMPRESSEDPART;
+    };
+    template<> struct packet_type<client_compressed_part_64> {
+        static const proto_type value = OP_COMPRESSEDPART_I64;
     };
 }
 

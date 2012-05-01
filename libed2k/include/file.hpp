@@ -53,6 +53,7 @@ namespace libed2k
     class known_file
     {
     public:
+        // TODO: should use fs::path as parameter
         known_file(const std::string& strFilename);
 
         /**

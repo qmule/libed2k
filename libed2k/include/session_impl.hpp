@@ -250,9 +250,6 @@ namespace libed2k {
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
-
-
-
         };
     }
 }

@@ -11,11 +11,8 @@
 
 namespace libed2k
 {
-    namespace ip = boost::asio::ip;
-
-
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
-                       int seq, add_transfer_params const& p):
+                   int seq, add_transfer_params const& p):
         m_ses(ses),
         m_abort(false),
         m_paused(false),
@@ -27,7 +24,7 @@ namespace libed2k
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
         m_seed_mode(p.seed_mode),
-        m_policy(this, p.peer_list),
+        m_policy(this),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
     {
         // TODO: init here
@@ -76,6 +73,27 @@ namespace libed2k
         m_owning_storage = 0;
     }
 
+    bool transfer::want_more_peers() const
+    {
+        return !is_finished() && m_policy.num_peers() == 0;
+    }
+
+    void transfer::request_peers()
+    {
+        APP("request peers by hash: " << m_filehash << ", size: " << m_filesize);
+        m_ses.m_server_connection->post_sources_request(m_filehash, m_filesize);
+    }
+
+    void transfer::add_peer(const tcp::endpoint& peer)
+    {
+        m_policy.add_peer(peer);
+    }
+
+    bool transfer::want_more_connections() const
+    {
+        return !m_abort && !is_paused() && m_policy.num_connect_candidates() > 0;
+    }
+
     bool transfer::connect_to_peer(peer* peerinfo)
     {
         tcp::endpoint ep(peerinfo->endpoint);
@@ -118,11 +136,6 @@ namespace libed2k
         // TODO: implement
         DBG("transfer::remove_peer(" << p << ")");
         m_connections.erase(p);
-    }
-
-    bool transfer::want_more_peers() const
-    {
-        return !is_paused() && m_policy.num_connect_candidates() > 0 && !m_abort;
     }
 
     void transfer::disconnect_all(const error_code& ec)
@@ -262,6 +275,8 @@ namespace libed2k
 
     void transfer::second_tick()
     {
+        if (want_more_peers()) request_peers();
+
         for (std::set<peer_connection*>::iterator i = m_connections.begin();
              i != m_connections.end(); ++i)
         {
@@ -279,7 +294,7 @@ namespace libed2k
         }
     }
 
-    void transfer::async_verify_piece(int piece_index, boost::function<void(int)> const&)
+    void transfer::async_verify_piece(int piece_index,boost::function<void(int)> const&)
     {
         //TODO: piece verification
     }
@@ -330,7 +345,7 @@ namespace libed2k
         entry.m_hFile = m_filehash;
         entry.m_network_point.m_nIP     = m_ses.m_client_id;
         entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
-        entry.m_list.add_tag(make_string_tag(m_filepath.string(), FT_FILENAME, true));
+        entry.m_list.add_tag(make_string_tag(m_filepath.filename(), FT_FILENAME, true));
 
         __file_size fs;
         fs.nQuadPart = m_filesize;
@@ -370,11 +385,6 @@ namespace libed2k
         }
 
         return entry;
-    }
-
-    void transfer::set_sources(const found_file_sources& file_sources)
-    {
-        // TODO - implement new sources utilization
     }
 
 }

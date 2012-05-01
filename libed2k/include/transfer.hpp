@@ -46,6 +46,10 @@ namespace libed2k {
 
         aux::session_impl& session() { return m_ses; }
 
+        bool want_more_peers() const;
+        void request_peers();
+        void add_peer(const tcp::endpoint& peer);
+
         bool connect_to_peer(peer* peerinfo);
 
         // this will remove the peer and make sure all
@@ -53,7 +57,7 @@ namespace libed2k {
         // decreased in the piece_picker
         void remove_peer(peer_connection* p);
 
-        bool want_more_peers() const;
+        bool want_more_connections() const;
         void disconnect_all(const error_code& ec);
         bool try_connect_peer();
         void give_connect_points(int points);
@@ -155,10 +159,6 @@ namespace libed2k {
           * convert transfer info into announce
          */
         shared_file_entry getAnnounce() const;
-
-        void set_sources(const found_file_sources& file_sources);
-
-        void send_server_request(const server_request& req);
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }
 

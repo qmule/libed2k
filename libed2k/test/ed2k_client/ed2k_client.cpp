@@ -19,9 +19,9 @@ int main(int argc, char* argv[])
         ("server,s", po::value<std::string>(), "ed2k server name")
         ("dir,d", po::value<fs::path>(), "data directory")
         ("file,f", po::value<fs::path>(), "requested file name")
-        ("peer_ip,i", po::value<std::string>(), "peer ip address")
-        ("peer_port,p", po::value<int>(), "peer port")
-        ("listen_port,l", po::value<int>(),
+        ("hash,H", po::value<std::string>(), "requested file hash")
+        ("size,S", po::value<size_t>(), "requested file size")
+        ("port,p", po::value<int>(),
          "port for incoming peer connections (default 4662)")
         ("help,h", "produce help message");
 
@@ -43,8 +43,8 @@ int main(int argc, char* argv[])
     libed2k::fingerprint print;
     libed2k::session_settings settings;
     settings.server_hostname = vm["server"].as<std::string>();
-    if (vm.count("listen_port"))
-        settings.listen_port = vm["listen_port"].as<int>();
+    if (vm.count("port"))
+        settings.listen_port = vm["port"].as<int>();
 
     init_logs();
     libed2k::session ses(print, "0.0.0.0", settings);
@@ -54,14 +54,12 @@ int main(int argc, char* argv[])
         fs::path dir = vm["dir"].as<fs::path>();
         ses.add_transfer_dir(dir);
 
-        if (vm.count("file") && vm.count("peer_ip") && vm.count("peer_port"))
+        if (vm.count("file") && vm.count("hash") && vm.count("size"))
         {
             libed2k::add_transfer_params params;
+            params.file_hash = libed2k::md4_hash(vm["hash"].as<std::string>());
             params.file_path = dir / vm["file"].as<fs::path>();
-            params.file_hash = libed2k::hash_md4(params.file_path.filename());
-            params.peer_list.push_back(
-                libed2k::peer_entry(vm["peer_ip"].as<std::string>(),
-                                    vm["peer_port"].as<int>()));
+            params.file_size = vm["size"].as<size_t>();
             params.seed_mode = false;
             ses.add_transfer(params);
         }

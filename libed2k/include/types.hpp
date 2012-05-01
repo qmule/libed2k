@@ -34,7 +34,6 @@ namespace libed2k {
 
     typedef boost::asio::ip::tcp tcp;
     typedef boost::asio::ip::udp udp;
-    typedef boost::asio::ip::address address;
     typedef boost::asio::deadline_timer dtimer;
     typedef boost::posix_time::time_duration time_duration;
 
@@ -52,6 +51,7 @@ namespace libed2k {
     typedef libtorrent::bitfield bitfield;
     typedef std::vector<char, boost::pool_allocator<char> > socket_buffer;
 
+    namespace ip = boost::asio::ip;
     namespace fs = boost::filesystem;
     namespace bio = boost::iostreams;
     namespace time = boost::posix_time;

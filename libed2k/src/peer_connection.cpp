@@ -47,6 +47,9 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_disk_recv_buffer_size(0)
 {
     init();
+
+    // connection is already established
+    do_read();
 }
 
 void peer_connection::init()
@@ -350,8 +353,6 @@ void peer_connection::start_receive_piece(peer_request const& r)
 
 void peer_connection::start()
 {
-    // REALLY? : connection is already established
-    do_read();
 }
 
 void peer_connection::on_error(const error_code& error)
