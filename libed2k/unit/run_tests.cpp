@@ -2,9 +2,11 @@
 #define BOOST_TEST_DYN_LINK
 #endif
 #define BOOST_TEST_MODULE main
+#include <string>
 #include <boost/test/unit_test.hpp>
 #include "error_code.hpp"
 #include "ctag.hpp"
+#include "file.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(simple_exception_test)
@@ -47,6 +49,22 @@ BOOST_AUTO_TEST_CASE(test_to_string_functions)
     libed2k::tg_type nType = libed2k::TAGTYPE_STR22;
     BOOST_CHECK_EQUAL(libed2k::tagTypetoString(nType), std::string("TAGTYPE_STR22"));
 }
+
+
+BOOST_AUTO_TEST_CASE(test_file_functions)
+{
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("ff.song.mP3"), libed2k::ED2KFT_AUDIO);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("..dfdf..song.AVi"), libed2k::ED2KFT_VIDEO);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("dff/..fdsong.sdsdmp3"), libed2k::ED2KFT_ANY);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("dfdf.songmp3"), libed2k::ED2KFT_ANY);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID(".dddfdf.song.DOC"), libed2k::ED2KFT_DOCUMENT);
+
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.mp3")), libed2k::ED2KFTSTR_AUDIO);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.avi")), libed2k::ED2KFTSTR_VIDEO);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.raR")), libed2k::ED2KFTSTR_PROGRAM);
+
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

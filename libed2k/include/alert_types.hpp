@@ -19,8 +19,14 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification;
 
-        server_connection_initialized_alert(boost::uint32_t nClientId, boost::uint32_t nFilesCount, boost::uint32_t nUsersCount) :
-            m_nClientId(nClientId), m_nFilesCount(nFilesCount), m_nUsersCount(nUsersCount)
+        server_connection_initialized_alert(boost::uint32_t nClientId,
+                boost::uint32_t nFilesCount, boost::uint32_t nUsersCount,
+                boost::uint32_t nTCPFlags, boost::uint32_t nAuxPort) :
+                    m_nClientId(nClientId),
+                    m_nFilesCount(nFilesCount),
+                    m_nUsersCount(nUsersCount),
+                    m_nTCPFlags(nTCPFlags),
+                    m_nAuxPort(nAuxPort)
         {}
         virtual int category() const { return static_category; }
 
@@ -35,6 +41,8 @@ namespace libed2k
         boost::uint32_t m_nClientId;
         boost::uint32_t m_nFilesCount;
         boost::uint32_t m_nUsersCount;
+        boost::uint32_t m_nTCPFlags;
+        boost::uint32_t m_nAuxPort;
     };
 
     /**
@@ -56,6 +64,27 @@ namespace libed2k
         }
 
         std::string m_strMessage;
+    };
+
+    /**
+      * emit when server down
+     */
+    struct server_connection_failed : alert
+    {
+        const static int static_category = alert::status_notification | alert::server_notification;
+
+        server_connection_failed(const error_code& error) : m_error(error){}
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return m_error.message(); }
+        virtual char const* what() const { return "server connection failed"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new server_connection_failed(*this)));
+        }
+
+        error_code m_error;
     };
 
     struct search_result_alert : alert

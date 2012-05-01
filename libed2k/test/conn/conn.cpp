@@ -3,7 +3,6 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "base_socket.hpp"
 #include "log.hpp"
 #include "session.hpp"
 #include "session_settings.hpp"

@@ -13,6 +13,8 @@
 
 #include "policy.hpp"
 #include "types.hpp"
+#include "session.hpp"
+#include "packet_struct.hpp"
 
 namespace libtorrent {
     class torrent_info;
@@ -158,16 +160,6 @@ namespace libed2k {
          */
         shared_file_entry getAnnounce() const;
 
-        void send_server_request(const server_request& req);
-
-        // these are callbacks called by the server_connection
-        // when this transfer got a response from its server request
-        // or when a failure occured
-        void on_server_response(const server_request& req, const server_response& res);
-        void on_server_request_timed_out(const server_request& req);
-        void on_server_request_error(server_request const& r, int response_code,
-                                     const std::string& str, int retry_interval);
-
         tcp::endpoint const& get_interface() const { return m_net_interface; }
 
         std::set<peer_connection*> m_connections;
@@ -203,6 +195,7 @@ namespace libed2k {
         md4_hash m_filehash;
         fs::path m_filepath;
         size_t m_filesize;
+        boost::uint32_t m_file_type;
 
         storage_mode_t m_storage_mode;
 

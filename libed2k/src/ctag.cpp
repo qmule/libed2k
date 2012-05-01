@@ -231,7 +231,7 @@ void base_tag::dump() const
             DBG("VALUE: " << asFloat());
             break;
         case TAGTYPE_BOOL:
-            DBG("VALUE: " << asBool()?"true":"false");
+            DBG("VALUE: " << (asBool() ? "true" : "false"));
             break;
         case TAGTYPE_HASH16:
             DBG("VALUE: " << asHash().toString());

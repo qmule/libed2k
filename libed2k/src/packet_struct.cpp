@@ -312,4 +312,20 @@ namespace libed2k
         m_entries.push_back(entry);
     }
 
+    global_server_state_res::global_server_state_res(size_t nMaxSize) :
+            m_nChallenge(0),
+            m_nUsersCount(0),
+            m_nFilesCount(0),
+            m_nCurrentMaxUsers(0),
+            m_nSoftFiles(0),
+            m_nHardFiles(0),
+            m_nUDPFlags(0),
+            m_nLowIdUsers(0),
+            m_nUDPObfuscationPort(0),
+            m_nTCPObfuscationPort(0),
+            m_nServerUDPKey(0),
+            m_nMaxSize(nMaxSize)
+     {
+     }
+
 }

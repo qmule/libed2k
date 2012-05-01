@@ -17,7 +17,7 @@ BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 using namespace boost::logging;
 
 // Step 3 : Specify your logging class(es)
-//typedef boost::logging::logger_format_write< > log_type;
+//typedef boost::logging::logger_format_write< > logger_type;
 //typedef boost::logging::writer::threading::ts_write<> log_type;
 typedef logger_format_write< default_, default_, writer::threading::ts_write > logger_type;
 
@@ -28,7 +28,7 @@ BOOST_DECLARE_LOG(g_l, logger_type)
 // Step 5: define the macros through which you'll log
 #define LDBG_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), debug ) << "[dbg] "
 #define LERR_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), error ) << "[ERR] "
-#define LAPP_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), info )
+#define LAPP_ BOOST_LOG_USE_LOG_IF_LEVEL(g_l(), g_l_filter(), info )  << "[inf] "
 
 
 #define DBG(x) LDBG_ << x
