@@ -154,7 +154,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\base_socket.cpp"
+				RelativePath="..\src\base_connection.cpp"
 				>
 			</File>
 			<File
@@ -163,6 +163,10 @@
 			</File>
 			<File
 				RelativePath="..\src\error_code.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file.cpp"
 				>
 			</File>
 			<File
@@ -236,7 +240,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\base_socket.hpp"
+				RelativePath="..\include\base_connection.hpp"
 				>
 			</File>
 			<File

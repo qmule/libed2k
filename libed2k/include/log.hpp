@@ -17,7 +17,7 @@ BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 using namespace boost::logging;
 
 // Step 3 : Specify your logging class(es)
-//typedef boost::logging::logger_format_write< > log_type;
+//typedef boost::logging::logger_format_write< > logger_type;
 //typedef boost::logging::writer::threading::ts_write<> log_type;
 typedef logger_format_write< default_, default_, writer::threading::ts_write > logger_type;
 
