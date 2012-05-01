@@ -61,7 +61,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "types.hpp"
 
 #ifndef LIBED2K_MAX_ALERT_TYPES
-#define LIBED2K_MAX_ALERT_TYPES 2
+#define LIBED2K_MAX_ALERT_TYPES 7
 #endif
 
 namespace libed2k
