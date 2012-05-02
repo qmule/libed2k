@@ -114,7 +114,7 @@ namespace libed2k {
             /**
               * search file on server
              */
-            void post_search_request(search_request& sr);
+            void post_search_request(request_order& sr);
 
             /**
               * request sources for file

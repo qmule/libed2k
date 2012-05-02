@@ -41,6 +41,9 @@ namespace libed2k
             filesize_is_zero,
             file_unavaliable,
 
+            // service errors
+            unclosed_quotation_mark,
+            operator_incorrect_place,
             num_errors
         };
     }

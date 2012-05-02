@@ -7,56 +7,9 @@
 #include "session.hpp"
 #include "session_settings.hpp"
 #include "alert_types.hpp"
+#include "util.hpp"
 
 using namespace libed2k;
-
-class alert_handler
-{
-public:
-    alert_handler(session& ses) : m_ses(ses)
-    {
-
-    }
-
-    void operator()(server_connection_initialized_alert& a)
-    {
-        DBG("connection initialized: " << a.m_nClientId);
-    }
-
-    void operator()(server_status_alert& a)
-    {
-        DBG("server status: files count: " << a.m_nFilesCount << " users count " << a.m_nUsersCount);
-    }
-
-    void operator()(server_message_alert& a)
-    {
-        DBG("Message: " << a.m_strMessage);
-    }
-
-    void operator()(server_identity_alert& a)
-    {
-        DBG("server_identity_alert: " << a.m_hServer << " name:  " << a.m_strName << " descr: " << a.m_strDescr);
-    }
-
-    void operator()(search_result_alert& a)
-    {
-
-    }
-
-    void operator()(server_connection_failed& a)
-    {
-        DBG("server connection failed: " << a.m_error.message());
-    }
-
-
-    void operator()(mule_listen_failed_alert& a)
-    {
-        DBG("listen failed");
-    }
-
-    session m_ses;
-
-};
 
 int main(int argc, char* argv[])
 {
@@ -76,11 +29,6 @@ int main(int argc, char* argv[])
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-    libed2k::search_request sr;
-
-
-    sr.add_entry(libed2k::search_request_entry("file1"));
-
     /*
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
@@ -95,6 +43,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
+    libed2k::request_order order = libed2k::generateSearchRequest(0,0,0, "", "", "file");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
@@ -104,20 +53,8 @@ int main(int argc, char* argv[])
     {
         std::auto_ptr<alert> a = ses.pop_alert();
 
-        alert_handler h(ses);
-
         while(a.get())
         {
-            /*
-            handle_alert<server_connection_initialized_alert,
-            server_status_alert,
-            server_message_alert,
-            server_identity_alert,
-            search_result_alert,
-            server_connection_failed,
-            mule_listen_failed_alert>::handle_alert(a, h);
-            */
-
             if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
             {
                 server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
@@ -125,7 +62,7 @@ int main(int argc, char* argv[])
                         << p->m_nClientId
                         << std::endl;
                 DBG("send search request");
-                //ses.post_search_request(sr);
+                ses.post_search_request(order);
             }
             else if (dynamic_cast<server_status_alert*>(a.get()))
             {
@@ -171,11 +108,6 @@ int main(int argc, char* argv[])
 
                     }
                 }
-            }
-            else if (dynamic_cast<server_connection_failed*>(a.get()))
-            {
-                server_connection_failed* p =  dynamic_cast<server_connection_failed*>(a.get());
-                DBG("server connection failed: " << p->m_error.message());
             }
             else
             {

@@ -753,9 +753,9 @@ alert const* session_impl::wait_for_alert(time_duration max_wait)
     return m_alerts.wait_for_alert(max_wait);
 }
 
-void session_impl::post_search_request(search_request& sr)
+void session_impl::post_search_request(request_order& ro)
 {
-    m_server_connection->post_search_request(sr);
+    m_server_connection->post_search_request(ro);
 }
 
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)

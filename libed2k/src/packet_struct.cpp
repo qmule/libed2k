@@ -315,9 +315,54 @@ namespace libed2k
 
     }
 
-    void search_request::add_entry(const search_request_entry& entry)
+    bool search_request_entry::isOperand() const
     {
-        m_entries.push_back(entry);
+        return (m_type == SEARCH_TYPE_BOOL);
+    }
+
+    const std::string& search_request_entry::getStrValue() const
+    {
+        return (m_strValue);
+    }
+
+    boost::uint32_t search_request_entry::getInt32Value() const
+    {
+        return (m_nValue32);
+    }
+
+    boost::uint64_t search_request_entry::getInt64Value() const
+    {
+        return (m_nValue64);
+    }
+
+    boost::uint8_t search_request_entry::getOperator() const
+    {
+        return (m_operator);
+    }
+
+    void search_request_entry::dump() const
+    {
+        if (m_type == SEARCH_TYPE_BOOL)
+        {
+            DBG("BOOL OPERATOR: " << toString(static_cast<search_request_entry::SRE_Operation>(m_operator)));
+        }
+        else if (m_type == SEARCH_TYPE_STR || m_type == SEARCH_TYPE_STR_TAG)
+        {
+            DBG("STRING: " << m_strValue);
+        }
+        else if (m_type == SEARCH_TYPE_UINT32)
+        {
+            DBG("INT32: " << m_nValue32);
+        }
+        else if (m_type == SEARCH_TYPE_UINT64)
+        {
+            DBG("INT64: " << m_nValue64);
+        }
+        else
+        {
+            DBG("Something weird");
+        }
+
     }
 
     global_server_state_res::global_server_state_res(size_t nMaxSize) :

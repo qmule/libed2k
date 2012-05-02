@@ -33,6 +33,8 @@ namespace libed2k
             "stopping transfer",
             "timed out",
             "file size is zero",
+            "unclosed quotation mark",
+            "operator incorrect place",
             "file not exists or is not regular file"
         };
 
