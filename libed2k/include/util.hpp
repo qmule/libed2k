@@ -85,7 +85,7 @@ namespace libed2k {
       * @param strFileExtension - file extension, empty string disable this parameter
       * @param strQuery - user expression with or without logical operators and quotation marks("), can not be empty
      */
-    extern request_order generateSearchRequest(boost::uint64_t nMinSize,
+    extern search_request generateSearchRequest(boost::uint64_t nMinSize,
             boost::uint64_t nMaxSize,
             unsigned int nSourcesCount,
             const std::string& strFileType,

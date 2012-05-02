@@ -92,14 +92,14 @@ namespace libed2k
         return (c == '"');
     }
 
-    request_order generateSearchRequest(boost::uint64_t nMinSize,
+    search_request generateSearchRequest(boost::uint64_t nMinSize,
                 boost::uint64_t nMaxSize,
                 unsigned int nSourcesCount,
                 const std::string& strFileType,
                 const std::string& strFileExtension,
                 const std::string& strQuery)
     {
-        request_order vPrefResult;
+        search_request vPrefResult;
         std::vector<search_request_entry> vResult;
 
         if (strQuery.empty())

@@ -49,7 +49,7 @@ namespace libed2k
 
         const tcp::endpoint& getServerEndpoint() const;
 
-        void post_search_request(request_order& ro);
+        void post_search_request(search_request& ro);
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
         void post_announce(offer_files_list& offer_list);
     private:

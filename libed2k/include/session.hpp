@@ -80,7 +80,7 @@ namespace libed2k {
         /**
           * execute search file on server
          */
-        void post_search_request(request_order& sr);
+        void post_search_request(search_request& sr);
 
         /**
           * search sources for file

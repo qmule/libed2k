@@ -85,7 +85,7 @@ namespace libed2k
         return (m_target);
     }
 
-    void server_connection::post_search_request(request_order& ro)
+    void server_connection::post_search_request(search_request& ro)
     {
         if (!is_stopped())
         {

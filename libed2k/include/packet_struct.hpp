@@ -593,14 +593,14 @@ else\
         boost::optional<std::string>     m_strMetaName;  //!< meta name
     };
 
-    typedef std::deque<search_request_entry> request_order;
+    typedef std::deque<search_request_entry> search_request;
 
     /**
       * simple wrapper for use in do_write template call
      */
     struct search_request_block
     {
-        search_request_block(request_order& ro) : m_order(ro){}
+        search_request_block(search_request& ro) : m_order(ro){}
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -611,7 +611,7 @@ else\
             }
         }
 
-        request_order& m_order;
+        search_request& m_order;
     };
 
     /**

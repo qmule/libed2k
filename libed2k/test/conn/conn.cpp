@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::request_order order = libed2k::generateSearchRequest(0,0,0, "", "", "file");
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0, "", "", "file");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
