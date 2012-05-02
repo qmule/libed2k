@@ -267,4 +267,11 @@ namespace libed2k
         return (vPrefResult);
     }
 
+    extern search_request generateSearchRequest(const md4_hash& hFile)
+    {
+        search_request vPrefResult;
+        vPrefResult.push_back(search_request_entry(std::string("related::") + hFile.toString()));
+        return vPrefResult;
+    }
+
 }

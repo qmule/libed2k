@@ -91,6 +91,11 @@ namespace libed2k {
             const std::string& strFileType,
             const std::string& strFileExtension,
             const std::string& strQuery);
+
+    /**
+      * @param md4_hash - file hash for search related files
+     */
+    extern search_request generateSearchRequest(const md4_hash& hFile);
 }
 
 #endif

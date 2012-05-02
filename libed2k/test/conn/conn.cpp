@@ -8,6 +8,7 @@
 #include "session_settings.hpp"
 #include "alert_types.hpp"
 #include "util.hpp"
+#include "file.hpp"
 
 using namespace libed2k;
 
@@ -43,11 +44,12 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0, "", "", "file");
+    libed2k::search_request order = libed2k::generateSearchRequest(300000,140000000,1, libed2k::ED2KFTSTR_VIDEO, "", "XXX");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
+
 
     while (std::cin.get() != 'q')
     {
@@ -91,10 +93,18 @@ int main(int argc, char* argv[])
 
                 }
 */
-                int nIndex = p->m_list.m_collection.size()/2;
+                int nIndex = p->m_list.m_collection.size() - 1;
 
-                if (nIndex)
+
+                if (nIndex > 0)
                 {
+
+                    DBG("Search related files");
+
+                    search_request sr2 = generateSearchRequest(p->m_list.m_collection[nIndex].m_hFile);
+                    ses.post_search_request(sr2);
+
+                    /*
 
                     const boost::shared_ptr<base_tag> src = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_COMPLETE_SOURCES);
                     const boost::shared_ptr<base_tag> sz = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_FILESIZE);
@@ -107,6 +117,8 @@ int main(int argc, char* argv[])
                         // request sources
 
                     }
+                    */
+
                 }
             }
             else
