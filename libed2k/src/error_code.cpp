@@ -35,6 +35,7 @@ namespace libed2k
             "file size is zero",
             "unclosed quotation mark",
             "operator incorrect place",
+            "known file has invalid header on save/load",
             "file not exists or is not regular file"
         };
 

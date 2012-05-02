@@ -44,6 +44,7 @@ namespace libed2k
             // service errors
             unclosed_quotation_mark,
             operator_incorrect_place,
+            known_file_invalid_header,
             num_errors
         };
     }

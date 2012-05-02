@@ -4,7 +4,10 @@
 
 #include <string>
 #include <vector>
+#include <boost/cstdint.hpp>
+#include "error_code.hpp"
 #include "md4_hash.hpp"
+#include "packet_struct.hpp"
 
 namespace libed2k
 {
@@ -50,6 +53,30 @@ namespace libed2k
 
     const unsigned int PIECE_COUNT_ALLOC = 20;
 
+    // for future usage
+    enum PreferencesDatFileVersions {
+        PREFFILE_VERSION        = 0x14 //<<-- last change: reduced .dat, by using .ini
+    };
+
+    enum PartMetFileVersions {
+        PARTFILE_VERSION            = 0xe0,
+        PARTFILE_SPLITTEDVERSION    = 0xe1, // For edonkey part files importing.
+        PARTFILE_VERSION_LARGEFILE  = 0xe2
+    };
+
+    enum CreditFileVersions {
+        CREDITFILE_VERSION      = 0x12
+    };
+
+    enum CanceledFileListVersions {
+        CANCELEDFILE_VERSION    = 0x21
+    };
+
+    // known.met file header
+    const boost::uint8_t  MET_HEADER                  = 0x0E;
+    const boost::uint8_t  MET_HEADER_WITH_LARGEFILES  = 0x0F;
+
+
     class known_file
     {
     public:
@@ -68,6 +95,73 @@ namespace libed2k
         std::string             m_strFilename;
         std::vector<md4_hash>   m_vHash;
         md4_hash                m_hFile;
+    };
+
+    typedef container_holder<boost::uint16_t, std::vector<md4_hash> > hash_list;
+
+    /**
+      * simple known file entry structure
+     */
+    struct known_file_entry
+    {
+        boost::uint32_t             m_nLastChanged; //!< date last changed
+        md4_hash                    m_hFile;        //!< file hash
+        hash_list                   m_hash_list;
+        tag_list<boost::uint32_t>   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nLastChanged;
+            ar & m_hFile;
+            ar & m_hash_list;
+            ar & m_list;
+        }
+
+        void dump() const;
+    };
+
+    typedef container_holder<boost::uint32_t, std::vector<known_file_entry> > known_file_list;
+
+    /**
+      * full known.met file content
+     */
+    struct known_file_collection
+    {
+        boost::uint8_t  m_nHeader;
+        known_file_list m_known_file_list;
+
+        template<typename Archive>
+        void save(Archive& ar)
+        {
+            if (m_nHeader != MET_HEADER && m_nHeader != MET_HEADER_WITH_LARGEFILES)
+            {
+                // incorrect header
+                throw libed2k_exception(errors::known_file_invalid_header);
+            }
+
+            ar & m_nHeader;
+            ar & m_known_file_list;
+        }
+
+        template<typename Archive>
+        void load(Archive& ar)
+        {
+            ar & m_nHeader;
+
+            if (m_nHeader != MET_HEADER && m_nHeader != MET_HEADER_WITH_LARGEFILES)
+            {
+                // incorrect header
+                throw libed2k_exception(errors::known_file_invalid_header);
+            }
+
+            ar & m_known_file_list;
+        }
+
+
+        void dump() const;
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 }
 
