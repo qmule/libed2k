@@ -56,6 +56,7 @@ void peer_connection::init()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
+    m_desired_queue_size = 2;
 
     // hello handler
     add_handler(OP_HELLO, boost::bind(
@@ -73,6 +74,90 @@ peer_connection::~peer_connection()
 
 void peer_connection::second_tick()
 {
+}
+
+void peer_connection::request_block()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (t->is_seed()) return;
+    // don't request pieces before we have the metadata
+    //if (!t->has_metadata()) return;
+
+    int num_requests = m_desired_queue_size
+        - (int)m_download_queue.size()
+        - (int)m_request_queue.size();
+
+    // if our request queue is already full, we
+    // don't have to make any new requests yet
+    if (num_requests <= 0) return;
+
+    piece_picker& p = t->picker();
+    std::vector<piece_block> interesting_pieces;
+    interesting_pieces.reserve(100);
+
+    int prefer_whole_pieces = 1;
+
+    // TODO: state = c.peer_speed()
+    piece_picker::piece_state_t state = piece_picker::medium;
+
+    p.pick_pieces(m_available_pieces, interesting_pieces,
+                  num_requests, prefer_whole_pieces, m_peer_info,
+                  state, picker_options(), std::vector<int>());
+
+    for (std::vector<piece_block>::iterator i = interesting_pieces.begin();
+         i != interesting_pieces.end(); ++i)
+    {
+        int num_block_requests = p.num_peers(*i);
+        if (num_block_requests > 0)
+        {
+            continue;
+        }
+
+        // don't request pieces we already have in our request queue
+        // This happens when pieces time out or the peer sends us
+        // pieces we didn't request. Those aren't marked in the
+        // piece picker, but we still keep track of them in the
+        // download queue
+        if (std::find_if(m_download_queue.begin(), m_download_queue.end(),
+                         has_block(*i)) != m_download_queue.end() ||
+            std::find_if(m_request_queue.begin(), m_request_queue.end(),
+                         has_block(*i)) != m_request_queue.end())
+        {
+            continue;
+        }
+
+        // ok, we found a piece that's not being downloaded
+        // by somebody else. request it from this peer
+        // and return
+        if (!add_request(*i, 0)) continue;
+        num_requests--;
+    }
+}
+
+bool peer_connection::add_request(const piece_block& block, int flags)
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    //if (t->upload_mode()) return false;
+    if (m_disconnecting) return false;
+
+    piece_picker::piece_state_t state = piece_picker::medium;
+
+    if (!t->picker().mark_as_downloading(block, peer_info(), state))
+        return false;
+
+    //if (t->alerts().should_post<block_downloading_alert>())
+    //{
+    //    t->alerts().post_alert(
+    //        block_downloading_alert(t->get_handle(), remote(), pid(), speedmsg,
+    //                                block.block_index, block.piece_index));
+    //}
+
+    pending_block pb(block);
+    //pb.busy = flags & req_busy;
+    m_request_queue.push_back(pb);
+    return true;
 }
 
 bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
@@ -347,12 +432,29 @@ void peer_connection::incoming_piece_fragment(int bytes)
 {
 }
 
-void peer_connection::start_receive_piece(peer_request const& r)
+void peer_connection::start_receive_piece(const peer_request& r)
 {
 }
 
 void peer_connection::start()
 {
+}
+
+int peer_connection::picker_options() const
+{
+    int ret = 0;
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (!t) return 0;
+
+    if (t->is_sequential_download())
+    {
+        ret |= piece_picker::sequential | piece_picker::ignore_whole_pieces;
+    }
+
+    ret |= piece_picker::rarest_first | piece_picker::speed_affinity;
+
+    return ret;
 }
 
 void peer_connection::on_error(const error_code& error)
@@ -369,7 +471,7 @@ bool peer_connection::can_write() const
 bool peer_connection::can_read(char* state) const
 {
     // TODO - should implement
-	return (true);  
+	return (true);
 }
 
 void peer_connection::on_disk_write_complete(
@@ -406,6 +508,7 @@ void peer_connection::on_hello_answer(const error_code& error)
     DBG("hello answer <== " << m_remote);
     if (!error)
     {
+        // peer handshake completed
     }
     else
     {
@@ -441,7 +544,7 @@ void peer_connection::write_hello_answer()
     cha.m_sNetIdentifier.m_nPort= m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
-    //boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | 
+    //boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS |
     //    CAPABLE_UNICODE | CAPABLE_LARGEFILES;
     //boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
     boost::uint32_t nUdpPort = 0;

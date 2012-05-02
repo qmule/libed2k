@@ -23,6 +23,7 @@ namespace libtorrent {
     struct ptime;
     class listen_failed_alert;
     struct bitfield;
+    struct has_block;
 
     namespace aux{
         class eh_initializer;
@@ -30,7 +31,9 @@ namespace libtorrent {
     
 }
 
-namespace libed2k {
+namespace libed2k
+{
+    typedef std::vector<char, boost::pool_allocator<char> > socket_buffer;
 
     typedef boost::asio::ip::tcp tcp;
     typedef boost::asio::ip::udp udp;
@@ -49,7 +52,7 @@ namespace libed2k {
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
-    typedef std::vector<char, boost::pool_allocator<char> > socket_buffer;
+    typedef libtorrent::has_block has_block;
 
     namespace ip = boost::asio::ip;
     namespace fs = boost::filesystem;

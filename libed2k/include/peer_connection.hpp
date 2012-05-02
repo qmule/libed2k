@@ -16,6 +16,7 @@
 #include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
+#include <libtorrent/bitfield.hpp>
 
 #include "base_connection.hpp"
 #include "types.hpp"
@@ -124,6 +125,8 @@ namespace libed2k
         // do in the constructor).
         void start();
 
+        int picker_options() const;
+
         // tells if this connection has data it want to send
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
@@ -136,6 +139,10 @@ namespace libed2k
 
         // constructor method
         void init();
+
+        void request_block();
+        bool add_request(piece_block const& b, int flags = 0);
+        void send_block_requests();
 
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
@@ -170,6 +177,9 @@ namespace libed2k
         // set to the transfer it belongs to.
         boost::weak_ptr<transfer> m_transfer;
 
+        // the pieces the other end have
+        bitfield m_available_pieces;
+
         // the blocks we have reserved in the piece
         // picker and will request from this peer.
         std::vector<pending_block> m_request_queue;
@@ -177,6 +187,10 @@ namespace libed2k
         // the queue of blocks we have requested
         // from this peer
         std::vector<pending_block> m_download_queue;
+
+        // the number of request we should queue up
+        // at the remote end.
+        boost::uint8_t m_desired_queue_size;
 
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming

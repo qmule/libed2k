@@ -264,8 +264,8 @@ namespace libed2k
 
         if (has_picker())
         {
-            int blocks_per_piece = 1;
-            int blocks_in_last_piece = 1;
+            int blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+            int blocks_in_last_piece = div_ceil(m_filesize % PIECE_SIZE, BLOCK_SIZE);
             m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
         }
 

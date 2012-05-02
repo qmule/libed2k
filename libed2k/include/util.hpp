@@ -9,15 +9,15 @@
 namespace libed2k {
 
     template <typename A, typename B>
-    A div_ceil(A a, B b)
+    inline A div_ceil(A a, B b)
     {
-        return A(a/b + bool(a%b));
+        return A((a + b - 1) / b);
     }
 
     template <typename A>
-    A bits2bytes(A bits)
+    inline A bits2bytes(A bits)
     {
-        return (bits + 7) / 8;
+        return div_ceil(bits, 8);
     }
 
     inline std::string int2ipstr(int ip)
