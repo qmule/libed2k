@@ -61,9 +61,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;$(SolutionDir)$(ConfigurationName)"
+				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(LIBTORRENT_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -191,6 +191,10 @@
 			</File>
 			<File
 				RelativePath="..\unit\test_md4hash.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\unit\test_search_request.cpp"
 				>
 			</File>
 		</Filter>
