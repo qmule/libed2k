@@ -38,15 +38,16 @@ namespace libed2k
             transfer_aborted,
             stopping_transfer,
             timed_out,
-            filesize_is_zero,
-            file_unavaliable,
             self_connection,
             duplicate_peer_id,
             too_many_connections,
             // service errors
+            filesize_is_zero,
+            file_unavaliable,
             unclosed_quotation_mark,
             operator_incorrect_place,
             known_file_invalid_header,
+
             num_errors
         };
     }

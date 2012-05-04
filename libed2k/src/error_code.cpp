@@ -32,15 +32,15 @@ namespace libed2k
             "transfer aborted",
             "stopping transfer",
             "timed out",
-            "file size is zero",
-            "file not exists or is not regular file",
             "connection to itself",
             "duplicate peer id",
-            "too many connections"
+            "too many connections",
+            // service errors
+            "file size is zero",
+            "file not exists or is not regular file",
             "unclosed quotation mark",
             "operator incorrect place",
-            "known file has invalid header on save/load",
-            "file not exists or is not regular file"
+            "known file has invalid header on save/load"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))
