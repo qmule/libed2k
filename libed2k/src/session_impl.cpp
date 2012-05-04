@@ -41,7 +41,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_max_connections(200),
     m_last_second_tick(time_now()),
     m_timer(m_io_service),
-    m_reconnect_counter(-1)
+    m_reconnect_counter(-1),
+    m_fmon(*this)
 {
     DBG("*** create ed2k session ***");
 
@@ -479,6 +480,9 @@ void session_impl::abort()
     error_code ec;
     m_timer.cancel(ec);
 
+
+    // close file monitor
+    m_fmon.stop();
 
     // close the listen sockets
     for (std::list<listen_socket_t>::iterator i = m_listen_sockets.begin(),

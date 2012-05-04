@@ -24,6 +24,7 @@
 #include "util.hpp"
 #include "alert.hpp"
 #include "packet_struct.hpp"
+#include "file.hpp"
 
 namespace libed2k {
 
@@ -247,6 +248,11 @@ namespace libed2k {
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
+
+            /**
+              * file hasher closed in self thread
+             */
+            file_monitor    m_fmon;
         };
     }
 }

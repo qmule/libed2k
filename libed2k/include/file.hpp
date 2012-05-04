@@ -4,7 +4,11 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 #include <boost/cstdint.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+#include <boost/thread/condition.hpp>
 #include "error_code.hpp"
 #include "md4_hash.hpp"
 #include "packet_struct.hpp"
@@ -162,6 +166,81 @@ namespace libed2k
         void dump() const;
 
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
+    /**
+      * simple monitor object
+     */
+    template <typename Data>
+    class monitor_order : boost::noncopyable
+    {
+    public:
+        void push(const Data& data)
+        {
+            boost::mutex::scoped_lock lock(m_monitorMutex);
+            m_queue.push(data);
+            m_signal.notify_one();
+        }
+
+        void cancel()
+        {
+            boost::mutex::scoped_lock lock(m_monitorMutex);
+            std::queue<std::string> empty;
+            std::swap(m_queue, empty );
+            m_signal.notify_one();
+        }
+
+        Data popWait()
+        {
+            boost::mutex::scoped_lock lock(m_monitorMutex);
+
+            if(m_queue.empty())
+            {
+                m_signal.wait(lock);
+            }
+
+            // we have received exit signal
+            if (m_queue.empty())
+            {
+                throw libed2k_exception(errors::no_error);
+            }
+
+            Data temp(m_queue.front());
+            m_queue.pop();
+            return temp;
+        }
+
+    private:
+        std::queue<Data> m_queue;
+        boost::mutex m_monitorMutex;
+        boost::condition m_signal;
+    };
+
+    namespace aux { class session_impl; }
+
+    class file_monitor
+    {
+    public:
+        file_monitor(aux::session_impl& ses);
+
+        /**
+          * start monitor thread
+         */
+        void start();
+
+        /**
+          * cancel all current works and wait thread exit
+         */
+        void stop();
+
+        monitor_order<std::string>  m_order;
+    private:
+        volatile bool           m_bCancel;
+        aux::session_impl&      m_ses;
+        boost::shared_ptr<boost::thread> m_thread;
+        boost::mutex m_mutex;
+
+        void do_work();
     };
 }
 

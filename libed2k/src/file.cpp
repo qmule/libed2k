@@ -11,6 +11,8 @@
 #include "md4_hash.hpp"
 #include "types.hpp"
 #include "file.hpp"
+#include "session.hpp"
+#include "session_impl.hpp"
 
 namespace libed2k
 {
@@ -698,6 +700,180 @@ namespace libed2k
         for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
         {
             m_known_file_list.m_collection[n].dump();
+        }
+    }
+
+    file_monitor::file_monitor(aux::session_impl& ses) : m_bCancel(false), m_ses(ses)
+    {
+
+    }
+
+    void file_monitor::start()
+    {
+        m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&file_monitor::do_work, this)));
+    }
+
+    void file_monitor::stop()
+    {
+        m_order.cancel();
+        m_bCancel   = true;
+
+        // when thread exists - wait it
+        if (m_thread.get())
+        {
+            m_thread->join();
+        }
+    }
+
+    void file_monitor::do_work()
+    {
+        try
+        {
+            while(1)
+            {
+                error_code ec;
+                std::string strFilename = m_order.popWait();
+
+                try
+                {
+                    add_transfer_params atp;
+                    fs::path p(strFilename);
+
+                    if (!fs::exists(p) || !fs::is_regular_file(p))
+                    {
+                        throw libed2k_exception(errors::file_unavaliable);
+                    }
+
+                    atp.file_path = p;
+
+                    bool    bPartial = false; // check last part in file not full
+                    uintmax_t nFileSize = boost::filesystem::file_size(p);
+
+                    if (nFileSize == 0)
+                    {
+                        throw libed2k_exception(errors::filesize_is_zero);
+                        return;
+                    }
+
+                    int nPartCount  = nFileSize / PIECE_SIZE + 1;
+                    atp.hash_set.reserve(nPartCount);
+
+                    bio::mapped_file_params mf_param;
+                    mf_param.flags  = bio::mapped_file_base::readonly;
+                    mf_param.path   = strFilename;
+                    mf_param.length = 0;
+
+
+                    bio::mapped_file_source fsource;
+                    DBG("System alignment: " << bio::mapped_file::alignment());
+
+                    uintmax_t nCurrentOffset = 0;
+                    CryptoPP::Weak1::MD4 md4_hasher;
+
+                    while(nCurrentOffset < nFileSize)
+                    {
+                        if (m_bCancel)
+                        {
+                            break;
+                        }
+
+                        uintmax_t nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
+                        uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
+
+                        // calculate map size
+                        uintmax_t nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
+
+                        // correct map length
+                        if (nMapLength > (nFileSize - nCurrentOffset))
+                        {
+                            nMapLength = nFileSize - nCurrentOffset + nDataCorrection;
+                        }
+                        else
+                        {
+                            nMapLength += nDataCorrection;
+                        }
+
+                        mf_param.offset = nMapPosition;
+                        mf_param.length = nMapLength;
+                        fsource.open(mf_param);
+
+                        uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
+
+                        DBG("Map position   : " << nMapPosition);
+                        DBG("Data correction: " << nDataCorrection);
+                        DBG("Map length     : " << nMapLength);
+                        DBG("Map piece count: " << nMapLength / PIECE_SIZE);
+
+                        while(nLocalOffset < nMapLength)
+                        {
+                            if (m_bCancel)
+                            {
+                                break;
+                            }
+
+                            // calculate current part size size
+                            uintmax_t nLength = PIECE_SIZE;
+
+                            if (PIECE_SIZE > nMapLength - nLocalOffset)
+                            {
+                                nLength = nMapLength-nLocalOffset;
+                                bPartial = true;
+                            }
+
+                            DBG("         local piece: " << nLength);
+
+                            libed2k::md4_hash hash;
+                            md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
+                            atp.hash_set.push_back(hash);
+                            // generate hash
+                            nLocalOffset    += nLength;
+                            nCurrentOffset  += nLength;
+                        }
+
+                        fsource.close();
+
+                    }
+
+                    if (m_bCancel)
+                    {
+                        break;
+                    }
+
+                    // when we don't have last partial piece - add special hash
+                    if (!bPartial)
+                    {
+                        atp.hash_set.push_back(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
+                    }
+
+                    if (atp.hash_set.size() > 1)
+                    {
+                        md4_hasher.CalculateDigest(atp.file_hash.getContainer(), reinterpret_cast<const unsigned char*>(&atp.hash_set[0]), atp.hash_set.size()*libed2k::MD4_HASH_SIZE);
+                    }
+                    else
+                    {
+                        atp.file_hash = atp.hash_set[0];
+                    }
+
+
+                    boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+                    m_ses.add_transfer(atp, ec);
+                }
+                catch(...) // hide all possible exceptions
+                {
+                    ERR("Error on hashing file");
+                }
+
+                // exit when session closing
+                if (ec.value() == errors::session_is_closing)
+                {
+                    break;
+                }
+            }
+        }
+        catch(libed2k_exception& e)
+        {
+            // exit signal received
         }
     }
 
