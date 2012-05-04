@@ -28,7 +28,8 @@ namespace libtorrent {
     namespace aux{
         class eh_initializer;
     }
-    
+
+    namespace detail{}
 }
 
 namespace libed2k
@@ -53,6 +54,8 @@ namespace libed2k
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
     typedef libtorrent::has_block has_block;
+
+    namespace detail = libtorrent::detail;
 
     namespace ip = boost::asio::ip;
     namespace fs = boost::filesystem;

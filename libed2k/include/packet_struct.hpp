@@ -6,7 +6,10 @@
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
+#include <libtorrent/bitfield.hpp>
+
 #include "ctag.hpp"
+#include "util.hpp"
 
 namespace libed2k
 {
@@ -821,10 +824,34 @@ else\
         }
     };
 
+    struct client_file_request
+    {
+        md4_hash m_hFile;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+        }
+    };
+
+    struct client_file_answer
+    {
+        md4_hash m_hFile;
+        container_holder<boost::uint16_t, std::string> m_filename;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+            ar & m_filename;
+        }
+    };
+
     struct client_file_description
     {
         boost::uint8_t m_nRating;
-        container_holder<boost::uint32_t, std::string > m_sComment;
+        container_holder<boost::uint32_t, std::string> m_sComment;
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -834,7 +861,7 @@ else\
         }
     };
 
-    struct client_file_request
+    struct client_filestatus_request
     {
         md4_hash m_hFile;
 
@@ -859,13 +886,24 @@ else\
     struct client_file_status
     {
         md4_hash m_hFile;
-        container_holder<boost::uint16_t, std::vector<unsigned char> > m_vcStatus;
+        bitfield m_status;
+        //container_holder<boost::uint16_t, std::vector<unsigned char> > m_vcStatus;
 
-        template<typename Archive>
-        void serialize(Archive& ar)
+        void serialize(archive::ed2k_iarchive& ar)
         {
+            boost::uint16_t bits;
             ar & m_hFile;
-            ar & m_vcStatus;
+            ar & bits;
+            std::vector<char> buf(bits2bytes(bits));
+            ar.raw_read(&buf[0], buf.size());
+            m_status.assign(&buf[0], bits);
+        }
+        void serialize(archive::ed2k_oarchive& ar)
+        {
+            boost::uint16_t bits = m_status.size();
+            ar & m_hFile;
+            ar & bits;
+            ar.raw_write(m_status.bytes(), bits2bytes(bits));
         }
     };
 
@@ -1007,10 +1045,16 @@ else\
     template<> struct packet_type<client_hello_answer> {
         static const proto_type value = OP_HELLOANSWER;
     };
+    template<> struct packet_type<client_file_request> {
+        static const proto_type value = OP_REQUESTFILENAME;
+    };
+    template<> struct packet_type<client_file_answer> {
+        static const proto_type value = OP_REQFILENAMEANSWER;
+    };
     template<> struct packet_type<client_file_description> {
         static const proto_type value = OP_FILEDESC;
     };
-    template<> struct packet_type<client_file_request> {
+    template<> struct packet_type<client_filestatus_request> {
         static const proto_type value = OP_SETREQFILEID;
     };
     template<> struct packet_type<client_no_file> {

@@ -10,7 +10,7 @@ all:
 clean:
 	cd https && $(MAKE) clean
 	cd crypto && $(MAKE) clean
-	cd ed2k_client $(MAKE) clean
+	cd ed2k_client && $(MAKE) clean
 	cd conn && $(MAKE) clean
 	cd hash && $(MAKE) clean
 	cd file && $(MAKE) clean

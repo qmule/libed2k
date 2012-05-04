@@ -9,6 +9,7 @@
 #include "alert_types.hpp"
 #include "util.hpp"
 #include "file.hpp"
+#include "search.hpp"
 
 using namespace libed2k;
 

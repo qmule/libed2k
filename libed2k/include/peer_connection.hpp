@@ -32,7 +32,6 @@ namespace libed2k
         class session_impl;
     }
 
-    namespace detail = libtorrent::detail;
     class peer_connection : public base_connection
     {
     public:
@@ -148,6 +147,7 @@ namespace libed2k
         void write_hello();
         void write_hello_answer();
         void write_file_request(const md4_hash& file_hash);
+        void write_filestatus_request(const md4_hash& file_hash);
         void write_no_file(const md4_hash& file_hash);
         void write_file_status(const md4_hash& file_hash, const bitfield& status);
         void write_hashset_request(const md4_hash& file_hash);

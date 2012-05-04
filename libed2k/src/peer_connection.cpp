@@ -576,8 +576,15 @@ void peer_connection::write_hello_answer()
 
 void peer_connection::write_file_request(const md4_hash& file_hash)
 {
-    DBG("request file " << file_hash << " ==> " << m_remote);
     client_file_request fr;
+    fr.m_hFile = file_hash;
+    do_write(fr);
+}
+
+void peer_connection::write_filestatus_request(const md4_hash& file_hash)
+{
+    DBG("request file status " << file_hash << " ==> " << m_remote);
+    client_filestatus_request fr;
     fr.m_hFile = file_hash;
     do_write(fr);
 }
@@ -596,8 +603,7 @@ void peer_connection::write_file_status(
     DBG("file status " << file_hash << " ==> " << m_remote);
     client_file_status fs;
     fs.m_hFile = file_hash;
-    fs.m_vcStatus.m_collection.assign(
-        status.bytes(), status.bytes() + bits2bytes(status.size()));
+    fs.m_status = status;
     do_write(fs);
 }
 
