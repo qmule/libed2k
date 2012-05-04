@@ -682,4 +682,23 @@ namespace libed2k
 
     }
 
+    void known_file_entry::dump() const
+    {
+        DBG("known_file_entry::dump(TS: " << m_nLastChanged
+                << " " << m_hFile
+                << " hash list size: " <<  m_hash_list.m_collection.size()
+                << " tag list size: " << m_list.count());
+    }
+
+    void known_file_collection::dump() const
+    {
+        DBG("known_file_collection::dump()");
+        DBG("size: " << m_known_file_list.m_size);
+
+        for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
+        {
+            m_known_file_list.m_collection[n].dump();
+        }
+    }
+
 }

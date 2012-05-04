@@ -2,6 +2,7 @@
 #define __PACKET_STRUCT__
 
 #include <vector>
+#include <deque>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
@@ -226,7 +227,7 @@ else\
         template<typename Archive>
         void save(Archive& ar)
         {
-            // save collection size in field with proprly size
+            // save collection size in field with properly size
             m_size = static_cast<size_type>(m_collection.size());
             ar & m_size;
 
@@ -449,6 +450,8 @@ else\
             ar & m_address;
             ar & m_list;
         }
+
+        void dump() const;
     };
 
     /**
@@ -541,8 +544,10 @@ else\
         {
             SRE_AND     = 0,
             SRE_OR      = 1,
-            SRE_NOT     = 2
+            SRE_NOT     = 2,
+            SRE_END     = 3
         };
+
         search_request_entry(SRE_Operation soper);
         search_request_entry(const std::string& strValue);
         search_request_entry(tg_type nMetaTagId, const std::string& strValue);
@@ -556,6 +561,21 @@ else\
         }
 
         void save(archive::ed2k_oarchive& ar);
+
+        /**
+          * return true when entry is AND/OR/NOT expression
+         */
+        bool isOperand() const;
+
+        /**
+          * methods for testing
+         */
+        const std::string& getStrValue() const;
+        boost::uint32_t    getInt32Value() const;
+        boost::uint64_t    getInt64Value() const;
+        boost::uint8_t     getOperator() const;
+
+        void dump() const;
 
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     private:
@@ -571,6 +591,27 @@ else\
 
         boost::optional<tg_type>         m_meta_type;    //!< meta type
         boost::optional<std::string>     m_strMetaName;  //!< meta name
+    };
+
+    typedef std::deque<search_request_entry> search_request;
+
+    /**
+      * simple wrapper for use in do_write template call
+     */
+    struct search_request_block
+    {
+        search_request_block(search_request& ro) : m_order(ro){}
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            for (size_t n = 0; n < m_order.size(); n++)
+            {
+                ar & m_order[n];
+            }
+        }
+
+        search_request& m_order;
     };
 
     /**
@@ -607,26 +648,6 @@ else\
     };
 
     typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
-
-    /**
-      * this structure holds search requests to eDonkey server
-      *
-     */
-    struct search_request
-    {
-        void add_entry(const search_request_entry& entry);
-
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            for (size_t n = 0; n < m_entries.size(); n++)
-            {
-                ar & m_entries[n];
-            }
-        }
-    private:
-        std::vector<search_request_entry> m_entries;
-    };
 
     /**
       * request sources for file
@@ -742,7 +763,7 @@ else\
     template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
     template<> struct packet_type<offer_files_list>         { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
 
-    template<> struct packet_type<search_request>           { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
+    template<> struct packet_type<search_request_block>     { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
     template<> struct packet_type<search_file_list>         { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
     template<> struct packet_type<search_more_result>       { static const proto_type value = OP_QUERY_MORE_RESULT;  }; //!< search result from server
 

@@ -72,10 +72,10 @@ size_t session::set_alert_queue_size_limit(size_t queue_size_limit_)
     return m_impl->set_alert_queue_size_limit(queue_size_limit_);
 }
 
-void session::post_search_request(search_request& sr)
+void session::post_search_request(search_request& ro)
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_search_request(sr);
+    m_impl->post_search_request(ro);
 }
 
 void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)

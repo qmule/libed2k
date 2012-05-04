@@ -19,8 +19,6 @@ namespace libed2k
         m_name_lookup(ses.m_io_service),
         m_keep_alive(ses.m_io_service),
         m_ses(ses),
-        m_nFilesCount(0),
-        m_nUsersCount(0),
         m_nTCPFlags(0),
         m_nAuxPort(0),
         m_bInitialization(false),
@@ -87,11 +85,13 @@ namespace libed2k
         return (m_target);
     }
 
-    void server_connection::post_search_request(search_request& sr)
+    void server_connection::post_search_request(search_request& ro)
     {
         if (!is_stopped())
         {
-            do_write(sr);
+            // use wrapper
+            search_request_block srb(ro);
+            do_write(srb);
         }
     }
 
@@ -378,27 +378,13 @@ namespace libed2k
                     {
                         server_list slist;
                         ia >> slist;
-
                         break;
                     }
                     case OP_SERVERSTATUS:
                     {
                         server_status sss;
                         ia >> sss;
-                        m_nFilesCount = sss.m_nFilesCount;
-                        m_nUsersCount = sss.m_nUserCount;
-
-                        if (m_nClientId != 0)
-                        {
-                            // we already got client id it means
-                            // server connection initialized
-                            // notyfy session
-                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount, m_nTCPFlags, m_nAuxPort);
-                            // do not send udp packets now
-                            //global_server_state_req gssr;
-                            //do_write_udp(gssr);
-                            //do_read_udp();
-                        }
+                        m_ses.m_alerts.post_alert_should(server_status_alert(sss.m_nFilesCount, sss.m_nUserCount));
                         break;
                     }
                     case OP_USERS_LIST:
@@ -415,24 +401,20 @@ namespace libed2k
 
                         DBG("Client id: " << m_nClientId << " tcp flags: " << idc.m_nTCPFlags << " aux port " << idc.m_nAuxPort);
 
-                        if (m_nUsersCount != 0)
-                        {
-                            // if we got users count != 0 - at least 1 user must
-                            // exists on server
-                            // (our connection) - server connection initialized
-                            // notify session
-                            m_ses.server_ready(m_nClientId, m_nFilesCount, m_nUsersCount, m_nTCPFlags, m_nAuxPort);
-                            // do now send udp packets now
-                            //global_server_state_req gssr;
-                            //do_write_udp(gssr);
-                            //do_read_udp();
-                        }
+                        if (m_ses.m_alerts.should_post<server_connection_initialized_alert>())
+                            m_ses.m_alerts.post_alert(server_connection_initialized_alert(idc.m_nClientId, idc.m_nTCPFlags, idc.m_nAuxPort));
+
+                        m_ses.server_ready(idc.m_nClientId, idc.m_nTCPFlags, idc.m_nAuxPort);
                         break;
                     }
                     case OP_SERVERIDENT:
                     {
                         server_info_entry se;
                         ia >> se;
+                        se.dump();
+                        m_ses.m_alerts.post_alert_should(server_identity_alert(se.m_hServer, se.m_address,
+                                se.m_list.getStringTagByNameId(ST_SERVERNAME),
+                                se.m_list.getStringTagByNameId(ST_DESCRIPTION)));
                         break;
                     }
                     case OP_FOUNDSOURCES:

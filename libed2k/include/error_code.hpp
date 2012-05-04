@@ -43,7 +43,10 @@ namespace libed2k
             self_connection,
             duplicate_peer_id,
             too_many_connections,
-
+            // service errors
+            unclosed_quotation_mark,
+            operator_incorrect_place,
+            known_file_invalid_header,
             num_errors
         };
     }

@@ -132,10 +132,7 @@ namespace libed2k {
             void announce_all();
 
             // called when server connection is initialized
-            void server_ready(
-                boost::uint32_t client_id,
-                boost::uint32_t file_count,
-                boost::uint32_t user_count,
+            void server_ready(boost::uint32_t client_id,
                 boost::uint32_t tcp_flags,
                 boost::uint32_t aux_port);
 

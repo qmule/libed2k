@@ -753,9 +753,9 @@ alert const* session_impl::wait_for_alert(time_duration max_wait)
     return m_alerts.wait_for_alert(max_wait);
 }
 
-void session_impl::post_search_request(search_request& sr)
+void session_impl::post_search_request(search_request& ro)
 {
-    m_server_connection->post_search_request(sr);
+    m_server_connection->post_search_request(ro);
 }
 
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
@@ -799,22 +799,14 @@ size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
 
 void session_impl::server_ready(
     boost::uint32_t client_id,
-    boost::uint32_t file_count,
-    boost::uint32_t user_count,
     boost::uint32_t tcp_flags,
     boost::uint32_t aux_port)
 {
-    APP("server_ready: client_id=" << client_id << ", file_count=" << file_count <<
-        ", user_count=" << user_count);
+    APP("server_ready: client_id=" << client_id);
     m_client_id = client_id;
     m_tcp_flags = tcp_flags;
     m_aux_port  = aux_port;
 
-    // server connection initialized - post alert here
-    if (m_alerts.should_post<server_connection_initialized_alert>())
-        m_alerts.post_alert(
-            server_connection_initialized_alert(client_id, file_count, user_count, tcp_flags, aux_port));
-/*
      // test code - for offer tests
     offer_files_list olist;
     shared_file_entry sf;
@@ -823,8 +815,9 @@ void session_impl::server_ready(
 
     sf.m_network_point.m_nIP     = client_id;
     sf.m_network_point.m_nPort   = settings().listen_port;
-    sf.m_list.add_tag(libed2k::make_string_tag("file.txt", FT_FILENAME, false));
-    sf.m_list.add_tag(libed2k::make_typed_tag(nFileSize, FT_FILESIZE, false));
+    sf.m_list.add_tag(libed2k::make_string_tag("file.txt", FT_FILENAME, true));
+    sf.m_list.add_tag(libed2k::make_typed_tag(nFileSize, FT_FILESIZE, true));
+    //sf.m_list.add_tag(libed2k::make_typed_tag(nFileSize, FT_FILESIZE_HI, false));
 
     std::string strED2KFileType(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("file.txt")));
 
@@ -838,7 +831,7 @@ void session_impl::server_ready(
     olist.m_collection.push_back(sf);
 
     m_server_connection->post_announce(olist);
-*/
+
     announce_all();
 }
 

@@ -164,7 +164,7 @@ namespace libed2k{
 
     	void dump() const
     	{
-    	    DBG("md2_hash::dump " << toString().c_str());
+    	    DBG("md4_hash::dump " << toString().c_str());
     	}
 
     	/**

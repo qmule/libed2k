@@ -37,6 +37,10 @@ namespace libed2k
             "connection to itself",
             "duplicate peer id",
             "too many connections"
+            "unclosed quotation mark",
+            "operator incorrect place",
+            "known file has invalid header on save/load",
+            "file not exists or is not regular file"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

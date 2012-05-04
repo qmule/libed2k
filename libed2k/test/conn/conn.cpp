@@ -7,6 +7,8 @@
 #include "session.hpp"
 #include "session_settings.hpp"
 #include "alert_types.hpp"
+#include "util.hpp"
+#include "file.hpp"
 
 using namespace libed2k;
 
@@ -28,11 +30,6 @@ int main(int argc, char* argv[])
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-    libed2k::search_request sr;
-
-
-    sr.add_entry(libed2k::search_request_entry("file1"));
-
     /*
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
@@ -47,10 +44,12 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
+    libed2k::search_request order = libed2k::generateSearchRequest(300000,140000000,1, libed2k::ED2KFTSTR_VIDEO, "", "XXX");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
+
 
     while (std::cin.get() != 'q')
     {
@@ -63,15 +62,24 @@ int main(int argc, char* argv[])
                 server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
                 std::cout << "server initalized: cid: "
                         << p->m_nClientId
-                        << " fc: " << p->m_nFilesCount
-                        << " uc: " << p->m_nUsersCount << std::endl;
+                        << std::endl;
                 DBG("send search request");
-                ses.post_search_request(sr);
+                ses.post_search_request(order);
+            }
+            else if (dynamic_cast<server_status_alert*>(a.get()))
+            {
+                server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
+                DBG("server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
             }
             else if (dynamic_cast<server_message_alert*>(a.get()))
             {
                 server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
                 std::cout << "msg: " << p->m_strMessage << std::endl;
+            }
+            else if (dynamic_cast<server_identity_alert*>(a.get()))
+            {
+                server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
+                DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
             }
             else if (dynamic_cast<search_result_alert*>(a.get()))
             {
@@ -85,10 +93,18 @@ int main(int argc, char* argv[])
 
                 }
 */
-                int nIndex = p->m_list.m_collection.size()/2;
+                int nIndex = p->m_list.m_collection.size() - 1;
 
-                if (nIndex)
+
+                if (nIndex > 0)
                 {
+
+                    DBG("Search related files");
+
+                    search_request sr2 = generateSearchRequest(p->m_list.m_collection[nIndex].m_hFile);
+                    ses.post_search_request(sr2);
+
+                    /*
 
                     const boost::shared_ptr<base_tag> src = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_COMPLETE_SOURCES);
                     const boost::shared_ptr<base_tag> sz = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_FILESIZE);
@@ -101,6 +117,8 @@ int main(int argc, char* argv[])
                         // request sources
 
                     }
+                    */
+
                 }
             }
             else

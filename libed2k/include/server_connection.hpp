@@ -49,7 +49,7 @@ namespace libed2k
 
         const tcp::endpoint& getServerEndpoint() const;
 
-        void post_search_request(search_request& sr);
+        void post_search_request(search_request& ro);
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
         void post_announce(offer_files_list& offer_list);
     private:
@@ -113,8 +113,6 @@ namespace libed2k
         tcp::resolver                   m_name_lookup;
         dtimer                          m_keep_alive;       //!< timer for ping server
         aux::session_impl&              m_ses;
-        boost::uint32_t                 m_nFilesCount;
-        boost::uint32_t                 m_nUsersCount;
         boost::uint32_t                 m_nTCPFlags;
         boost::uint32_t                 m_nAuxPort;
         bool                            m_bInitialization;  //!< set true when we wait for connect

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cassert>
+
 #include <boost/cstdint.hpp>
 #include <boost/mem_fn.hpp>
 #include "log.hpp"
@@ -606,6 +607,12 @@ public:
     const boost::shared_ptr<base_tag> operator[](size_t n) const;
     const boost::shared_ptr<base_tag> getTagByNameId(tg_nid_type nId) const;
     
+    /**
+      * return special tag as string
+      * if tag not exists or his type is not string returns empty string
+     */
+    std::string getStringTagByNameId(tg_nid_type nId) const;
+
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
     void dump() const;
@@ -661,6 +668,24 @@ const boost::shared_ptr<base_tag> tag_list<size_type>::getTagByNameId(tg_nid_typ
     }
 
     return (boost::shared_ptr<base_tag>());
+}
+
+template<typename size_type>
+std::string tag_list<size_type>::getStringTagByNameId(tg_nid_type nId) const
+{
+    if (boost::shared_ptr<base_tag> p = getTagByNameId(nId))
+    {
+        try
+        {
+            return (p->asString());
+        }
+        catch(libed2k_exception& e)
+        {
+            ERR("Incorrect type conversion: " << e.what());
+        }
+    }
+
+    return (std::string(""));
 }
 
 template<typename size_type>
