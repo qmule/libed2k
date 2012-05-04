@@ -131,6 +131,25 @@ namespace libed2k
         return peerinfo->connection;
     }
 
+    bool transfer::attach_peer(peer_connection* p)
+    {
+        // TODO: check transfer for validness
+
+        if (m_ses.m_connections.find(p) == m_ses.m_connections.end())
+        {
+            return false;
+        }
+        if (m_ses.is_aborted())
+        {
+            return false;
+        }
+        if (!m_policy.new_connection(*p))
+            return false;
+
+        m_connections.insert(p);
+        return true;
+    }
+
     void transfer::remove_peer(peer_connection* p)
     {
         // TODO: implement

@@ -33,7 +33,10 @@ namespace libed2k
             "stopping transfer",
             "timed out",
             "file size is zero",
-            "file not exists or is not regular file"
+            "file not exists or is not regular file",
+            "connection to itself",
+            "duplicate peer id",
+            "too many connections"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

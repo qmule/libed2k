@@ -40,6 +40,9 @@ namespace libed2k
             timed_out,
             filesize_is_zero,
             file_unavaliable,
+            self_connection,
+            duplicate_peer_id,
+            too_many_connections,
 
             num_errors
         };

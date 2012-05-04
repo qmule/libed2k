@@ -800,6 +800,19 @@ else\
         }
     };
 
+    struct client_file_description
+    {
+        boost::uint8_t m_nRating;
+        container_holder<boost::uint32_t, std::string > m_sComment;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nRating;
+            ar & m_sComment;
+        }
+    };
+
     struct client_file_request
     {
         md4_hash m_hFile;
@@ -972,6 +985,9 @@ else\
     };
     template<> struct packet_type<client_hello_answer> {
         static const proto_type value = OP_HELLOANSWER;
+    };
+    template<> struct packet_type<client_file_description> {
+        static const proto_type value = OP_FILEDESC;
     };
     template<> struct packet_type<client_file_request> {
         static const proto_type value = OP_SETREQFILEID;

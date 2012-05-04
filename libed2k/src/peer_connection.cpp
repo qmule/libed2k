@@ -22,13 +22,14 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
     m_transfer(transfer),
-    m_peer_info(peerinfo),
+    m_peer(peerinfo),
     m_connecting(true),
+    m_active(true),
     m_packet_size(0),
     m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
-    init();
+    reset();
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
@@ -40,19 +41,20 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_last_receive(time_now()),
     m_last_sent(time_now()),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
-    m_peer_info(peerinfo),
+    m_peer(peerinfo),
     m_connecting(false),
+    m_active(false),
     m_packet_size(0),
     m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
-    init();
+    reset();
 
     // connection is already established
     do_read();
 }
 
-void peer_connection::init()
+void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
@@ -64,6 +66,8 @@ void peer_connection::init()
     // hello answer handler
     add_handler(OP_HELLOANSWER, boost::bind(
                     &peer_connection::on_hello_answer, this, _1));
+    add_handler(OP_SETREQFILEID, boost::bind(
+                    &peer_connection::on_file_request, this, _1));
 }
 
 peer_connection::~peer_connection()
@@ -74,6 +78,44 @@ peer_connection::~peer_connection()
 
 void peer_connection::second_tick()
 {
+}
+
+bool peer_connection::attach_to_transfer(const md4_hash& hash)
+{
+    boost::weak_ptr<transfer> wpt = m_ses.find_transfer(hash);
+    boost::shared_ptr<transfer> t = wpt.lock();
+
+    if (t && t->is_aborted())
+    {
+        DBG("the transfer has been aborted");
+        t.reset();
+    }
+
+    if (!t)
+    {
+        // we couldn't find the transfer!
+        DBG("couldn't find a transfer with the given hash: " << hash);
+        return false;
+    }
+
+    if (t->is_paused())
+    {
+        // paused transfer will not accept incoming connections
+        DBG("rejected connection to paused torrent");
+        return false;
+    }
+
+    // check to make sure we don't have another connection with the same
+    // hash and peer_id. If we do. close this connection.
+    if (!t->attach_peer(this)) return false;
+    m_transfer = wpt;
+
+    // if the transfer isn't ready to accept
+    // connections yet, we'll have to wait with
+    // our initialization
+    if (t->ready_for_connections()) init();
+    m_available_pieces.clear_all();
+    return true;
 }
 
 void peer_connection::request_block()
@@ -102,7 +144,7 @@ void peer_connection::request_block()
     piece_picker::piece_state_t state = piece_picker::medium;
 
     p.pick_pieces(m_available_pieces, interesting_pieces,
-                  num_requests, prefer_whole_pieces, m_peer_info,
+                  num_requests, prefer_whole_pieces, m_peer,
                   state, picker_options(), std::vector<int>());
 
     for (std::vector<piece_block>::iterator i = interesting_pieces.begin();
@@ -144,7 +186,7 @@ bool peer_connection::add_request(const piece_block& block, int flags)
 
     piece_picker::piece_state_t state = piece_picker::medium;
 
-    if (!t->picker().mark_as_downloading(block, peer_info(), state))
+    if (!t->picker().mark_as_downloading(block, get_peer(), state))
         return false;
 
     //if (t->alerts().should_post<block_downloading_alert>())
@@ -177,7 +219,7 @@ bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
     m_disk_recv_buffer.reset(m_ses.allocate_disk_buffer("receive buffer"));
     if (!m_disk_recv_buffer)
     {
-        disconnect(libtorrent::errors::no_memory);
+        disconnect(errors::no_memory);
         return false;
     }
     m_disk_recv_buffer_size = disk_buffer_size;
@@ -416,7 +458,7 @@ void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& 
                                         self_as<peer_connection>(), _1, _2, p, t));
 
     bool was_finished = picker.is_piece_finished(p.piece);
-    picker.mark_as_writing(block_finished, peer_info());
+    picker.mark_as_writing(block_finished, get_peer());
 
     // did we just finish the piece?
     // this means all blocks are either written
@@ -487,39 +529,12 @@ void peer_connection::on_disk_write_complete(
 
     piece_block block_finished(r.piece, r.start / t->block_size());
     piece_picker& picker = t->picker();
-    picker.mark_as_finished(block_finished, peer_info());
-}
-
-void peer_connection::on_hello(const error_code& error)
-{
-    DBG("hello packet <== " << m_remote);
-    if (!error)
-    {
-        write_hello_answer();
-    }
-    else
-    {
-        ERR("hello packet received error " << error.message());
-    }
-}
-
-void peer_connection::on_hello_answer(const error_code& error)
-{
-    DBG("hello answer <== " << m_remote);
-    if (!error)
-    {
-        // peer handshake completed
-    }
-    else
-    {
-        ERR("hello answer received error " << error.message());
-    }
+    picker.mark_as_finished(block_finished, get_peer());
 }
 
 void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
-
     const session_settings& settings = m_ses.settings();
     boost::uint32_t nVersion = 0x3c;
     client_hello hello;
@@ -561,6 +576,7 @@ void peer_connection::write_hello_answer()
 
 void peer_connection::write_file_request(const md4_hash& file_hash)
 {
+    DBG("request file " << file_hash << " ==> " << m_remote);
     client_file_request fr;
     fr.m_hFile = file_hash;
     do_write(fr);
@@ -568,6 +584,7 @@ void peer_connection::write_file_request(const md4_hash& file_hash)
 
 void peer_connection::write_no_file(const md4_hash& file_hash)
 {
+    DBG("no file " << file_hash << " ==> " << m_remote);
     client_no_file nf;
     nf.m_hFile = file_hash;
     do_write(nf);
@@ -576,6 +593,7 @@ void peer_connection::write_no_file(const md4_hash& file_hash)
 void peer_connection::write_file_status(
     const md4_hash& file_hash, const bitfield& status)
 {
+    DBG("file status " << file_hash << " ==> " << m_remote);
     client_file_status fs;
     fs.m_hFile = file_hash;
     fs.m_vcStatus.m_collection.assign(
@@ -585,6 +603,7 @@ void peer_connection::write_file_status(
 
 void peer_connection::write_hashset_request(const md4_hash& file_hash)
 {
+    DBG("request hashset for " << file_hash << " ==> " << m_remote);
     client_hashset_request hr;
     hr.m_hFile = file_hash;
     do_write(hr);
@@ -592,6 +611,7 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
 
 void peer_connection::write_hashset_answer(const known_file& file)
 {
+    DBG("hashset ==> " << m_remote);
     client_hashset_answer ha;
     ha.m_hFile = file.getFileHash();
     for (size_t part = 0; part < file.getPiecesCount(); ++part)
@@ -601,6 +621,7 @@ void peer_connection::write_hashset_answer(const known_file& file)
 
 void peer_connection::write_start_upload(const md4_hash& file_hash)
 {
+    DBG("start download " << file_hash << " ==> " << m_remote);
     client_start_upload su;
     su.m_hFile = file_hash;
     do_write(su);
@@ -608,6 +629,7 @@ void peer_connection::write_start_upload(const md4_hash& file_hash)
 
 void peer_connection::write_queue_ranking(boost::uint16_t rank)
 {
+    DBG("queue ranking is " << rank << " ==> " << m_remote);
     client_queue_ranking qr;
     qr.m_nRank = rank;
     do_write(qr);
@@ -615,12 +637,68 @@ void peer_connection::write_queue_ranking(boost::uint16_t rank)
 
 void peer_connection::write_accept_upload()
 {
+    DBG("accept upload ==> " << m_remote);
     client_accept_upload au;
     do_write(au);
 }
 
 void peer_connection::write_cancel_transfer()
 {
+    DBG("cancel ==> " << m_remote);
     client_cancel_transfer ct;
     do_write(ct);
+}
+
+void peer_connection::on_hello(const error_code& error)
+{
+    DBG("hello packet <== " << m_remote);
+    if (!error)
+    {
+        write_hello_answer();
+    }
+    else
+    {
+        ERR("hello packet received error " << error.message());
+    }
+}
+
+void peer_connection::on_hello_answer(const error_code& error)
+{
+    DBG("hello answer <== " << m_remote);
+    if (!error)
+    {
+        // peer handshake completed
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        write_file_request(t->hash());
+    }
+    else
+    {
+        ERR("hello answer received error " << error.message());
+    }
+}
+
+void peer_connection::on_file_request(const error_code& error)
+{
+    if (!error)
+    {
+        client_file_request fr;
+        decode_packet(fr);
+        DBG("file request " << fr.m_hFile << " <== " << m_remote);
+        if (attach_to_transfer(fr.m_hFile))
+        {
+            DBG("found file "<< fr.m_hFile);
+            bitfield status; // undefined
+            write_file_status(fr.m_hFile, status);
+        }
+        else
+        {
+            DBG("file " << fr.m_hFile << " not found ==> " << m_remote);
+            write_no_file(fr.m_hFile);
+            disconnect(errors::file_unavaliable, 2);
+        }
+    }
+    else
+    {
+        DBG("file request error " << error.message() << " <== " << m_remote);
+    }
 }

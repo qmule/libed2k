@@ -16,14 +16,38 @@ namespace libed2k {
     {
     public:
         policy(transfer* t, const std::vector<peer_entry>& peer_list);
-
+        // this is called once for every peer we get from the server.
         peer* add_peer(const tcp::endpoint& ep);
+        // called when an incoming connection is accepted
+        // false means the connection was refused or failed
+        bool new_connection(peer_connection& c);
+
         size_t num_peers() const { return m_peers.size(); }
         void set_connection(peer* p, peer_connection* c);
         bool connect_one_peer();
         int num_connect_candidates() const { return m_num_connect_candidates; }
+
     private:
+
         typedef std::deque<peer*> peers_t;
+
+        struct peer_address_compare
+        {
+            bool operator()(const peer* lhs, const ip::address& rhs) const
+            { return lhs->address() < rhs; }
+
+            bool operator()(const ip::address& lhs, const peer* rhs) const
+            { return lhs < rhs->address(); }
+
+            bool operator()(const peer* lhs, const peer* rhs) const
+            { return lhs->address() < rhs->address(); }
+        };
+
+        std::pair<peers_t::iterator, peers_t::iterator> find_peers(const ip::address& a)
+        {
+            return std::equal_range(
+                m_peers.begin(), m_peers.end(), a, peer_address_compare());
+        }
 
         bool is_connect_candidate(peer const& p) const;
 
