@@ -11,6 +11,7 @@
 #include "util.hpp"
 #include "log.hpp"
 #include "file.hpp"
+#include "search.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_search_request)
 

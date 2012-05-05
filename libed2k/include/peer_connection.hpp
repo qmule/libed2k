@@ -16,6 +16,7 @@
 #include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
+#include <libtorrent/bitfield.hpp>
 
 #include "base_connection.hpp"
 #include "types.hpp"
@@ -31,7 +32,6 @@ namespace libed2k
         class session_impl;
     }
 
-    namespace detail = libtorrent::detail;
     class peer_connection : public base_connection
     {
     public:
@@ -50,7 +50,10 @@ namespace libed2k
 
         ~peer_connection();
 
-        peer* peer_info() const { return m_peer_info; }
+        peer* get_peer() const { return m_peer; }
+        void set_peer(peer* pi) { m_peer = pi; }
+
+        const tcp::endpoint& remote() const { return m_remote; }
 
         // is called once every second by the main loop
         void second_tick();
@@ -85,26 +88,14 @@ namespace libed2k
         void incoming_piece_fragment(int bytes);
         void start_receive_piece(peer_request const& r);
 
-        // the following functions appends messages
-        // to the send buffer
-        void write_hello();
-        void write_hello_answer();
-        void write_file_request(const md4_hash& file_hash);
-        void write_no_file(const md4_hash& file_hash);
-        void write_file_status(const md4_hash& file_hash, const bitfield& status);
-        void write_hashset_request(const md4_hash& file_hash);
-        void write_hashset_answer(const known_file& file);
-        void write_start_upload(const md4_hash& file_hash);
-        void write_queue_ranking(boost::uint16_t rank);
-        void write_accept_upload();
-        void write_cancel_transfer();
-        void write_have(int index);
-        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
-
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
         void disconnect(error_code const& ec, int error = 0);
         bool is_disconnecting() const { return m_disconnecting; }
+
+        // returns true if this connection is still waiting to
+        // finish the connection attempt
+        bool is_connecting() const { return m_connecting; }
 
         // this is called when the connection attempt has succeeded
         // and the peer_connection is supposed to set m_connecting
@@ -118,11 +109,17 @@ namespace libed2k
         // tcp connections.
         void connect(int ticket);
 
+        // a connection is local if it was initiated by us.
+        // if it was an incoming connection, it is remote
+        bool is_local() const { return m_active; }
+
         // this function is called after it has been constructed and properly
         // reference counted. It is safe to call self() in this function
         // and schedule events with references to itself (that is not safe to
         // do in the constructor).
         void start();
+
+        int picker_options() const;
 
         // tells if this connection has data it want to send
         // and has enough upload bandwidth quota left to send it.
@@ -135,14 +132,37 @@ namespace libed2k
     private:
 
         // constructor method
-        void init();
+        void reset();
+        bool attach_to_transfer(const md4_hash& hash);
+
+        void request_block();
+        bool add_request(piece_block const& b, int flags = 0);
+        void send_block_requests();
 
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
 
+        // the following functions appends messages
+        // to the send buffer
+        void write_hello();
+        void write_hello_answer();
+        void write_file_request(const md4_hash& file_hash);
+        void write_filestatus_request(const md4_hash& file_hash);
+        void write_no_file(const md4_hash& file_hash);
+        void write_file_status(const md4_hash& file_hash, const bitfield& status);
+        void write_hashset_request(const md4_hash& file_hash);
+        void write_hashset_answer(const known_file& file);
+        void write_start_upload(const md4_hash& file_hash);
+        void write_queue_ranking(boost::uint16_t rank);
+        void write_accept_upload();
+        void write_cancel_transfer();
+        void write_have(int index);
+        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
+
         // protocol handlers
         void on_hello(const error_code& error);
         void on_hello_answer(const error_code& error);
+        void on_file_request(const error_code& error);
         void on_piece(int received);
 
         bool packet_finished() const { return m_packet_size <= m_recv_pos; }
@@ -170,6 +190,9 @@ namespace libed2k
         // set to the transfer it belongs to.
         boost::weak_ptr<transfer> m_transfer;
 
+        // the pieces the other end have
+        bitfield m_available_pieces;
+
         // the blocks we have reserved in the piece
         // picker and will request from this peer.
         std::vector<pending_block> m_request_queue;
@@ -178,10 +201,14 @@ namespace libed2k
         // from this peer
         std::vector<pending_block> m_download_queue;
 
+        // the number of request we should queue up
+        // at the remote end.
+        boost::uint8_t m_desired_queue_size;
+
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming
         // and hasn't been added to a transfer yet.
-        peer* m_peer_info;
+        peer* m_peer;
 
         // the ticket id from the connection queue.
         // This is used to identify the connection
@@ -198,6 +225,11 @@ namespace libed2k
         // may not even have been attempted when the
         // time out is reached.
         bool m_connecting;
+
+        // is true if it was we that connected to the peer
+        // and false if we got an incoming connection
+        // could be considered: true = local, false = remote
+        bool m_active;
 
 		// set to true when this peer is only uploading
 		bool m_upload_only;
