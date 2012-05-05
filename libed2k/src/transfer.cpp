@@ -24,7 +24,7 @@ namespace libed2k
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
         m_seed_mode(p.seed_mode),
-        m_policy(this),
+        m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
     {
         // TODO: init here
@@ -129,6 +129,25 @@ namespace libed2k
 
 
         return peerinfo->connection;
+    }
+
+    bool transfer::attach_peer(peer_connection* p)
+    {
+        // TODO: check transfer for validness
+
+        if (m_ses.m_connections.find(p) == m_ses.m_connections.end())
+        {
+            return false;
+        }
+        if (m_ses.is_aborted())
+        {
+            return false;
+        }
+        if (!m_policy.new_connection(*p))
+            return false;
+
+        m_connections.insert(p);
+        return true;
     }
 
     void transfer::remove_peer(peer_connection* p)
@@ -264,8 +283,8 @@ namespace libed2k
 
         if (has_picker())
         {
-            int blocks_per_piece = 1;
-            int blocks_in_last_piece = 1;
+            int blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+            int blocks_in_last_piece = div_ceil(m_filesize % PIECE_SIZE, BLOCK_SIZE);
             m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
         }
 

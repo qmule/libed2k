@@ -11,9 +11,11 @@ namespace libed2k {
     class peer
     {
     public:
-        peer(const tcp::endpoint& ep):
-            endpoint(ep), connection(NULL)
+        peer(const tcp::endpoint& ep, bool conn):
+            endpoint(ep), connection(NULL), connectable(conn)
         {}
+
+        ip::address address() const { return endpoint.address(); }
 
         tcp::endpoint endpoint;
 
@@ -21,6 +23,10 @@ namespace libed2k {
         // will refer to a valid peer_connection
         peer_connection* connection;
 
+        // incoming peers (that don't advertize their listen port)
+        // will not be considered connectable. Peers that
+        // we have a listen port for will be assumed to be.
+        bool connectable;
     };
 
     class peer_entry
