@@ -26,7 +26,7 @@ namespace libed2k
     class auth_runner;
 
     /**
-      * this class provide authorization to is https server
+      * this class provide single authorization call to IS https server
       *
     */
     class is_https_auth : public boost::noncopyable, public boost::enable_shared_from_this<is_https_auth>
@@ -137,6 +137,11 @@ namespace libed2k
         std::string                 m_strResult; //XML result
     };
 
+    /**
+      * this class need for run several auth calls in dedicated thread without
+      * blocking main thread
+      *
+     */
     class auth_runner
     {
     public:
