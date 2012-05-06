@@ -76,6 +76,17 @@ namespace libed2k {
     extern int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst,
                             int nMaxSize);
 
+
+
+#ifdef WIN32
+    extern std::wstring convert_to_filesystem(const std::string& s);
+#else
+    inline std::string convert_to_filesystem(const std::string& s) { return s; }
+#endif
+
+    // convert string in UTF-8 or national codeset to UCS-2
+    extern std::wstring convert_to_wstring(std::string const& s);
+
 }
 
 #endif

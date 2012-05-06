@@ -19,7 +19,17 @@
 
 using namespace libed2k;
 using namespace libed2k::aux;
-namespace ip = boost::asio::ip;
+
+    // we work in UTF-16 on windows and UTF-8 on linux
+#ifdef _WIN32
+    typedef fs::wpath fpath;
+    typedef fs::wrecursive_directory_iterator fitr;
+    typedef std::wstring str_path;
+#else
+    typedef fs::path fpath;
+    typedef fs::recursive_directory_iterator fitr;
+    typedef std::string  str_path;
+#endif
 
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings):
@@ -41,7 +51,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_max_connections(200),
     m_last_second_tick(time_now()),
     m_timer(m_io_service),
-    m_reconnect_counter(-1)
+    m_reconnect_counter(-1),
+    m_fmon(boost::bind(&session_impl::post_transfer, this, _1))
 {
     DBG("*** create ed2k session ***");
 
@@ -194,7 +205,7 @@ void session_impl::operator()()
         m_io_service.run(ec);
         if (ec)
         {
-            std::cerr << ec.message() << "\n";
+            ERR("session_impl::operator()" << ec.message());
             std::string err = ec.message();
         }
         m_io_service.reset();
@@ -369,6 +380,12 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
     if (i != m_connections.end()) m_connections.erase(i);
 }
 
+void session_impl::post_transfer(add_transfer_params const& params)
+{
+    error_code ec;
+    m_io_service.post(boost::bind(&session_impl::add_transfer, this, params, ec));
+}
+
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {
@@ -406,6 +423,7 @@ transfer_handle session_impl::add_transfer(
     transfer_ptr->start();
 
     m_transfers.insert(std::make_pair(params.file_hash, transfer_ptr));
+    //m_transfers.
 
     return transfer_handle(transfer_ptr);
 }
@@ -479,6 +497,9 @@ void session_impl::abort()
     error_code ec;
     m_timer.cancel(ec);
 
+
+    // close file monitor
+    m_fmon.stop();
 
     // close the listen sockets
     for (std::list<listen_socket_t>::iterator i = m_listen_sockets.begin(),
@@ -848,4 +869,38 @@ void session_impl::server_stopped()
         m_reconnect_counter = (m_settings.server_reconnect_timeout); // we check it every 1 s
         DBG("session_impl::server_stopped(restart from " <<  m_reconnect_counter << ")");
     }
+}
+
+void session_impl::save_state() const
+{
+    DBG("session_impl::save_state()");
+}
+
+void session_impl::load_state()
+{
+    DBG("session_impl::load_state()");
+
+    // first add transfer from known.met if it exists
+    if (!m_settings.m_known_file.empty())
+    {
+        fs::ifstream fstream(convert_to_filesystem(m_settings.m_known_file));
+
+        if (fstream)
+        {
+            known_file_collection kfc;
+            libed2k::archive::ed2k_iarchive ifa(fstream);
+
+            try
+            {
+                ifa >> kfc;
+                // generate transfers
+            }
+            catch(libed2k_exception& e)
+            {
+                // hide parse errors
+            }
+        }
+
+    }
+
 }

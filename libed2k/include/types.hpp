@@ -62,6 +62,7 @@ namespace libed2k
     namespace bio = boost::iostreams;
     namespace time = boost::posix_time;
     typedef time::ptime ptime;
+
 }
 
 #endif

@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <libtorrent/utf8.hpp>
 #include "util.hpp"
 #include "zlib.h"
 #include "file.hpp"
@@ -66,5 +67,37 @@ namespace libed2k
         inflateEnd(&str);
         return (ret);
     }
+
+    std::wstring convert_to_wstring(std::string const& s)
+    {
+        std::wstring ret;
+        int result = libtorrent::utf8_wchar(s, ret);
+#ifndef _WIN32
+        return ret;
+#else
+        if (result == 0) return ret;
+
+        ret.clear();
+        const char* end = &s[0] + s.size();
+        for (const char* i = &s[0]; i < end;)
+        {
+            wchar_t c = '.';
+            int result = std::mbtowc(&c, i, end - i);
+            if (result > 0) i += result;
+            else ++i;
+            ret += c;
+        }
+        return ret;
+#endif
+    }
+
+#ifdef WIN32
+    std::wstring convert_to_filesystem(const std::string& s)
+    {
+        std::wstring wstr;
+        libtorrent::utf8_wchar(s, wstr);
+        return (wstr);
+    }
+#endif
 
 }
