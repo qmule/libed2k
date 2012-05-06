@@ -68,6 +68,12 @@ namespace libed2k {
         // about, not necessarily connected to.
         int max_peerlist_size;
 
+        //!< known.met file
+        std::string     m_known_file;
+
+        //!< users files and directories
+        std::vector<std::string >   m_fd_list;
+
         md4_hash client_hash;    // ed2k client hash, todo: remove
     };
 

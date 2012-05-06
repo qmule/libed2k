@@ -24,6 +24,7 @@
 #include "util.hpp"
 #include "alert.hpp"
 #include "packet_struct.hpp"
+#include "file.hpp"
 
 namespace libed2k {
 
@@ -41,6 +42,7 @@ namespace libed2k {
             enum { send_buffer_size = 128 };
 
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
+            typedef std::map<std::string, md4_hash> transfer_filename_map;
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
             session_impl(const fingerprint& id, const char* listen_interface,
@@ -70,7 +72,10 @@ namespace libed2k {
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }
 
+            void post_transfer(add_transfer_params const& );
             transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
+
+
             std::vector<transfer_handle> add_transfer_dir(
                 const fs::path& dir, error_code& ec);
 
@@ -139,6 +144,16 @@ namespace libed2k {
             // called when server stopped
             void server_stopped();
 
+            /**
+              * save transfers to disk
+             */
+            void save_state() const;
+
+            /**
+              * load transfers from disk
+             */
+            void load_state();
+
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
@@ -188,6 +203,12 @@ namespace libed2k {
             boost::intrusive_ptr<server_connection> m_server_connection;
 
             transfer_map m_transfers;
+
+            /**
+              * this map contains files what will moved to hashing
+              *
+             */
+            transfer_filename_map m_transfers_filenames;
 
             // the index of the torrent that will be offered to
             // connect to a peer next time on_tick is called.
@@ -247,6 +268,11 @@ namespace libed2k {
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
+
+            /**
+              * file hasher closed in self thread
+             */
+            file_monitor    m_fmon;
         };
     }
 }

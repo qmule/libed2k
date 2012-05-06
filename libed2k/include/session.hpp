@@ -53,6 +53,8 @@ namespace libed2k {
         bool seed_mode;
     };
 
+    typedef boost::function<void (const add_transfer_params&)> add_transfer_handler;
+
 
     // Once it's created, the session object will spawn the main thread
     // that will do all the work. The main thread will be idle as long 
