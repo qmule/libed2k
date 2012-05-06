@@ -1,8 +1,10 @@
 #include <map>
 #include <algorithm>
+#include <locale>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/bind.hpp>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
@@ -487,9 +489,7 @@ namespace libed2k
         std::string strExt = strFileName.substr(nPos);
 
         // simple to lower because we can't parse national extensions in file
-        std::transform(strExt.begin(), strExt.end(), strExt.begin(), ::tolower);
-
-
+        std::transform(strExt.begin(), strExt.end(), strExt.begin(), boost::bind(std::tolower<char>, _1, std::locale(""))); //std::bind2nd(std::ptr_fun(std::tolower<char>), loc));
         SED2KFileTypeMap::iterator it = ED2KFileTypesMap.find(strExt);
         if (it != ED2KFileTypesMap.end())
         {

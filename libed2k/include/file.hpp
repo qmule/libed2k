@@ -50,6 +50,13 @@ namespace libed2k
     #define FT_ED2K_MEDIA_BITRATE   "bitrate"   // <uint32>
     #define FT_ED2K_MEDIA_CODEC     "codec"     // <string>
 
+    const boost::uint8_t PR_VERYLOW     = 4;
+    const boost::uint8_t PR_LOW         = 0;
+    const boost::uint8_t PR_NORMAL      = 1;
+    const boost::uint8_t PR_HIGH        = 2;
+    const boost::uint8_t PR_VERYHIGH    = 3;
+    const boost::uint8_t PR_AUTO        = 5;
+    const boost::uint8_t PR_POWERSHARE  = 6;
 
     EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
     std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);

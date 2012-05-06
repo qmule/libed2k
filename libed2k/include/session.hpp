@@ -39,7 +39,11 @@ namespace libed2k {
             resume_data(0),
             storage_mode(storage_mode_sparse),
             duplicate_is_error(false),
-            seed_mode(false)
+            seed_mode(false),
+            m_accepted(0),
+            m_requested(0),
+            m_transferred(0),
+            m_priority(0)
         {}
 
         md4_hash file_hash;
@@ -51,6 +55,11 @@ namespace libed2k {
         storage_mode_t storage_mode;
         bool duplicate_is_error;
         bool seed_mode;
+
+        boost::uint32_t m_accepted;
+        boost::uint32_t m_requested;
+        boost::uint64_t m_transferred;
+        boost::uint8_t  m_priority;
     };
 
     typedef boost::function<void (const add_transfer_params&)> add_transfer_handler;

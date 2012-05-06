@@ -893,14 +893,94 @@ void session_impl::load_state()
             try
             {
                 ifa >> kfc;
+
                 // generate transfers
+                for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
+                {
+
+                    // first we need to check file exists on disk
+                    std::string strFilename = kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME);
+
+                    if (strFilename.empty())
+                    {
+                        continue;
+                    }
+
+                    fpath fp(convert_to_filesystem(strFilename));
+
+                    if (!fs::exists(fp) || !fs::is_regular_file(fp))
+                    {
+                        DBG("session_impl::load_state: file " << strFilename << " not exists");
+                        continue;
+                    }
+
+                    // generate transfer
+                    add_transfer_params atp;
+                    atp.file_path = strFilename;    // use UTF-8
+                    atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
+                    atp.hash_set.assign(kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.begin(),
+                            kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.end());
+
+                    for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
+                    {
+                        const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
+
+                        switch(p->getNameId())
+                        {
+                            case FT_FILENAME:
+                                // ignore this tag - already loaded
+                                break;
+                            case FT_FILESIZE:
+                                atp.file_size = p->asInt();
+                                break;
+                            case FT_ATTRANSFERRED:
+                                atp.m_transferred += p->asInt();
+                                break;
+                            case FT_ATTRANSFERREDHI:
+                                atp.m_transferred += (p->asInt() << 32);
+                                break;
+                            case FT_ATREQUESTED:
+                                atp.m_requested = p->asInt();
+                                break;
+                            case FT_ATACCEPTED:
+                                atp.m_accepted = p->asInt();
+                                break;
+                            case FT_ULPRIORITY:
+                                atp.m_priority = p->asInt();
+                                break;
+                            default:
+                                // ignore unused tags like
+                                // FT_PERMISSIONS
+                                // FT_AICH_HASH:
+                                // and all kad tags
+                                break;
+
+                        }
+                    }
+
+                    // add file to control map
+                    m_transfers_filenames.insert(std::make_pair(strFilename, atp.file_hash));
+                    // add transfer
+                    error_code ec;
+                    add_transfer(atp, ec);
+
+                    if (ec.value() == errors::session_is_closing)
+                    {
+                        DBG("session_impl::load_state: session was closed");
+                        break;
+                    }
+                }
             }
             catch(libed2k_exception& e)
             {
                 // hide parse errors
+                ERR("session_impl::load_state: parse error " << e.what());
             }
         }
 
     }
+
+    // scan directories and files from settings
+
 
 }
