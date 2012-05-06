@@ -62,10 +62,7 @@ namespace libed2k
 
         m_context.set_default_verify_paths();
 
-
-        m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
-        m_deadline.async_wait(boost::bind(&is_https_auth::check_deadline, shared_from_this()));
-        // resolve
+        // resolve - it can't be cancelled
         m_resolver.async_resolve(tcp::resolver::query(strHost, "https"), boost::bind(&is_https_auth::handle_resolve, shared_from_this(),
             boost::asio::placeholders::error,
             boost::asio::placeholders::iterator));
@@ -97,20 +94,23 @@ namespace libed2k
 
     void is_https_auth::handle_resolve(const boost::system::error_code& error, tcp::resolver::iterator itr)
     {
+        DBG("is_https_auth::handle_resolve: " << error);
+
         if (m_stopped) return;
 
-        if (!error)
+        if (error || itr == tcp::resolver::iterator())
         {
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
-            // prepare to connect
-            boost::asio::async_connect(m_ssec.lowest_layer(), itr, boost::bind(&is_https_auth::conn_condition<tcp::resolver::iterator>, shared_from_this(),
-                boost::asio::placeholders::error,
-                boost::asio::placeholders::iterator), boost::bind(&is_https_auth::handle_connect, shared_from_this(), boost::asio::placeholders::error));
-        }
-        else
-        {
+            DBG("resolve failed " << error);
             close(error);
+            return;
         }
+
+        m_target = *itr;
+
+        m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
+        m_deadline.async_wait(boost::bind(&is_https_auth::check_deadline, shared_from_this()));
+        m_ssec.lowest_layer().async_connect(m_target,
+                boost::bind(&is_https_auth::handle_connect, shared_from_this(), boost::asio::placeholders::error));
     }
 
     void is_https_auth::handle_connect(const boost::system::error_code& error)
@@ -292,11 +292,15 @@ namespace libed2k
 
     void auth_runner::stop()
     {
-        DBG("auth_runner::stop()");
+
         if (m_ptr.get())
         {
+            DBG("auth_runner::stop()");
             m_ptr->do_close();  //!< cancel all current operations
             m_thread->join();   //!< wait thread completes work
+
+            m_ptr.reset();
+            m_thread.reset();
             m_service.reset();  //!< reset service status - clear previous errors
         }
     }

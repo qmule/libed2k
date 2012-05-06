@@ -79,24 +79,17 @@ namespace libed2k
 
         void do_close();
 
+    private:
+
         /**
           * stop auth request
          */
         void close(const error_code& ec);
 
-    private:
         /**
           * async resolve callback
          */
         void handle_resolve(const boost::system::error_code& error, tcp::resolver::iterator itr);
-
-        template <typename Iterator>
-        Iterator conn_condition(const boost::system::error_code& ec,  Iterator next)
-        {
-            //if (ec) std::cout << "Error: " << ec.message() << std::endl;
-            //std::cout << "Trying: " << next->endpoint() << std::endl;
-            return next;
-        }
 
         /**
           *  async connect callback
@@ -135,6 +128,7 @@ namespace libed2k
         boost::asio::streambuf 		m_request;	//!< request buffer
         auth_callback               m_on_auth;
         std::string                 m_strResult; //XML result
+        tcp::endpoint               m_target;
     };
 
     /**
@@ -145,6 +139,8 @@ namespace libed2k
     class auth_runner
     {
     public:
+        friend class is_https_auth;
+
         void start(const std::string& strHost,
                             const std::string& strPage,
                             const std::string& strLogin,
