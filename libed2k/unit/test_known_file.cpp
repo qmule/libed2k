@@ -13,8 +13,46 @@
 #include "constants.hpp"
 #include "types.hpp"
 #include "file.hpp"
+#include "session_impl.hpp"
+#include "log.hpp"
+
+//#define HASH_TEST
+
+namespace libed2k
+{
+    namespace aux
+    {
+        class session_impl_test : public session_impl_base
+        {
+        public:
+            session_impl_test(const session_settings& settings);
+            virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
+            void stop();
+        };
+
+        session_impl_test::session_impl_test(const session_settings& settings) : session_impl_base(settings)
+        {
+            m_fmon.start();
+        }
+
+        transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)
+        {
+            return (transfer_handle(boost::weak_ptr<transfer>()));
+        }
+
+        void session_impl_test::stop()
+        {
+            DBG("fmon stop");
+            m_fmon.stop();
+            DBG("fmon stop complete");
+        }
+
+
+    }
+}
 
 BOOST_AUTO_TEST_SUITE(test_known_files)
+
 
 void generate_file(size_t nSize, const char* pchFilename)
 {
@@ -39,12 +77,14 @@ struct test_files
                 m_file4("./test4.bin"),
                 m_file5("./test5.bin")
     {
+#ifdef LONG_TIME_TESTS
         // generate test files
         generate_file(100, "./test1.bin");
         generate_file(libed2k::PIECE_SIZE, "./test2.bin");
         generate_file(libed2k::PIECE_SIZE+1, "./test3.bin");
         generate_file(libed2k::PIECE_SIZE*4, "./test4.bin");
         generate_file(libed2k::PIECE_SIZE+4566, "./test5.bin");
+#endif
     }
 
     ~test_files()
@@ -82,10 +122,9 @@ struct test_files
     libed2k::known_file m_file5;
 };
 
-
-
 BOOST_FIXTURE_TEST_CASE(test_file_calculate, test_files)
 {
+#ifdef LONG_TIME_TESTS
     m_file1.init();
     BOOST_CHECK_EQUAL(m_file1.getPiecesCount(), 1);
     BOOST_CHECK_EQUAL(m_file1.getFileHash().toString(), std::string("1AA8AFE3018B38D9B4D880D0683CCEB5"));
@@ -106,6 +145,19 @@ BOOST_FIXTURE_TEST_CASE(test_file_calculate, test_files)
     m_file5.init();
     BOOST_CHECK_EQUAL(m_file5.getPiecesCount(), 2);
     BOOST_CHECK_EQUAL(m_file5.getFileHash().toString(), std::string("9C7F988154D2C9AF16D92661756CF6B2"));
+#endif
+}
+
+BOOST_AUTO_TEST_CASE(test_session)
+{
+    LOGGER_INIT()
+    libed2k::session_settings s;
+    s.m_known_file = "./known.met";
+    s.m_fd_list.push_back(std::make_pair("/home/apavlov/mule", true));
+    s.m_fd_list.push_back(std::make_pair("/home/apavlov/", false));
+    libed2k::aux::session_impl_test st(s);
+    st.load_state();
+    st.stop();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -6,6 +6,8 @@ namespace libed2k {
     class session_settings
     {
     public:
+        typedef std::vector<std::pair<std::string, bool> >  fd_list;
+
         session_settings():
             server_timeout(120),
             peer_timeout(120),
@@ -72,7 +74,8 @@ namespace libed2k {
         std::string     m_known_file;
 
         //!< users files and directories
-        std::vector<std::string >   m_fd_list;
+        //!< second parameter true for recursive search and false otherwise
+        fd_list m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
     };

@@ -3,6 +3,7 @@
 #include <sys/resource.h>
 #endif
 
+#include <algorithm>
 #include <libtorrent/peer_connection.hpp>
 #include <libtorrent/socket.hpp>
 
@@ -16,27 +17,215 @@
 #include "log.hpp"
 #include "alert_types.hpp"
 #include "file.hpp"
+#include "util.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
 
-    // we work in UTF-16 on windows and UTF-8 on linux
-#ifdef _WIN32
-    typedef fs::wpath fpath;
-    typedef fs::wrecursive_directory_iterator fitr;
-    typedef std::wstring str_path;
-#else
-    typedef fs::path fpath;
-    typedef fs::recursive_directory_iterator fitr;
-    typedef std::string  str_path;
-#endif
+session_impl_base::session_impl_base(const session_settings& settings) :
+        m_io_service(),
+        m_settings(settings),
+        m_fmon(boost::bind(&session_impl_base::post_transfer, this, _1))
+{
+}
+
+session_impl_base::~session_impl_base()
+{
+
+}
+
+void session_impl_base::post_transfer(add_transfer_params const& params)
+{
+    error_code ec;
+    m_io_service.post(boost::bind(&session_impl_base::add_transfer, this, params, ec));
+}
+
+void session_impl_base::save_state() const
+{
+    DBG("session_impl::save_state()");
+}
+
+// resolve reference to reference and overloading problems
+bool dref_is_regular_file(fpath p)
+{
+    return fs::is_regular_file(p);
+}
+
+void session_impl_base::load_state()
+{
+    DBG("session_impl_base::load_state()");
+
+
+    std::map<std::string, size_t> known_items;  //!< temporary map for known file dictionary
+    known_file_collection kfc;                  //!< structured data buffer
+    error_code  ec;                             //!< checking error code
+
+    if (!m_settings.m_known_file.empty())
+    {
+        fs::ifstream fstream(convert_to_filesystem(m_settings.m_known_file));
+
+        if (fstream)
+        {
+
+            libed2k::archive::ed2k_iarchive ifa(fstream);
+
+            try
+            {
+                ifa >> kfc;
+
+                // generate transfers
+                for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
+                {
+
+                    // first we need to check file exists on disk
+                    std::string strFilename = kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME);
+
+                    if (strFilename.empty())
+                    {
+                        continue;
+                    }
+
+                    known_items.insert(std::make_pair(strFilename, n));
+                }
+            }
+            catch(libed2k_exception& e)
+            {
+                // hide parse errors
+                ERR("session_impl_base::load_state: parse error " << e.what());
+            }
+        }
+
+    }
+
+    // scan directories and files from settings
+    for (session_settings::fd_list::iterator itr = m_settings.m_fd_list.begin(); itr != m_settings.m_fd_list.end(); ++itr)
+    {
+        fpath p(convert_to_filesystem(itr->first));
+        std::vector<fpath> v;
+
+        try
+        {
+            if (fs::exists(p) && fs::is_directory(p))
+            {
+                if (itr->second)
+                {
+                    std::copy(r_dir_itr(p), r_dir_itr(), std::back_inserter(v));
+                }
+                else
+                {
+                    std::copy(dir_itr(p), dir_itr(), std::back_inserter(v));
+                }
+
+                v.erase(std::remove_if(v.begin(), v.end(), std::not1(std::ptr_fun(dref_is_regular_file))), v.end());
+            }
+            else
+            {
+                v.push_back(p);
+            }
+        }
+        catch(fs::filesystem_error& e)
+        {
+            ERR("filesystem error: " << e.what());
+        }
+
+        for (std::vector<fpath>::iterator itr = v.begin(); itr != v.end(); ++itr)
+        {
+
+            std::map<std::string, size_t>::iterator m = known_items.find(convert_from_filesystem(itr->leaf()));
+
+            if (m != known_items.end())
+            {
+                size_t n = m->second;
+
+                // ok, file exists in local catalog - compare times
+                if (fs::last_write_time(*itr) != kfc.m_known_file_list.m_collection[n].m_nLastChanged)
+                {
+                    DBG("last write time mismatch");
+                    break;
+                }
+
+                DBG("known file: " << convert_from_filesystem(itr->leaf()));
+
+                // generate transfer
+                add_transfer_params atp;
+
+                atp.file_path = m->first;    // use UTF-8
+                atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
+                atp.hash_set.assign(kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.begin(),
+                        kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.end());
+
+                for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
+                {
+                    const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
+
+                    switch(p->getNameId())
+                    {
+                        case FT_FILENAME:
+                            // ignore this tag - already loaded, second tag we don't use
+                            break;
+                        case FT_FILESIZE:
+                            atp.file_size = p->asInt();
+                            break;
+                        case FT_ATTRANSFERRED:
+                            atp.m_transferred += p->asInt();
+                            break;
+                        case FT_ATTRANSFERREDHI:
+                            atp.m_transferred += (p->asInt() << 32);
+                            break;
+                        case FT_ATREQUESTED:
+                            atp.m_requested = p->asInt();
+                            break;
+                        case FT_ATACCEPTED:
+                            atp.m_accepted = p->asInt();
+                            break;
+                        case FT_ULPRIORITY:
+                            atp.m_priority = p->asInt();
+                            break;
+                        default:
+                            // ignore unused tags like
+                            // FT_PERMISSIONS
+                            // FT_AICH_HASH:
+                            // and all kad tags
+                            break;
+
+                    }
+                }
+
+                // add file to control map
+                m_transfers_filenames.insert(std::make_pair(m->first, atp.file_hash));
+                // add transfer
+                add_transfer(atp, ec);
+
+                if (ec.value() == errors::session_is_closing)
+                {
+                    DBG("session_impl_base::load_state: session was closed");
+                    break;
+                }
+
+                continue;
+            }
+
+            //ok, need hash this file
+            DBG("hash file: " << convert_from_filesystem(itr->leaf()));
+            m_fmon.m_order.push(*itr);
+        }
+
+        if (ec.value() == errors::session_is_closing)
+        {
+            DBG("session is closed, exit");
+            break;
+        }
+    }
+
+
+}
+
 
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
-                           const session_settings& settings):
+                           const session_settings& settings): session_impl_base(settings),
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
-    m_io_service(),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
                   m_filepool, BLOCK_SIZE),
@@ -44,15 +233,13 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_server_connection(new server_connection(*this)),
     m_transfers(),
     m_next_connect_transfer(m_transfers),
-    m_settings(settings),
     m_client_id(0),
     m_abort(false),
     m_paused(false),
     m_max_connections(200),
     m_last_second_tick(time_now()),
     m_timer(m_io_service),
-    m_reconnect_counter(-1),
-    m_fmon(boost::bind(&session_impl::post_transfer, this, _1))
+    m_reconnect_counter(-1)
 {
     DBG("*** create ed2k session ***");
 
@@ -378,12 +565,6 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
         std::find_if(m_connections.begin(), m_connections.end(),
                      boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p);
     if (i != m_connections.end()) m_connections.erase(i);
-}
-
-void session_impl::post_transfer(add_transfer_params const& params)
-{
-    error_code ec;
-    m_io_service.post(boost::bind(&session_impl::add_transfer, this, params, ec));
 }
 
 transfer_handle session_impl::add_transfer(
@@ -869,118 +1050,4 @@ void session_impl::server_stopped()
         m_reconnect_counter = (m_settings.server_reconnect_timeout); // we check it every 1 s
         DBG("session_impl::server_stopped(restart from " <<  m_reconnect_counter << ")");
     }
-}
-
-void session_impl::save_state() const
-{
-    DBG("session_impl::save_state()");
-}
-
-void session_impl::load_state()
-{
-    DBG("session_impl::load_state()");
-
-    // first add transfer from known.met if it exists
-    if (!m_settings.m_known_file.empty())
-    {
-        fs::ifstream fstream(convert_to_filesystem(m_settings.m_known_file));
-
-        if (fstream)
-        {
-            known_file_collection kfc;
-            libed2k::archive::ed2k_iarchive ifa(fstream);
-
-            try
-            {
-                ifa >> kfc;
-
-                // generate transfers
-                for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
-                {
-
-                    // first we need to check file exists on disk
-                    std::string strFilename = kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME);
-
-                    if (strFilename.empty())
-                    {
-                        continue;
-                    }
-
-                    fpath fp(convert_to_filesystem(strFilename));
-
-                    if (!fs::exists(fp) || !fs::is_regular_file(fp))
-                    {
-                        DBG("session_impl::load_state: file " << strFilename << " not exists");
-                        continue;
-                    }
-
-                    // generate transfer
-                    add_transfer_params atp;
-                    atp.file_path = strFilename;    // use UTF-8
-                    atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
-                    atp.hash_set.assign(kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.begin(),
-                            kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.end());
-
-                    for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
-                    {
-                        const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
-
-                        switch(p->getNameId())
-                        {
-                            case FT_FILENAME:
-                                // ignore this tag - already loaded
-                                break;
-                            case FT_FILESIZE:
-                                atp.file_size = p->asInt();
-                                break;
-                            case FT_ATTRANSFERRED:
-                                atp.m_transferred += p->asInt();
-                                break;
-                            case FT_ATTRANSFERREDHI:
-                                atp.m_transferred += (p->asInt() << 32);
-                                break;
-                            case FT_ATREQUESTED:
-                                atp.m_requested = p->asInt();
-                                break;
-                            case FT_ATACCEPTED:
-                                atp.m_accepted = p->asInt();
-                                break;
-                            case FT_ULPRIORITY:
-                                atp.m_priority = p->asInt();
-                                break;
-                            default:
-                                // ignore unused tags like
-                                // FT_PERMISSIONS
-                                // FT_AICH_HASH:
-                                // and all kad tags
-                                break;
-
-                        }
-                    }
-
-                    // add file to control map
-                    m_transfers_filenames.insert(std::make_pair(strFilename, atp.file_hash));
-                    // add transfer
-                    error_code ec;
-                    add_transfer(atp, ec);
-
-                    if (ec.value() == errors::session_is_closing)
-                    {
-                        DBG("session_impl::load_state: session was closed");
-                        break;
-                    }
-                }
-            }
-            catch(libed2k_exception& e)
-            {
-                // hide parse errors
-                ERR("session_impl::load_state: parse error " << e.what());
-            }
-        }
-
-    }
-
-    // scan directories and files from settings
-
-
 }

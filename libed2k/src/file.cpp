@@ -729,12 +729,11 @@ namespace libed2k
         {
             while(1)
             {
-                std::string strFilename = m_order.popWait();
+                fpath p = m_order.popWait();
 
                 try
                 {
                     add_transfer_params atp;
-                    fs::path p(strFilename);
 
                     if (!fs::exists(p) || !fs::is_regular_file(p))
                     {
@@ -757,7 +756,7 @@ namespace libed2k
 
                     bio::mapped_file_params mf_param;
                     mf_param.flags  = bio::mapped_file_base::readonly;
-                    mf_param.path   = strFilename;
+                    mf_param.path   = p.string();
                     mf_param.length = 0;
 
 

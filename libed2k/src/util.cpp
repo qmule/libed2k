@@ -98,6 +98,13 @@ namespace libed2k
         libtorrent::utf8_wchar(s, wstr);
         return (wstr);
     }
+
+    std::string convert_from_filesystem(const std::wstring& w)
+    {
+        std::string str;
+        libtorrent::wchar_utf8(w, str);
+        return (str);
+    }
 #endif
 
 }
