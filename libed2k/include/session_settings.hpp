@@ -10,6 +10,7 @@ namespace libed2k {
             server_timeout(120),
             peer_timeout(120),
             peer_connect_timeout(7),
+            allow_multiple_connections_per_ip(false),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
             server_port(4661),
@@ -17,7 +18,8 @@ namespace libed2k {
             client_name("http://www.aMule.org"),
             server_keep_alive_timeout(20),
             server_ip(0),
-            server_reconnect_timeout(5)
+            server_reconnect_timeout(5),
+            max_peerlist_size(4000)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -40,6 +42,10 @@ namespace libed2k {
         // connection is dropped. The time is specified in seconds.
         int peer_connect_timeout;
 
+        // false to not allow multiple connections from the same
+        // IP address. true will allow it.
+        bool allow_multiple_connections_per_ip;
+
         // sets the socket send and receive buffer sizes
         // 0 means OS default
         int recv_socket_buffer_size;
@@ -56,6 +62,17 @@ namespace libed2k {
         int             server_keep_alive_timeout;
         unsigned long int server_ip; // todo: remove
         int             server_reconnect_timeout;   //!< reconnect to server after fail, -1 - do nothing
+
+        // the max number of peers in the peer list
+        // per transfer. This is the peers we know
+        // about, not necessarily connected to.
+        int max_peerlist_size;
+
+        //!< known.met file
+        std::string     m_known_file;
+
+        //!< users files and directories
+        std::vector<std::string >   m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
     };

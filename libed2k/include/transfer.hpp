@@ -41,6 +41,8 @@ namespace libed2k {
                  int seq, add_transfer_params const& p);
         ~transfer();
 
+        const md4_hash& hash() const { return m_filehash; }
+
         void start();
         void abort();
 
@@ -49,9 +51,12 @@ namespace libed2k {
         bool want_more_peers() const;
         void request_peers();
         void add_peer(const tcp::endpoint& peer);
-
         bool connect_to_peer(peer* peerinfo);
-
+        // used by peer_connection to attach itself to a torrent
+        // since incoming connections don't know what torrent
+        // they're a part of until they have received an info_hash.
+        // false means attach failed
+        bool attach_peer(peer_connection* peer);
         // this will remove the peer and make sure all
         // the pieces it had have their reference counter
         // decreased in the piece_picker
@@ -78,6 +83,8 @@ namespace libed2k {
             if (is_seed()) return true;
             return (num_pieces() - m_picker->num_have() == 0);
         }
+
+        bool is_aborted() const { return m_abort; }
 
         void set_sequential_download(bool sd);
         bool is_sequential_download() const { return m_sequential_download; }
@@ -128,6 +135,19 @@ namespace libed2k {
             return has_picker() ? m_picker->num_have() : num_pieces();
         }
 
+        void peer_has(int index)
+        {
+            if (m_picker.get())
+            {
+                assert(!is_seed());
+                m_picker->inc_refcount(index);
+            }
+            else
+            {
+                assert(is_seed());
+            }
+        }
+
         int num_pieces() const;
 
         // piece_passed is called when a piece passes the hash check
@@ -146,6 +166,10 @@ namespace libed2k {
         void restore_piece_state(int index);
 
         piece_manager& filesystem() { return *m_storage; }
+
+        // unless this returns true, new connections must wait
+        // with their initialization.
+        bool ready_for_connections() const { return true; }
 
         // --------------------------------------------
         // SERVER MANAGEMENT

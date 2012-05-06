@@ -46,11 +46,14 @@ namespace libed2k {
         fs::path file_path;
         size_t file_size;
         std::vector<md4_hash> hash_set;
+        std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
         bool seed_mode;
     };
+
+    typedef boost::function<void (const add_transfer_params&)> add_transfer_handler;
 
 
     // Once it's created, the session object will spawn the main thread

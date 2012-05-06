@@ -23,7 +23,10 @@ int main(int argc, char* argv[])
         ("size,S", po::value<size_t>(), "requested file size")
         ("port,p", po::value<int>(),
          "port for incoming peer connections (default 4662)")
-        ("help,h", "produce help message");
+        ("help,h", "produce help message")
+        // temporary options, should be removed
+        ("peer_ip,i", po::value<std::string>(), "peer ip address")
+        ("peer_port,P", po::value<int>(), "peer port");
 
     po::variables_map vm;
     try {
@@ -61,6 +64,14 @@ int main(int argc, char* argv[])
             params.file_path = dir / vm["file"].as<fs::path>();
             params.file_size = vm["size"].as<size_t>();
             params.seed_mode = false;
+
+            if (vm.count("peer_ip") && vm.count("peer_port"))
+            {
+                params.peer_list.push_back(
+                    libed2k::peer_entry(vm["peer_ip"].as<std::string>(),
+                                        vm["peer_port"].as<int>()));
+            }
+
             ses.add_transfer(params);
         }
     }

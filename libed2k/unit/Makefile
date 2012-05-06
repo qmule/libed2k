@@ -13,6 +13,7 @@ all: $(BIN)
 
 clean:
 		rm -f $(OBJF)
+		rm -f $(BIN)
 
 include ../Makefile.conf
 
