@@ -11,8 +11,6 @@
 #include "md4_hash.hpp"
 #include "types.hpp"
 #include "file.hpp"
-#include "session.hpp"
-#include "session_impl.hpp"
 
 namespace libed2k
 {
@@ -703,14 +701,14 @@ namespace libed2k
         }
     }
 
-    file_monitor::file_monitor(aux::session_impl& ses) : m_bCancel(false), m_ses(ses)
+    file_monitor::file_monitor(add_transfer_handler handler) : m_bCancel(false), m_add_transfer(handler)
     {
 
     }
 
     void file_monitor::start()
     {
-        m_thread = boost::shared_ptr<boost::thread>(new boost::thread(boost::bind(&file_monitor::do_work, this)));
+        m_thread.reset(new boost::thread(boost::ref(*this)));
     }
 
     void file_monitor::stop()
@@ -725,13 +723,12 @@ namespace libed2k
         }
     }
 
-    void file_monitor::do_work()
+    void file_monitor::operator()()
     {
         try
         {
             while(1)
             {
-                error_code ec;
                 std::string strFilename = m_order.popWait();
 
                 try
@@ -854,20 +851,11 @@ namespace libed2k
                         atp.file_hash = atp.hash_set[0];
                     }
 
-
-                    boost::mutex::scoped_lock l(m_ses.m_mutex);
-
-                    m_ses.add_transfer(atp, ec);
+                    m_add_transfer(atp);
                 }
                 catch(...) // hide all possible exceptions
                 {
                     ERR("Error on hashing file");
-                }
-
-                // exit when session closing
-                if (ec.value() == errors::session_is_closing)
-                {
-                    break;
                 }
             }
         }

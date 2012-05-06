@@ -12,6 +12,7 @@
 #include "error_code.hpp"
 #include "md4_hash.hpp"
 #include "packet_struct.hpp"
+#include "session.hpp"
 
 namespace libed2k
 {
@@ -221,7 +222,7 @@ namespace libed2k
     class file_monitor
     {
     public:
-        file_monitor(aux::session_impl& ses);
+        file_monitor(add_transfer_handler handler);
 
         /**
           * start monitor thread
@@ -233,15 +234,17 @@ namespace libed2k
          */
         void stop();
 
+        void operator()();
+
         monitor_order<std::string>  m_order;
+
     private:
         volatile bool           m_bCancel;
-        aux::session_impl&      m_ses;
+        add_transfer_handler    m_add_transfer;
         boost::shared_ptr<boost::thread> m_thread;
         boost::mutex m_mutex;
-
-        void do_work();
     };
+
 }
 
 #endif //__FILE__HPP__
