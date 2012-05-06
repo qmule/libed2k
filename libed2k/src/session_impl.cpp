@@ -205,7 +205,7 @@ void session_impl::operator()()
         m_io_service.run(ec);
         if (ec)
         {
-            std::cerr << ec.message() << "\n";
+            ERR("session_impl::operator()" << ec.message());
             std::string err = ec.message();
         }
         m_io_service.reset();
