@@ -22,12 +22,14 @@ namespace libed2k
         m_filehash(p.file_hash),
         m_filepath(p.file_path),
         m_filesize(p.file_size),
+        m_num_verified(0),
         m_storage_mode(p.storage_mode),
         m_seed_mode(p.seed_mode),
         m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
     {
-        // TODO: init here
+        if (m_seed_mode)
+            m_verified.resize(num_pieces(), false);
     }
 
     transfer::~transfer()

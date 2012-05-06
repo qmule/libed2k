@@ -887,7 +887,6 @@ else\
     {
         md4_hash m_hFile;
         bitfield m_status;
-        //container_holder<boost::uint16_t, std::vector<unsigned char> > m_vcStatus;
 
         void serialize(archive::ed2k_iarchive& ar)
         {
@@ -954,6 +953,14 @@ else\
     };
 
     struct client_accept_upload
+    {
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+        }
+    };
+
+    struct client_out_parts
     {
         template<typename Archive>
         void serialize(Archive& ar)
@@ -1039,6 +1046,17 @@ else\
     typedef client_compressed_part<boost::uint32_t> client_compressed_part_32;
     typedef client_compressed_part<boost::uint64_t> client_compressed_part_64;
 
+    struct client_end_download
+    {
+        md4_hash m_hFile;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hFile;
+        }
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
     };
@@ -1078,6 +1096,9 @@ else\
     template<> struct packet_type<client_accept_upload> {
         static const proto_type value = OP_ACCEPTUPLOADREQ;
     };
+    template<> struct packet_type<client_out_parts> {
+        static const proto_type value = OP_OUTOFPARTREQS;
+    };
     template<> struct packet_type<client_cancel_transfer> {
         static const proto_type value = OP_CANCELTRANSFER;
     };
@@ -1098,6 +1119,9 @@ else\
     };
     template<> struct packet_type<client_compressed_part_64> {
         static const proto_type value = OP_COMPRESSEDPART_I64;
+    };
+    template<> struct packet_type<client_end_download> {
+        static const proto_type value = OP_END_OF_DOWNLOAD;
     };
 }
 

@@ -147,8 +147,9 @@ namespace libed2k
         void write_hello();
         void write_hello_answer();
         void write_file_request(const md4_hash& file_hash);
-        void write_filestatus_request(const md4_hash& file_hash);
+        void write_file_answer(const md4_hash& file_hash, const std::string& filename);
         void write_no_file(const md4_hash& file_hash);
+        void write_filestatus_request(const md4_hash& file_hash);
         void write_file_status(const md4_hash& file_hash, const bitfield& status);
         void write_hashset_request(const md4_hash& file_hash);
         void write_hashset_answer(const known_file& file);
@@ -156,6 +157,7 @@ namespace libed2k
         void write_queue_ranking(boost::uint16_t rank);
         void write_accept_upload();
         void write_cancel_transfer();
+
         void write_have(int index);
         void write_piece(const peer_request& r, disk_buffer_holder& buffer);
 
@@ -163,6 +165,17 @@ namespace libed2k
         void on_hello(const error_code& error);
         void on_hello_answer(const error_code& error);
         void on_file_request(const error_code& error);
+        void on_file_answer(const error_code& error);
+        void on_no_file(const error_code& error);
+        void on_filestatus_request(const error_code& error);
+        void on_file_status(const error_code& error);
+        void on_hashset_request(const error_code& error);
+        void on_hashset_answer(const error_code& error);
+        void on_start_upload(const error_code& error);
+        void on_queue_ranking(const error_code& error);
+        void on_accept_upload(const error_code& error);
+        void on_cancel_transfer(const error_code& error);
+
         void on_piece(int received);
 
         bool packet_finished() const { return m_packet_size <= m_recv_pos; }

@@ -171,6 +171,15 @@ namespace libed2k {
         // with their initialization.
         bool ready_for_connections() const { return true; }
 
+        const bitfield& verified() const { return m_verified; }
+        bool all_verified() const { return m_num_verified == num_pieces(); }
+        bool verified_piece(int piece) const { return m_verified.get_bit(piece); }
+        void verified(int piece)
+        {
+            ++m_num_verified;
+            m_verified.set_bit(piece);
+        }
+
         // --------------------------------------------
         // SERVER MANAGEMENT
 
@@ -220,6 +229,14 @@ namespace libed2k {
         fs::path m_filepath;
         size_t m_filesize;
         boost::uint32_t m_file_type;
+
+        // each bit represents a piece. a set bit means
+        // the piece has had its hash verified. This
+        // is only used in seed mode (when m_seed_mode
+        // is true)
+        bitfield m_verified;
+        // m_num_verified = m_verified.count()
+        int m_num_verified;
 
         storage_mode_t m_storage_mode;
 
