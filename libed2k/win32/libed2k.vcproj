@@ -202,6 +202,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\search.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\server_connection.cpp"
 				>
 			</File>
@@ -252,6 +256,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\file.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\fingerprint.hpp"
 				>
 			</File>
@@ -292,6 +300,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\search.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\server_connection.hpp"
 				>
 			</File>
@@ -317,6 +329,10 @@
 			</File>
 			<File
 				RelativePath="..\include\types.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\util.hpp"
 				>
 			</File>
 		</Filter>

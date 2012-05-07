@@ -51,10 +51,10 @@ namespace libed2k
     #define FT_ED2K_MEDIA_CODEC     "codec"     // <string>
 
 
-    EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
-    std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
-    EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
-    std::string GetFileTypeByName(const std::string& strFileName);
+    extern EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
+    extern std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
+    extern EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
+    extern std::string GetFileTypeByName(const std::string& strFileName);
 
     const unsigned int PIECE_COUNT_ALLOC = 20;
 
