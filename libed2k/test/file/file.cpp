@@ -1,11 +1,14 @@
 #include <iostream>
 #include <fstream>
+#include <boost/filesystem.hpp>
+#include <libtorrent/utf8.hpp>
 
 #include "constants.hpp"
 #include "packet_struct.hpp"
 #include "log.hpp"
 #include "file.hpp"
 #include "archive.hpp"
+#include "types.hpp"
 
 using namespace libed2k;
 
@@ -18,6 +21,22 @@ int main(int argc, char* argv[])
         ERR("Set filename in first parameter");
         return 1;
     }
+
+    std::wstring strPath = L"C:/work";
+
+    fs::wpath wp(strPath);
+
+    if ( fs::exists( wp ) )
+    {
+        fs::wrecursive_directory_iterator end_itr; // default construction yields past-the-end
+        for ( fs::wrecursive_directory_iterator itr( wp );  itr != end_itr;  ++itr )
+        {            
+            std::cout << "x\n";
+            std::string strUTF8;
+            libtorrent::wchar_utf8(itr->filename(), strUTF8);
+            std::cout << strUTF8 << std::endl;
+        }
+    }    
 
     std::ifstream fs(argv[1], std::ios::binary);
 

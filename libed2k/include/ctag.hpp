@@ -605,6 +605,8 @@ public:
     size_t count() const;
     void clear();
     const boost::shared_ptr<base_tag> operator[](size_t n) const;
+    tg_nid_type getTagNameId(size_t n) const;
+    tg_type     getTagType(size_t n) const;
     const boost::shared_ptr<base_tag> getTagByNameId(tg_nid_type nId) const;
     
     /**
@@ -648,12 +650,22 @@ void tag_list<size_type>::add_tag(boost::shared_ptr<base_tag> ptag)
 template<typename size_type>
 const boost::shared_ptr<base_tag> tag_list<size_type>::operator[](size_t n) const
 {
-    if (n >= m_container.size())
-    {
-        throw libed2k_exception(errors::tag_list_index_error);
-    }
-
+    BOOST_ASSERT(n < m_container.size());
     return (m_container[n]);
+}
+
+template<typename size_type>
+tg_nid_type tag_list<size_type>::getTagNameId(size_t n) const
+{
+    BOOST_ASSERT(n < m_container.size());
+    return m_container[n]->getNameId();
+}
+
+template<typename size_type>
+tg_type tag_list<size_type>::getTagType(size_t n) const
+{
+    BOOST_ASSERT(n < m_container.size());
+    return m_container[n]->getType();
 }
 
 template<typename size_type>

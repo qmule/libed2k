@@ -1,8 +1,10 @@
 #include <map>
 #include <algorithm>
+#include <locale>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/bind.hpp>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
@@ -487,9 +489,7 @@ namespace libed2k
         std::string strExt = strFileName.substr(nPos);
 
         // simple to lower because we can't parse national extensions in file
-        std::transform(strExt.begin(), strExt.end(), strExt.begin(), ::tolower);
-
-
+        std::transform(strExt.begin(), strExt.end(), strExt.begin(), boost::bind(std::tolower<char>, _1, std::locale(""))); //std::bind2nd(std::ptr_fun(std::tolower<char>), loc));
         SED2KFileTypeMap::iterator it = ED2KFileTypesMap.find(strExt);
         if (it != ED2KFileTypesMap.end())
         {
@@ -729,12 +729,11 @@ namespace libed2k
         {
             while(1)
             {
-                std::string strFilename = m_order.popWait();
+                fs::path p = m_order.popWait();
 
                 try
                 {
                     add_transfer_params atp;
-                    fs::path p(strFilename);
 
                     if (!fs::exists(p) || !fs::is_regular_file(p))
                     {
@@ -754,7 +753,7 @@ namespace libed2k
 
                     bio::mapped_file_params mf_param;
                     mf_param.flags  = bio::mapped_file_base::readonly;
-                    mf_param.path   = strFilename;
+                    mf_param.path   = p.string();
                     mf_param.length = 0;
 
 

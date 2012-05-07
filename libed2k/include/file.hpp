@@ -50,11 +50,18 @@ namespace libed2k
     #define FT_ED2K_MEDIA_BITRATE   "bitrate"   // <uint32>
     #define FT_ED2K_MEDIA_CODEC     "codec"     // <string>
 
+    const boost::uint8_t PR_VERYLOW     = 4;
+    const boost::uint8_t PR_LOW         = 0;
+    const boost::uint8_t PR_NORMAL      = 1;
+    const boost::uint8_t PR_HIGH        = 2;
+    const boost::uint8_t PR_VERYHIGH    = 3;
+    const boost::uint8_t PR_AUTO        = 5;
+    const boost::uint8_t PR_POWERSHARE  = 6;
 
-    EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
-    std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
-    EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
-    std::string GetFileTypeByName(const std::string& strFileName);
+    extern EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
+    extern std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
+    extern EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
+    extern std::string GetFileTypeByName(const std::string& strFileName);
 
     const unsigned int PIECE_COUNT_ALLOC = 20;
 
@@ -186,7 +193,7 @@ namespace libed2k
         void cancel()
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
-            std::queue<std::string> empty;
+            std::queue<fs::path> empty;
             std::swap(m_queue, empty );
             m_signal.notify_one();
         }
@@ -236,7 +243,7 @@ namespace libed2k
 
         void operator()();
 
-        monitor_order<std::string>  m_order;
+        monitor_order<fs::path>  m_order;
 
     private:
         volatile bool           m_bCancel;

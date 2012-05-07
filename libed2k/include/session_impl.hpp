@@ -33,16 +33,68 @@ namespace libed2k {
     class transfer;
     class add_transfer_params;
 
-    namespace aux {
+    namespace aux
+    {
+        /**
+          * class used for testing
+         */
+        class session_impl_base : boost::noncopyable
+        {
+        public:
+            typedef std::map<std::string, md4_hash> transfer_filename_map;
 
-        class session_impl: boost::noncopyable
+            session_impl_base(const session_settings& settings);
+            virtual ~session_impl_base();
+
+
+            const session_settings& settings() const { return m_settings; }
+            session_settings& settings() { return m_settings; }
+
+            /**
+              *  add transfer from another thread
+             */
+            virtual void post_transfer(add_transfer_params const& );
+
+            virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
+
+            /**
+              * save transfers to disk
+             */
+            void save_state() const;
+
+            /**
+              * load transfers from disk
+             */
+            void load_state();
+
+            // this is where all active sockets are stored.
+            // the selector can sleep while there's no activity on
+            // them
+            mutable boost::asio::io_service m_io_service;
+
+            // the settings for the client
+            session_settings m_settings;
+
+            /**
+              * file hasher closed in self thread
+             */
+            file_monitor    m_fmon;
+
+            /**
+              * this map contains files what will moved to hashing
+              *
+             */
+            transfer_filename_map m_transfers_filenames;
+        };
+
+
+        class session_impl: public session_impl_base
         {
         public:
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
 
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
-            typedef std::map<std::string, md4_hash> transfer_filename_map;
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
             session_impl(const fingerprint& id, const char* listen_interface,
@@ -72,8 +124,10 @@ namespace libed2k {
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }
 
-            void post_transfer(add_transfer_params const& );
-            transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
+            /**
+              * add transfer from current thread directly
+             */
+            virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
 
 
             std::vector<transfer_handle> add_transfer_dir(
@@ -87,9 +141,6 @@ namespace libed2k {
 
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
-
-            const session_settings& settings() const { return m_settings; }
-            session_settings& settings() { return m_settings; }
 
             void on_disk_queue();
 
@@ -144,16 +195,6 @@ namespace libed2k {
             // called when server stopped
             void server_stopped();
 
-            /**
-              * save transfers to disk
-             */
-            void save_state() const;
-
-            /**
-              * load transfers from disk
-             */
-            void load_state();
-
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
@@ -174,11 +215,6 @@ namespace libed2k {
             // since they will still have references to it
             // when they are destructed.
             libtorrent::file_pool m_filepool;
-
-            // this is where all active sockets are stored.
-            // the selector can sleep while there's no activity on
-            // them
-            mutable boost::asio::io_service m_io_service;
 
             // handles delayed alerts
             alert_manager m_alerts;
@@ -203,12 +239,6 @@ namespace libed2k {
             boost::intrusive_ptr<server_connection> m_server_connection;
 
             transfer_map m_transfers;
-
-            /**
-              * this map contains files what will moved to hashing
-              *
-             */
-            transfer_filename_map m_transfers_filenames;
 
             // the index of the torrent that will be offered to
             // connect to a peer next time on_tick is called.
@@ -239,8 +269,6 @@ namespace libed2k {
 
             listen_socket_t setup_listener(tcp::endpoint ep, bool v6_only = false);
 
-            // the settings for the client
-            session_settings m_settings;
             // ed2k client identifier, issued by server
             boost::uint32_t m_client_id;
             boost::uint32_t m_tcp_flags;
@@ -268,11 +296,6 @@ namespace libed2k {
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
-
-            /**
-              * file hasher closed in self thread
-             */
-            file_monitor    m_fmon;
         };
     }
 }
