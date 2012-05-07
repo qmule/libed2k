@@ -25,6 +25,7 @@ using namespace libed2k::aux;
 session_impl_base::session_impl_base(const session_settings& settings) :
         m_io_service(),
         m_settings(settings),
+        m_transfers(),
         m_fmon(boost::bind(&session_impl_base::post_transfer, this, _1))
 {
 }
@@ -40,21 +41,40 @@ void session_impl_base::post_transfer(add_transfer_params const& params)
     m_io_service.post(boost::bind(&session_impl_base::add_transfer, this, params, ec));
 }
 
-void session_impl_base::save_state() const
-{
-    DBG("session_impl::save_state()");
-}
-
 // resolve reference to reference and overloading problems
 bool dref_is_regular_file(fs::path p)
 {
     return fs::is_regular_file(p);
 }
 
+void session_impl_base::save_state() const
+{
+    DBG("session_impl::save_state()");
+    known_file_collection kfc;
+
+    for (transfer_map::const_iterator i = m_transfers.begin(),
+            end(m_transfers.end()); i != end; ++i)
+    {
+        kfc.m_known_file_list.add(known_file_entry(i->second->getFilehash(),
+                i->second->getHashset().all_hashes(),
+                i->second->getFilepath(),
+                i->second->getAcepted(),
+                i->second->getResuested(),
+                i->second->getTransferred(),
+                i->second->getPriority()));
+    }
+
+    if (!m_settings.m_known_file.empty())
+    {
+        fs::ofstream fstream(convert_to_native(m_settings.m_known_file));
+        libed2k::archive::ed2k_oarchive ofa(fstream);
+        ofa << kfc;
+    }
+}
+
 void session_impl_base::load_state()
 {
     DBG("session_impl_base::load_state()");
-
 
     std::map<std::string, size_t> known_items;  //!< temporary map for known file dictionary
     known_file_collection kfc;                  //!< structured data buffer
@@ -138,13 +158,24 @@ void session_impl_base::load_state()
         {
             // search file name in known.met content before use convert current file name from native to utf8
             std::map<std::string, size_t>::iterator m = known_items.find(convert_from_native(itr->leaf()));
+            boost::uint32_t nLastChangeTime = fs::last_write_time(*itr);
+
+            // check file already processed
+            transfer_filename_map::iterator p_itr = m_transfers_filenames.find(std::make_pair(itr->leaf(), nLastChangeTime));
+
+            if (p_itr != m_transfers_filenames.end())
+            {
+                // file already processed
+                continue;
+            }
 
             if (m != known_items.end())
             {
                 size_t n = m->second;
+                boost::uint32_t nLastChangeTime = kfc.m_known_file_list.m_collection[n].m_nLastChanged;
 
                 // ok, file exists in local catalog - compare times
-                if (fs::last_write_time(*itr) != kfc.m_known_file_list.m_collection[n].m_nLastChanged)
+                if (nLastChangeTime != kfc.m_known_file_list.m_collection[n].m_nLastChanged)
                 {
                     DBG("last write time mismatch");
                     break;
@@ -197,8 +228,8 @@ void session_impl_base::load_state()
                     }
                 }
 
-                // add file to control map
-                m_transfers_filenames.insert(std::make_pair(m->first, atp.file_hash));
+                // add file to control map in native
+                m_transfers_filenames.insert(std::make_pair(std::make_pair(itr->leaf(), nLastChangeTime), atp.file_hash));
                 // add transfer
                 add_transfer(atp, ec);
 
@@ -213,6 +244,9 @@ void session_impl_base::load_state()
 
             //ok, need hash this file
             DBG("hash file: " << (itr->leaf()));
+
+            // add file name to control map
+            m_transfers_filenames.insert(std::make_pair(std::make_pair(itr->leaf(), nLastChangeTime), md4_hash(md4_hash::m_emptyMD4Hash)));
             m_fmon.m_order.push(*itr);
         }
 
@@ -237,7 +271,6 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                   m_filepool, BLOCK_SIZE),
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
-    m_transfers(),
     m_next_connect_transfer(m_transfers),
     m_client_id(0),
     m_abort(false),

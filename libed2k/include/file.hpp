@@ -121,6 +121,16 @@ namespace libed2k
         hash_list                   m_hash_list;
         tag_list<boost::uint32_t>   m_list;
 
+        known_file_entry();
+
+        known_file_entry(const md4_hash& hFile,
+                            const std::vector<md4_hash>& hSet,
+                            const fs::path& p,
+                            boost::uint32_t nAccepted,
+                            boost::uint32_t nRequested,
+                            boost::uint64_t nTransferred,
+                            boost::uint8_t  nPriority);
+
         template<typename Archive>
         void serialize(Archive& ar)
         {
@@ -142,6 +152,8 @@ namespace libed2k
     {
         boost::uint8_t  m_nHeader;
         known_file_list m_known_file_list;
+
+        known_file_collection();
 
         template<typename Archive>
         void save(Archive& ar)

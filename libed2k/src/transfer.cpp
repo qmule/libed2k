@@ -26,7 +26,11 @@ namespace libed2k
         m_storage_mode(p.storage_mode),
         m_seed_mode(p.seed_mode),
         m_policy(this, p.peer_list),
-        m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
+        m_info(new libtorrent::torrent_info(libtorrent::sha1_hash())),
+        m_accepted(p.m_accepted),
+        m_requested(p.m_requested),
+        m_transferred(p.m_transferred),
+        m_priority(p.m_priority)
     {
     }
 

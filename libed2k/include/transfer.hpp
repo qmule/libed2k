@@ -172,6 +172,15 @@ namespace libed2k {
         // with their initialization.
         bool ready_for_connections() const { return true; }
 
+        const md4_hash getFilehash() const { return m_filehash; }
+        const hash_set& getHashset() const { return m_hashset;  }
+        fs::path getFilepath() const { return m_filepath; }
+
+        boost::uint32_t getAcepted() const { return m_accepted; }
+        boost::uint32_t getResuested() const { return m_requested; }
+        boost::uint64_t getTransferred() const { return m_transferred; }
+        boost::uint8_t  getPriority() const { return m_priority; }
+
         // --------------------------------------------
         // SERVER MANAGEMENT
 
@@ -234,6 +243,11 @@ namespace libed2k {
         // may store invalid data
         // should store valid file path
         boost::intrusive_ptr<libtorrent::torrent_info> m_info;
+
+        boost::uint32_t m_accepted;
+        boost::uint32_t m_requested;
+        boost::uint64_t m_transferred;
+        boost::uint8_t  m_priority;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and

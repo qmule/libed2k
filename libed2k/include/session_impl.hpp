@@ -41,7 +41,8 @@ namespace libed2k {
         class session_impl_base : boost::noncopyable
         {
         public:
-            typedef std::map<std::string, md4_hash> transfer_filename_map;
+            typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
+            typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
@@ -74,6 +75,7 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
+            transfer_map m_transfers;
 
             /**
               * file hasher closed in self thread
@@ -94,7 +96,6 @@ namespace libed2k {
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
 
-            typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
             session_impl(const fingerprint& id, const char* listen_interface,
@@ -237,8 +238,6 @@ namespace libed2k {
 
             // ed2k server connection
             boost::intrusive_ptr<server_connection> m_server_connection;
-
-            transfer_map m_transfers;
 
             // the index of the torrent that will be offered to
             // connect to a peer next time on_tick is called.

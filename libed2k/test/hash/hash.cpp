@@ -11,7 +11,6 @@
 
 const size_t nPieceCount = 10;
 
-namespace bio = boost::iostreams;
 using namespace libed2k;
 
 void generate_file(size_t nSize, const char* pchFilename)

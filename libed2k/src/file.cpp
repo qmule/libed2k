@@ -682,12 +682,47 @@ namespace libed2k
 
     }
 
+    known_file_entry::known_file_entry()
+    {
+
+    }
+
+    known_file_entry::known_file_entry(const md4_hash& hFile,
+                                        const std::vector<md4_hash>& hSet,
+                                        const fs::path& p,
+                                        boost::uint32_t nAccepted,
+                                        boost::uint32_t nRequested,
+                                        boost::uint64_t nTransferred,
+                                        boost::uint8_t nPriority)
+    {
+        boost::uint32_t m_nLastChanged  = fs::last_write_time(p);
+        boost::uint64_t nFileSize       = fs::file_size(p);
+        m_hFile = hFile;
+
+        __file_size fs_trans;
+        fs_trans.nQuadPart = nTransferred;
+
+        m_hash_list.m_collection.assign(hSet.begin(), hSet.end());
+        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));
+        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));  // write same name for backward compatibility
+        m_list.add_tag(make_typed_tag(nFileSize, FT_FILESIZE, true));
+        m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
+        m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
+        m_list.add_tag(make_typed_tag(nRequested, FT_ATREQUESTED, true));
+        m_list.add_tag(make_typed_tag(nAccepted, FT_ATACCEPTED, true));
+        m_list.add_tag(make_typed_tag(nPriority, FT_ULPRIORITY, true));
+    }
+
     void known_file_entry::dump() const
     {
         DBG("known_file_entry::dump(TS: " << m_nLastChanged
                 << " " << m_hFile
                 << " hash list size: " <<  m_hash_list.m_collection.size()
                 << " tag list size: " << m_list.count());
+    }
+
+    known_file_collection::known_file_collection() : m_nHeader(MET_HEADER_WITH_LARGEFILES)
+    {
     }
 
     void known_file_collection::dump() const
