@@ -2,17 +2,22 @@
 #ifndef __LIBED2K_MD4_HASH__
 #define __LIBED2K_MD4_HASH__
 
-#include <boost/cstdint.hpp>
-#include <boost/assert.hpp>
 #include <string>
 #include <sstream>
 #include <string.h>
 #include <algorithm>
 #include <typeinfo>
 #include <vector>
+
+#include <boost/cstdint.hpp>
+#include <boost/assert.hpp>
+
+#include <libtorrent/bitfield.hpp>
+
 #include "log.hpp"
 #include "archive.hpp"
 #include "error_code.hpp"
+#include "types.hpp"
 
 namespace libed2k{
 
@@ -175,6 +180,27 @@ namespace libed2k{
     	md4hash_container   m_hash;
     };
 
+    class hash_set
+    {
+    public:
+        const bitfield& pieces() const { return m_pieces; }
+        const std::vector<md4_hash>& hashes() const { return m_hashes; }
+
+        void pieces(const bitfield& ps) { m_pieces = ps; }
+        void hashes(const std::vector<md4_hash>& hs) { m_hashes = hs; }
+        void append(const md4_hash& hash)
+        {
+            size_t i = m_pieces.size();
+            m_pieces.resize(i + 1);
+            m_pieces.set_bit(i);
+            m_hashes.push_back(hash);
+        }
+        void special(const md4_hash& hash) { m_hashes.push_back(hash); }
+
+    private:
+        bitfield m_pieces;
+        std::vector<md4_hash> m_hashes;
+    };
 }
 
 

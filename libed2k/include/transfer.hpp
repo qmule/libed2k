@@ -37,11 +37,12 @@ namespace libed2k {
     {
     public:
 
-        transfer(aux::session_impl& ses, tcp::endpoint const& net_interface, 
+        transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
 
         const md4_hash& hash() const { return m_filehash; }
+        const hash_set& hashset() const { return m_hashset; }
 
         void start();
         void abort();
@@ -171,15 +172,6 @@ namespace libed2k {
         // with their initialization.
         bool ready_for_connections() const { return true; }
 
-        const bitfield& verified() const { return m_verified; }
-        bool all_verified() const { return m_num_verified == num_pieces(); }
-        bool verified_piece(int piece) const { return m_verified.get_bit(piece); }
-        void verified(int piece)
-        {
-            ++m_num_verified;
-            m_verified.set_bit(piece);
-        }
-
         // --------------------------------------------
         // SERVER MANAGEMENT
 
@@ -226,17 +218,10 @@ namespace libed2k {
         tcp::endpoint m_net_interface;
 
         md4_hash m_filehash;
+        hash_set m_hashset;
         fs::path m_filepath;
         size_t m_filesize;
         boost::uint32_t m_file_type;
-
-        // each bit represents a piece. a set bit means
-        // the piece has had its hash verified. This
-        // is only used in seed mode (when m_seed_mode
-        // is true)
-        bitfield m_verified;
-        // m_num_verified = m_verified.count()
-        int m_num_verified;
 
         storage_mode_t m_storage_mode;
 

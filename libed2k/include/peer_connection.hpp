@@ -152,7 +152,7 @@ namespace libed2k
         void write_filestatus_request(const md4_hash& file_hash);
         void write_file_status(const md4_hash& file_hash, const bitfield& status);
         void write_hashset_request(const md4_hash& file_hash);
-        void write_hashset_answer(const known_file& file);
+        void write_hashset_answer(const md4_hash& file_hash, const std::vector<md4_hash>& hash_set);
         void write_start_upload(const md4_hash& file_hash);
         void write_queue_ranking(boost::uint16_t rank);
         void write_accept_upload();
@@ -204,7 +204,7 @@ namespace libed2k
         boost::weak_ptr<transfer> m_transfer;
 
         // the pieces the other end have
-        bitfield m_available_pieces;
+        hash_set m_remote_hashset;
 
         // the blocks we have reserved in the piece
         // picker and will request from this peer.

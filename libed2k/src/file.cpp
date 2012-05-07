@@ -752,9 +752,6 @@ namespace libed2k
                         return;
                     }
 
-                    int nPartCount  = nFileSize / PIECE_SIZE + 1;
-                    atp.hash_set.reserve(nPartCount);
-
                     bio::mapped_file_params mf_param;
                     mf_param.flags  = bio::mapped_file_base::readonly;
                     mf_param.path   = strFilename;
@@ -821,7 +818,7 @@ namespace libed2k
 
                             libed2k::md4_hash hash;
                             md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                            atp.hash_set.push_back(hash);
+                            atp.piece_hash.append(hash);
                             // generate hash
                             nLocalOffset    += nLength;
                             nCurrentOffset  += nLength;
@@ -839,16 +836,19 @@ namespace libed2k
                     // when we don't have last partial piece - add special hash
                     if (!bPartial)
                     {
-                        atp.hash_set.push_back(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
+                        atp.piece_hash.special(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
                     }
 
-                    if (atp.hash_set.size() > 1)
+                    if (atp.piece_hash.hashes().size() > 1)
                     {
-                        md4_hasher.CalculateDigest(atp.file_hash.getContainer(), reinterpret_cast<const unsigned char*>(&atp.hash_set[0]), atp.hash_set.size()*libed2k::MD4_HASH_SIZE);
+                        md4_hasher.CalculateDigest(
+                            atp.file_hash.getContainer(),
+                            reinterpret_cast<const unsigned char*>(&atp.piece_hash.hashes()[0]),
+                            atp.piece_hash.hashes().size()*libed2k::MD4_HASH_SIZE);
                     }
                     else
                     {
-                        atp.file_hash = atp.hash_set[0];
+                        atp.file_hash = atp.piece_hash.hashes()[0];
                     }
 
                     m_add_transfer(atp);
