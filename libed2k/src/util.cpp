@@ -3,7 +3,9 @@
 #include <libtorrent/utf8.hpp>
 #include <libtorrent/escape_string.hpp>
 
+#ifndef WIN32
 #include <iconv.h>
+#endif
 #include <locale.h>
 
 #include "util.hpp"
@@ -12,6 +14,18 @@
 
 namespace libed2k 
 {
+    #define CHECK_BOM(size, x) ((size >= 3)  && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
+
+    std::string bom_filter(const std::string& s)
+    {
+        if (CHECK_BOM(s.size(), s))
+        {
+            return s.substr(3);
+        }
+
+        return s;
+    }
+
     std::string bitfield2string(const bitfield& bits)
     {
         std::stringstream str;
@@ -79,7 +93,7 @@ namespace libed2k
         inflateEnd(&str);
         return (ret);
     }
-
+#if 0
     std::wstring convert_to_wstring(std::string const& s)
     {
         std::wstring ret;
@@ -118,7 +132,7 @@ namespace libed2k
         return (str);
     }
 #endif
-
+#endif
 
     std::string convert_to_native(const std::string& s)
     {

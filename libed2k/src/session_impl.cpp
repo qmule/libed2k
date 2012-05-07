@@ -86,6 +86,7 @@ void session_impl_base::load_state()
                     }
 
                     known_items.insert(std::make_pair(strFilename, n));
+                    DBG("session_impl_base::load_state: known file item: " << convert_to_native(strFilename));
                 }
             }
             catch(libed2k_exception& e)
@@ -100,27 +101,32 @@ void session_impl_base::load_state()
     // scan directories and files from settings
     for (session_settings::fd_list::iterator itr = m_settings.m_fd_list.begin(); itr != m_settings.m_fd_list.end(); ++itr)
     {
+        DBG("session_impl_base::load_state: scan directory: " << convert_to_native(itr->first));
         fs::path p(convert_to_native(itr->first));  // convert UTF-8 properties to native
         std::vector<fs::path> v;
 
         try
         {
-            if (fs::exists(p) && fs::is_directory(p))
-            {
-                if (itr->second)
-                {
-                    std::copy(r_dir_itr(p), r_dir_itr(), std::back_inserter(v));
-                }
-                else
-                {
-                    std::copy(dir_itr(p), dir_itr(), std::back_inserter(v));
-                }
+            if (fs::exists(p))
+            {                
 
-                v.erase(std::remove_if(v.begin(), v.end(), std::not1(std::ptr_fun(dref_is_regular_file))), v.end());
-            }
-            else
-            {
-                v.push_back(p);
+                if (fs::is_directory(p))
+                {
+                    if (itr->second)
+                    {
+                        std::copy(fs::recursive_directory_iterator(p), fs::recursive_directory_iterator(), std::back_inserter(v));
+                    }
+                    else
+                    {
+                        std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(v));
+                    }
+
+                    v.erase(std::remove_if(v.begin(), v.end(), std::not1(std::ptr_fun(dref_is_regular_file))), v.end());
+                }
+                else if (fs::is_regular_file(p))
+                {
+                    v.push_back(p);
+                }
             }
         }
         catch(fs::filesystem_error& e)
