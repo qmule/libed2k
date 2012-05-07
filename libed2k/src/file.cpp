@@ -835,7 +835,7 @@ namespace libed2k
                     // when we don't have last partial piece - add special hash
                     if (!bPartial)
                     {
-                        atp.piece_hash.special(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
+                        atp.piece_hash.set_terminal();
                     }
 
                     if (atp.piece_hash.hashes().size() > 1)

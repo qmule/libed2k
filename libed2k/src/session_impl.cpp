@@ -151,8 +151,8 @@ void session_impl_base::load_state()
 
                 atp.file_path = m->first;    // use native code page
                 atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
-                atp.hash_set.assign(kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.begin(),
-                        kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.end());
+                atp.piece_hash.all_hashes(
+                    kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection);
 
                 for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
                 {

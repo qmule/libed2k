@@ -30,8 +30,9 @@ namespace libed2k{
     {
     public:
         friend class archive::access;
-    	typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
-    	static const md4hash_container m_emptyMD4Hash;
+        typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
+        static const md4hash_container m_emptyMD4Hash;
+        static const md4_hash terminal;
 
     	md4_hash()
     	{
@@ -57,6 +58,14 @@ namespace libed2k{
     	{
     		memcpy(m_hash, container, MD4_HASH_SIZE);
     	}
+
+        bool defined() const
+        {
+            int sum = 0;
+            for (size_t i = 0; i < MD4_HASH_SIZE; ++i)
+                sum |= m_hash[i];
+            return sum != 0;
+        }
 
     	unsigned char* getContainer()
     	{
@@ -183,8 +192,22 @@ namespace libed2k{
     class hash_set
     {
     public:
+        hash_set(): m_has_terminal(false)
+        {}
+
         const bitfield& pieces() const { return m_pieces; }
         const std::vector<md4_hash>& hashes() const { return m_hashes; }
+        std::vector<md4_hash> all_hashes() const
+        {
+            std::vector<md4_hash> res;
+            size_t h = 0;
+            for(size_t p = 0; p < m_pieces.size(); ++p)
+                res.push_back(m_pieces[p] ? m_hashes[h++] : md4_hash());
+
+            if (m_has_terminal) res.push_back(md4_hash::terminal);
+
+            return res;
+        }
 
         void pieces(const bitfield& ps) { m_pieces = ps; }
         void hashes(const std::vector<md4_hash>& hs) { m_hashes = hs; }
@@ -195,11 +218,36 @@ namespace libed2k{
             m_pieces.set_bit(i);
             m_hashes.push_back(hash);
         }
-        void special(const md4_hash& hash) { m_hashes.push_back(hash); }
+        void set_terminal() { m_has_terminal = true; }
+        void all_hashes(const std::vector<md4_hash>& hs)
+        {
+            size_t nPieces;;
+            if (*hs.rbegin() == md4_hash::terminal)
+            {
+                set_terminal();
+                nPieces = hs.size() - 1;
+            }
+            else
+            {
+                nPieces = hs.size();
+            }
+
+            m_pieces.resize(nPieces);
+            m_pieces.clear_all();
+            for (size_t i = 0; i != nPieces; ++i)
+            {
+                if (hs[i].defined())
+                {
+                    m_pieces.set_bit(i);
+                    m_hashes.push_back(hs[i]);
+                }
+            }
+        }
 
     private:
         bitfield m_pieces;
         std::vector<md4_hash> m_hashes;
+        bool m_has_terminal;
     };
 }
 
