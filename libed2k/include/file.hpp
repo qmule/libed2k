@@ -58,10 +58,10 @@ namespace libed2k
     const boost::uint8_t PR_AUTO        = 5;
     const boost::uint8_t PR_POWERSHARE  = 6;
 
-    EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
-    std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
-    EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
-    std::string GetFileTypeByName(const std::string& strFileName);
+    extern EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
+    extern std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
+    extern EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);
+    extern std::string GetFileTypeByName(const std::string& strFileName);
 
     const unsigned int PIECE_COUNT_ALLOC = 20;
 

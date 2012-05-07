@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="unittest"
-	ProjectGUID="{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}"
-	RootNamespace="unittest"
+	Name="https"
+	ProjectGUID="{37ED7AE5-7BDB-40C7-BB4A-2679562CE77F}"
+	RootNamespace="https"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -61,9 +61,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib"
+				AdditionalDependencies="libboost_iostreams-vc90-mt-sgd-1_49.lib cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib libeay32MTd.lib ssleay32MTd.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(LIBTORRENT_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;$(SolutionDir)$(ConfigurationName);$(LIBTORRENT_ROOT)\lib"
+				IgnoreAllDefaultLibraries="false"
+				IgnoreDefaultLibraryNames="msvcprtd.lib;msvcrtd.lib"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -174,27 +176,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\unit\run_tests.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\unit\test_alerts.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\unit\test_archive.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\unit\test_crypto.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\unit\test_md4hash.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\unit\test_search_request.cpp"
+				RelativePath="..\test\https\main.cpp"
 				>
 			</File>
 		</Filter>
