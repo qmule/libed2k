@@ -10,6 +10,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
+#include <locale.h>
 #include "constants.hpp"
 #include "types.hpp"
 #include "file.hpp"
@@ -61,7 +62,7 @@ void generate_file(size_t nSize, const char* pchFilename)
     if (of)
     {
         // generate small file
-        for (int i = 0; i < nSize; i++)
+        for (size_t i = 0; i < nSize; i++)
         {
             of << 'X';
         }
@@ -152,9 +153,27 @@ BOOST_AUTO_TEST_CASE(test_session)
 {
     LOGGER_INIT()
     libed2k::session_settings s;
+#ifdef WIN32
+    setlocale(LC_CTYPE, "");
+    FILE* fp = fopen("D:\\work\\isclient\\libed2k\\win32\\Debug\\x.txt", "rb");
+    s.m_known_file = "D:\\work\\isclient\\libed2k\\win32\\Debug\\known.met";
+
+    if (fp)
+    {
+        char chBuffer[1024] = {0};
+        int n = fread(chBuffer,1,50, fp);
+        s.m_fd_list.push_back(std::make_pair(std::string(chBuffer), true));
+        DBG("load dir: " << libed2k::convert_to_native(std::string(chBuffer)));
+        fclose(fp);
+    }
+        
+    //DBG("ANSI: " << libed2k::convert_to_native(s.m_known_file));
+    //s.m_fd_list.push_back(std::make_pair("d:\\mule", false));
+#else
     s.m_known_file = "./known.met";
     s.m_fd_list.push_back(std::make_pair("/home/apavlov/mule", true));
     s.m_fd_list.push_back(std::make_pair("/home/apavlov/", false));
+#endif
     libed2k::aux::session_impl_test st(s);
     st.load_state();
     st.stop();

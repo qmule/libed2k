@@ -1,4 +1,5 @@
 #include "ctag.hpp"
+#include "util.hpp"
 
 namespace libed2k{
 
@@ -328,6 +329,7 @@ void string_tag::load(archive::ed2k_iarchive& ar)
 
     m_strValue.resize(nLength);
     ar & m_strValue;
+    m_strValue = bom_filter(m_strValue);
 }
 
 void string_tag::length2type()

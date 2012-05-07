@@ -77,9 +77,21 @@ namespace libed2k {
                             int nMaxSize);
 
 
+    /**
+      * truncate BOM header from UTF-8 strings
+      *
+     */
+    extern std::string bom_filter(const std::string& s);
 
-    std::string convert_to_native(const std::string& s);
-    std::string convert_from_native(const std::string& s);
+    /**
+      * convert UTF-8 string to native codepage
+     */
+    extern std::string convert_to_native(const std::string& s);
+
+    /**
+      * make UTF-8 string from native string
+     */
+    extern std::string convert_from_native(const std::string& s);
 
 }
 

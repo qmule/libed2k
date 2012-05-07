@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib libeay32MTd.lib ssleay32MTd.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(LIBTORRENT_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
@@ -187,6 +187,10 @@
 			</File>
 			<File
 				RelativePath="..\unit\test_crypto.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\unit\test_known_file.cpp"
 				>
 			</File>
 			<File
