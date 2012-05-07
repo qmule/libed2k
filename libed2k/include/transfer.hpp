@@ -43,6 +43,7 @@ namespace libed2k {
 
         const md4_hash& hash() const { return m_filehash; }
         const hash_set& hashset() const { return m_hashset; }
+        size_t filesize() const { return m_filesize; }
 
         void start();
         void abort();

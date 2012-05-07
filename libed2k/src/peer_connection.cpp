@@ -201,6 +201,48 @@ bool peer_connection::add_request(const piece_block& block, int flags)
     return true;
 }
 
+void peer_connection::send_block_requests()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (m_disconnecting) return;
+    if (m_download_queue.size() >= m_desired_queue_size) return;
+
+    client_request_parts_64 rp;
+    rp.m_hFile = t->hash();
+
+    while (!m_request_queue.empty() && m_download_queue.size() < m_desired_queue_size)
+    {
+        pending_block block = m_request_queue.front();
+        m_request_queue.erase(m_request_queue.begin());
+
+        // if we're a seed, we don't have a piece picker
+        // so we don't have to worry about invariants getting
+        // out of sync with it
+        if (t->is_seed()) continue;
+
+        // this can happen if a block times out, is re-requested and
+        // then arrives "unexpectedly"
+        if (t->picker().is_finished(block.block) ||
+            t->picker().is_downloaded(block.block))
+        {
+            t->picker().abort_download(block.block);
+            continue;
+        }
+
+        m_download_queue.push_back(block);
+        rp.append(block_range(block.block.piece_index, block.block.block_index, t->filesize()));
+        if (rp.full())
+        {
+            write_request_parts(rp);
+            rp.reset();
+        }
+    }
+
+    if (!rp.empty())
+        write_request_parts(rp);
+}
+
 bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
 {
     if (disk_buffer_size == 0) return true;
@@ -665,6 +707,16 @@ void peer_connection::write_cancel_transfer()
     do_write(ct);
 }
 
+void peer_connection::write_request_parts(client_request_parts_64 rp)
+{
+    DBG("request parts " << rp.m_hFile << ": "
+        << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
+        << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
+        << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
+        << " ==> " << m_remote);
+    do_write(rp);
+}
+
 void peer_connection::on_hello(const error_code& error)
 {
     DBG("hello packet <== " << m_remote);
@@ -838,6 +890,7 @@ void peer_connection::on_hashset_answer(const error_code& error)
         if (t->hash() == ha.m_hFile)
         {
             m_remote_hashset.hashes(ha.m_vhParts.m_collection);
+            write_start_upload(t->hash());
         }
         else
         {
@@ -855,6 +908,20 @@ void peer_connection::on_start_upload(const error_code& error)
 {
     if (!error)
     {
+        client_start_upload su;
+        decode_packet(su);
+        DBG("start upload " << su.m_hFile << " <== " << m_remote);
+
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        if (t->hash() == su.m_hFile)
+        {
+            write_accept_upload();
+        }
+        else
+        {
+            write_no_file(su.m_hFile);
+            disconnect(errors::file_unavaliable, 2);
+        }
     }
     else
     {
@@ -866,6 +933,10 @@ void peer_connection::on_queue_ranking(const error_code& error)
 {
     if (!error)
     {
+        client_queue_ranking qr;
+        decode_packet(qr);
+        DBG("queue ranking " << qr.m_nRank << " <== " << m_remote);
+        // TODO: handle it
     }
     else
     {
@@ -877,6 +948,9 @@ void peer_connection::on_accept_upload(const error_code& error)
 {
     if (!error)
     {
+        DBG("accept upload <== " << m_remote);
+        request_block();
+        send_block_requests();
     }
     else
     {
