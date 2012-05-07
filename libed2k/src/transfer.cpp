@@ -20,6 +20,7 @@ namespace libed2k
         m_sequence_number(seq),
         m_net_interface(net_interface.address(), 0),
         m_filehash(p.file_hash),
+        m_hashset(p.piece_hash),
         m_filepath(p.file_path),
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
@@ -27,7 +28,6 @@ namespace libed2k
         m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash()))
     {
-        // TODO: init here
     }
 
     transfer::~transfer()

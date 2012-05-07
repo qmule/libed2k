@@ -114,7 +114,6 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
     // connections yet, we'll have to wait with
     // our initialization
     if (t->ready_for_connections()) init();
-    m_available_pieces.clear_all();
     return true;
 }
 
@@ -143,7 +142,7 @@ void peer_connection::request_block()
     // TODO: state = c.peer_speed()
     piece_picker::piece_state_t state = piece_picker::medium;
 
-    p.pick_pieces(m_available_pieces, interesting_pieces,
+    p.pick_pieces(m_remote_hashset.pieces(), interesting_pieces,
                   num_requests, prefer_whole_pieces, m_peer,
                   state, picker_options(), std::vector<int>());
 
@@ -576,17 +575,20 @@ void peer_connection::write_hello_answer()
 
 void peer_connection::write_file_request(const md4_hash& file_hash)
 {
+    DBG("file request " << file_hash << " ==> " << m_remote);
     client_file_request fr;
     fr.m_hFile = file_hash;
     do_write(fr);
 }
 
-void peer_connection::write_filestatus_request(const md4_hash& file_hash)
+void peer_connection::write_file_answer(
+    const md4_hash& file_hash, const std::string& filename)
 {
-    DBG("request file status " << file_hash << " ==> " << m_remote);
-    client_filestatus_request fr;
-    fr.m_hFile = file_hash;
-    do_write(fr);
+    DBG("file answer " << file_hash << ", " << filename << " ==> " << m_remote);
+    client_file_answer fa;
+    fa.m_hFile = file_hash;
+    fa.m_filename.m_collection = filename;
+    do_write(fa);
 }
 
 void peer_connection::write_no_file(const md4_hash& file_hash)
@@ -595,6 +597,14 @@ void peer_connection::write_no_file(const md4_hash& file_hash)
     client_no_file nf;
     nf.m_hFile = file_hash;
     do_write(nf);
+}
+
+void peer_connection::write_filestatus_request(const md4_hash& file_hash)
+{
+    DBG("request file status " << file_hash << " ==> " << m_remote);
+    client_filestatus_request fr;
+    fr.m_hFile = file_hash;
+    do_write(fr);
 }
 
 void peer_connection::write_file_status(
@@ -615,13 +625,13 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
     do_write(hr);
 }
 
-void peer_connection::write_hashset_answer(const known_file& file)
+void peer_connection::write_hashset_answer(
+    const md4_hash& file_hash, const std::vector<md4_hash>& hash_set)
 {
     DBG("hashset ==> " << m_remote);
     client_hashset_answer ha;
-    ha.m_hFile = file.getFileHash();
-    for (size_t part = 0; part < file.getPiecesCount(); ++part)
-        ha.m_vhParts.m_collection.push_back(file.getPieceHash(part));
+    ha.m_hFile = file_hash;
+    ha.m_vhParts.m_collection = hash_set;
     do_write(ha);
 }
 
@@ -692,19 +702,195 @@ void peer_connection::on_file_request(const error_code& error)
         DBG("file request " << fr.m_hFile << " <== " << m_remote);
         if (attach_to_transfer(fr.m_hFile))
         {
-            DBG("found file "<< fr.m_hFile);
             bitfield status; // undefined
             write_file_status(fr.m_hFile, status);
         }
         else
         {
-            DBG("file " << fr.m_hFile << " not found ==> " << m_remote);
             write_no_file(fr.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
     else
     {
-        DBG("file request error " << error.message() << " <== " << m_remote);
+        ERR("file request error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_file_answer(const error_code& error)
+{
+    if (!error)
+    {
+        client_file_answer fa;
+        decode_packet(fa);
+        DBG("file answer " << fa.m_hFile << ", " << fa.m_filename.m_collection
+            << " <== " << m_remote);
+        write_filestatus_request(fa.m_hFile);
+    }
+    else
+    {
+        ERR("file answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_no_file(const error_code& error)
+{
+    if (!error)
+    {
+        client_no_file nf;
+        decode_packet(nf);
+        DBG("no file " << nf.m_hFile << m_remote);
+        disconnect(errors::file_unavaliable, 2);
+    }
+    else
+    {
+        ERR("no file error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_filestatus_request(const error_code& error)
+{
+    if (!error)
+    {
+        client_filestatus_request fr;
+        decode_packet(fr);
+        DBG("file status request " << fr.m_hFile << " <== " << m_remote);
+
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        if (t->hash() == fr.m_hFile)
+        {
+            write_file_status(t->hash(), t->hashset().pieces());
+        }
+        else
+        {
+            write_no_file(fr.m_hFile);
+            disconnect(errors::file_unavaliable, 2);
+        }
+    }
+    else
+    {
+        ERR("file status request error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_file_status(const error_code& error)
+{
+    if (!error)
+    {
+        client_file_status fs;
+        decode_packet(fs);
+        DBG("file status answer "<< fs.m_hFile << ", " << bitfield2string(fs.m_status)
+            << " <== " << m_remote);
+
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        if (t->hash() == fs.m_hFile)
+        {
+            m_remote_hashset.pieces(fs.m_status);
+            t->picker().inc_refcount(fs.m_status);
+            write_hashset_request(fs.m_hFile);
+        }
+        else
+        {
+            write_no_file(fs.m_hFile);
+            disconnect(errors::file_unavaliable, 2);
+        }
+    }
+    else
+    {
+        ERR("file status answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_hashset_request(const error_code& error)
+{
+    if (!error)
+    {
+        client_hashset_request hr;
+        decode_packet(hr);
+        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
+
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        if (t->hash() == hr.m_hFile)
+        {
+            write_hashset_answer(t->hash(), t->hashset().hashes());
+        }
+        else
+        {
+            write_no_file(hr.m_hFile);
+            disconnect(errors::file_unavaliable, 2);
+        }
+    }
+    else
+    {
+        ERR("hashset request error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_hashset_answer(const error_code& error)
+{
+    if (!error)
+    {
+        client_hashset_answer ha;
+        decode_packet(ha);
+        DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
+
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        if (t->hash() == ha.m_hFile)
+        {
+            m_remote_hashset.hashes(ha.m_vhParts.m_collection);
+        }
+        else
+        {
+            write_no_file(ha.m_hFile);
+            disconnect(errors::file_unavaliable, 2);
+        }
+    }
+    else
+    {
+        ERR("hashset answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_start_upload(const error_code& error)
+{
+    if (!error)
+    {
+    }
+    else
+    {
+        ERR("start upload error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_queue_ranking(const error_code& error)
+{
+    if (!error)
+    {
+    }
+    else
+    {
+        ERR("queue ranking error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_accept_upload(const error_code& error)
+{
+    if (!error)
+    {
+    }
+    else
+    {
+        ERR("accept upload error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_cancel_transfer(const error_code& error)
+{
+    if (!error)
+    {
+    }
+    else
+    {
+        ERR("transfer cancel error " << error.message() << " <== " << m_remote);
     }
 }

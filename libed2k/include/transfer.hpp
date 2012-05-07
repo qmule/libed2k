@@ -37,11 +37,12 @@ namespace libed2k {
     {
     public:
 
-        transfer(aux::session_impl& ses, tcp::endpoint const& net_interface, 
+        transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
 
         const md4_hash& hash() const { return m_filehash; }
+        const hash_set& hashset() const { return m_hashset; }
 
         void start();
         void abort();
@@ -217,6 +218,7 @@ namespace libed2k {
         tcp::endpoint m_net_interface;
 
         md4_hash m_filehash;
+        hash_set m_hashset;
         fs::path m_filepath;
         size_t m_filesize;
         boost::uint32_t m_file_type;

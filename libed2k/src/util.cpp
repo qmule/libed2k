@@ -26,6 +26,13 @@ namespace libed2k
         return s;
     }
 
+    std::string bitfield2string(const bitfield& bits)
+    {
+        std::stringstream str;
+        for(size_t i = 0; i < bits.size(); ++i) str << bits[i];
+        return str.str();
+    }
+
     int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst, int nMaxSize)
     {
         // start off with one kilobyte and grow
@@ -90,10 +97,10 @@ namespace libed2k
     std::wstring convert_to_wstring(std::string const& s)
     {
         std::wstring ret;
-        int result = libtorrent::utf8_wchar(s, ret);
 #ifndef _WIN32
         return ret;
 #else
+        int result = libtorrent::utf8_wchar(s, ret);
         if (result == 0) return ret;
 
         ret.clear();

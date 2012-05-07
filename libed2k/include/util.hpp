@@ -27,6 +27,8 @@ namespace libed2k {
         return ss.str();
     }
 
+    extern std::string bitfield2string(const bitfield& bits);
+
     inline int round_up8(int v)
     {
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
