@@ -78,16 +78,8 @@ namespace libed2k {
 
 
 
-#ifdef WIN32
-    extern std::wstring convert_to_filesystem(const std::string& s);
-    extern std::string convert_from_filesystem(const std::wstring& s);
-#else
-    inline std::string convert_to_filesystem(const std::string& s) { return s; }
-    inline std::string convert_from_filesystem(const std::string& s) { return s; }
-#endif
-
-    // convert string in UTF-8 or national codeset to UCS-2
-    extern std::wstring convert_to_wstring(std::string const& s);
+    std::string convert_to_native(const std::string& s);
+    std::string convert_from_native(const std::string& s);
 
 }
 

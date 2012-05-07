@@ -46,7 +46,7 @@ void session_impl_base::save_state() const
 }
 
 // resolve reference to reference and overloading problems
-bool dref_is_regular_file(fpath p)
+bool dref_is_regular_file(fs::path p)
 {
     return fs::is_regular_file(p);
 }
@@ -62,7 +62,7 @@ void session_impl_base::load_state()
 
     if (!m_settings.m_known_file.empty())
     {
-        fs::ifstream fstream(convert_to_filesystem(m_settings.m_known_file));
+        fs::ifstream fstream(convert_to_native(m_settings.m_known_file));
 
         if (fstream)
         {
@@ -77,7 +77,7 @@ void session_impl_base::load_state()
                 for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
                 {
 
-                    // first we need to check file exists on disk
+                    // file name from known.met in UTF-8
                     std::string strFilename = kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME);
 
                     if (strFilename.empty())
@@ -100,8 +100,8 @@ void session_impl_base::load_state()
     // scan directories and files from settings
     for (session_settings::fd_list::iterator itr = m_settings.m_fd_list.begin(); itr != m_settings.m_fd_list.end(); ++itr)
     {
-        fpath p(convert_to_filesystem(itr->first));
-        std::vector<fpath> v;
+        fs::path p(convert_to_native(itr->first));  // convert UTF-8 properties to native
+        std::vector<fs::path> v;
 
         try
         {
@@ -125,13 +125,13 @@ void session_impl_base::load_state()
         }
         catch(fs::filesystem_error& e)
         {
-            ERR("filesystem error: " << e.what());
+            ERR("file system error: " << e.what());
         }
 
-        for (std::vector<fpath>::iterator itr = v.begin(); itr != v.end(); ++itr)
+        for (std::vector<fs::path>::iterator itr = v.begin(); itr != v.end(); ++itr)
         {
-
-            std::map<std::string, size_t>::iterator m = known_items.find(convert_from_filesystem(itr->leaf()));
+            // search file name in known.met content before use convert current file name from native to utf8
+            std::map<std::string, size_t>::iterator m = known_items.find(convert_from_native(itr->leaf()));
 
             if (m != known_items.end())
             {
@@ -144,12 +144,12 @@ void session_impl_base::load_state()
                     break;
                 }
 
-                DBG("known file: " << convert_from_filesystem(itr->leaf()));
+                DBG("known file: " << (itr->leaf()));
 
                 // generate transfer
                 add_transfer_params atp;
 
-                atp.file_path = m->first;    // use UTF-8
+                atp.file_path = m->first;    // use native code page
                 atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
                 atp.hash_set.assign(kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.begin(),
                         kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.end());
@@ -206,7 +206,7 @@ void session_impl_base::load_state()
             }
 
             //ok, need hash this file
-            DBG("hash file: " << convert_from_filesystem(itr->leaf()));
+            DBG("hash file: " << (itr->leaf()));
             m_fmon.m_order.push(*itr);
         }
 

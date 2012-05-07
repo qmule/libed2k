@@ -729,7 +729,7 @@ namespace libed2k
         {
             while(1)
             {
-                fpath p = m_order.popWait();
+                fs::path p = m_order.popWait();
 
                 try
                 {

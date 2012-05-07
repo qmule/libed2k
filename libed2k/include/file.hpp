@@ -193,7 +193,7 @@ namespace libed2k
         void cancel()
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
-            std::queue<fpath> empty;
+            std::queue<fs::path> empty;
             std::swap(m_queue, empty );
             m_signal.notify_one();
         }
@@ -243,7 +243,7 @@ namespace libed2k
 
         void operator()();
 
-        monitor_order<fpath>  m_order;
+        monitor_order<fs::path>  m_order;
 
     private:
         volatile bool           m_bCancel;
