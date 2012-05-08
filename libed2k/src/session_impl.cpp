@@ -37,6 +37,7 @@ session_impl_base::~session_impl_base()
 
 void session_impl_base::post_transfer(add_transfer_params const& params)
 {
+    DBG("session_impl_base::post_transfer");
     error_code ec;
     m_io_service.post(boost::bind(&session_impl_base::add_transfer, this, params, ec));
 }
@@ -122,7 +123,7 @@ void session_impl_base::load_state()
     for (session_settings::fd_list::iterator itr = m_settings.m_fd_list.begin(); itr != m_settings.m_fd_list.end(); ++itr)
     {
         DBG("session_impl_base::load_state: scan directory: " << convert_to_native(itr->first));
-        fs::path p(convert_to_native(itr->first));  // convert UTF-8 properties to native
+        fs::path p(convert_to_native(bom_filter(itr->first)));  // convert UTF-8 properties to native
         std::vector<fs::path> v;
 
         try
@@ -181,6 +182,9 @@ void session_impl_base::load_state()
                     break;
                 }
 
+                DBG("hash count: " << kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.size());
+
+
                 DBG("known file: " << (itr->leaf()));
 
                 // generate transfer
@@ -188,8 +192,17 @@ void session_impl_base::load_state()
 
                 atp.file_path = m->first;    // use native code page
                 atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
-                atp.piece_hash.all_hashes(
-                    kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection);
+
+                if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
+                {
+                    // when file contain only one hash - we save main hash directly into container
+                    atp.piece_hash.append(kfc.m_known_file_list.m_collection[n].m_hFile);
+                }
+                else
+                {
+                    atp.piece_hash.all_hashes(
+                            kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection);
+                }
 
                 for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
                 {
@@ -243,7 +256,7 @@ void session_impl_base::load_state()
             }
 
             //ok, need hash this file
-            DBG("hash file: " << (itr->leaf()));
+            DBG("hash file: " << (itr->string()));
 
             // add file name to control map
             m_transfers_filenames.insert(std::make_pair(std::make_pair(itr->leaf(), nLastChangeTime), md4_hash(md4_hash::m_emptyMD4Hash)));

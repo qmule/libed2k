@@ -221,7 +221,10 @@ namespace libed2k{
         void set_terminal() { m_has_terminal = true; }
         void all_hashes(const std::vector<md4_hash>& hs)
         {
-            size_t nPieces;;
+            size_t nPieces;
+
+            BOOST_ASSERT(!hs.empty());
+
             if (*hs.rbegin() == md4_hash::terminal)
             {
                 set_terminal();

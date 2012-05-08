@@ -14,8 +14,6 @@
 
 namespace libed2k 
 {
-    #define CHECK_BOM(size, x) ((size >= 3)  && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
-
     std::string bom_filter(const std::string& s)
     {
         if (CHECK_BOM(s.size(), s))

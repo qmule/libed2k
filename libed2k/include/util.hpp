@@ -5,7 +5,9 @@
 #include "types.hpp"
 #include "constants.hpp"
 
-namespace libed2k {
+namespace libed2k
+{
+    #define CHECK_BOM(size, x) ((size >= 3)  && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
 
     template <typename A, typename B>
     inline A div_ceil(A a, B b)

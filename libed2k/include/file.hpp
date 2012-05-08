@@ -204,10 +204,12 @@ namespace libed2k
 
         void cancel()
         {
+            DBG("monitor:: cancel");
             boost::mutex::scoped_lock lock(m_monitorMutex);
             std::queue<fs::path> empty;
             std::swap(m_queue, empty );
             m_signal.notify_one();
+            DBG("monitor:: completed");
         }
 
         Data popWait()
@@ -216,8 +218,11 @@ namespace libed2k
 
             if(m_queue.empty())
             {
+                DBG("popWait: before signal");
                 m_signal.wait(lock);
             }
+
+            DBG("popWait: after signal");
 
             // we have received exit signal
             if (m_queue.empty())

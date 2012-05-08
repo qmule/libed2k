@@ -764,7 +764,14 @@ namespace libed2k
         {
             while(1)
             {
+                if (m_bCancel)
+                {
+                    break;
+                }
+
                 fs::path p = m_order.popWait();
+
+                std::cout << "file_monitor::operator(): " << p.string();
 
                 try
                 {
