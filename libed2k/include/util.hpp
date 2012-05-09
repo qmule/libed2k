@@ -36,6 +36,8 @@ namespace libed2k
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
     }
 
+    extern std::pair<size_t, size_t> block_range(int piece, int block, size_t size);
+
     inline ptime time_now()
     {
         return time::microsec_clock::universal_time();

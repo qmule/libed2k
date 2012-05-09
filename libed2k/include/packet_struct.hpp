@@ -980,23 +980,37 @@ else\
     struct client_request_parts
     {
         md4_hash  m_hFile;
-        size_type m_begin_offset_1;
-        size_type m_begin_offset_2;
-        size_type m_begin_offset_3;
-        size_type m_end_offset_1;
-        size_type m_end_offset_2;
-        size_type m_end_offset_3;
+        size_type m_begin_offset[3];
+        size_type m_end_offset[3];
+        size_t m_parts;
+
+        client_request_parts() { reset(); }
+        void reset()
+        {
+            m_parts = 0;
+            std::memset(m_begin_offset, sizeof(m_begin_offset), 0);
+            std::memset(m_end_offset, sizeof(m_end_offset), 0);
+        }
+        void append(std::pair<size_type,size_type> range)
+        {
+            assert(!full());
+            m_begin_offset[m_parts] = range.first;
+            m_end_offset[m_parts] = range.second;
+            ++m_parts;
+        }
+        bool full() const { return m_parts == 3; }
+        bool empty() const { return m_parts == 0; }
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hFile;
-            ar & m_begin_offset_1;
-            ar & m_begin_offset_2;
-            ar & m_begin_offset_3;
-            ar & m_end_offset_1;
-            ar & m_end_offset_2;
-            ar & m_end_offset_3;
+            ar & m_begin_offset[0];
+            ar & m_begin_offset[1];
+            ar & m_begin_offset[2];
+            ar & m_end_offset[0];
+            ar & m_end_offset[1];
+            ar & m_end_offset[2];
         }
     };
 

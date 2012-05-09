@@ -157,6 +157,7 @@ namespace libed2k
         void write_queue_ranking(boost::uint16_t rank);
         void write_accept_upload();
         void write_cancel_transfer();
+        void write_request_parts(client_request_parts_64 rp);
 
         void write_have(int index);
         void write_piece(const peer_request& r, disk_buffer_holder& buffer);
