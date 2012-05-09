@@ -234,6 +234,7 @@ void drop_directory_tree()
 
 BOOST_AUTO_TEST_CASE(test_string_conversions)
 {
+    setlocale(LC_CTYPE, "");
     std::string strDirectory = chRussianDirectory;
     std::string strNative = libed2k::convert_to_native(libed2k::bom_filter(strDirectory));
 
