@@ -195,10 +195,16 @@ namespace libed2k
     class monitor_order : boost::noncopyable
     {
     public:
+        monitor_order()
+        {
+            m_cancelled = false;
+        }
+
         void push(const Data& data)
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
             m_queue.push(data);
+            m_cancelled = false;
             m_signal.notify_one();
         }
 
@@ -208,6 +214,7 @@ namespace libed2k
             boost::mutex::scoped_lock lock(m_monitorMutex);
             std::queue<fs::path> empty;
             std::swap(m_queue, empty );
+            m_cancelled = true;
             m_signal.notify_one();
             DBG("monitor:: completed");
         }
@@ -215,6 +222,11 @@ namespace libed2k
         Data popWait()
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
+
+            if (m_cancelled)
+            {
+                throw libed2k_exception(errors::no_error);
+            }
 
             if(m_queue.empty())
             {
@@ -224,9 +236,9 @@ namespace libed2k
 
             DBG("popWait: after signal");
 
-            // we have received exit signal
             if (m_queue.empty())
             {
+                // we have exit signal
                 throw libed2k_exception(errors::no_error);
             }
 
@@ -236,9 +248,10 @@ namespace libed2k
         }
 
     private:
-        std::queue<Data> m_queue;
-        boost::mutex m_monitorMutex;
-        boost::condition m_signal;
+        bool                m_cancelled;
+        std::queue<Data>    m_queue;
+        boost::mutex        m_monitorMutex;
+        boost::condition    m_signal;
     };
 
     namespace aux { class session_impl; }

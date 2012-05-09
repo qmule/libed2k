@@ -55,8 +55,8 @@ namespace libed2k
 
             DBG("add hash for: " << t.file_path.string());
 
-            BOOST_CHECK(find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
-            m_vH.erase(find(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
+            BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
+            m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
 
             if (m_hash_count == 5)
             {
@@ -243,16 +243,24 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_session)
+BOOST_AUTO_TEST_CASE(test_file_monitor)
 {
     LOGGER_INIT()
+    libed2k::session_settings s;
+    s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
+    libed2k::aux::session_impl_test st(s);
+    st.stop();
+}
+
+BOOST_AUTO_TEST_CASE(test_session)
+{
+    //LOGGER_INIT()
     setlocale(LC_CTYPE, "");
 
     libed2k::session_settings s;
 
     s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
 
-    drop_directory_tree();
     create_directory_tree();
 
     libed2k::aux::session_impl_test st(s);
@@ -265,8 +273,9 @@ BOOST_AUTO_TEST_CASE(test_session)
     }
 
     st.wait();
-    //sleep(5);
+
     st.stop();
+    drop_directory_tree();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
