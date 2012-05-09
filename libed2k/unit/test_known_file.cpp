@@ -30,8 +30,6 @@ namespace libed2k
             void wait();
             void run();
 
-            virtual void post_transfer(add_transfer_params const& params);
-
             int                 m_hash_count;
             boost::mutex        m_mutex;
             boost::condition    m_signal;
@@ -89,12 +87,6 @@ namespace libed2k
             m_io_service.run();
         }
 
-        void session_impl_test::post_transfer(add_transfer_params const& params)
-        {
-            DBG("session_impl_test::post_transfer");
-            error_code ec;
-            m_io_service.post(boost::bind(&session_impl_test::add_transfer, this, params, ec));
-        }
     }
 }
 
