@@ -199,10 +199,11 @@ namespace libed2k {
 
         std::set<peer_connection*> m_connections;
 
+        void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
+
     private:
         void on_files_released(int ret, disk_io_job const& j);
-		void on_piece_verified(int ret, disk_io_job const& j,
-                               boost::function<void(int)> f);
+		void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void on_transfer_aborted(int ret, disk_io_job const& j);
 
         // will initialize the storage and the piece-picker
