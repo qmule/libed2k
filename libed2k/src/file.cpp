@@ -895,7 +895,7 @@ namespace libed2k
                 }
             }
         }
-        catch(libed2k_exception& e)
+        catch(libed2k_exception&)
         {
             // exit signal received
         }

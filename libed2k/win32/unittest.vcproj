@@ -45,7 +45,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib libeay32MTd.lib ssleay32MTd.lib"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib libeay32MDd.lib ssleay32MDd.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\lib&quot;;&quot;$(LIBTORRENT_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
