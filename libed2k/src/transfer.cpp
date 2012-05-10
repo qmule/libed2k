@@ -275,6 +275,10 @@ namespace libed2k
         // destructor has to be called from the main thread
     }
 
+    void transfer::on_disk_error(disk_io_job const& j, peer_connection* c)
+    {
+    }
+
     void transfer::init()
     {
         // the shared_from_this() will create an intentional

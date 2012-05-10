@@ -557,6 +557,44 @@ bool peer_connection::can_read(char* state) const
 	return (true);
 }
 
+void peer_connection::fill_send_buffer()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    if (!t) return;
+
+    int buffer_size_watermark = 512;
+
+    while (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
+    {
+        peer_request& r = m_requests.front();
+        t->filesystem().async_read(r, boost::bind(&peer_connection::on_disk_read_complete,
+                                                  self_as<peer_connection>(), _1, _2, r));
+        m_requests.erase(m_requests.begin());
+    }
+}
+
+void peer_connection::on_disk_read_complete(int ret, disk_io_job const& j, peer_request r)
+{
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+    disk_buffer_holder buffer(m_ses.m_disk_thread, j.buffer);
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (ret != r.length)
+    {
+        if (!t)
+        {
+            disconnect(j.error);
+            return;
+        }
+
+        // handle_disk_error may disconnect us
+        t->on_disk_error(j, this);
+        return;
+    }
+
+    write_piece(r, buffer);
+}
+
 void peer_connection::on_disk_write_complete(
     int ret, disk_io_job const& j, peer_request r, boost::shared_ptr<transfer> t)
 {
@@ -715,6 +753,21 @@ void peer_connection::write_request_parts(client_request_parts_64 rp)
         << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
         << " ==> " << m_remote);
     do_write(rp);
+}
+
+void peer_connection::write_piece(const peer_request& r, disk_buffer_holder& buffer)
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    client_sending_part_64 sp;
+    sp.m_hFile = t->hash();
+    sp.m_begin_offset = r.piece * PIECE_SIZE + r.start;
+    sp.m_end_offset = sp.m_begin_offset + r.length;
+    do_write(sp);
+
+    append_send_buffer(buffer.get(), r.length,
+                       boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
+    buffer.release();
+    do_write();
 }
 
 void peer_connection::on_hello(const error_code& error)
@@ -962,9 +1015,42 @@ void peer_connection::on_cancel_transfer(const error_code& error)
 {
     if (!error)
     {
+        DBG("cancel transfer <== " << m_remote);
+        // TODO: handle it.
+        disconnect(errors::transfer_aborted);
     }
     else
     {
         ERR("transfer cancel error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_request_parts(const error_code& error)
+{
+    if (!error)
+    {
+        client_request_parts_64 rp;
+        decode_packet(rp);
+        DBG("request parts " << rp.m_hFile << ": "
+            << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
+            << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
+            << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
+            << " <== " << m_remote);
+        for (size_t i = 0; i < 3; ++i)
+        {
+            if (rp.m_begin_offset[i] < rp.m_end_offset[i])
+            {
+                peer_request r;
+                r.piece = rp.m_begin_offset[i] / PIECE_SIZE;
+                r.start = rp.m_begin_offset[i] % PIECE_SIZE;
+                r.length = rp.m_end_offset[i] - rp.m_begin_offset[i];
+                m_requests.push_back(r);
+                fill_send_buffer();
+            }
+        }
+    }
+    else
+    {
+        ERR("request parts error " << error.message() << " <== " << m_remote);
     }
 }

@@ -875,12 +875,13 @@ namespace libed2k
                         atp.piece_hash.set_terminal();
                     }
 
-                    if (atp.piece_hash.hashes().size() > 1)
+                    std::vector<md4_hash> hashes = atp.piece_hash.all_hashes();
+                    if (hashes.size() > 1)
                     {
                         md4_hasher.CalculateDigest(
                             atp.file_hash.getContainer(),
-                            reinterpret_cast<const unsigned char*>(&atp.piece_hash.hashes()[0]),
-                            atp.piece_hash.hashes().size()*libed2k::MD4_HASH_SIZE);
+                            reinterpret_cast<const unsigned char*>(&hashes[0]),
+                            hashes.size()*libed2k::MD4_HASH_SIZE);
                     }
                     else
                     {
