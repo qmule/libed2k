@@ -12,7 +12,6 @@
 
 #include <libtorrent/error_code.hpp>
 #include <libtorrent/chained_buffer.hpp>
-#include <libtorrent/buffer.hpp>
 #include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
@@ -71,22 +70,10 @@ namespace libed2k
             num_supported_messages
         };
 
-        buffer::const_interval receive_buffer() const
-        {
-            if (m_recv_buffer.empty())
-                return buffer::const_interval(0,0);
-            return buffer::const_interval(&m_recv_buffer[0],
-                                          &m_recv_buffer[0] + m_recv_pos);
-        }
-
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
-        void reset_recv_buffer(int packet_size);
-        void cut_receive_buffer(int size, int packet_size);
 
         void incoming_piece(peer_request const& p, disk_buffer_holder& data);
-        void incoming_piece_fragment(int bytes);
-        void start_receive_piece(peer_request const& r);
 
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
@@ -179,10 +166,9 @@ namespace libed2k
         void on_accept_upload(const error_code& error);
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
+        void on_piece(const error_code& error);
 
-        void on_piece(int received);
-
-        bool packet_finished() const { return m_packet_size <= m_recv_pos; }
+        void on_receive_data(const error_code& error, std::size_t bytes_transferred);
 
         // keep the io_service running as long as we
         // have peer connections
@@ -191,8 +177,6 @@ namespace libed2k
         // timeouts
         ptime m_last_receive;
         ptime m_last_sent;
-
-        libtorrent::buffer m_recv_buffer;
 
         // if this peer is receiving a piece, this
         // points to a disk buffer that the data is
@@ -259,16 +243,7 @@ namespace libed2k
         // to the list of connections that will be closed.
         bool m_disconnecting;
 
-        // the size (in bytes) of the bittorrent message
-        // we're currently receiving
-        int m_packet_size;
-
-        // the number of bytes of the bittorrent payload
-        // we've received so far
-        int m_recv_pos;
-
         int m_disk_recv_buffer_size;
-
     };
 
 }
