@@ -139,6 +139,8 @@ namespace libed2k
         bool add_request(piece_block const& b, int flags = 0);
         void send_block_requests();
 
+        void fill_send_buffer();
+        void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
 
@@ -158,9 +160,9 @@ namespace libed2k
         void write_accept_upload();
         void write_cancel_transfer();
         void write_request_parts(client_request_parts_64 rp);
+        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
 
         void write_have(int index);
-        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
 
         // protocol handlers
         void on_hello(const error_code& error);
@@ -176,6 +178,7 @@ namespace libed2k
         void on_queue_ranking(const error_code& error);
         void on_accept_upload(const error_code& error);
         void on_cancel_transfer(const error_code& error);
+        void on_request_parts(const error_code& error);
 
         void on_piece(int received);
 
@@ -206,6 +209,10 @@ namespace libed2k
 
         // the pieces the other end have
         hash_set m_remote_hashset;
+
+        // the queue of requests we have got
+        // from this peer
+        std::vector<peer_request> m_requests;
 
         // the blocks we have reserved in the piece
         // picker and will request from this peer.
@@ -251,10 +258,6 @@ namespace libed2k
         // this is true if this connection has been added
         // to the list of connections that will be closed.
         bool m_disconnecting;
-
-        // a list of byte offsets inside the send buffer
-        // the piece requests
-        std::vector<int> m_requests_in_buffer;
 
         // the size (in bytes) of the bittorrent message
         // we're currently receiving
