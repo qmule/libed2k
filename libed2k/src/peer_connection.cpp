@@ -25,8 +25,6 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_peer(peerinfo),
     m_connecting(true),
     m_active(true),
-    m_packet_size(0),
-    m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
     reset();
@@ -44,8 +42,6 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_peer(peerinfo),
     m_connecting(false),
     m_active(false),
-    m_packet_size(0),
-    m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
     reset();
@@ -247,12 +243,6 @@ bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
 {
     if (disk_buffer_size == 0) return true;
 
-    if (disk_buffer_size > 16 * 1024)
-    {
-        disconnect(libtorrent::errors::invalid_piece_size, 2);
-        return false;
-    }
-
     // first free the old buffer
     m_disk_recv_buffer.reset();
     // then allocate a new one
@@ -271,26 +261,6 @@ char* peer_connection::release_disk_receive_buffer()
 {
     m_disk_recv_buffer_size = 0;
     return m_disk_recv_buffer.release();
-}
-
-void peer_connection::reset_recv_buffer(int packet_size)
-{
-    if (m_recv_pos > m_packet_size)
-    {
-        cut_receive_buffer(m_packet_size, packet_size);
-        return;
-    }
-    m_recv_pos = 0;
-    m_packet_size = packet_size;
-}
-
-void peer_connection::cut_receive_buffer(int size, int packet_size)
-{
-    if (size > 0)
-        std::memmove(&m_recv_buffer[0], &m_recv_buffer[0] + size, m_recv_pos - size);
-
-    m_recv_pos -= size;
-    m_packet_size = packet_size;
 }
 
 void peer_connection::on_timeout()
@@ -424,64 +394,42 @@ void peer_connection::on_connect(error_code const& e)
     write_hello();
 }
 
-// -----------------------------
-// ----------- PIECE -----------
-// -----------------------------
-void peer_connection::on_piece(int received)
+void peer_connection::on_piece(const error_code& error)
 {
-    buffer::const_interval recv_buffer = receive_buffer();
-    int recv_pos = recv_buffer.end - recv_buffer.begin;
-    int header_size = 0; // ???
-
-    if (recv_pos == 1) // receive buffer is empty
+    if (!error)
     {
-        if (!allocate_disk_receive_buffer(m_packet_size - header_size))
+        client_sending_part_64 sp;
+        decode_packet(sp);
+        DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+            << " <== " << m_remote);
+
+        peer_request r;
+        r.piece = sp.m_begin_offset / PIECE_SIZE;
+        r.start = sp.m_begin_offset % PIECE_SIZE;
+        r.length = sp.m_end_offset - sp.m_begin_offset;
+
+        if (!allocate_disk_receive_buffer(r.length))
         {
             return;
         }
-    }
 
-    peer_request p;
-
-    if (recv_pos >= header_size) // read header
-    {
-        const char* ptr = recv_buffer.begin + 1;
-        p.piece = libtorrent::detail::read_int32(ptr);
-        p.start = libtorrent::detail::read_int32(ptr);
-        p.length = m_packet_size - header_size;
-    }
-
-    int piece_bytes = 0;
-    if (recv_pos <= header_size)
-    {
-        // only received protocol data
-    }
-    else if (recv_pos - received >= header_size)
-    {
-        // only received payload data
-        piece_bytes = received;
+        boost::asio::async_read(
+            *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
+            make_read_handler(boost::bind(&peer_connection::on_receive_data,
+                                          self_as<peer_connection>(), _1, _2)));
     }
     else
     {
-        // received a bit of both
-        piece_bytes = recv_pos - header_size;
+        ERR("piece error " << error.message() << " <== " << m_remote);
     }
 
-    if (recv_pos < header_size) return;
+}
 
-    if (recv_pos - received < header_size && recv_pos >= header_size)
-    {
-        // call this once, the first time the entire header
-        // has been received
-        start_receive_piece(p);
-        if (is_disconnecting()) return;
-    }
-
-    incoming_piece_fragment(piece_bytes);
-    if (!packet_finished()) return;
-
-    disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-    incoming_piece(p, holder);
+void peer_connection::on_receive_data(const error_code& error, std::size_t bytes_transferred)
+{
+    //disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
+    //incoming_piece(r, holder);
+    do_read();
 }
 
 void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& data)
@@ -509,14 +457,6 @@ void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& 
         t->async_verify_piece(
             p.piece, boost::bind(&transfer::piece_finished, t, p.piece, _1));
     }
-}
-
-void peer_connection::incoming_piece_fragment(int bytes)
-{
-}
-
-void peer_connection::start_receive_piece(const peer_request& r)
-{
 }
 
 void peer_connection::start()
