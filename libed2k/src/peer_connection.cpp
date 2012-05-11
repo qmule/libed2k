@@ -56,20 +56,34 @@ void peer_connection::reset()
     m_connection_ticket = -1;
     m_desired_queue_size = 2;
 
-    // hello handler
-    add_handler(OP_HELLO, boost::bind(
-                    &peer_connection::on_hello, this, _1));
-    // hello answer handler
-    add_handler(OP_HELLOANSWER, boost::bind(
-                    &peer_connection::on_hello_answer, this, _1));
-    add_handler(OP_SETREQFILEID, boost::bind(
-                    &peer_connection::on_file_request, this, _1));
+    add_handler(OP_HELLO, boost::bind(&peer_connection::on_hello, this, _1));
+    add_handler(OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, this, _1));
+    add_handler(OP_REQUESTFILENAME, boost::bind(&peer_connection::on_file_request, this, _1));
+    add_handler(OP_REQFILENAMEANSWER, boost::bind(&peer_connection::on_file_answer, this, _1));
+    add_handler(OP_FILEDESC, boost::bind(&peer_connection::on_file_description, this, _1));
+    add_handler(OP_SETREQFILEID, boost::bind(&peer_connection::on_filestatus_request, this, _1));
+    add_handler(OP_FILEREQANSNOFIL, boost::bind(&peer_connection::on_no_file, this, _1));
+    add_handler(OP_FILESTATUS, boost::bind(&peer_connection::on_file_status, this, _1));
+    add_handler(OP_HASHSETREQUEST, boost::bind(&peer_connection::on_hashset_request, this, _1));
+    add_handler(OP_HASHSETANSWER, boost::bind(&peer_connection::on_hashset_answer, this, _1));
+    add_handler(OP_STARTUPLOADREQ, boost::bind(&peer_connection::on_start_upload, this, _1));
+    add_handler(OP_QUEUERANKING, boost::bind(&peer_connection::on_queue_ranking, this, _1));
+    add_handler(OP_ACCEPTUPLOADREQ, boost::bind(&peer_connection::on_accept_upload, this, _1));
+    add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
+    add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
+    add_handler(OP_REQUESTPARTS_I64, boost::bind(&peer_connection::on_request_parts, this, _1));
+    add_handler(OP_SENDINGPART_I64, boost::bind(&peer_connection::on_piece, this, _1));
+    add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
 }
 
 peer_connection::~peer_connection()
 {
     m_disk_recv_buffer_size = 0;
     DBG("*** PEER CONNECTION CLOSED");
+}
+
+void peer_connection::init()
+{
 }
 
 void peer_connection::second_tick()
@@ -713,6 +727,20 @@ void peer_connection::on_file_answer(const error_code& error)
     }
 }
 
+void peer_connection::on_file_description(const error_code& error)
+{
+    if (!error)
+    {
+        client_file_description fd;
+        decode_packet(fd);
+        DBG("file description " << fd.m_nRating << ", " << fd.m_sComment.m_collection << " <== " << m_remote);
+    }
+    else
+    {
+        ERR("file description error " << error.message() << " <== " << m_remote);
+    }
+}
+
 void peer_connection::on_no_file(const error_code& error)
 {
     if (!error)
@@ -886,6 +914,21 @@ void peer_connection::on_accept_upload(const error_code& error)
     }
 }
 
+void peer_connection::on_out_parts(const error_code& error)
+{
+    if (!error)
+    {
+        client_out_parts op;
+        decode_packet(op);
+        DBG("out of parts <== " << m_remote);
+    }
+    else
+    {
+        ERR("out of parts error " << error.message() << " <== " << m_remote);
+    }
+
+}
+
 void peer_connection::on_cancel_transfer(const error_code& error)
 {
     if (!error)
@@ -953,10 +996,25 @@ void peer_connection::on_piece(const error_code& error)
             *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r)));
+        do_read();
     }
     else
     {
         ERR("piece error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_end_download(const error_code& error)
+{
+    if (!error)
+    {
+        client_end_download ed;
+        decode_packet(ed);
+        DBG("end download " << ed.m_hFile << " <== " << m_remote);
+    }
+    else
+    {
+        ERR("end download error " << error.message() << " <== " << m_remote);
     }
 }
 
@@ -989,5 +1047,6 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
             r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
     }
 
-    do_read();
+    request_block();
+    send_block_requests();
 }
