@@ -394,71 +394,6 @@ void peer_connection::on_connect(error_code const& e)
     write_hello();
 }
 
-void peer_connection::on_piece(const error_code& error)
-{
-    if (!error)
-    {
-        client_sending_part_64 sp;
-        decode_packet(sp);
-        DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
-            << " <== " << m_remote);
-
-        peer_request r;
-        r.piece = sp.m_begin_offset / PIECE_SIZE;
-        r.start = sp.m_begin_offset % PIECE_SIZE;
-        r.length = sp.m_end_offset - sp.m_begin_offset;
-
-        if (!allocate_disk_receive_buffer(r.length))
-        {
-            return;
-        }
-
-        boost::asio::async_read(
-            *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
-            make_read_handler(boost::bind(&peer_connection::on_receive_data,
-                                          self_as<peer_connection>(), _1, _2)));
-    }
-    else
-    {
-        ERR("piece error " << error.message() << " <== " << m_remote);
-    }
-
-}
-
-void peer_connection::on_receive_data(const error_code& error, std::size_t bytes_transferred)
-{
-    //disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-    //incoming_piece(r, holder);
-    do_read();
-}
-
-void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& data)
-{
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-
-    if (is_disconnecting()) return;
-    if (t->is_seed()) return;
-
-    piece_picker& picker = t->picker();
-    piece_manager& fs = t->filesystem();
-    piece_block block_finished(p.piece, p.start / t->block_size());
-
-    fs.async_write(p, data, boost::bind(&peer_connection::on_disk_write_complete,
-                                        self_as<peer_connection>(), _1, _2, p, t));
-
-    bool was_finished = picker.is_piece_finished(p.piece);
-    picker.mark_as_writing(block_finished, get_peer());
-
-    // did we just finish the piece?
-    // this means all blocks are either written
-    // to disk or are in the disk write cache
-    if (picker.is_piece_finished(p.piece) && !was_finished)
-    {
-        t->async_verify_piece(
-            p.piece, boost::bind(&transfer::piece_finished, t, p.piece, _1));
-    }
-}
-
 void peer_connection::start()
 {
 }
@@ -546,7 +481,7 @@ void peer_connection::on_disk_write_complete(
 
     if (t->is_seed()) return;
 
-    piece_block block_finished(r.piece, r.start / t->block_size());
+    piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
     piece_picker& picker = t->picker();
     picker.mark_as_finished(block_finished, get_peer());
 }
@@ -993,4 +928,66 @@ void peer_connection::on_request_parts(const error_code& error)
     {
         ERR("request parts error " << error.message() << " <== " << m_remote);
     }
+}
+
+void peer_connection::on_piece(const error_code& error)
+{
+    if (!error)
+    {
+        client_sending_part_64 sp;
+        decode_packet(sp);
+        DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+            << " <== " << m_remote);
+
+        peer_request r;
+        r.piece = sp.m_begin_offset / PIECE_SIZE;
+        r.start = sp.m_begin_offset % PIECE_SIZE;
+        r.length = sp.m_end_offset - sp.m_begin_offset;
+
+        if (!allocate_disk_receive_buffer(r.length))
+        {
+            return;
+        }
+
+        boost::asio::async_read(
+            *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
+            make_read_handler(boost::bind(&peer_connection::on_receive_data,
+                                          self_as<peer_connection>(), _1, _2, r)));
+    }
+    else
+    {
+        ERR("piece error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_receive_data(const error_code& error, std::size_t bytes_transferred, peer_request r)
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (is_disconnecting()) return;
+    if (t->is_seed()) return;
+
+    piece_picker& picker = t->picker();
+    piece_manager& fs = t->filesystem();
+    piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
+
+    disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
+    fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
+                                          self_as<peer_connection>(), _1, _2, r, t));
+
+    bool was_finished = picker.is_piece_finished(r.piece);
+    picker.mark_as_writing(block_finished, get_peer());
+
+    // did we just finish the piece?
+    // this means all blocks are either written
+    // to disk or are in the disk write cache
+    if (picker.is_piece_finished(r.piece) && !was_finished)
+    {
+        boost::optional<const md4_hash&> ohash = m_remote_hashset.hash(r.piece);
+        assert(ohash);
+        t->async_verify_piece(
+            r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
+    }
+
+    do_read();
 }

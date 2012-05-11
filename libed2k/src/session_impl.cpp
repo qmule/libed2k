@@ -56,9 +56,9 @@ void session_impl_base::save_state() const
     for (transfer_map::const_iterator i = m_transfers.begin(),
             end(m_transfers.end()); i != end; ++i)
     {
-        kfc.m_known_file_list.add(known_file_entry(i->second->getFilehash(),
-                i->second->getHashset().all_hashes(),
-                i->second->getFilepath(),
+        kfc.m_known_file_list.add(known_file_entry(i->second->hash(),
+                i->second->hashset().all_hashes(),
+                i->second->filepath(),
                 i->second->getAcepted(),
                 i->second->getResuested(),
                 i->second->getTransferred(),

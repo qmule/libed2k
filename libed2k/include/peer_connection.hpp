@@ -73,8 +73,6 @@ namespace libed2k
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
 
-        void incoming_piece(peer_request const& p, disk_buffer_holder& data);
-
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
         void disconnect(error_code const& ec, int error = 0);
@@ -168,7 +166,7 @@ namespace libed2k
         void on_request_parts(const error_code& error);
         void on_piece(const error_code& error);
 
-        void on_receive_data(const error_code& error, std::size_t bytes_transferred);
+        void on_receive_data(const error_code& error, std::size_t bytes_transferred, peer_request);
 
         // keep the io_service running as long as we
         // have peer connections
