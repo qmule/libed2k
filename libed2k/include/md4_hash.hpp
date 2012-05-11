@@ -263,6 +263,12 @@ namespace libed2k{
                 }
             }
         }
+        void reset(size_t pieces)
+        {
+            m_pieces.resize(pieces);
+            m_pieces.clear_all();
+            m_hashes.clear();
+        }
 
     private:
         bitfield m_pieces;

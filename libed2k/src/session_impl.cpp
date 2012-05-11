@@ -675,6 +675,7 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
             kfile.init();
             add_transfer_params params;
             params.file_hash = kfile.getFileHash();
+            params.piece_hash.all_hashes(kfile.getPieceHashes());
             params.file_path = i->path();
             params.file_size = fs::file_size(i->path());
             params.seed_mode = true;

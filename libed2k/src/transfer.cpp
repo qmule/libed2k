@@ -32,6 +32,7 @@ namespace libed2k
         m_transferred(p.m_transferred),
         m_priority(p.m_priority)
     {
+        assert(!m_hashset.pieces().empty());
     }
 
     transfer::~transfer()
@@ -277,13 +278,21 @@ namespace libed2k
 
     void transfer::on_disk_error(disk_io_job const& j, peer_connection* c)
     {
+        if (!j.error) return;
+        ERR("disk error: '" << j.error.message() << " in file " << j.error_file);
     }
 
     void transfer::init()
     {
+        file_storage& files = const_cast<file_storage&>(m_info->files());
+        files.set_num_pieces(num_pieces());
+        files.set_piece_length(PIECE_SIZE);
+        files.add_file(m_filepath.filename(), m_filesize);
+        //files.set_name(name);
+
         // the shared_from_this() will create an intentional
         // cycle of ownership, see the hpp file for description.
-        m_owning_storage = new libtorrent::piece_manager(
+        m_owning_storage = new piece_manager(
             shared_from_this(), m_info, m_filepath.parent_path(), m_ses.m_filepool,
             m_ses.m_disk_thread, libtorrent::default_storage_constructor,
             static_cast<libtorrent::storage_mode_t>(m_storage_mode));

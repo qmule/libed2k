@@ -103,6 +103,7 @@ namespace libed2k
         const md4_hash& getFileHash() const;
         const md4_hash& getPieceHash(size_t nPart) const;
         size_t          getPiecesCount() const;
+        const std::vector<md4_hash>& getPieceHashes() const { return m_vHash; }
     private:
         std::string             m_strFilename;
         std::vector<md4_hash>   m_vHash;

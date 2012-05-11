@@ -988,8 +988,8 @@ else\
         void reset()
         {
             m_parts = 0;
-            std::memset(m_begin_offset, sizeof(m_begin_offset), 0);
-            std::memset(m_end_offset, sizeof(m_end_offset), 0);
+            std::memset(m_begin_offset, 0, sizeof(m_begin_offset));
+            std::memset(m_end_offset, 0, sizeof(m_end_offset));
         }
         void append(std::pair<size_type,size_type> range)
         {
@@ -998,7 +998,7 @@ else\
             m_end_offset[m_parts] = range.second;
             ++m_parts;
         }
-        bool full() const { return m_parts == 3; }
+        bool full() const { return m_parts > 2; }
         bool empty() const { return m_parts == 0; }
 
         template<typename Archive>

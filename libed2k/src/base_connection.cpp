@@ -158,7 +158,6 @@ namespace libed2k
 
             if (itr != m_handlers.end())
             {
-                DBG("call normal handler");
                 itr->second(error);
             }
             else

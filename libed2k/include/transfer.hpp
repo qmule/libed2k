@@ -110,7 +110,8 @@ namespace libed2k {
         // --------------------------------------------
         // PIECE MANAGEMENT
         // --------------------------------------------
-        void async_verify_piece(int piece_index, const md4_hash& hash, const boost::function<void(int)>& fun);
+        void async_verify_piece(int piece_index, const md4_hash& hash,
+                                const boost::function<void(int)>& fun);
 
         // this is called from the peer_connection
         // each time a piece has failed the hash test

@@ -579,7 +579,8 @@ void peer_connection::write_filestatus_request(const md4_hash& file_hash)
 void peer_connection::write_file_status(
     const md4_hash& file_hash, const bitfield& status)
 {
-    DBG("file status " << file_hash << " ==> " << m_remote);
+    DBG("file status " << file_hash
+        << ", [" << bitfield2string(status) << "] ==> " << m_remote);
     client_file_status fs;
     fs.m_hFile = file_hash;
     fs.m_status = status;
@@ -696,8 +697,8 @@ void peer_connection::on_file_request(const error_code& error)
         DBG("file request " << fr.m_hFile << " <== " << m_remote);
         if (attach_to_transfer(fr.m_hFile))
         {
-            bitfield status; // undefined
-            write_file_status(fr.m_hFile, status);
+            boost::shared_ptr<transfer> t = m_transfer.lock();
+            write_file_status(fr.m_hFile, t->hashset().pieces());
         }
         else
         {
@@ -787,8 +788,8 @@ void peer_connection::on_file_status(const error_code& error)
     {
         client_file_status fs;
         decode_packet(fs);
-        DBG("file status answer "<< fs.m_hFile << ", " << bitfield2string(fs.m_status)
-            << " <== " << m_remote);
+        DBG("file status answer "<< fs.m_hFile
+            << ", [" << bitfield2string(fs.m_status) << "] <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == fs.m_hFile)
