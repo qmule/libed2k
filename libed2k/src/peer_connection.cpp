@@ -25,8 +25,6 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_peer(peerinfo),
     m_connecting(true),
     m_active(true),
-    m_packet_size(0),
-    m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
     reset();
@@ -44,8 +42,6 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_peer(peerinfo),
     m_connecting(false),
     m_active(false),
-    m_packet_size(0),
-    m_recv_pos(0),
     m_disk_recv_buffer_size(0)
 {
     reset();
@@ -60,20 +56,34 @@ void peer_connection::reset()
     m_connection_ticket = -1;
     m_desired_queue_size = 2;
 
-    // hello handler
-    add_handler(OP_HELLO, boost::bind(
-                    &peer_connection::on_hello, this, _1));
-    // hello answer handler
-    add_handler(OP_HELLOANSWER, boost::bind(
-                    &peer_connection::on_hello_answer, this, _1));
-    add_handler(OP_SETREQFILEID, boost::bind(
-                    &peer_connection::on_file_request, this, _1));
+    add_handler(OP_HELLO, boost::bind(&peer_connection::on_hello, this, _1));
+    add_handler(OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, this, _1));
+    add_handler(OP_REQUESTFILENAME, boost::bind(&peer_connection::on_file_request, this, _1));
+    add_handler(OP_REQFILENAMEANSWER, boost::bind(&peer_connection::on_file_answer, this, _1));
+    add_handler(OP_FILEDESC, boost::bind(&peer_connection::on_file_description, this, _1));
+    add_handler(OP_SETREQFILEID, boost::bind(&peer_connection::on_filestatus_request, this, _1));
+    add_handler(OP_FILEREQANSNOFIL, boost::bind(&peer_connection::on_no_file, this, _1));
+    add_handler(OP_FILESTATUS, boost::bind(&peer_connection::on_file_status, this, _1));
+    add_handler(OP_HASHSETREQUEST, boost::bind(&peer_connection::on_hashset_request, this, _1));
+    add_handler(OP_HASHSETANSWER, boost::bind(&peer_connection::on_hashset_answer, this, _1));
+    add_handler(OP_STARTUPLOADREQ, boost::bind(&peer_connection::on_start_upload, this, _1));
+    add_handler(OP_QUEUERANKING, boost::bind(&peer_connection::on_queue_ranking, this, _1));
+    add_handler(OP_ACCEPTUPLOADREQ, boost::bind(&peer_connection::on_accept_upload, this, _1));
+    add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
+    add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
+    add_handler(OP_REQUESTPARTS_I64, boost::bind(&peer_connection::on_request_parts, this, _1));
+    add_handler(OP_SENDINGPART_I64, boost::bind(&peer_connection::on_piece, this, _1));
+    add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
 }
 
 peer_connection::~peer_connection()
 {
     m_disk_recv_buffer_size = 0;
     DBG("*** PEER CONNECTION CLOSED");
+}
+
+void peer_connection::init()
+{
 }
 
 void peer_connection::second_tick()
@@ -247,12 +257,6 @@ bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
 {
     if (disk_buffer_size == 0) return true;
 
-    if (disk_buffer_size > 16 * 1024)
-    {
-        disconnect(libtorrent::errors::invalid_piece_size, 2);
-        return false;
-    }
-
     // first free the old buffer
     m_disk_recv_buffer.reset();
     // then allocate a new one
@@ -271,26 +275,6 @@ char* peer_connection::release_disk_receive_buffer()
 {
     m_disk_recv_buffer_size = 0;
     return m_disk_recv_buffer.release();
-}
-
-void peer_connection::reset_recv_buffer(int packet_size)
-{
-    if (m_recv_pos > m_packet_size)
-    {
-        cut_receive_buffer(m_packet_size, packet_size);
-        return;
-    }
-    m_recv_pos = 0;
-    m_packet_size = packet_size;
-}
-
-void peer_connection::cut_receive_buffer(int size, int packet_size)
-{
-    if (size > 0)
-        std::memmove(&m_recv_buffer[0], &m_recv_buffer[0] + size, m_recv_pos - size);
-
-    m_recv_pos -= size;
-    m_packet_size = packet_size;
 }
 
 void peer_connection::on_timeout()
@@ -424,101 +408,6 @@ void peer_connection::on_connect(error_code const& e)
     write_hello();
 }
 
-// -----------------------------
-// ----------- PIECE -----------
-// -----------------------------
-void peer_connection::on_piece(int received)
-{
-    buffer::const_interval recv_buffer = receive_buffer();
-    int recv_pos = recv_buffer.end - recv_buffer.begin;
-    int header_size = 0; // ???
-
-    if (recv_pos == 1) // receive buffer is empty
-    {
-        if (!allocate_disk_receive_buffer(m_packet_size - header_size))
-        {
-            return;
-        }
-    }
-
-    peer_request p;
-
-    if (recv_pos >= header_size) // read header
-    {
-        const char* ptr = recv_buffer.begin + 1;
-        p.piece = libtorrent::detail::read_int32(ptr);
-        p.start = libtorrent::detail::read_int32(ptr);
-        p.length = m_packet_size - header_size;
-    }
-
-    int piece_bytes = 0;
-    if (recv_pos <= header_size)
-    {
-        // only received protocol data
-    }
-    else if (recv_pos - received >= header_size)
-    {
-        // only received payload data
-        piece_bytes = received;
-    }
-    else
-    {
-        // received a bit of both
-        piece_bytes = recv_pos - header_size;
-    }
-
-    if (recv_pos < header_size) return;
-
-    if (recv_pos - received < header_size && recv_pos >= header_size)
-    {
-        // call this once, the first time the entire header
-        // has been received
-        start_receive_piece(p);
-        if (is_disconnecting()) return;
-    }
-
-    incoming_piece_fragment(piece_bytes);
-    if (!packet_finished()) return;
-
-    disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-    incoming_piece(p, holder);
-}
-
-void peer_connection::incoming_piece(peer_request const& p, disk_buffer_holder& data)
-{
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-
-    if (is_disconnecting()) return;
-    if (t->is_seed()) return;
-
-    piece_picker& picker = t->picker();
-    piece_manager& fs = t->filesystem();
-    piece_block block_finished(p.piece, p.start / t->block_size());
-
-    fs.async_write(p, data, boost::bind(&peer_connection::on_disk_write_complete,
-                                        self_as<peer_connection>(), _1, _2, p, t));
-
-    bool was_finished = picker.is_piece_finished(p.piece);
-    picker.mark_as_writing(block_finished, get_peer());
-
-    // did we just finish the piece?
-    // this means all blocks are either written
-    // to disk or are in the disk write cache
-    if (picker.is_piece_finished(p.piece) && !was_finished)
-    {
-        t->async_verify_piece(
-            p.piece, boost::bind(&transfer::piece_finished, t, p.piece, _1));
-    }
-}
-
-void peer_connection::incoming_piece_fragment(int bytes)
-{
-}
-
-void peer_connection::start_receive_piece(const peer_request& r)
-{
-}
-
 void peer_connection::start()
 {
 }
@@ -606,7 +495,7 @@ void peer_connection::on_disk_write_complete(
 
     if (t->is_seed()) return;
 
-    piece_block block_finished(r.piece, r.start / t->block_size());
+    piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
     piece_picker& picker = t->picker();
     picker.mark_as_finished(block_finished, get_peer());
 }
@@ -838,6 +727,20 @@ void peer_connection::on_file_answer(const error_code& error)
     }
 }
 
+void peer_connection::on_file_description(const error_code& error)
+{
+    if (!error)
+    {
+        client_file_description fd;
+        decode_packet(fd);
+        DBG("file description " << fd.m_nRating << ", " << fd.m_sComment.m_collection << " <== " << m_remote);
+    }
+    else
+    {
+        ERR("file description error " << error.message() << " <== " << m_remote);
+    }
+}
+
 void peer_connection::on_no_file(const error_code& error)
 {
     if (!error)
@@ -1011,6 +914,21 @@ void peer_connection::on_accept_upload(const error_code& error)
     }
 }
 
+void peer_connection::on_out_parts(const error_code& error)
+{
+    if (!error)
+    {
+        client_out_parts op;
+        decode_packet(op);
+        DBG("out of parts <== " << m_remote);
+    }
+    else
+    {
+        ERR("out of parts error " << error.message() << " <== " << m_remote);
+    }
+
+}
+
 void peer_connection::on_cancel_transfer(const error_code& error)
 {
     if (!error)
@@ -1053,4 +971,82 @@ void peer_connection::on_request_parts(const error_code& error)
     {
         ERR("request parts error " << error.message() << " <== " << m_remote);
     }
+}
+
+void peer_connection::on_piece(const error_code& error)
+{
+    if (!error)
+    {
+        client_sending_part_64 sp;
+        decode_packet(sp);
+        DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+            << " <== " << m_remote);
+
+        peer_request r;
+        r.piece = sp.m_begin_offset / PIECE_SIZE;
+        r.start = sp.m_begin_offset % PIECE_SIZE;
+        r.length = sp.m_end_offset - sp.m_begin_offset;
+
+        if (!allocate_disk_receive_buffer(r.length))
+        {
+            return;
+        }
+
+        boost::asio::async_read(
+            *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
+            make_read_handler(boost::bind(&peer_connection::on_receive_data,
+                                          self_as<peer_connection>(), _1, _2, r)));
+        do_read();
+    }
+    else
+    {
+        ERR("piece error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_end_download(const error_code& error)
+{
+    if (!error)
+    {
+        client_end_download ed;
+        decode_packet(ed);
+        DBG("end download " << ed.m_hFile << " <== " << m_remote);
+    }
+    else
+    {
+        ERR("end download error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_receive_data(const error_code& error, std::size_t bytes_transferred, peer_request r)
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (is_disconnecting()) return;
+    if (t->is_seed()) return;
+
+    piece_picker& picker = t->picker();
+    piece_manager& fs = t->filesystem();
+    piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
+
+    disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
+    fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
+                                          self_as<peer_connection>(), _1, _2, r, t));
+
+    bool was_finished = picker.is_piece_finished(r.piece);
+    picker.mark_as_writing(block_finished, get_peer());
+
+    // did we just finish the piece?
+    // this means all blocks are either written
+    // to disk or are in the disk write cache
+    if (picker.is_piece_finished(r.piece) && !was_finished)
+    {
+        boost::optional<const md4_hash&> ohash = m_remote_hashset.hash(r.piece);
+        assert(ohash);
+        t->async_verify_piece(
+            r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
+    }
+
+    request_block();
+    send_block_requests();
 }

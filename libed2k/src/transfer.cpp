@@ -181,10 +181,10 @@ namespace libed2k
         return m_policy.connect_one_peer();
     }
 
-    void transfer::piece_passed(int index)
+    void transfer::piece_passed(int index, const md4_hash& hash)
     {
         bool was_finished = (num_have() == num_pieces());
-        we_have(index);
+        we_have(index, hash);
         if (!was_finished && is_finished())
         {
             // transfer finished
@@ -197,11 +197,11 @@ namespace libed2k
         }
     }
 
-    void transfer::we_have(int index)
+    void transfer::we_have(int index, const md4_hash& hash)
     {
         //TODO: update progress
-
         m_picker->we_have(index);
+        m_hashset.hash(index, hash);
     }
 
     int transfer::num_pieces() const
@@ -322,16 +322,18 @@ namespace libed2k
         }
     }
 
-    void transfer::async_verify_piece(int piece_index,boost::function<void(int)> const&)
+    void transfer::async_verify_piece(
+        int piece_index, const md4_hash& hash, const boost::function<void(int)>& fun)
     {
         //TODO: piece verification
+        fun(0);
     }
 
     // passed_hash_check
     //  0: success, piece passed check
     // -1: disk failure
     // -2: piece failed check
-    void transfer::piece_finished(int index, int passed_hash_check)
+    void transfer::piece_finished(int index, const md4_hash& hash, int passed_hash_check)
     {
         // even though the piece passed the hash-check
         // it might still have failed being written to disk
@@ -345,7 +347,7 @@ namespace libed2k
         {
             // the following call may cause picker to become invalid
             // in case we just became a seed
-            piece_passed(index);
+            piece_passed(index, hash);
         }
         else if (passed_hash_check == -2)
         {

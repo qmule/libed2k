@@ -44,6 +44,7 @@ namespace libed2k {
         const md4_hash& hash() const { return m_filehash; }
         const hash_set& hashset() const { return m_hashset; }
         size_t filesize() const { return m_filesize; }
+        const fs::path& filepath() const { return m_filepath; }
 
         void start();
         void abort();
@@ -92,7 +93,6 @@ namespace libed2k {
         bool is_sequential_download() const { return m_sequential_download; }
 
         int queue_position() const { return m_sequence_number; }
-        int block_size() const { return m_block_size; }
 
         void second_tick();
 
@@ -109,12 +109,27 @@ namespace libed2k {
 
         // --------------------------------------------
         // PIECE MANAGEMENT
-
-        void async_verify_piece(int piece_index, boost::function<void(int)> const&);
+        // --------------------------------------------
+        void async_verify_piece(int piece_index, const md4_hash& hash, const boost::function<void(int)>& fun);
 
         // this is called from the peer_connection
         // each time a piece has failed the hash test
-        void piece_finished(int index, int passed_hash_check);
+        void piece_finished(int index, const md4_hash& hash, int passed_hash_check);
+
+        // piece_passed is called when a piece passes the hash check
+        // this will tell all peers that we just got his piece
+        // and also let the piece picker know that we have this piece
+        // so it wont pick it for download
+        void piece_passed(int index, const md4_hash& hash);
+
+        // piece_failed is called when a piece fails the hash check
+        void piece_failed(int index);
+
+        // this will restore the piece picker state for a piece
+        // by re marking all the requests to blocks in this piece
+        // that are still outstanding in peers' download queues.
+        // this is done when a piece fails
+        void restore_piece_state(int index);
 
         bool has_picker() const
         {
@@ -130,7 +145,7 @@ namespace libed2k {
 
         // called when we learn that we have a piece
         // only once per piece
-        void we_have(int index);
+        void we_have(int index, const md4_hash& hash);
 
         int num_have() const
         {
@@ -152,30 +167,11 @@ namespace libed2k {
 
         int num_pieces() const;
 
-        // piece_passed is called when a piece passes the hash check
-        // this will tell all peers that we just got his piece
-        // and also let the piece picker know that we have this piece
-        // so it wont pick it for download
-        void piece_passed(int index);
-
-        // piece_failed is called when a piece fails the hash check
-        void piece_failed(int index);
-
-        // this will restore the piece picker state for a piece
-        // by re marking all the requests to blocks in this piece
-        // that are still outstanding in peers' download queues.
-        // this is done when a piece fails
-        void restore_piece_state(int index);
-
         piece_manager& filesystem() { return *m_storage; }
 
         // unless this returns true, new connections must wait
         // with their initialization.
         bool ready_for_connections() const { return true; }
-
-        const md4_hash getFilehash() const { return m_filehash; }
-        const hash_set& getHashset() const { return m_hashset;  }
-        fs::path getFilepath() const { return m_filepath; }
 
         boost::uint32_t getAcepted() const { return m_accepted; }
         boost::uint32_t getResuested() const { return m_requested; }
@@ -223,7 +219,6 @@ namespace libed2k {
         bool m_sequential_download;
 
         int m_sequence_number;
-        int m_block_size;
 
         // the network interface all outgoing connections
         // are opened through
