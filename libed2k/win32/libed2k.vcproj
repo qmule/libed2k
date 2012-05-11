@@ -42,11 +42,12 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_MT;_DLL;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T"
+				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
+				BrowseInformation="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -61,6 +62,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName)d.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -105,7 +107,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
