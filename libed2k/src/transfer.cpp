@@ -11,6 +11,7 @@
 
 namespace libed2k
 {
+
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
         m_ses(ses),

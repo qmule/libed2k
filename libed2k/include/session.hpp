@@ -60,6 +60,21 @@ namespace libed2k {
         boost::uint32_t m_requested;
         boost::uint64_t m_transferred;
         boost::uint8_t  m_priority;
+
+        bool operator==(const add_transfer_params& t) const
+        {
+            return (file_hash == t.file_hash &&
+                    piece_hash.all_hashes() == t.piece_hash.all_hashes() &&
+                    file_path == t.file_path &&
+                    file_size == t.file_size &&
+                    m_accepted == t.m_accepted &&
+                    m_requested == t.m_requested &&
+                    m_transferred == t.m_transferred &&
+                    m_priority  == t.m_priority
+                    );
+        }
+
+        void dump() const;
     };
 
     typedef boost::function<void (const add_transfer_params&)> add_transfer_handler;

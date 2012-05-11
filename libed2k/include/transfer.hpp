@@ -178,6 +178,7 @@ namespace libed2k {
         boost::uint32_t getResuested() const { return m_requested; }
         boost::uint64_t getTransferred() const { return m_transferred; }
         boost::uint8_t  getPriority() const { return m_priority; }
+        size_t          getFilesize() const { return m_filesize; }
 
         // --------------------------------------------
         // SERVER MANAGEMENT

@@ -29,17 +29,19 @@ namespace libed2k
             void stop();
             void wait();
             void run();
-
-            virtual void post_transfer(add_transfer_params const& params);
+            void save();    // this method emulated save_state in session_base
 
             int                 m_hash_count;
             boost::mutex        m_mutex;
             boost::condition    m_signal;
             std::vector<md4_hash> m_vH;
+            std::vector<add_transfer_params> m_vParams;
+            bool                m_bAfterSave;
         };
 
         session_impl_test::session_impl_test(const session_settings& settings) : session_impl_base(settings), m_hash_count(0)
         {
+            m_bAfterSave = false;
             m_fmon.start();
             m_vH.push_back(std::string("1AA8AFE3018B38D9B4D880D0683CCEB5"));
             m_vH.push_back(std::string("E76BADB8F958D7685B4549D874699EE9"));
@@ -51,16 +53,33 @@ namespace libed2k
         transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)
         {
             boost::mutex::scoped_lock lock(m_mutex);
-            ++m_hash_count;
 
-            DBG("add hash for: " << t.file_path.string());
-
-            BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
-            m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
-
-            if (m_hash_count == 5)
+            // after save we load all files from known.met
+            if (m_bAfterSave)
             {
-                m_signal.notify_all();
+                DBG("add transfer after save: " << m_vParams.size());
+                ++m_hash_count;
+                t.dump();
+                BOOST_CHECK(std::find(m_vParams.begin(), m_vParams.end(), t) != m_vParams.end());
+                m_vParams.erase(std::remove(m_vParams.begin(), m_vParams.end(), t), m_vParams.end());
+                BOOST_CHECK(m_vParams.size() == (5 - m_hash_count));
+            }
+            else
+            {
+                // now all files were loaded by file monitor
+                ++m_hash_count;
+
+                DBG("add hash for: " << t.file_path.string());
+
+                BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
+                m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
+                BOOST_CHECK(m_vH.size() == (5 - m_hash_count));
+                m_vParams.push_back(t);
+
+                if (m_hash_count == 5)
+                {
+                    m_signal.notify_all();
+                }
             }
 
             return (transfer_handle(boost::weak_ptr<transfer>()));
@@ -89,12 +108,47 @@ namespace libed2k
             m_io_service.run();
         }
 
-        void session_impl_test::post_transfer(add_transfer_params const& params)
+        void session_impl_test::save()
         {
-            DBG("session_impl_test::post_transfer");
-            error_code ec;
-            m_io_service.post(boost::bind(&session_impl_test::add_transfer, this, params, ec));
+            m_hash_count = 0;
+            m_bAfterSave = true;
+            m_transfers_filenames.clear();
+            DBG("session_impl::save_state()");
+            known_file_collection kfc;
+
+            std::vector<add_transfer_params>::iterator itr = m_vParams.begin();
+
+            while(itr != m_vParams.end())
+            {
+                itr->dump();
+                kfc.m_known_file_list.add(known_file_entry(itr->file_hash,
+                        itr->piece_hash.all_hashes(),
+                        itr->file_path,
+                        itr->file_size,
+                        itr->m_accepted,
+                        itr->m_requested,
+                        itr->m_transferred,
+                        itr->m_priority));
+
+                ++itr;
+            }
+
+            try
+            {
+                if (!m_settings.m_known_file.empty())
+                {
+                    fs::ofstream fstream(convert_to_native(m_settings.m_known_file));
+                    libed2k::archive::ed2k_oarchive ofa(fstream);
+                    ofa << kfc;
+                }
+            }
+            catch(libed2k_exception&)
+            {
+                BOOST_REQUIRE(false);
+            }
+
         }
+
     }
 }
 
@@ -260,6 +314,7 @@ BOOST_AUTO_TEST_CASE(test_session)
 
     libed2k::session_settings s;
 
+    s.m_known_file = "known.met";
     s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
 
     create_directory_tree();
@@ -274,9 +329,17 @@ BOOST_AUTO_TEST_CASE(test_session)
     }
 
     st.wait();
-
     st.stop();
+
+    // file monitor was stopped
+    st.save();
+    st.load_state();
+    BOOST_CHECK_EQUAL(st.m_hash_count, 5);
+
+
     drop_directory_tree();
+    libed2k::fs::path p = "known.met";
+    libed2k::fs::remove(p);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
