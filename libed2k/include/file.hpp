@@ -126,6 +126,7 @@ namespace libed2k
         known_file_entry(const md4_hash& hFile,
                             const std::vector<md4_hash>& hSet,
                             const fs::path& p,
+                            size_t  nFilesize,
                             boost::uint32_t nAccepted,
                             boost::uint32_t nRequested,
                             boost::uint64_t nTransferred,
