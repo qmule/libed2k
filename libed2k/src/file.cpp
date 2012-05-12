@@ -690,21 +690,21 @@ namespace libed2k
     known_file_entry::known_file_entry(const md4_hash& hFile,
                                         const std::vector<md4_hash>& hSet,
                                         const fs::path& p,
+                                        size_t  nFilesize,
                                         boost::uint32_t nAccepted,
                                         boost::uint32_t nRequested,
                                         boost::uint64_t nTransferred,
-                                        boost::uint8_t nPriority)
+                                        boost::uint8_t nPriority) :
+                                        m_nLastChanged(fs::last_write_time(p)),
+                                        m_hFile(hFile)
     {
-        boost::uint32_t m_nLastChanged  = fs::last_write_time(p);
-        boost::uint64_t nFileSize       = fs::file_size(p);
-        m_hFile = hFile;
-
+        boost::uint64_t nFileSize       = nFilesize;
         __file_size fs_trans;
         fs_trans.nQuadPart = nTransferred;
 
         m_hash_list.m_collection.assign(hSet.begin(), hSet.end());
-        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));
-        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));  // write same name for backward compatibility
+        m_list.add_tag(make_string_tag(convert_from_native(p.leaf()), FT_FILENAME, true));
+        m_list.add_tag(make_string_tag(convert_from_native(p.leaf()), FT_FILENAME, true));  // write same name for backward compatibility
         m_list.add_tag(make_typed_tag(nFileSize, FT_FILESIZE, true));
         m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
         m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
@@ -781,6 +781,7 @@ namespace libed2k
 
                     bool    bPartial = false; // check last part in file not full
                     uintmax_t nFileSize = boost::filesystem::file_size(p);
+                    atp.file_size = nFileSize;
 
                     if (nFileSize == 0)
                     {

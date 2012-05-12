@@ -49,10 +49,13 @@ namespace libed2k
 
         ~peer_connection();
 
+        void init();
+
         peer* get_peer() const { return m_peer; }
         void set_peer(peer* pi) { m_peer = pi; }
 
         const tcp::endpoint& remote() const { return m_remote; }
+        const hash_set& remote_hashset() const { return m_remote_hashset; }
 
         // is called once every second by the main loop
         void second_tick();
@@ -72,8 +75,6 @@ namespace libed2k
 
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
-
-        void incoming_piece(peer_request const& p, disk_buffer_holder& data);
 
         void on_timeout();
         // this will cause this peer_connection to be disconnected.
@@ -112,9 +113,6 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
-
-        void set_upload_only(bool u);
-        bool upload_only() const { return m_upload_only; }
 
     private:
 
@@ -156,6 +154,7 @@ namespace libed2k
         void on_hello_answer(const error_code& error);
         void on_file_request(const error_code& error);
         void on_file_answer(const error_code& error);
+        void on_file_description(const error_code& error);
         void on_no_file(const error_code& error);
         void on_filestatus_request(const error_code& error);
         void on_file_status(const error_code& error);
@@ -164,11 +163,13 @@ namespace libed2k
         void on_start_upload(const error_code& error);
         void on_queue_ranking(const error_code& error);
         void on_accept_upload(const error_code& error);
+        void on_out_parts(const error_code& error);
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
         void on_piece(const error_code& error);
+        void on_end_download(const error_code& error);
 
-        void on_receive_data(const error_code& error, std::size_t bytes_transferred);
+        void on_receive_data(const error_code& error, std::size_t bytes_transferred, peer_request);
 
         // keep the io_service running as long as we
         // have peer connections
@@ -235,9 +236,6 @@ namespace libed2k
         // and false if we got an incoming connection
         // could be considered: true = local, false = remote
         bool m_active;
-
-		// set to true when this peer is only uploading
-		bool m_upload_only;
 
         // this is true if this connection has been added
         // to the list of connections that will be closed.

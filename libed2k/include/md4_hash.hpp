@@ -11,6 +11,7 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/assert.hpp>
+#include <boost/optional.hpp>
 
 #include <libtorrent/bitfield.hpp>
 
@@ -208,6 +209,15 @@ namespace libed2k{
 
             return res;
         }
+        boost::optional<const md4_hash&> hash(size_t piece_index) const
+        {
+            size_t h = 0;
+            for(size_t p = 0; p < piece_index; ++p)
+                if (m_pieces[p]) ++h;
+            return m_pieces[piece_index] ?
+                boost::optional<const md4_hash&>(m_hashes[h]):
+                boost::optional<const md4_hash&>();
+        }
 
         void pieces(const bitfield& ps) { m_pieces = ps; }
         void hashes(const std::vector<md4_hash>& hs) { m_hashes = hs; }
@@ -217,6 +227,13 @@ namespace libed2k{
             m_pieces.resize(i + 1);
             m_pieces.set_bit(i);
             m_hashes.push_back(hash);
+        }
+        void hash(size_t piece_index, const md4_hash& _hash)
+        {
+            std::vector<md4_hash>::iterator pos = m_hashes.begin();
+            for(size_t p = 0; p < piece_index; ++p) if (m_pieces[p]) ++pos;
+            if (m_pieces[piece_index]) *pos = _hash;
+            else m_hashes.insert(pos, _hash);
         }
         void set_terminal() { m_has_terminal = true; }
         void all_hashes(const std::vector<md4_hash>& hs)
@@ -245,6 +262,12 @@ namespace libed2k{
                     m_hashes.push_back(hs[i]);
                 }
             }
+        }
+        void reset(size_t pieces)
+        {
+            m_pieces.resize(pieces);
+            m_pieces.clear_all();
+            m_hashes.clear();
         }
 
     private:

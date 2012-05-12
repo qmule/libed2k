@@ -9,7 +9,7 @@ namespace libed2k
         m_ses(ses), m_socket(new tcp::socket(ses.m_io_service)),
         m_deadline(ses.m_io_service)
     {
-        init();
+        reset();
     }
 
     base_connection::base_connection(
@@ -17,7 +17,7 @@ namespace libed2k
         const tcp::endpoint& remote):
         m_ses(ses), m_socket(s), m_deadline(ses.m_io_service), m_remote(remote)
     {
-        init();
+        reset();
     }
 
     base_connection::~base_connection()
@@ -26,7 +26,7 @@ namespace libed2k
         boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
-    void base_connection::init()
+    void base_connection::reset()
     {
         m_deadline.expires_at(boost::posix_time::pos_infin);
         m_write_in_progress = false;
@@ -158,7 +158,6 @@ namespace libed2k
 
             if (itr != m_handlers.end())
             {
-                DBG("call normal handler");
                 itr->second(error);
             }
             else

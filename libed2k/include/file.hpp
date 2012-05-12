@@ -103,6 +103,7 @@ namespace libed2k
         const md4_hash& getFileHash() const;
         const md4_hash& getPieceHash(size_t nPart) const;
         size_t          getPiecesCount() const;
+        const std::vector<md4_hash>& getPieceHashes() const { return m_vHash; }
     private:
         std::string             m_strFilename;
         std::vector<md4_hash>   m_vHash;
@@ -126,6 +127,7 @@ namespace libed2k
         known_file_entry(const md4_hash& hFile,
                             const std::vector<md4_hash>& hSet,
                             const fs::path& p,
+                            size_t  nFilesize,
                             boost::uint32_t nAccepted,
                             boost::uint32_t nRequested,
                             boost::uint64_t nTransferred,

@@ -56,13 +56,22 @@ void session_impl_base::save_state() const
     for (transfer_map::const_iterator i = m_transfers.begin(),
             end(m_transfers.end()); i != end; ++i)
     {
-        kfc.m_known_file_list.add(known_file_entry(i->second->getFilehash(),
-                i->second->getHashset().all_hashes(),
-                i->second->getFilepath(),
+        try
+        {
+            kfc.m_known_file_list.add(known_file_entry(i->second->hash(),
+                i->second->hashset().all_hashes(),
+                i->second->filepath(),
+                i->second->getFilesize(),
                 i->second->getAcepted(),
                 i->second->getResuested(),
                 i->second->getTransferred(),
                 i->second->getPriority()));
+        }
+        catch(fs::filesystem_error& fe)
+        {
+            // we can get error when call last_write_time - ignore it and don't write this item into file
+            ERR("file system error on save_state: " << fe.what());
+        }
     }
 
     if (!m_settings.m_known_file.empty())
@@ -167,30 +176,25 @@ void session_impl_base::load_state()
             if (p_itr != m_transfers_filenames.end())
             {
                 // file already processed
+                DBG("file already processed");
                 continue;
             }
 
             if (m != known_items.end())
             {
+                DBG("item found in catalog: fs ts: " << nLastChangeTime << " catalog: " << kfc.m_known_file_list.m_collection[m->second].m_nLastChanged);
+            }
+
+            if (m != known_items.end() && nLastChangeTime == kfc.m_known_file_list.m_collection[m->second].m_nLastChanged)
+            {
                 size_t n = m->second;
-                boost::uint32_t nLastChangeTime = kfc.m_known_file_list.m_collection[n].m_nLastChanged;
-
-                // ok, file exists in local catalog - compare times
-                if (nLastChangeTime != kfc.m_known_file_list.m_collection[n].m_nLastChanged)
-                {
-                    DBG("last write time mismatch");
-                    break;
-                }
-
                 DBG("hash count: " << kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.size());
-
-
                 DBG("known file: " << (itr->leaf()));
 
                 // generate transfer
                 add_transfer_params atp;
 
-                atp.file_path = m->first;    // use native code page
+                atp.file_path = *itr;    // use native code page
                 atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
 
                 if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
@@ -675,6 +679,7 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
             kfile.init();
             add_transfer_params params;
             params.file_hash = kfile.getFileHash();
+            params.piece_hash.all_hashes(kfile.getPieceHashes());
             params.file_path = i->path();
             params.file_size = fs::file_size(i->path());
             params.seed_mode = true;

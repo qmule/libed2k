@@ -56,7 +56,7 @@ namespace libed2k{
         typedef boost::iostreams::basic_array_source<char> Device;
 
         // constructor method
-        void init();
+        void reset();
 
         void do_read();
         void do_write();
