@@ -33,7 +33,7 @@ namespace libed2k
         m_transferred(p.m_transferred),
         m_priority(p.m_priority)
     {
-        assert(!m_hashset.pieces().empty());
+        assert(m_hashset.pieces().size() == num_pieces());
     }
 
     transfer::~transfer()
@@ -205,7 +205,7 @@ namespace libed2k
         m_hashset.hash(index, hash);
     }
 
-    int transfer::num_pieces() const
+    size_t transfer::num_pieces() const
     {
         return div_ceil(m_filesize, PIECE_SIZE);
     }
@@ -225,6 +225,7 @@ namespace libed2k
     // pieces have been downloaded)
     void transfer::finished()
     {
+        DBG("file transfer '" << m_filepath.filename() << "' completed");
         //TODO: post alert
 
         //set_state(transfer_status::finished);
@@ -236,17 +237,18 @@ namespace libed2k
         if (is_seed()) completed();
 
         // disconnect all seeds
+        std::vector<peer_connection*> seeds;
         for (std::set<peer_connection*>::iterator i = m_connections.begin();
              i != m_connections.end(); ++i)
         {
             peer_connection* p = *i;
-            if (p->upload_only())
-            {
-                p->disconnect(errors::transfer_finished);
-            }
+            if (p->remote_hashset().pieces().count() == int(num_have()))
+                seeds.push_back(p);
         }
+        std::for_each(seeds.begin(), seeds.end(),
+                      boost::bind(&peer_connection::disconnect, _1, errors::transfer_finished, 0));
 
-        //if (m_abort) return;
+        if (m_abort) return;
 
         // we need to keep the object alive during this operation
         m_storage->async_release_files(
@@ -335,7 +337,7 @@ namespace libed2k
         int piece_index, const md4_hash& hash, const boost::function<void(int)>& fun)
     {
         //TODO: piece verification
-        fun(0);
+        m_ses.m_io_service.post(boost::bind(fun, 0));
     }
 
     // passed_hash_check

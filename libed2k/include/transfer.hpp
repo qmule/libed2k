@@ -148,7 +148,7 @@ namespace libed2k {
         // only once per piece
         void we_have(int index, const md4_hash& hash);
 
-        int num_have() const
+        size_t num_have() const
         {
             return has_picker() ? m_picker->num_have() : num_pieces();
         }
@@ -166,7 +166,7 @@ namespace libed2k {
             }
         }
 
-        int num_pieces() const;
+        size_t num_pieces() const;
 
         piece_manager& filesystem() { return *m_storage; }
 
