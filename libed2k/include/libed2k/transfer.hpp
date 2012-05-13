@@ -11,10 +11,10 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include "policy.hpp"
-#include "types.hpp"
-#include "session.hpp"
-#include "packet_struct.hpp"
+#include "libed2k/policy.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libtorrent {
     class torrent_info;

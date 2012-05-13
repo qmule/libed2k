@@ -17,9 +17,9 @@
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
 
-#include "base_connection.hpp"
-#include "types.hpp"
-#include "error_code.hpp"
+#include "libed2k/base_connection.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/error_code.hpp"
 
 namespace libed2k
 {

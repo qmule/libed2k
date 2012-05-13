@@ -11,10 +11,10 @@
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream.hpp>
-#include "archive.hpp"
-#include "ctag.hpp"
-#include "packet_struct.hpp"
-#include "log.hpp"
+#include "libed2k/archive.hpp"
+#include "libed2k/ctag.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/log.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_archive)
 

@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include "types.hpp"
+#include "libed2k/types.hpp"
 
 #ifndef LIBED2K_MAX_ALERT_TYPES
 #define LIBED2K_MAX_ALERT_TYPES 7

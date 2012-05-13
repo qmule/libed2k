@@ -9,10 +9,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
-#include "error_code.hpp"
-#include "md4_hash.hpp"
-#include "packet_struct.hpp"
-#include "session.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/session.hpp"
 
 namespace libed2k
 {

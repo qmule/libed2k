@@ -5,9 +5,9 @@
 #include <boost/filesystem.hpp>
 
 #include <cryptopp/md4.h>
-#include "constants.hpp"
-#include "log.hpp"
-#include "md4_hash.hpp"
+#include "libed2k/constants.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/md4_hash.hpp"
 
 const size_t nPieceCount = 10;
 

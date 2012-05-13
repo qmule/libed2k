@@ -8,9 +8,9 @@
 
 #include <boost/cstdint.hpp>
 #include <boost/mem_fn.hpp>
-#include "log.hpp"
-#include "archive.hpp"
-#include "md4_hash.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/archive.hpp"
+#include "libed2k/md4_hash.hpp"
 
 namespace libed2k{
 

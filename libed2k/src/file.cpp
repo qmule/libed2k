@@ -8,11 +8,11 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
-#include "constants.hpp"
-#include "log.hpp"
-#include "md4_hash.hpp"
-#include "types.hpp"
-#include "file.hpp"
+#include "libed2k/constants.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/file.hpp"
 
 namespace libed2k
 {

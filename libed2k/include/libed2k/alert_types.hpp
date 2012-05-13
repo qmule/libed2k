@@ -4,10 +4,10 @@
 // for print_endpoint
 #include <libtorrent/socket.hpp>
 
-#include "alert.hpp"
-#include "types.hpp"
-#include "error_code.hpp"
-#include "packet_struct.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/packet_struct.hpp"
 
 
 namespace libed2k
@@ -177,6 +177,7 @@ namespace libed2k
                 , libtorrent::print_endpoint(endpoint).c_str(), error.message().c_str());
             return ret;
         }
+
     };
 
 }

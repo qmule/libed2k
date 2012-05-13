@@ -4,9 +4,9 @@
 #define BOOST_TEST_MODULE main
 #include <string>
 #include <boost/test/unit_test.hpp>
-#include "error_code.hpp"
-#include "ctag.hpp"
-#include "file.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/ctag.hpp"
+#include "libed2k/file.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(simple_exception_test)

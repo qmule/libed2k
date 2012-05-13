@@ -8,9 +8,9 @@
 #endif
 #include <locale.h>
 
-#include "util.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/file.hpp"
 #include "zlib.h"
-#include "file.hpp"
 
 namespace libed2k 
 {

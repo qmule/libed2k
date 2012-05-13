@@ -14,8 +14,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "error_code.hpp"
-#include "types.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/types.hpp"
 
 
 namespace libed2k

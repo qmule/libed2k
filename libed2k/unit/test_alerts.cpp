@@ -10,8 +10,8 @@
 #include <boost/thread/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include "alert.hpp"
-#include "alert_types.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/alert_types.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(test_alerts)

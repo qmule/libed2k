@@ -1,6 +1,6 @@
 #include <boost/logging/format.hpp>
 #include <boost/logging/writer/ts_write.hpp>
-#include "log.hpp"
+#include "libed2k/log.hpp"
 
 #ifndef _RELEASE
 

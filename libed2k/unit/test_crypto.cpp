@@ -9,7 +9,7 @@
 #include <string>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include "is_crypto.hpp"
+#include "libed2k/is_crypto.hpp"
 
 // test for encrypt / decrypt password 
 struct test_crypto 

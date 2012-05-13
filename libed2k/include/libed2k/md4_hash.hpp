@@ -15,10 +15,10 @@
 
 #include <libtorrent/bitfield.hpp>
 
-#include "log.hpp"
-#include "archive.hpp"
-#include "error_code.hpp"
-#include "types.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/archive.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/types.hpp"
 
 namespace libed2k{
 
