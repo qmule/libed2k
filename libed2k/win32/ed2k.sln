@@ -23,6 +23,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "https", "https.vcproj", "{3
 		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "crypto", "crypto.vcproj", "{C3588752-2F1A-41FD-82AD-515DABCEA56E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -49,6 +51,10 @@ Global
 		{37ED7AE5-7BDB-40C7-BB4A-2679562CE77F}.Debug|Win32.Build.0 = Debug|Win32
 		{37ED7AE5-7BDB-40C7-BB4A-2679562CE77F}.Release|Win32.ActiveCfg = Release|Win32
 		{37ED7AE5-7BDB-40C7-BB4A-2679562CE77F}.Release|Win32.Build.0 = Release|Win32
+		{C3588752-2F1A-41FD-82AD-515DABCEA56E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C3588752-2F1A-41FD-82AD-515DABCEA56E}.Debug|Win32.Build.0 = Debug|Win32
+		{C3588752-2F1A-41FD-82AD-515DABCEA56E}.Release|Win32.ActiveCfg = Release|Win32
+		{C3588752-2F1A-41FD-82AD-515DABCEA56E}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
