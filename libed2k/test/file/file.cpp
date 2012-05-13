@@ -3,12 +3,12 @@
 #include <boost/filesystem.hpp>
 #include <libtorrent/utf8.hpp>
 
-#include "constants.hpp"
-#include "packet_struct.hpp"
-#include "log.hpp"
-#include "file.hpp"
-#include "archive.hpp"
-#include "types.hpp"
+#include "libed2k/constants.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/archive.hpp"
+#include "libed2k/types.hpp"
 
 using namespace libed2k;
 

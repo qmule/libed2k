@@ -235,107 +235,107 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\include\alert.hpp"
+				RelativePath="..\include\libed2k\alert.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\alert_types.hpp"
+				RelativePath="..\include\libed2k\alert_types.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\archive.hpp"
+				RelativePath="..\include\libed2k\archive.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\base_connection.hpp"
+				RelativePath="..\include\libed2k\base_connection.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\ctag.hpp"
+				RelativePath="..\include\libed2k\ctag.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\error_code.hpp"
+				RelativePath="..\include\libed2k\error_code.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\file.hpp"
+				RelativePath="..\include\libed2k\file.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\fingerprint.hpp"
+				RelativePath="..\include\libed2k\fingerprint.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\is_crypto.hpp"
+				RelativePath="..\include\libed2k\is_crypto.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\is_https_auth.hpp"
+				RelativePath="..\include\libed2k\is_https_auth.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\log.hpp"
+				RelativePath="..\include\libed2k\log.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\md4_hash.hpp"
+				RelativePath="..\include\libed2k\md4_hash.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\packet_struct.hpp"
+				RelativePath="..\include\libed2k\packet_struct.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\peer.hpp"
+				RelativePath="..\include\libed2k\peer.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\peer_connection.hpp"
+				RelativePath="..\include\libed2k\peer_connection.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\peer_id.hpp"
+				RelativePath="..\include\libed2k\peer_id.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\policy.hpp"
+				RelativePath="..\include\libed2k\policy.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\search.hpp"
+				RelativePath="..\include\libed2k\search.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\server_connection.hpp"
+				RelativePath="..\include\libed2k\server_connection.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\session.hpp"
+				RelativePath="..\include\libed2k\session.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\session_impl.hpp"
+				RelativePath="..\include\libed2k\session_impl.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\session_settings.hpp"
+				RelativePath="..\include\libed2k\session_settings.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\transfer.hpp"
+				RelativePath="..\include\libed2k\transfer.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\transfer_handle.hpp"
+				RelativePath="..\include\libed2k\transfer_handle.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\types.hpp"
+				RelativePath="..\include\libed2k\types.hpp"
 				>
 			</File>
 			<File
-				RelativePath="..\include\util.hpp"
+				RelativePath="..\include\libed2k\util.hpp"
 				>
 			</File>
 		</Filter>

@@ -20,11 +20,11 @@
 #include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 
-#include "types.hpp"
-#include "log.hpp"
-#include "archive.hpp"
-#include "packet_struct.hpp"
-#include "constants.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/archive.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/constants.hpp"
 
 namespace libed2k{
 

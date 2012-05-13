@@ -8,12 +8,12 @@
 
 #include <libtorrent/intrusive_ptr_base.hpp>
 
-#include "types.hpp"
-#include "packet_struct.hpp"
-#include "error_code.hpp"
-#include "base_connection.hpp"
-#include "peer.hpp"
-#include "session_impl.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/base_connection.hpp"
+#include "libed2k/peer.hpp"
+#include "libed2k/session_impl.hpp"
 
 namespace libed2k
 {

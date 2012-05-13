@@ -1,13 +1,13 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include "server_connection.hpp"
-#include "transfer.hpp"
-#include "session_impl.hpp"
-#include "session.hpp"
-#include "transfer.hpp"
-#include "log.hpp"
-#include "alert_types.hpp"
+#include "libed2k/server_connection.hpp"
+#include "libed2k/transfer.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/transfer.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/alert_types.hpp"
 
 namespace libed2k
 {

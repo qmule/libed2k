@@ -1,6 +1,6 @@
 #include <string>
 #include <iostream>
-#include "is_crypto.hpp"
+#include "libed2k/is_crypto.hpp"
 
 int main(int argc, char* argv[])
 {

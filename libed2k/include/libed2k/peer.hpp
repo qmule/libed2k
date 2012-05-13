@@ -2,7 +2,7 @@
 #define __LIBED2K_PEER__
 
 #include <boost/asio.hpp>
-#include "types.hpp"
+#include "libed2k/types.hpp"
 
 namespace libed2k {
 

@@ -8,12 +8,12 @@
 
 #include <libtorrent/storage.hpp>
 
-#include "fingerprint.hpp"
-#include "md4_hash.hpp"
-#include "transfer_handle.hpp"
-#include "peer.hpp"
-#include "alert.hpp"
-#include "packet_struct.hpp"
+#include "libed2k/fingerprint.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/transfer_handle.hpp"
+#include "libed2k/peer.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k {
 

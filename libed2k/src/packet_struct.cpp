@@ -1,4 +1,4 @@
-#include "packet_struct.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k
 {

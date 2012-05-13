@@ -7,11 +7,11 @@
 #endif
 
 #include <boost/test/unit_test.hpp>
-#include "packet_struct.hpp"
-#include "util.hpp"
-#include "log.hpp"
-#include "file.hpp"
-#include "search.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/search.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_search_request)
 

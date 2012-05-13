@@ -8,8 +8,8 @@
 
 #include <libtorrent/bitfield.hpp>
 
-#include "ctag.hpp"
-#include "util.hpp"
+#include "libed2k/ctag.hpp"
+#include "libed2k/util.hpp"
 
 namespace libed2k
 {

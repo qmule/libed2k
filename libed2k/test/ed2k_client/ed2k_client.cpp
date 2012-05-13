@@ -3,10 +3,10 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "session.hpp"
-#include "session_settings.hpp"
-#include "log.hpp"
-#include "util.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/util.hpp"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;

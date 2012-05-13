@@ -11,11 +11,11 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
 #include <locale.h>
-#include "constants.hpp"
-#include "types.hpp"
-#include "file.hpp"
-#include "session_impl.hpp"
-#include "log.hpp"
+#include "libed2k/constants.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/log.hpp"
 
 namespace libed2k
 {

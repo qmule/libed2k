@@ -1,6 +1,6 @@
 
-#include "search.hpp"
-#include "file.hpp"
+#include "libed2k/search.hpp"
+#include "libed2k/file.hpp"
 
 namespace libed2k
 {

@@ -16,15 +16,15 @@
 #include "libtorrent/identify_client.hpp"
 #include "libtorrent/stat.hpp"
 
-#include "fingerprint.hpp"
-#include "md4_hash.hpp"
-#include "transfer_handle.hpp"
-#include "session_settings.hpp"
-#include "types.hpp"
-#include "util.hpp"
-#include "alert.hpp"
-#include "packet_struct.hpp"
-#include "file.hpp"
+#include "libed2k/fingerprint.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/transfer_handle.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/file.hpp"
 
 namespace libed2k {
 

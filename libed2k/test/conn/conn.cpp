@@ -3,13 +3,13 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include "log.hpp"
-#include "session.hpp"
-#include "session_settings.hpp"
-#include "alert_types.hpp"
-#include "util.hpp"
-#include "file.hpp"
-#include "search.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/alert_types.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/search.hpp"
 
 using namespace libed2k;
 

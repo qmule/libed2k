@@ -1,8 +1,8 @@
 
-#include "session.hpp"
-#include "session_impl.hpp"
-#include "peer_connection.hpp"
-#include "server_connection.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/server_connection.hpp"
 
 namespace libed2k {
 

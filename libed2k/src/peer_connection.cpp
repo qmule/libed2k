@@ -2,12 +2,12 @@
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/storage.hpp>
 
-#include "peer_connection.hpp"
-#include "session_impl.hpp"
-#include "session.hpp"
-#include "transfer.hpp"
-#include "file.hpp"
-#include "util.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/transfer.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/util.hpp"
 
 using namespace libed2k;
 namespace ip = boost::asio::ip;

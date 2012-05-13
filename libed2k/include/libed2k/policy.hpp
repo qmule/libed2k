@@ -4,7 +4,7 @@
 #include <deque>
 #include <vector>
 
-#include "peer.hpp"
+#include "libed2k/peer.hpp"
 
 namespace libed2k {
 
