@@ -3,6 +3,7 @@
 #include "libed2k/session_impl.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/transfer_handle.hpp"
 
 namespace libed2k {
 
@@ -95,6 +96,19 @@ void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     boost::mutex::scoped_lock l(m_impl->m_mutex);
     m_impl->post_sources_request(hFile, nSize);
 }
+
+transfer_handle session::find_transfer(const md4_hash & hash) const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->find_transfer_handle(hash);
+}
+
+std::vector<transfer_handle> session::get_transfers() const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->get_transfers();
+}
+
 
 
 }

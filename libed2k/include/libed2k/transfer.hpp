@@ -72,7 +72,7 @@ namespace libed2k {
 
         // the number of peers that belong to this torrent
         int num_peers() const { return (int)m_connections.size(); }
-        int num_seeds() const;
+        int num_seeds() const { return 0; } //TODO - implement it
 
         bool is_paused() const;
         bool is_seed() const
@@ -88,6 +88,16 @@ namespace libed2k {
         }
 
         bool is_aborted() const { return m_abort; }
+
+        /**
+          * TODO - need implement it
+         */
+        void pause();
+        void resume();
+        void set_upload_limit(int limit);
+        int upload_limit() const;
+        void set_download_limit(int limit);
+        int download_limit() const;
 
         void set_sequential_download(bool sd);
         bool is_sequential_download() const { return m_sequential_download; }

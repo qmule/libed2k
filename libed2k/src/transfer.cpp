@@ -255,6 +255,42 @@ namespace libed2k
             boost::bind(&transfer::on_files_released, shared_from_this(), _1, _2));
     }
 
+    void transfer::pause()
+    {
+
+    }
+
+    void transfer::resume()
+    {
+
+    }
+
+    void transfer::set_upload_limit(int limit)
+    {
+
+    }
+
+    int transfer::upload_limit() const
+    {
+
+    }
+
+    void transfer::set_download_limit(int limit)
+    {
+
+    }
+
+    int transfer::download_limit() const
+    {
+
+    }
+
+    void transfer::set_sequential_download(bool sd)
+    {
+        m_sequential_download = sd;
+    }
+
+
     void transfer::piece_failed(int index)
     {
     }

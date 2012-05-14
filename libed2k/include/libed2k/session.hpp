@@ -20,6 +20,7 @@ namespace libed2k {
     typedef libtorrent::storage_constructor_type storage_constructor_type;
 
     class session_settings;
+    class transfer_handle;
     namespace aux {
         class session_impl;
     }
@@ -113,6 +114,9 @@ namespace libed2k {
           * search sources for file
          */
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
+
+        transfer_handle find_transfer(const md4_hash& hash) const;
+        std::vector<transfer_handle> get_transfers() const;
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);

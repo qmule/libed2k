@@ -32,6 +32,7 @@ namespace libed2k {
     class server_connection;
     class transfer;
     class add_transfer_params;
+    class transfer_handle;
 
     namespace aux
     {
@@ -118,6 +119,8 @@ namespace libed2k {
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
+            transfer_handle find_transfer_handle(const md4_hash& hash);
+            std::vector<transfer_handle> get_transfers();
 
             void close_connection(const peer_connection* p, const error_code& ec);
 
@@ -156,9 +159,11 @@ namespace libed2k {
             // if there are any trasfers and any free slots
             void connect_new_peers();
 
-            // must be locked to access the data
-            // in this struct
-            mutable boost::mutex m_mutex;
+            /**
+              * must be locked before access data in this class
+             */
+            typedef boost::mutex mutex_t;
+            mutable mutex_t m_mutex;
 
             void setup_socket_buffers(tcp::socket& s);
 
