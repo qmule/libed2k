@@ -75,6 +75,7 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
+            libtorrent::session_settings m_disk_thread_settings;
             transfer_map m_transfers;
 
             /**
@@ -106,6 +107,8 @@ namespace libed2k {
             void operator()();
 
             void open_listen_port();
+
+            void update_disk_thread_settings();
 
             void async_accept(boost::shared_ptr<tcp::acceptor> const& listener);
             void on_accept_connection(boost::shared_ptr<tcp::socket> const& s,

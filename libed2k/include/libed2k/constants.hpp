@@ -7,7 +7,8 @@
 namespace libed2k {
 
     const size_t PIECE_SIZE = 9728000ull; // ???
-    const boost::uint32_t BLOCK_SIZE = 184320u;    // 180*1024
+    const boost::uint32_t BLOCK_SIZE = 184320u; //180*1024
+    const boost::uint32_t DISK_BLOCK_SIZE = 16384u; // 16*1024
     const size_t HIGHEST_LOWID_ED2K = 16777216;
 
     const size_t READ_HANDLER_MAX_SIZE = 256;

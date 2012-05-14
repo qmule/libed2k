@@ -125,7 +125,8 @@ namespace libed2k
         void send_block_requests();
 
         void fill_send_buffer();
-        void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r);
+        void sequential_read(const peer_request& r);
+        void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
 
@@ -145,9 +146,8 @@ namespace libed2k
         void write_accept_upload();
         void write_cancel_transfer();
         void write_request_parts(client_request_parts_64 rp);
-        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
-
-        void write_have(int index);
+        void write_piece(const peer_request& r);
+        void write_piece_data(const peer_request& r, disk_buffer_holder& buffer);
 
         // protocol handlers
         void on_hello(const error_code& error);

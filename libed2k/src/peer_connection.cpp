@@ -456,21 +456,39 @@ bool peer_connection::can_read(char* state) const
 
 void peer_connection::fill_send_buffer()
 {
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-    if (!t) return;
-
     int buffer_size_watermark = 512;
 
     while (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
     {
-        peer_request& r = m_requests.front();
-        t->filesystem().async_read(r, boost::bind(&peer_connection::on_disk_read_complete,
-                                                  self_as<peer_connection>(), _1, _2, r));
+        const peer_request& req = m_requests.front();
+        write_piece(req);
+        sequential_read(req);
         m_requests.erase(m_requests.begin());
     }
 }
 
-void peer_connection::on_disk_read_complete(int ret, disk_io_job const& j, peer_request r)
+void peer_connection::sequential_read(const peer_request& req)
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    if (!t) return;
+
+    peer_request r = req;
+    peer_request left = req;
+    r.length = std::min(req.length, int(DISK_BLOCK_SIZE));
+    left.start = r.start + r.length;
+    left.length = req.length - r.length;
+
+    if (r.length > 0)
+    {
+        DBG("!!! seq read");
+        t->filesystem().async_read(r, boost::bind(&peer_connection::on_disk_read_complete,
+                                                  self_as<peer_connection>(), _1, _2, r, left));
+    }
+
+}
+
+void peer_connection::on_disk_read_complete(
+    int ret, disk_io_job const& j, peer_request r, peer_request left)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
     disk_buffer_holder buffer(m_ses.m_disk_thread, j.buffer);
@@ -489,7 +507,8 @@ void peer_connection::on_disk_read_complete(int ret, disk_io_job const& j, peer_
         return;
     }
 
-    write_piece(r, buffer);
+    write_piece_data(r, buffer);
+    sequential_read(left);
 }
 
 void peer_connection::on_disk_write_complete(
@@ -499,7 +518,7 @@ void peer_connection::on_disk_write_complete(
 
     // in case the outstanding bytes just dropped down
     // to allow to receive more data
-    // do_read();
+    do_read();
 
     if (t->is_seed()) return;
 
@@ -653,7 +672,7 @@ void peer_connection::write_request_parts(client_request_parts_64 rp)
     do_write(rp);
 }
 
-void peer_connection::write_piece(const peer_request& r, disk_buffer_holder& buffer)
+void peer_connection::write_piece(const peer_request& r)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     client_sending_part_64 sp;
@@ -665,7 +684,10 @@ void peer_connection::write_piece(const peer_request& r, disk_buffer_holder& buf
 
     DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
         << " ==> " << m_remote);
+}
 
+void peer_connection::write_piece_data(const peer_request& r, disk_buffer_holder& buffer)
+{
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
