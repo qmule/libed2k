@@ -1,5 +1,5 @@
 
-#include "md4_hash.hpp"
+#include "libed2k/md4_hash.hpp"
 
 namespace libed2k{
 

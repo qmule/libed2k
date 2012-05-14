@@ -2,7 +2,7 @@
 #ifndef __LIBED2K_SEARCH__
 #define __LIBED2K_SEARCH__
 
-#include "packet_struct.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k
 {

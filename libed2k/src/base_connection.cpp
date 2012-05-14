@@ -1,7 +1,7 @@
 
-#include "base_connection.hpp"
-#include "session.hpp"
-#include "session_impl.hpp"
+#include "libed2k/base_connection.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_impl.hpp"
 
 namespace libed2k
 {
@@ -158,7 +158,6 @@ namespace libed2k
 
             if (itr != m_handlers.end())
             {
-                DBG("call normal handler");
                 itr->second(error);
             }
             else

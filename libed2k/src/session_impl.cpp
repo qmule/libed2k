@@ -7,17 +7,17 @@
 #include <libtorrent/peer_connection.hpp>
 #include <libtorrent/socket.hpp>
 
-#include "session.hpp"
-#include "session_impl.hpp"
-#include "transfer_handle.hpp"
-#include "transfer.hpp"
-#include "peer_connection.hpp"
-#include "server_connection.hpp"
-#include "constants.hpp"
-#include "log.hpp"
-#include "alert_types.hpp"
-#include "file.hpp"
-#include "util.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/transfer_handle.hpp"
+#include "libed2k/transfer.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/server_connection.hpp"
+#include "libed2k/constants.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/alert_types.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/util.hpp"
 
 using namespace libed2k;
 using namespace libed2k::aux;
@@ -679,6 +679,7 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
             kfile.init();
             add_transfer_params params;
             params.file_hash = kfile.getFileHash();
+            params.piece_hash.all_hashes(kfile.getPieceHashes());
             params.file_path = i->path();
             params.file_size = fs::file_size(i->path());
             params.seed_mode = true;

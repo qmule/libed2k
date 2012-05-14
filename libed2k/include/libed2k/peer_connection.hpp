@@ -17,9 +17,9 @@
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
 
-#include "base_connection.hpp"
-#include "types.hpp"
-#include "error_code.hpp"
+#include "libed2k/base_connection.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/error_code.hpp"
 
 namespace libed2k
 {
@@ -55,6 +55,7 @@ namespace libed2k
         void set_peer(peer* pi) { m_peer = pi; }
 
         const tcp::endpoint& remote() const { return m_remote; }
+        const hash_set& remote_hashset() const { return m_remote_hashset; }
 
         // is called once every second by the main loop
         void second_tick();
@@ -112,9 +113,6 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
-
-        void set_upload_only(bool u);
-        bool upload_only() const { return m_upload_only; }
 
     private:
 
@@ -238,9 +236,6 @@ namespace libed2k
         // and false if we got an incoming connection
         // could be considered: true = local, false = remote
         bool m_active;
-
-		// set to true when this peer is only uploading
-		bool m_upload_only;
 
         // this is true if this connection has been added
         // to the list of connections that will be closed.

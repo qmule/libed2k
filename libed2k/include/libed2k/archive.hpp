@@ -4,8 +4,9 @@
 #include <iostream>
 #include <boost/mpl/eval_if.hpp>
 #include <boost/mpl/identity.hpp>
-#include <boost/type_traits.hpp>
-#include "error_code.hpp"
+#include <boost/type_traits/is_fundamental.hpp>
+#include <boost/type_traits/is_class.hpp>
+#include "libed2k/error_code.hpp"
 
 namespace libed2k
 {

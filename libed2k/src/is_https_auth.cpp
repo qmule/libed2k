@@ -2,8 +2,8 @@
 #include <boost/archive/iterators/insert_linebreaks.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
 #include <boost/archive/iterators/ostream_iterator.hpp>
-#include "is_https_auth.hpp"
-#include "log.hpp"
+#include "libed2k/is_https_auth.hpp"
+#include "libed2k/log.hpp"
 
 namespace libed2k
 {

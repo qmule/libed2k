@@ -25,6 +25,7 @@ namespace libtorrent {
     class listen_failed_alert;
     struct bitfield;
     struct has_block;
+    class file_storage;
 
     namespace aux{
         class eh_initializer;
@@ -55,6 +56,7 @@ namespace libed2k
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
     typedef libtorrent::has_block has_block;
+    typedef libtorrent::file_storage file_storage;
 
     namespace detail = libtorrent::detail;
 

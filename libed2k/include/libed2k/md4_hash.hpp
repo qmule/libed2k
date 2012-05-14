@@ -15,10 +15,10 @@
 
 #include <libtorrent/bitfield.hpp>
 
-#include "log.hpp"
-#include "archive.hpp"
-#include "error_code.hpp"
-#include "types.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/archive.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/types.hpp"
 
 namespace libed2k{
 
@@ -262,6 +262,12 @@ namespace libed2k{
                     m_hashes.push_back(hs[i]);
                 }
             }
+        }
+        void reset(size_t pieces)
+        {
+            m_pieces.resize(pieces);
+            m_pieces.clear_all();
+            m_hashes.clear();
         }
 
     private:

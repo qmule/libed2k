@@ -2,8 +2,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "is_https_auth.hpp"
-#include "log.hpp"
+#include "libed2k/is_https_auth.hpp"
+#include "libed2k/log.hpp"
 
 void on_auth(const std::string& strRes, const boost::system::error_code& error)
 {

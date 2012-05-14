@@ -11,10 +11,10 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include "policy.hpp"
-#include "types.hpp"
-#include "session.hpp"
-#include "packet_struct.hpp"
+#include "libed2k/policy.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libtorrent {
     class torrent_info;
@@ -110,7 +110,8 @@ namespace libed2k {
         // --------------------------------------------
         // PIECE MANAGEMENT
         // --------------------------------------------
-        void async_verify_piece(int piece_index, const md4_hash& hash, const boost::function<void(int)>& fun);
+        void async_verify_piece(int piece_index, const md4_hash& hash,
+                                const boost::function<void(int)>& fun);
 
         // this is called from the peer_connection
         // each time a piece has failed the hash test
@@ -147,7 +148,7 @@ namespace libed2k {
         // only once per piece
         void we_have(int index, const md4_hash& hash);
 
-        int num_have() const
+        size_t num_have() const
         {
             return has_picker() ? m_picker->num_have() : num_pieces();
         }
@@ -165,7 +166,7 @@ namespace libed2k {
             }
         }
 
-        int num_pieces() const;
+        size_t num_pieces() const;
 
         piece_manager& filesystem() { return *m_storage; }
 

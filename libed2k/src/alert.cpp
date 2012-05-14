@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "alert.hpp"
-#include "util.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/util.hpp"
 #include <boost/thread/xtime.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>

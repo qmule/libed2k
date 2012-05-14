@@ -3,10 +3,10 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "session.hpp"
-#include "session_settings.hpp"
-#include "log.hpp"
-#include "util.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/util.hpp"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -64,6 +64,7 @@ int main(int argc, char* argv[])
             params.file_path = dir / vm["file"].as<fs::path>();
             params.file_size = vm["size"].as<size_t>();
             params.seed_mode = false;
+            params.piece_hash.reset(libed2k::div_ceil(params.file_size, libed2k::PIECE_SIZE));
 
             if (vm.count("peer_ip") && vm.count("peer_port"))
             {

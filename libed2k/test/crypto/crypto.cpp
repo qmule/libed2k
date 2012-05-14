@@ -2,8 +2,8 @@
 #include <iostream>
 #include <locale>
 #include <libtorrent/utf8.hpp>
-#include "log.hpp"
-#include "is_crypto.hpp"
+#include "libed2k/log.hpp"
+#include "libed2k/is_crypto.hpp"
 
 const unsigned char chCryptKey[] = 
 { '\x30','\x82','\x01','\x07','\x02','\x01','\x00','\x30','\x0d','\x06','\x09','\x2a','\x86','\x48','\x86','\xf7','\x0d','\x01','\x01','\x01','\x05',

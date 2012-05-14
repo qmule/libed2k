@@ -9,7 +9,7 @@
 #endif
 
 #include <boost/test/unit_test.hpp>
-#include "md4_hash.hpp"
+#include "libed2k/md4_hash.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_md4_hash)
 
