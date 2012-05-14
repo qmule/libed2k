@@ -14,6 +14,7 @@
 #include <boost/optional.hpp>
 
 #include <libtorrent/bitfield.hpp>
+#include <libtorrent/escape_string.hpp>
 
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
@@ -34,6 +35,8 @@ namespace libed2k{
         typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
         static const md4hash_container m_emptyMD4Hash;
         static const md4_hash terminal;
+
+        enum { hash_size = MD4_HASH_SIZE };
 
     	md4_hash()
     	{
@@ -95,45 +98,11 @@ namespace libed2k{
 
     	void fromString(const std::string& strHash)
     	{
+    	    BOOST_ASSERT(strHash.size() == MD4_HASH_SIZE*2);
 
-    	    if (strHash.size() < MD4_HASH_SIZE*2)
+    	    if (!libtorrent::from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)m_hash))
     	    {
     	        throw libed2k_exception(errors::md4_hash_index_error);
-    	    }
-
-    	    clear();
-
-    	    for ( size_t i = 0; i < MD4_HASH_SIZE * 2; i++ )
-    	    {
-    	        unsigned int word = strHash[i];
-
-                if ((word >= '0') && (word <= '9'))
-                {
-                    word -= '0';
-                }
-                else if ((word >= 'A') && (word <= 'F'))
-                {
-                    word -= 'A' - 10;
-                }
-                else if (word >= 'a' && word <= 'f')
-                {
-                    word -= 'a' - 10;
-                }
-                else
-                {
-                     throw libed2k_exception(errors::md4_hash_convert_error);
-                }                
-
-                unsigned char cData = static_cast<unsigned char>(word);
-
-                if (i % 2 == 0)
-                {
-                    m_hash[i/2] = static_cast<unsigned char>(cData << 4);
-                }
-                else
-                {
-                    m_hash[i/2] += static_cast<unsigned char>(cData);
-                }
     	    }
     	}
 

@@ -614,6 +614,26 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
+transfer_handle session_impl::find_transfer_handle(const md4_hash& hash)
+{
+    return transfer_handle(find_transfer(hash));
+}
+
+std::vector<transfer_handle> session_impl::get_transfers()
+{
+    std::vector<transfer_handle> ret;
+
+    for (session_impl::transfer_map::iterator i
+        = m_transfers.begin(), end(m_transfers.end());
+        i != end; ++i)
+    {
+        if (i->second->is_aborted()) continue;
+        ret.push_back(transfer_handle(i->second));
+    }
+
+    return ret;
+}
+
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
 {
     DBG("CLOSING CONNECTION " << p->remote() << " : " << ec.message());
