@@ -34,7 +34,7 @@ namespace libed2k
 
     void base_connection::close(const error_code& ec)
     {
-        DBG("base_connection::close()");
+        DBG("base_connection::close(" << ec.message() << ")");
         m_socket->close();
         m_deadline.cancel();
     }
@@ -162,13 +162,15 @@ namespace libed2k
             }
             else
             {
-                DBG("ignore unhandled packet");
+                DBG("ignore unhandled packet: " << std::hex << int(m_in_header.m_type));
             }
 
             m_in_gzip_container.clear();
             m_in_container.clear();
 
-            do_read();
+            // don't read data as header
+            if (m_in_header.m_type != OP_SENDINGPART && m_in_header.m_type != OP_SENDINGPART_I64)
+                do_read();
         }
         else
         {
