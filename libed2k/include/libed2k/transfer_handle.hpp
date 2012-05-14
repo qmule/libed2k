@@ -49,6 +49,15 @@ namespace libed2k
         int num_peers() const;
         int num_seeds() const;
         fs::path save_path() const;
+
+        bool operator==(const transfer_handle& h) const
+        { return m_transfer.lock() == h.m_transfer.lock(); }
+
+        bool operator!=(const transfer_handle& h) const
+        { return m_transfer.lock() != h.m_transfer.lock(); }
+
+        bool operator<(const transfer_handle& h) const
+        { return m_transfer.lock() < h.m_transfer.lock(); }
     private:
 
         transfer_handle(const boost::weak_ptr<transfer>& t):
