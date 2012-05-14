@@ -499,7 +499,7 @@ void peer_connection::on_disk_write_complete(
 
     // in case the outstanding bytes just dropped down
     // to allow to receive more data
-    do_read();
+    // do_read();
 
     if (t->is_seed()) return;
 
@@ -1002,6 +1002,7 @@ void peer_connection::on_piece(const error_code& error)
             *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r)));
+        m_read_in_progress = true;
     }
     else
     {
@@ -1065,6 +1066,7 @@ void peer_connection::on_receive_data(const error_code& error,
             r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
     }
 
+    m_read_in_progress = false;
     do_read();
     request_block();
     send_block_requests();
