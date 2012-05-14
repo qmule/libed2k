@@ -117,7 +117,7 @@ namespace libed2k {
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
             transfer_handle find_transfer_handle(const md4_hash& hash);
-            std::vector<transfer_handle> session_impl::get_transfers();
+            std::vector<transfer_handle> get_transfers();
 
             void close_connection(const peer_connection* p, const error_code& ec);
 

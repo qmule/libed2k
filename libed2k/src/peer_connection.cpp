@@ -12,6 +12,15 @@
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
+peer_request mk_peer_request(size_t begin, size_t end)
+{
+    peer_request r;
+    r.piece = begin / PIECE_SIZE;
+    r.start = begin % PIECE_SIZE;
+    r.length = end - begin + 1;
+    return r;
+}
+
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
@@ -54,7 +63,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
-    m_desired_queue_size = 2;
+    m_desired_queue_size = 3;
 
     add_handler(OP_HELLO, boost::bind(&peer_connection::on_hello, this, _1));
     add_handler(OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, this, _1));
@@ -233,8 +242,7 @@ void peer_connection::send_block_requests()
 
         // this can happen if a block times out, is re-requested and
         // then arrives "unexpectedly"
-        if (t->picker().is_finished(block.block) ||
-            t->picker().is_downloaded(block.block))
+        if (t->picker().is_finished(block.block) || t->picker().is_downloaded(block.block))
         {
             t->picker().abort_download(block.block);
             continue;
@@ -649,10 +657,14 @@ void peer_connection::write_piece(const peer_request& r, disk_buffer_holder& buf
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     client_sending_part_64 sp;
+    std::pair<size_t, size_t> range = block_range(r.piece, r.start / BLOCK_SIZE, t->filesize());
     sp.m_hFile = t->hash();
-    sp.m_begin_offset = r.piece * PIECE_SIZE + r.start;
-    sp.m_end_offset = sp.m_begin_offset + r.length;
+    sp.m_begin_offset = range.first;
+    sp.m_end_offset = range.second;
     do_write(sp);
+
+    DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+        << " ==> " << m_remote);
 
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
@@ -959,14 +971,10 @@ void peer_connection::on_request_parts(const error_code& error)
         {
             if (rp.m_begin_offset[i] < rp.m_end_offset[i])
             {
-                peer_request r;
-                r.piece = rp.m_begin_offset[i] / PIECE_SIZE;
-                r.start = rp.m_begin_offset[i] % PIECE_SIZE;
-                r.length = rp.m_end_offset[i] - rp.m_begin_offset[i];
-                m_requests.push_back(r);
-                fill_send_buffer();
+                m_requests.push_back(mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
             }
         }
+        fill_send_buffer();
     }
     else
     {
@@ -983,10 +991,7 @@ void peer_connection::on_piece(const error_code& error)
         DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
             << " <== " << m_remote);
 
-        peer_request r;
-        r.piece = sp.m_begin_offset / PIECE_SIZE;
-        r.start = sp.m_begin_offset % PIECE_SIZE;
-        r.length = sp.m_end_offset - sp.m_begin_offset;
+        peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
 
         if (!allocate_disk_receive_buffer(r.length))
         {
@@ -997,7 +1002,6 @@ void peer_connection::on_piece(const error_code& error)
             *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r)));
-        do_read();
     }
     else
     {
@@ -1019,8 +1023,11 @@ void peer_connection::on_end_download(const error_code& error)
     }
 }
 
-void peer_connection::on_receive_data(const error_code& error, std::size_t bytes_transferred, peer_request r)
+void peer_connection::on_receive_data(const error_code& error,
+                                      std::size_t bytes_transferred, peer_request r)
 {
+    assert(int(bytes_transferred) == r.length);
+
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
     if (is_disconnecting()) return;
@@ -1030,9 +1037,19 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
     piece_manager& fs = t->filesystem();
     piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
 
+    std::vector<pending_block>::iterator b
+        = std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(block_finished));
+
+    if (b == m_download_queue.end())
+    {
+        ERR("The block we just got was not in the request queue");
+        return;
+    }
+
     disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
     fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
                                           self_as<peer_connection>(), _1, _2, r, t));
+    m_download_queue.erase(b);
 
     bool was_finished = picker.is_piece_finished(r.piece);
     picker.mark_as_writing(block_finished, get_peer());
@@ -1048,6 +1065,7 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
             r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
     }
 
+    do_read();
     request_block();
     send_block_requests();
 }
