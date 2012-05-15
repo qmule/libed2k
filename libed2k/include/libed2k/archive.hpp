@@ -122,14 +122,14 @@ namespace libed2k
         private:
             // Fundamental types simple read as raw binary block
             template<typename T>
-            inline void serialize_impl(T & val, typename boost::enable_if<boost::is_fundamental<T> >::type* dummy = 0)
+            inline void serialize_impl(T & val, typename boost::enable_if<boost::is_fundamental<T> >::type*  = 0)
             {
                 raw_write(reinterpret_cast<const char*>(&val), sizeof(T));
             }
 
             //Classes need to be serialize using their special method
             template<typename T>
-            inline void serialize_impl(T & val,  typename boost::enable_if<boost::is_class<T> >::type* dummy = 0)
+            inline void serialize_impl(T & val,  typename boost::enable_if<boost::is_class<T> >::type* = 0)
             {
                 val.serialize(*this);
             }
@@ -198,14 +198,14 @@ namespace libed2k
             std::istream& m_container;
 
             template<typename T>
-            inline void deserialize_impl(T & val, typename boost::enable_if<boost::is_fundamental<T> >::type* dummy = 0)
+            inline void deserialize_impl(T & val, typename boost::enable_if<boost::is_fundamental<T> >::type* = 0)
             {
                 raw_read(reinterpret_cast<char*>(&val), sizeof(T));
             }
            
             //Classes
             template<typename T>
-            inline void deserialize_impl(T & val, typename boost::enable_if<boost::is_class<T> >::type* dummy = 0)
+            inline void deserialize_impl(T & val, typename boost::enable_if<boost::is_class<T> >::type* = 0)
             {
                 val.serialize(*this);
             }
