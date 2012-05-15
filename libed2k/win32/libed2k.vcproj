@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\transfer_handle.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\util.cpp"
 				>
 			</File>
