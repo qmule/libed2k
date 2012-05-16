@@ -70,6 +70,7 @@ namespace libed2k
 
     void is_https_auth::do_close()
     {
+        if (m_stopped) return;
         m_service.post(boost::bind(&is_https_auth::close, shared_from_this(), boost::asio::error::operation_aborted));
     }
 

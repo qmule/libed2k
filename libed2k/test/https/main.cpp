@@ -29,9 +29,10 @@ int main(int argc, char* argv[])
 
 		libed2k::auth_runner ar;
 		ar.start("el.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
+		sleep(20);
 		ar.start("el.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
-		ar.start("el2.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
-		ar.start("el.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
+		//ar.start("el2.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
+		//ar.start("el.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
 
 	    while (std::cin.get() != 'q')
 	    {
