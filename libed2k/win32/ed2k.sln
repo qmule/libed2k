@@ -24,6 +24,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "https", "https.vcproj", "{3
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "crypto", "crypto.vcproj", "{C3588752-2F1A-41FD-82AD-515DABCEA56E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

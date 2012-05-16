@@ -695,16 +695,18 @@ namespace libed2k
                                         boost::uint32_t nRequested,
                                         boost::uint64_t nTransferred,
                                         boost::uint8_t nPriority) :
-                                        m_nLastChanged(fs::last_write_time(p)),
+                                        m_nLastChanged(0),
                                         m_hFile(hFile)
     {
+        fs::path native_p = convert_to_native(p.string());
+        m_nLastChanged = fs::last_write_time(native_p);
         boost::uint64_t nFileSize       = nFilesize;
         __file_size fs_trans;
         fs_trans.nQuadPart = nTransferred;
 
         m_hash_list.m_collection.assign(hSet.begin(), hSet.end());
-        m_list.add_tag(make_string_tag(convert_from_native(p.leaf()), FT_FILENAME, true));
-        m_list.add_tag(make_string_tag(convert_from_native(p.leaf()), FT_FILENAME, true));  // write same name for backward compatibility
+        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));
+        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));  // write same name for backward compatibility
         m_list.add_tag(make_typed_tag(nFileSize, FT_FILESIZE, true));
         m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
         m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
@@ -764,9 +766,9 @@ namespace libed2k
         {
             while(1)
             {
-                fs::path p = m_order.popWait();
+                fs::path p = m_order.popWait(); // this is native code page                
 
-                std::cout << "file_monitor::operator(): " << p.string();
+                DBG("file_monitor::operator(): " << p.string());
 
                 try
                 {
@@ -777,7 +779,7 @@ namespace libed2k
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    atp.file_path = p;
+                    atp.file_path = convert_from_native(p.string()); // we add transfer in UTF8 only!
 
                     bool    bPartial = false; // check last part in file not full
                     uintmax_t nFileSize = boost::filesystem::file_size(p);

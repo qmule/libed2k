@@ -11,7 +11,7 @@ namespace libed2k {
     {
         DBG("add_transfer_params::dump");
         DBG("file hash: " << file_hash << " all hashes size: " << piece_hash.all_hashes().size());
-        DBG("file path: " << file_path.string());
+        DBG("file path: " << convert_to_native(file_path.string()));
         DBG("file size: " << file_size);
         DBG("accepted: " << m_accepted
                             << " requested: " << m_requested

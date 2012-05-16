@@ -69,7 +69,7 @@ namespace libed2k
                 // now all files were loaded by file monitor
                 ++m_hash_count;
 
-                DBG("add hash for: " << t.file_path.string());
+                DBG("add hash for: " << convert_to_native(t.file_path.string()));
 
                 BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
                 m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
@@ -137,7 +137,8 @@ namespace libed2k
             {
                 if (!m_settings.m_known_file.empty())
                 {
-                    fs::ofstream fstream(convert_to_native(m_settings.m_known_file));
+                    DBG("save to " << convert_to_native(m_settings.m_known_file));
+                    fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
                     libed2k::archive::ed2k_oarchive ofa(fstream);
                     ofa << kfc;
                 }

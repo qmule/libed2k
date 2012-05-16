@@ -18,6 +18,13 @@ const unsigned char chCryptKey[] =
   '\xf0','\x44','\x1d','\xe8','\x2a','\xa5','\xe5','\xa0','\x94','\xce','\x82','\xb5','\xc1','\x9e','\xa4','\x9e','\x61','\xd4','\xd9','\xdf','\x02','\x18','\x72','\xe3','\x3d',
   '\xc6','\x5b','\xd0','\x8e','\x6e','\x8a','\x30','\x2d','\x33','\x88','\x5b','\x3f','\xe0','\x36','\x88','\x2c','\x3d','\xec','\x54','\xce','\xef'};
 
+const unsigned char chPasswd[] = 
+{
+'\x6A','\x00','\x58','\x00','\x37','\x00','\x72','\x00','\x2B','\x00','\x6E','\x00','\x49','\x00','\x55','\x00','\x4A','\x00','\x62','\x00','\x45','\x00','\x6D','\x00','\x54','\x00','\x51','\x00','\x73','\x00','\x66','\x00',
+'\x30','\x00','\x44','\x00','\x53','\x00','\x48','\x00','\x57','\x00','\x73','\x00','\x77','\x00','\x59','\x00','\x31','\x00','\x61','\x00','\x46','\x00','\x35','\x00','\x4C','\x00','\x2F','\x00','\x50','\x00','\x6D','\x00',
+'\x6F','\x00','\x6B','\x00','\x49','\x00','\x61','\x00','\x33','\x00','\x38','\x00','\x59','\x00','\x74','\x00','\x70','\x00','\x78','\x00','\x73','\x00','\x3D','\x00','\x0A','\x00','\x00','\x00'};
+
+
 int main(int argc, char* argv[])
 {
     LOGGER_INIT()
@@ -30,36 +37,46 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    FILE* fc = fopen(strCrypto.c_str(), "wb");
-    if (!fc)
-    {
-        std::cout << "Unable to create crypt file" << std::endl;
-        return 1;
-    }
+    //FILE* fc = fopen(strCrypto.c_str(), "wb");
+    //if (!fc)
+    //{
+    //    std::cout << "Unable to create crypt file" << std::endl;
+    //    return 1;
+    //}
 
-    fwrite(chCryptKey, 1, sizeof(chCryptKey), fc);
-    fclose(fc);
+    //fwrite(chCryptKey, 1, sizeof(chCryptKey), fc);
+    //fclose(fc);
 
 
     DBG("Use key file: " << argv[1] << " and password: " << argv[2]);
 	std::string strFilename = argv[1];
-	std::string strEPassword = is_crypto::EncryptPasswd(argv[2], strCrypto.c_str());
-	std::string strPassword = is_crypto::DecryptPasswd(strEPassword, strCrypto.c_str());
+    std::wstring strSrc;
+    strSrc.assign((wchar_t*)chPasswd, sizeof(chPasswd)/2);
+    std::string strSrc2;
+    libtorrent::wchar_utf8(strSrc, strSrc2);
+    DBG("utf8 password: " << strSrc2);
+    char chBOM[] = {'\xEF', '\xBB', '\xBF'};
 
-    std::wstring strWideP;
-    libtorrent::utf8_wchar(strEPassword, strWideP);
-    FILE* fp = fopen("./dump.txt", "wb");
+    std::string strBom;
+    strBom.assign(chBOM, sizeof(chBOM));
+    strSrc2 = strBom + strSrc2;
+    //std::string strEPassword = is_crypto::EncryptPasswd(argv[2], strFilename.c_str());
+    std::string strPassword = is_crypto::DecryptPasswd(strSrc2, strFilename);
 
-    if (fp)
-    {
-        fwrite(strWideP.c_str(), 2, strWideP.length(), fp);
-        fclose(fp);
-    }
+    //std::wstring strWideP;
+    //libtorrent::utf8_wchar(strEPassword, strWideP);
+    //FILE* fp = fopen("./dump.txt", "wb");
+
+    //if (fp)
+    //{
+    //    fwrite(strWideP.c_str(), 2, strWideP.length(), fp);
+    //    fclose(fp);
+    //}
 
     //std::cout << "P: " << std::hex << strWideP.c_str() << std::endl;
 
 	std::cout << "Decrypted password: " << strPassword << std::endl;
-	std::cout << "Encrypted password: " << strEPassword << std::endl;
+	//std::cout << "Encrypted password: " << strEPassword << std::endl;
 	return 0;
 };
 

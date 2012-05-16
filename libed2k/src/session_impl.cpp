@@ -76,7 +76,7 @@ void session_impl_base::save_state() const
 
     if (!m_settings.m_known_file.empty())
     {
-        fs::ofstream fstream(convert_to_native(m_settings.m_known_file));
+        fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
         libed2k::archive::ed2k_oarchive ofa(fstream);
         ofa << kfc;
     }
@@ -92,7 +92,7 @@ void session_impl_base::load_state()
 
     if (!m_settings.m_known_file.empty())
     {
-        fs::ifstream fstream(convert_to_native(m_settings.m_known_file));
+        fs::ifstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
 
         if (fstream)
         {
@@ -170,7 +170,7 @@ void session_impl_base::load_state()
             std::map<std::string, size_t>::iterator m = known_items.find(convert_from_native(itr->leaf()));
             boost::uint32_t nLastChangeTime = fs::last_write_time(*itr);
 
-            // check file already processed
+            // check file already processed - save it in native codepage
             transfer_filename_map::iterator p_itr = m_transfers_filenames.find(std::make_pair(itr->leaf(), nLastChangeTime));
 
             if (p_itr != m_transfers_filenames.end())
@@ -194,7 +194,7 @@ void session_impl_base::load_state()
                 // generate transfer
                 add_transfer_params atp;
 
-                atp.file_path = *itr;    // use native code page
+                atp.file_path = convert_from_native(itr->string());    // use utf8 codepage
                 atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
 
                 if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
@@ -262,8 +262,9 @@ void session_impl_base::load_state()
             //ok, need hash this file
             DBG("hash file: " << (itr->string()));
 
-            // add file name to control map
-            m_transfers_filenames.insert(std::make_pair(std::make_pair(itr->leaf(), nLastChangeTime), md4_hash(md4_hash::m_emptyMD4Hash)));
+            // add file name to control map in native code page
+            m_transfers_filenames.insert(std::make_pair(std::make_pair(itr->leaf(), nLastChangeTime), md4_hash(md4_hash::m_emptyMD4Hash)));            
+            // go to hashing - send fs in native code page - will be converted to utf8 by monitor
             m_fmon.m_order.push(*itr);
         }
 
