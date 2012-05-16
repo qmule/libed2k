@@ -60,6 +60,7 @@ namespace libed2k{
 
         void do_read();
         void do_write();
+        void do_write(boost::function<void(const error_code&, size_t)> fun);
 
         template<typename T>
         void do_write(T& t);

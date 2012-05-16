@@ -74,7 +74,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
-    m_desired_queue_size = 3;
+    m_desired_queue_size = 1;
 
     add_handler(OP_HELLO, boost::bind(&peer_connection::on_hello, this, _1));
     add_handler(OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, this, _1));
@@ -473,12 +473,12 @@ void peer_connection::fill_send_buffer()
     {
         const peer_request& req = m_requests.front();
         write_piece(req);
-        sequential_read(req);
+        sequential_send(req);
         m_requests.erase(m_requests.begin());
     }
 }
 
-void peer_connection::sequential_read(const peer_request& req)
+void peer_connection::sequential_send(const peer_request& req)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t) return;
@@ -491,10 +491,6 @@ void peer_connection::sequential_read(const peer_request& req)
     {
         t->filesystem().async_read(r, boost::bind(&peer_connection::on_disk_read_complete,
                                                   self_as<peer_connection>(), _1, _2, r, left));
-    }
-    else
-    {
-        fill_send_buffer();
     }
 }
 
@@ -522,25 +518,30 @@ void peer_connection::on_disk_read_complete(
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
-    do_write();
+    do_write(boost::bind(&peer_connection::on_send_data, self_as<peer_connection>(), _1, _2));
 
-    sequential_read(left);
+    sequential_send(left);
 }
 
-void peer_connection::sequential_write(const peer_request& req)
+void peer_connection::sequential_receive(const peer_request& req)
 {
     std::pair<peer_request, peer_request> reqs = split_request(req);
     peer_request r = reqs.first;
     peer_request left = reqs.second;
 
-    if (r.length > 0)
+    if (r.length > 0 && !m_read_in_progress)
     {
-        if (!allocate_disk_receive_buffer(r.length)) return;
+        if (!allocate_disk_receive_buffer(r.length))
+        {
+            ERR("cannot allocate disk receive buffer " << r.length);
+            return;
+        }
 
         boost::asio::async_read(
             *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r, left)));
+        m_read_in_progress = true;
     }
     else
         do_read();
@@ -550,6 +551,8 @@ void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
     assert(int(bytes_transferred) == r.length);
+    assert(m_read_in_progress);
+    m_read_in_progress = false;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
@@ -571,15 +574,15 @@ void peer_connection::on_receive_data(
 
     disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
     fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
-                                          self_as<peer_connection>(), _1, _2, r, t));
-    picker.mark_as_writing(block_finished, get_peer());
+                                          self_as<peer_connection>(), _1, _2, r, left, t));
 
     if (left.length > 0)
-        sequential_write(left);
+        sequential_receive(left);
     else
     {
-        m_download_queue.erase(b);
         bool was_finished = picker.is_piece_finished(r.piece);
+        picker.mark_as_writing(block_finished, get_peer());
+        m_download_queue.erase(b);
 
         // did we just finish the piece?
         // this means all blocks are either written
@@ -592,27 +595,38 @@ void peer_connection::on_receive_data(
                 r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
         }
 
-        m_read_in_progress = false;
         do_read();
         request_block();
         send_block_requests();
     }
 }
 
+void peer_connection::on_send_data(const error_code& error, std::size_t bytes_transferred)
+{
+    base_connection::on_write(error, bytes_transferred);
+    fill_send_buffer();
+}
+
 void peer_connection::on_disk_write_complete(
-    int ret, disk_io_job const& j, peer_request r, boost::shared_ptr<transfer> t)
+    int ret, disk_io_job const& j, peer_request r, peer_request left, boost::shared_ptr<transfer> t)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
-    // in case the outstanding bytes just dropped down
-    // to allow to receive more data
-    do_read();
+    assert(r.piece == j.piece);
+    assert(r.start == j.offset);
 
-    if (t->is_seed()) return;
+    if (left.length == 0)
+    {
+        // in case the outstanding bytes just dropped down
+        // to allow to receive more data
+        //do_read();
 
-    piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
-    piece_picker& picker = t->picker();
-    picker.mark_as_finished(block_finished, get_peer());
+        if (t->is_seed()) return;
+
+        piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
+        piece_picker& picker = t->picker();
+        picker.mark_as_finished(block_finished, get_peer());
+    }
 }
 
 void peer_connection::write_hello()
@@ -1094,8 +1108,7 @@ void peer_connection::on_piece(const error_code& error)
             << " <== " << m_remote);
 
         peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
-        sequential_write(r);
-        m_read_in_progress = true;
+        sequential_receive(r);
     }
     else
     {
