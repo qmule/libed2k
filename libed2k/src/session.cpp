@@ -91,6 +91,12 @@ void session::post_search_request(search_request& ro)
     m_impl->post_search_request(ro);
 }
 
+void session::post_search_more_result_request()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->post_search_more_result_request();
+}
+
 void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);
@@ -107,6 +113,18 @@ std::vector<transfer_handle> session::get_transfers() const
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);
     return m_impl->get_transfers();
+}
+
+int session::download_rate_limit() const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->m_settings.download_rate_limit;
+}
+
+int session::upload_rate_limit() const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->m_settings.upload_rate_limit;
 }
 
 

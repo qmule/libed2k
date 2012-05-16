@@ -95,6 +95,15 @@ namespace libed2k
         }
     }
 
+    void server_connection::post_search_more_result_request()
+    {
+        if (!is_stopped())
+        {
+            search_more_result smr;
+            do_write(smr);
+        }
+    }
+
     void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     {
         if (!is_stopped())

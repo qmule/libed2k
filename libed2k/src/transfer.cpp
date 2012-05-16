@@ -272,7 +272,7 @@ namespace libed2k
 
     int transfer::upload_limit() const
     {
-
+        return 0;
     }
 
     void transfer::set_download_limit(int limit)
@@ -282,7 +282,7 @@ namespace libed2k
 
     int transfer::download_limit() const
     {
-
+        return 0;
     }
 
     void transfer::set_sequential_download(bool sd)

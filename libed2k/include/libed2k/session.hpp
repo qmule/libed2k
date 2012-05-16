@@ -109,6 +109,7 @@ namespace libed2k {
           * execute search file on server
          */
         void post_search_request(search_request& sr);
+        void post_search_more_result_request();
 
         /**
           * search sources for file
@@ -117,6 +118,9 @@ namespace libed2k {
 
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
+
+        int download_rate_limit() const;
+        int upload_rate_limit() const;
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);
