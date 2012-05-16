@@ -10,6 +10,7 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md5.h>
 #include "libed2k/is_crypto.hpp"
+#include "libed2k/log.hpp"
 
 namespace is_crypto
 {
@@ -66,6 +67,7 @@ void CreateKey(byte *key, int len_key)
     if (!GetVolumeInformationA("C:\\",NameBuffer, sizeof(NameBuffer),
             &VSNumber,&MCLength,&FileSF,SysNameBuffer,sizeof(SysNameBuffer))){
         VSNumber = 1024; // если нам не удалось узнать серииник тома чтож, ставим заранее приготовленное число
+        DBG("Disk serial number: " << VSNumber);
     }
 #else
     VSNumber = 1024;
