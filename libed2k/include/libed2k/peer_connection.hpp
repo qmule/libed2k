@@ -125,13 +125,15 @@ namespace libed2k
         void send_block_requests();
 
         void fill_send_buffer();
-        void sequential_read(const peer_request& r);
+        void sequential_send(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
-        void sequential_write(const peer_request& r);
+        void sequential_receive(const peer_request& r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
-                                    peer_request r, boost::shared_ptr<transfer> t);
+                                    peer_request r, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
+        void on_send_data(const error_code& error, std::size_t bytes_transferred);
+
 
         // the following functions appends messages
         // to the send buffer
