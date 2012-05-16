@@ -13,6 +13,77 @@
 
 using namespace libed2k;
 
+/**
+ md4_hash::dump D4CF11BC699F0850210A92BEE8DFCD12
+23:57.11 4860[dbg] net_identifier::dump(IP=1768108042 port=4662)
+23:57.11 4861[dbg] size type is: 4
+23:57.11 4862[dbg] count: 7
+23:57.11 4863[dbg] base_tag::dump
+23:57.11 4864[dbg] type: TAGTYPE_STRING
+23:57.11 4865[dbg] name:  tag id: FT_FILENAME
+23:57.11 4866[dbg] VALUEСоблазны в больнице.XXX
+23:57.11 4867[dbg] base_tag::dump
+23:57.11 4868[dbg] type: TAGTYPE_UINT32
+23:57.11 4869[dbg] name:  tag id: FT_FILESIZE
+23:57.11 4870[dbg] VALUE: 732807168
+23:57.11 4871[dbg] base_tag::dump
+23:57.11 4872[dbg] type: TAGTYPE_UINT8
+23:57.11 4873[dbg] name:  tag id: FT_SOURCES
+23:57.11 4874[dbg] VALUE: 43
+23:57.11 4875[dbg] base_tag::dump
+23:57.11 4876[dbg] type: TAGTYPE_UINT8
+23:57.11 4877[dbg] name:  tag id: FT_COMPLETE_SOURCES
+23:57.11 4878[dbg] VALUE: 42
+23:57.11 4879[dbg] base_tag::dump
+23:57.11 4880[dbg] type: TAGTYPE_UINT16
+23:57.11 4881[dbg] name:  tag id: FT_MEDIA_BITRATE
+23:57.11 4882[dbg] VALUE: 982
+23:57.11 4883[dbg] base_tag::dump
+23:57.11 4884[dbg] type: TAGTYPE_STR4
+23:57.11 4885[dbg] name:  tag id: FT_MEDIA_CODEC
+23:57.11 4886[dbg] VALUExvid
+23:57.11 4887[dbg] base_tag::dump
+23:57.11 4888[dbg] type: TAGTYPE_UINT16
+23:57.11 4889[dbg] name:  tag id: FT_MEDIA_LENGTH
+23:57.11 4890[dbg] VALUE: 5904
+23:57.11 4891[dbg] search_file_entry::dump
+23:57.11 4892[dbg] md4_hash::dump 6FE930EE2BB8B4E5B960811346331A43
+23:57.11 4893[dbg] net_identifier::dump(IP=576732682 port=4666)
+23:57.11 4894[dbg] size type is: 4
+23:57.11 4895[dbg] count: 7
+23:57.11 4896[dbg] base_tag::dump
+23:57.11 4897[dbg] type: TAGTYPE_STRING
+23:57.11 4898[dbg] name:  tag id: FT_FILENAME
+23:57.11 4899[dbg] VALUEXXX Видео Bangbros. Nasty Naom.wmv
+23:57.11 4900[dbg] base_tag::dump
+23:57.11 4901[dbg] type: TAGTYPE_UINT32
+23:57.11 4902[dbg] name:  tag id: FT_FILESIZE
+23:57.11 4903[dbg] VALUE: 6779182
+23:57.11 4904[dbg] base_tag::dump
+23:57.11 4905[dbg] type: TAGTYPE_UINT8
+23:57.11 4906[dbg] name:  tag id: FT_SOURCES
+23:57.11 4907[dbg] VALUE: 2
+23:57.11 4908[dbg] base_tag::dump
+23:57.11 4909[dbg] type: TAGTYPE_UINT8
+23:57.11 4910[dbg] name:  tag id: FT_COMPLETE_SOURCES
+23:57.11 4911[dbg] VALUE: 2
+23:57.11 4912[dbg] base_tag::dump
+23:57.11 4913[dbg] type: TAGTYPE_UINT16
+23:57.11 4914[dbg] name:  tag id: FT_MEDIA_BITRATE
+23:57.11 4915[dbg] VALUE: 1017
+23:57.11 4916[dbg] base_tag::dump
+23:57.11 4917[dbg] type: TAGTYPE_STR4
+23:57.11 4918[dbg] name:  tag id: FT_MEDIA_CODEC
+23:57.11 4919[dbg] VALUEwmv2
+23:57.11 4920[dbg] base_tag::dump
+23:57.11 4921[dbg] type: TAGTYPE_UINT8
+23:57.11 4922[dbg] name:  tag id: FT_MEDIA_LENGTH
+23:57.11 4923[dbg] VALUE: 54
+23:57.11 4924[dbg] Results count: 52
+
+
+ */
+
 int main(int argc, char* argv[])
 {
     LOGGER_INIT()
@@ -45,7 +116,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(300000,140000000,1, libed2k::ED2KFTSTR_VIDEO, "", "XXX");
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,1, "", "", "XXX");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
@@ -94,16 +165,23 @@ int main(int argc, char* argv[])
 
                 }
 */
+                if (p->m_list.m_collection.size() > 10)
+                {
+                    // generate continue request
+                    //search_request sr2;
+                    ses.post_search_more_result_request();
+                }
+
                 int nIndex = p->m_list.m_collection.size() - 1;
 
 
                 if (nIndex > 0)
                 {
 
-                    DBG("Search related files");
+                    //DBG("Search related files");
 
-                    search_request sr2 = generateSearchRequest(p->m_list.m_collection[nIndex].m_hFile);
-                    ses.post_search_request(sr2);
+                    //search_request sr2 = generateSearchRequest(p->m_list.m_collection[nIndex].m_hFile);
+                    //ses.post_search_request(sr2);
 
                     /*
 

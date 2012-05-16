@@ -109,6 +109,7 @@ namespace libed2k {
           * execute search file on server
          */
         void post_search_request(search_request& sr);
+        void post_search_more_result_request();
 
         /**
           * search sources for file

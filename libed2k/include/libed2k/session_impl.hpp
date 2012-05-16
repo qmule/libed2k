@@ -181,6 +181,8 @@ namespace libed2k {
              */
             void post_search_request(search_request& sr);
 
+            void post_search_more_result_request();
+
             /**
               * request sources for file
              */
