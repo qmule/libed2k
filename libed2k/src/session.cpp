@@ -109,6 +109,18 @@ std::vector<transfer_handle> session::get_transfers() const
     return m_impl->get_transfers();
 }
 
+int session::download_rate_limit() const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->m_settings.download_rate_limit;
+}
+
+int session::upload_rate_limit() const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->m_settings.upload_rate_limit;
+}
+
 
 
 }

@@ -285,7 +285,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_filepool(40),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool, BLOCK_SIZE),
+                  m_filepool, DISK_BLOCK_SIZE),
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
@@ -476,6 +476,14 @@ void session_impl::open_listen_port()
         m_listen_sockets.push_back(s);
         async_accept(s.sock);
     }
+}
+
+void session_impl::update_disk_thread_settings()
+{
+    disk_io_job j;
+    j.buffer = (char*)&m_disk_thread_settings;
+    j.action = disk_io_job::update_settings;
+    m_disk_thread.add_job(j);
 }
 
 void session_impl::async_accept(boost::shared_ptr<ip::tcp::acceptor> const& listener)

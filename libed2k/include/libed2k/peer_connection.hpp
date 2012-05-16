@@ -125,9 +125,13 @@ namespace libed2k
         void send_block_requests();
 
         void fill_send_buffer();
-        void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r);
+        void sequential_read(const peer_request& r);
+        void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
+        void sequential_write(const peer_request& r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, boost::shared_ptr<transfer> t);
+        void on_receive_data(const error_code& error, std::size_t bytes_transferred,
+                             peer_request r, peer_request left);
 
         // the following functions appends messages
         // to the send buffer
@@ -145,9 +149,7 @@ namespace libed2k
         void write_accept_upload();
         void write_cancel_transfer();
         void write_request_parts(client_request_parts_64 rp);
-        void write_piece(const peer_request& r, disk_buffer_holder& buffer);
-
-        void write_have(int index);
+        void write_piece(const peer_request& r);
 
         // protocol handlers
         void on_hello(const error_code& error);
@@ -169,7 +171,6 @@ namespace libed2k
         void on_piece(const error_code& error);
         void on_end_download(const error_code& error);
 
-        void on_receive_data(const error_code& error, std::size_t bytes_transferred, peer_request);
 
         // keep the io_service running as long as we
         // have peer connections

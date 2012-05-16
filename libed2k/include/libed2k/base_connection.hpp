@@ -129,6 +129,7 @@ namespace libed2k{
         chained_buffer m_send_buffer;  //!< buffer for outgoing messages
         tcp::endpoint m_remote;
         bool m_write_in_progress; //!< write indicator
+        bool m_read_in_progress;  //!< read indicator
         handler_map m_handlers;
 
         //

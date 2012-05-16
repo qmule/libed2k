@@ -21,7 +21,9 @@ namespace libed2k {
             server_keep_alive_timeout(20),
             server_ip(0),
             server_reconnect_timeout(5),
-            max_peerlist_size(4000)
+            max_peerlist_size(4000),
+            download_rate_limit(-1),
+            upload_rate_limit(-1)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -70,6 +72,13 @@ namespace libed2k {
         // about, not necessarily connected to.
         int max_peerlist_size;
 
+        /**
+          * session rate limits
+          * -1 unlimits
+         */
+        int download_rate_limit;
+        int upload_rate_limit;
+
         //!< known.met file
         std::string     m_known_file;
 
@@ -78,6 +87,7 @@ namespace libed2k {
         fd_list m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
+
     };
 
 }
