@@ -55,6 +55,11 @@ int main(int argc, char* argv[])
     std::string strSrc2;
     libtorrent::wchar_utf8(strSrc, strSrc2);
     DBG("utf8 password: " << strSrc2);
+    char chBOM[] = {'\xEF', '\xBB', '\xBF'};
+
+    std::string strBom;
+    strBom.assign(chBOM, sizeof(chBOM));
+    strSrc2 = strBom + strSrc2;
     //std::string strEPassword = is_crypto::EncryptPasswd(argv[2], strFilename.c_str());
     std::string strPassword = is_crypto::DecryptPasswd(strSrc2, strFilename);
 

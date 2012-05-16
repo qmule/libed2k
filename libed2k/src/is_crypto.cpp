@@ -66,9 +66,10 @@ void CreateKey(byte *key, int len_key)
     //получаем серииник тома
     if (!GetVolumeInformationA("C:\\",NameBuffer, sizeof(NameBuffer),
             &VSNumber,&MCLength,&FileSF,SysNameBuffer,sizeof(SysNameBuffer))){
-        VSNumber = 1024; // если нам не удалось узнать серииник тома чтож, ставим заранее приготовленное число
-        DBG("Disk serial number: " << VSNumber);
+        VSNumber = 1024; // если нам не удалось узнать серииник тома чтож, ставим заранее приготовленное число        
     }
+
+    DBG("Disk serial number: " << VSNumber);
 #else
     VSNumber = 1024;
 #endif
@@ -122,6 +123,7 @@ std::string EncryptPasswd(const std::string& strPasswd, const std::string& strFi
     }
     catch(...)
     {
+        DBG("hash file empty after error");
         memset( hashFile, 0x01, Weak::MD5::DIGESTSIZE );
     }
 
@@ -160,9 +162,11 @@ std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& st
     try
     {
         CryptoPP::FileSource f(strFilename.c_str(), true, new CryptoPP::HashFilter(hash, new CryptoPP::ArraySink(hashFile, Weak::MD5::DIGESTSIZE)));
+        DBG("file hashed");
     }
     catch(...)
     {
+        DBG("hash file empty after error");
         memset( hashFile, 0x01, Weak::MD5::DIGESTSIZE );
     }
 
@@ -173,7 +177,9 @@ std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& st
     CreateIV(hashFile, Weak::MD5::DIGESTSIZE, iv, CryptoPP::Blowfish::BLOCKSIZE);
 
     std::string decipher;
-    try {
+    try 
+    {
+        DBG("go decrypt");
         CryptoPP::StringSink *sink = new CryptoPP::StringSink(decipher);
         CryptoPP::Gunzip *unzip = new CryptoPP::Gunzip (sink);
         CryptoPP::CBC_Mode<CryptoPP::Blowfish>::Decryption twofish(key, CryptoPP::Blowfish::DEFAULT_KEYLENGTH, iv);
