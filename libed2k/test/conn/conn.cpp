@@ -98,7 +98,11 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
+    settings.server_keep_alive_timeout = 20;
+    settings.server_reconnect_timeout = 30;
     settings.server_hostname = argv[1];
+    settings.server_timeout = 25;
+    //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
@@ -122,9 +126,25 @@ int main(int argc, char* argv[])
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
 
-
-    while (std::cin.get() != 'q')
+    char c;
+    while ((c = std::cin.get()) != 'q')
     {
+        switch(c)
+        {
+        case 'd':
+            ses.server_conn_stop();
+            break;
+        case 'c':
+            ses.server_conn_start();
+            break;
+        case 'f':
+            ses.post_search_request(order);
+            break;
+        default:
+            break;
+        };
+
+
         std::auto_ptr<alert> a = ses.pop_alert();
 
         while(a.get())
@@ -136,7 +156,7 @@ int main(int argc, char* argv[])
                         << p->m_nClientId
                         << std::endl;
                 DBG("send search request");
-                ses.post_search_request(order);
+                //ses.post_search_request(order);
             }
             else if (dynamic_cast<server_status_alert*>(a.get()))
             {
@@ -169,7 +189,7 @@ int main(int argc, char* argv[])
                 {
                     // generate continue request
                     //search_request sr2;
-                    ses.post_search_more_result_request();
+                    //ses.post_search_more_result_request();
                 }
 
                 int nIndex = p->m_list.m_collection.size() - 1;

@@ -121,6 +121,9 @@ namespace libed2k {
 
         int download_rate_limit() const;
         int upload_rate_limit() const;
+
+        void server_conn_start();
+        void server_conn_stop();
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);

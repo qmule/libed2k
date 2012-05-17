@@ -12,9 +12,13 @@
 namespace libed2k
 {
 
+#define STATE_CMP(c) if (!compatible_state(c)) { return; }
+#define CHECK_ABORTED(error) if (error == boost::asio::error::operation_aborted) { return; }
+
     typedef boost::iostreams::basic_array_source<char> Device;
 
     server_connection::server_connection(aux::session_impl& ses):
+        m_state(SC_OFFLINE),
         m_nClientId(0),
         m_name_lookup(ses.m_io_service),
         m_keep_alive(ses.m_io_service),
@@ -27,57 +31,50 @@ namespace libed2k
         m_udp_socket(ses.m_io_service),
         m_udp_name_lookup(ses.m_io_service)
     {
-        m_deadline.expires_at(boost::posix_time::pos_infin);
+        //m_deadline.expires_at(boost::posix_time::pos_infin);
     }
 
     server_connection::~server_connection()
     {
+        stop();
         boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
     void server_connection::start()
     {
-        m_bInitialization = true; // start connecting
+        STATE_CMP(SC_TO_ONLINE)
+        m_state = SC_PROCESS;
+
         const session_settings& settings = m_ses.settings();
 
-        check_deadline();
+        //m_deadline.expires_at(boost::posix_time::pos_infin);
+        m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
 
         tcp::resolver::query q(settings.server_hostname,
                                boost::lexical_cast<std::string>(settings.server_port));
 
-        // temporary off udp
-        //udp::resolver::query uq(settings.server_hostname,
-        //        boost::lexical_cast<std::string>(settings.server_port + 3)); // UDP port = TCP port + 3
-
         m_name_lookup.async_resolve(
             q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
 
+    }
 
-        //m_udp_name_lookup.async_resolve(
-        //    uq, boost::bind(&server_connection::on_udp_name_lookup, self(), _1, _2));
+    void server_connection::stop()
+    {
+        STATE_CMP(SC_TO_OFFLINE);
+        close(boost::asio::error::operation_aborted);
     }
 
     void server_connection::close(const error_code& ec)
     {
         DBG("server_connection::close()");
-        m_bInitialization = false;
+        m_state = SC_OFFLINE;
         m_socket.close();
         m_deadline.cancel();
         m_name_lookup.cancel();
         m_keep_alive.cancel();
         m_udp_socket.close();
-        m_ses.server_stopped(); // inform session
+        m_ses.on_server_stopped(); // inform session
         m_ses.m_alerts.post_alert_should(server_connection_failed(ec));
-    }
-
-    bool server_connection::is_stopped() const
-    {
-        return (!m_socket.is_open());
-    }
-
-    bool server_connection::initializing() const
-    {
-        return (m_bInitialization);
     }
 
     const tcp::endpoint& server_connection::getServerEndpoint() const
@@ -87,54 +84,42 @@ namespace libed2k
 
     void server_connection::post_search_request(search_request& ro)
     {
-        if (!is_stopped())
-        {
-            // use wrapper
-            search_request_block srb(ro);
-            do_write(srb);
-        }
+        STATE_CMP(SC_TO_SERVER)
+        // use wrapper
+        search_request_block srb(ro);
+        do_write(srb);
     }
 
     void server_connection::post_search_more_result_request()
     {
-        if (!is_stopped())
-        {
-            search_more_result smr;
-            do_write(smr);
-        }
+        STATE_CMP(SC_TO_SERVER)
+        search_more_result smr;
+        do_write(smr);
     }
 
     void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     {
-        if (!is_stopped())
-        {
-            DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
-            get_file_sources gfs;
-            gfs.m_hFile = hFile;
-            gfs.m_file_size.nQuadPart = nSize;
-            do_write(gfs);
-        }
+        DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
+        STATE_CMP(SC_TO_SERVER)
+        get_file_sources gfs;
+        gfs.m_hFile = hFile;
+        gfs.m_file_size.nQuadPart = nSize;
+        do_write(gfs);
     }
 
     void server_connection::post_announce(offer_files_list& offer_list)
     {
-        if (!is_stopped())
-        {
-            DBG("server_connection::post_announce: " << offer_list.m_collection.size());
-            do_write(offer_list);
-        }
+        DBG("server_connection::post_announce: " << offer_list.m_collection.size());
+        STATE_CMP(SC_TO_SERVER)
+        do_write(offer_list);
     }
 
     void server_connection::on_name_lookup(
         const error_code& error, tcp::resolver::iterator i)
     {
-        const session_settings& settings = m_ses.settings();
+        CHECK_ABORTED(error);
 
-        if (error == boost::asio::error::operation_aborted)
-        {
-            close(error);
-            return;
-        }
+        const session_settings& settings = m_ses.settings();
 
         if (error || i == tcp::resolver::iterator())
         {
@@ -151,7 +136,7 @@ namespace libed2k
         // prepare for connect
         // set timeout
         // execute connect
-        m_deadline.expires_from_now(boost::posix_time::seconds(settings.peer_connect_timeout));
+        m_deadline.expires_from_now(boost::posix_time::seconds(settings.server_timeout));
         m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
     }
 
@@ -159,9 +144,8 @@ namespace libed2k
     void server_connection::on_udp_name_lookup(
         const error_code& error, udp::resolver::iterator i)
     {
+        CHECK_ABORTED(error);
         const session_settings& settings = m_ses.settings();
-
-        if (error == boost::asio::error::operation_aborted) return;
 
         if (error || i == udp::resolver::iterator())
         {
@@ -175,8 +159,6 @@ namespace libed2k
         DBG("server name resolved: " << libtorrent::print_endpoint(m_udp_target));
         // start udp socket on out host
         m_udp_socket.open(udp::v4());
-
-        //DBG("udp socket status: " << (m_udp_socket.is_open())?"opened":"closed");
     }
 
     // private callback methods
@@ -184,13 +166,7 @@ namespace libed2k
     {
         DBG("server_connection::on_connection_complete");
 
-        m_bInitialization = false;  // initialization complete
-
-        if (is_stopped())
-        {
-            DBG("socket was closed");
-            return;
-        }
+        CHECK_ABORTED(error);
 
         if (error)
         {
@@ -248,16 +224,10 @@ namespace libed2k
 
     void server_connection::write_server_keep_alive()
     {
-        // do nothing when server connection stopped
-        if (is_stopped())
-        {
-            DBG("server_connection::write_server_keep_alive: stopped");
-            return;
-        }
-
+        DBG("server_connection::write_server_keep_alive()");
+        STATE_CMP(SC_TO_SERVER)
+        DBG("server_connection::write_server_keep_alive(ping)");
         server_get_list sgl;
-        DBG("server_connection::write_server_keep_alive: send server ping");
-
         do_write(sgl);
         m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
         m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
@@ -265,8 +235,6 @@ namespace libed2k
 
     void server_connection::handle_write(const error_code& error, size_t nSize)
     {
-        if (is_stopped()) return;
-
         if (!error)
         {
             m_write_order.pop_front();
@@ -304,7 +272,7 @@ namespace libed2k
 
     void server_connection::handle_read_header(const error_code& error, size_t nSize)
     {
-        if (is_stopped()) return;
+        CHECK_ABORTED(error);
 
         if (!error)
         {
@@ -339,7 +307,7 @@ namespace libed2k
 
     void server_connection::handle_read_packet(const error_code& error, size_t nSize)
     {
-        if (is_stopped()) return;
+        CHECK_ABORTED(error);
 
         if (!error)
         {
@@ -412,7 +380,7 @@ namespace libed2k
 
                         if (m_ses.m_alerts.should_post<server_connection_initialized_alert>())
                             m_ses.m_alerts.post_alert(server_connection_initialized_alert(idc.m_nClientId, idc.m_nTCPFlags, idc.m_nAuxPort));
-
+                        m_state = SC_ONLINE;
                         m_ses.server_ready(idc.m_nClientId, idc.m_nTCPFlags, idc.m_nAuxPort);
                         break;
                     }
@@ -469,9 +437,14 @@ namespace libed2k
 
    void server_connection::check_deadline()
    {
-       if (is_stopped())
-           return;
+       DBG("server_connection::check_deadline()");
 
+       if (!m_socket.is_open())
+       {
+           return;
+       }
+
+       DBG("server_connection::check_deadline: check deadline");
        // Check whether the deadline has passed. We compare the deadline against
        // the current time since a new asynchronous operation may have moved the
        // deadline before this actor had a chance to run.
@@ -493,10 +466,13 @@ namespace libed2k
        m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
    }
 
+   bool server_connection::compatible_state(char c) const
+   {
+       return (c & m_state);
+   }
+
    void server_connection::handle_write_udp(const error_code& error, size_t nSize)
    {
-       if (is_stopped()) return;
-       //if (!m_udp_socket.is_open()) return;
 
        if (!error)
        {
@@ -534,9 +510,6 @@ namespace libed2k
 
    void server_connection::handle_read_header_udp(const error_code& error, size_t nSize)
    {
-       if (is_stopped()) return;
-
-
        DBG("server_connection::handle_read_header_udp(" << error.message() << ")");
 
        if (!error)

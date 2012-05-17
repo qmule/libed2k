@@ -19,6 +19,15 @@ namespace libed2k
 {
     namespace aux { class session_impl; }
 
+    const char SC_OFFLINE   = '\x01';
+    const char SC_ONLINE    = '\x02';
+    const char SC_PROCESS   = '\x04';
+
+    const char SC_TO_ONLINE     = SC_OFFLINE;
+    const char SC_TO_OFFLINE    = SC_PROCESS | SC_ONLINE;
+    const char SC_TO_SERVER     = SC_ONLINE;
+
+
     class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
@@ -32,28 +41,24 @@ namespace libed2k
          */
         void start();
 
-        /**
-          * close socket and cancel all deadline timers
-         */
-        void close(const error_code& ec);
-
-        /**
-          * connection stopped when his socket is not opened
-         */
-        bool is_stopped() const;
-
-        /**
-          * return true when connection in initialization process
-         */
-        bool initializing() const;
+        void stop();
 
         const tcp::endpoint& getServerEndpoint() const;
+
+        bool offline()      const { return m_state == SC_OFFLINE; }
+        bool online()       const { return m_state == SC_ONLINE; }
+        bool connecting()   const { return m_state == SC_PROCESS; }
 
         void post_search_request(search_request& ro);
         void post_search_more_result_request();
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
         void post_announce(offer_files_list& offer_list);
     private:
+
+        /**
+          * close socket and cancel all deadline timers
+         */
+        void close(const error_code& ec);
 
         // resolve host name go to connect
         void on_name_lookup(const error_code& error, tcp::resolver::iterator i);
@@ -109,7 +114,9 @@ namespace libed2k
           * deadline timer handler
          */
         void check_deadline();
+        bool compatible_state(char c) const;
 
+        char                            m_state;
         boost::uint32_t                 m_nClientId;
         tcp::resolver                   m_name_lookup;
         dtimer                          m_keep_alive;       //!< timer for ping server
@@ -138,11 +145,6 @@ namespace libed2k
     template<typename T>
     void server_connection::do_write(T& t)
     {
-        if (is_stopped())
-        {
-            return;
-        }
-
         bool bWriteInProgress = !m_write_order.empty();
 
         m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));

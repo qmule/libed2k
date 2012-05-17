@@ -203,8 +203,10 @@ namespace libed2k {
                 boost::uint32_t tcp_flags,
                 boost::uint32_t aux_port);
 
+            void server_conn_start();
+            void server_conn_stop();
             // called when server stopped
-            void server_stopped();
+            void on_server_stopped();
 
             boost::object_pool<peer> m_peer_pool;
 

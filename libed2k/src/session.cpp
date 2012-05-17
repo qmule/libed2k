@@ -127,6 +127,18 @@ int session::upload_rate_limit() const
     return m_impl->m_settings.upload_rate_limit;
 }
 
+void session::server_conn_start()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->server_conn_start();
+}
+
+void session::server_conn_stop()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->server_conn_stop();
+}
+
 
 
 }

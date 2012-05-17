@@ -870,7 +870,7 @@ void session_impl::on_tick(error_code const& e)
     {
         DBG("session_impl::on_tick: reconnect server connection");
         // execute server connection restart
-        if (m_server_connection->is_stopped() && !m_server_connection->initializing())
+        if (!m_server_connection->online() && !m_server_connection->connecting())
         {
             m_server_connection->start();
         }
@@ -1128,9 +1128,9 @@ void session_impl::server_ready(
     announce_all();
 }
 
-void session_impl::server_stopped()
+void session_impl::on_server_stopped()
 {
-    DBG("session_impl::server_stopped");
+    DBG("session_impl::on_server_stopped");
     m_client_id   = 0;
     m_tcp_flags   = 0;
     m_aux_port    = 0;
@@ -1139,6 +1139,16 @@ void session_impl::server_stopped()
     if (m_settings.server_reconnect_timeout > -1)
     {
         m_reconnect_counter = (m_settings.server_reconnect_timeout); // we check it every 1 s
-        DBG("session_impl::server_stopped(restart from " <<  m_reconnect_counter << ")");
+        DBG("session_impl::on_server_stopped(restart from " <<  m_reconnect_counter << ")");
     }
+}
+
+void session_impl::server_conn_start()
+{
+    m_server_connection->start();
+}
+
+void session_impl::server_conn_stop()
+{
+    m_server_connection->stop();
 }
