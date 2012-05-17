@@ -558,7 +558,7 @@ else\
         search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue);
         search_request_entry(const std::string& strMetaTagName, boost::uint8_t nOperator, boost::uint64_t nValue);
 
-        void load(archive::ed2k_iarchive& ar)
+        void load(archive::ed2k_iarchive&)
         {
             // do nothing - we never load this structure
         }
