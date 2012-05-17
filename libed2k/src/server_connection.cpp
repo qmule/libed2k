@@ -132,6 +132,7 @@ namespace libed2k
         m_target = *i;
 
         DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
+        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libtorrent::print_endpoint(m_target)));
 
         // prepare for connect
         // set timeout

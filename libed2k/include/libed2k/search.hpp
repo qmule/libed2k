@@ -19,7 +19,11 @@ namespace libed2k
     extern search_request generateSearchRequest(
         boost::uint64_t nMinSize, boost::uint64_t nMaxSize,
         unsigned int nSourcesCount, const std::string& strFileType,
-        const std::string& strFileExtension, const std::string& strQuery);
+        const std::string& strFileExtension,
+        const std::string& strCodec,
+        boost::uint32_t nMediaLength,
+        boost::uint32_t nMediaBitrate,
+        const std::string& strQuery);
 
     /**
      * @param md4_hash - file hash for search related files

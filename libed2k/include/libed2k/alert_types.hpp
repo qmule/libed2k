@@ -12,6 +12,23 @@
 
 namespace libed2k
 {
+    struct server_name_resolved_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+        server_name_resolved_alert(const std::string& strServer) : m_strServer(strServer){}
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new server_name_resolved_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("server name was resolved"); }
+        virtual char const* what() const { return "server notification"; }
+
+        std::string m_strServer;
+    };
+
     /**
       * emit when server connection was initialized
      */

@@ -35,8 +35,18 @@ namespace libed2k
                 unsigned int nSourcesCount,
                 const std::string& strFileType,
                 const std::string& strFileExtension,
+                const std::string& strCodec,
+                boost::uint32_t nMediaLength,
+                boost::uint32_t nMediaBitrate,
                 const std::string& strQuery)
     {
+
+#define ADD_AND() \
+        if (!vResult.empty())\
+        {\
+            vResult.push_back(search_request_entry(search_request_entry::SRE_AND));\
+        }\
+
         search_request vPrefResult;
         std::vector<search_request_entry> vResult;
 
@@ -52,31 +62,19 @@ namespace libed2k
 
         if (nMaxSize != 0)
         {
-            if (!vResult.empty())
-            {
-                vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
-            }
-
+            ADD_AND()
             vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_LESS, nMaxSize));
         }
 
         if (nSourcesCount != 0)
         {
-            if (!vResult.empty())
-            {
-                vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
-            }
-
+            ADD_AND()
             vResult.push_back(search_request_entry(FT_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
         }
 
         if (!strFileType.empty())
         {
-            if (!vResult.empty())
-            {
-                vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
-            }
-
+            ADD_AND()
             if ((strFileType == ED2KFTSTR_ARCHIVE) || (strFileType == ED2KFTSTR_CDIMAGE))
             {
                 vResult.push_back(search_request_entry(FT_FILETYPE, ED2KFTSTR_PROGRAM));
@@ -90,12 +88,26 @@ namespace libed2k
 
         if (!strFileExtension.empty())
         {
-            if (!vResult.empty())
-            {
-                vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
-            }
-
+            ADD_AND()
             vResult.push_back(search_request_entry(FT_FILEFORMAT, strFileExtension)); // I don't check this value!
+        }
+
+        if (!strCodec.empty())
+        {
+            ADD_AND()
+            vResult.push_back(search_request_entry(FT_MEDIA_CODEC, strFileExtension)); // I don't check this value!
+        }
+
+        if (nMediaLength != 0)
+        {
+            ADD_AND()
+            vResult.push_back(search_request_entry(FT_MEDIA_LENGTH, strFileExtension)); // I don't check this value!
+        }
+
+        if (nMediaBitrate != 0)
+        {
+            ADD_AND()
+            vResult.push_back(search_request_entry(FT_MEDIA_BITRATE, strFileExtension)); // I don't check this value!
         }
 
 

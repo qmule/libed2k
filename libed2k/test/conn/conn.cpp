@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,1, "", "", "XXX");
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,1, "", "", "", 0, 0, "XXX");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
@@ -157,6 +157,10 @@ int main(int argc, char* argv[])
                         << std::endl;
                 DBG("send search request");
                 //ses.post_search_request(order);
+            }
+            else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
+            {
+                DBG("server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->m_strServer);
             }
             else if (dynamic_cast<server_status_alert*>(a.get()))
             {
