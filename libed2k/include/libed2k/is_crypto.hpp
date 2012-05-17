@@ -1,3 +1,6 @@
+#ifndef __IS_CRYPTO__
+#define __IS_CRYPTO__
+
 #include <string>
 #include <cryptopp/config.h>
 #ifdef WIN32
@@ -21,3 +24,4 @@ extern std::string DecryptPasswd(const std::string& strEncpasswd, const std::str
 
 }
 
+#endif //__IS_CRYPTO__
