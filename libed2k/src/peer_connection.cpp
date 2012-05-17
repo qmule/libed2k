@@ -499,6 +499,9 @@ void peer_connection::on_disk_read_complete(
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
+    assert(r.piece == j.piece);
+    assert(r.start == j.offset);
+
     disk_buffer_holder buffer(m_ses.m_disk_thread, j.buffer);
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
