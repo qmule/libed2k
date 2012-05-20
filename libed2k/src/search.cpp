@@ -33,11 +33,12 @@ namespace libed2k
     search_request generateSearchRequest(boost::uint64_t nMinSize,
                 boost::uint64_t nMaxSize,
                 unsigned int nSourcesCount,
+                unsigned int nCompleteSourcesCount,
                 const std::string& strFileType,
                 const std::string& strFileExtension,
                 const std::string& strCodec,
-                boost::uint32_t nMediaLength,
-                boost::uint32_t nMediaBitrate,
+                unsigned int nMediaLength,
+                unsigned int nMediaBitrate,
                 const std::string& strQuery)
     {
 
@@ -112,6 +113,12 @@ namespace libed2k
                     vResult.push_back(search_request_entry(FT_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
                 }
 
+                if (nCompleteSourcesCount != 0)
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_COMPLETE_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
+                }
+
                 if (!strFileExtension.empty())
                 {
                     ADD_AND()
@@ -127,14 +134,16 @@ namespace libed2k
                 if (nMediaLength != 0)
                 {
                     ADD_AND()
-                    vResult.push_back(search_request_entry(FT_MEDIA_LENGTH, strFileExtension)); // I don't check this value!
+                    vResult.push_back(search_request_entry(FT_MEDIA_LENGTH, ED2K_SEARCH_OP_GREATER_EQUAL, nMediaLength)); // I don't check this value!
                 }
 
                 if (nMediaBitrate != 0)
                 {
                     ADD_AND()
-                    vResult.push_back(search_request_entry(FT_MEDIA_BITRATE, strFileExtension)); // I don't check this value!
+                    vResult.push_back(search_request_entry(FT_MEDIA_BITRATE, ED2K_SEARCH_OP_GREATER_EQUAL, nMediaBitrate)); // I don't check this value!
                 }
+
+
             }
         }
 

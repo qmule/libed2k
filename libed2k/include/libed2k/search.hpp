@@ -21,11 +21,13 @@ namespace libed2k
      */
     extern search_request generateSearchRequest(
         boost::uint64_t nMinSize, boost::uint64_t nMaxSize,
-        unsigned int nSourcesCount, const std::string& strFileType,
+        unsigned int nSourcesCount, 
+        unsigned int nCompleteSourcesCount,
+        const std::string& strFileType,
         const std::string& strFileExtension,
         const std::string& strCodec,
-        boost::uint32_t nMediaLength,
-        boost::uint32_t nMediaBitrate,
+        unsigned int nMediaLength,
+        unsigned int nMediaBitrate,
         const std::string& strQuery);
 
     /**
