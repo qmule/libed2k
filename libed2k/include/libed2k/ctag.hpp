@@ -282,6 +282,16 @@ public:
     virtual const blob_type&    asBlob() const;
     virtual const md4_hash&     asHash() const;
 
+    bool operator==(const std::string& strName) const
+    {
+        return (!m_strName.empty() && m_strName == strName);
+    }
+
+    bool operator==(tg_nid_type nId) const
+    {
+        return (m_nNameId != TAGTYPE_UNDEFINED && m_nNameId == nId);
+    }
+
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 protected:
     base_tag(const std::string& strName, tg_nid_type nNameId);
@@ -608,6 +618,7 @@ public:
     tg_nid_type getTagNameId(size_t n) const;
     tg_type     getTagType(size_t n) const;
     const boost::shared_ptr<base_tag> getTagByNameId(tg_nid_type nId) const;
+    const boost::shared_ptr<base_tag> getTagByName(const std::string& strName) const;
     
     /**
       * return special tag as string
@@ -673,7 +684,21 @@ const boost::shared_ptr<base_tag> tag_list<size_type>::getTagByNameId(tg_nid_typ
 {
     for (size_t n = 0; n < m_container.size(); n++)
     {
-        if (m_container[n]->getNameId() == nId)
+        if (*m_container[n] == nId)
+        {
+            return (m_container[n]);
+        }
+    }
+
+    return (boost::shared_ptr<base_tag>());
+}
+
+template<typename size_type>
+const boost::shared_ptr<base_tag> tag_list<size_type>::getTagByName(const std::string& strName) const
+{
+    for (size_t n = 0; n < m_container.size(); n++)
+    {
+        if (*m_container[n] == strName)
         {
             return (m_container[n]);
         }

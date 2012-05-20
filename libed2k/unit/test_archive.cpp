@@ -15,6 +15,7 @@
 #include "libed2k/ctag.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/log.hpp"
+#include "libed2k/file.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_archive)
 
@@ -587,16 +588,32 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     BOOST_CHECK(hRes == libed2k::md4_hash(libed2k::md4_hash::m_emptyMD4Hash));
 }
 
-BOOST_AUTO_TEST_CASE(test_some_methods)
+BOOST_AUTO_TEST_CASE(test_list_getters)
 {
     boost::uint32_t n32 = 23;
     libed2k::tag_list<boost::uint16_t> src_list;
     src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::CT_NAME, true));
     src_list.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ATACCEPTED, true));
+    src_list.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ED2K_MEDIA_LENGTH, false));
+    src_list.add_tag(libed2k::make_string_tag("Charoff", libed2k::FT_ED2K_MEDIA_ARTIST, false));
+
 
     BOOST_CHECK_EQUAL(src_list.getStringTagByNameId(libed2k::CT_NAME), std::string("IVAN"));
     BOOST_CHECK_EQUAL(src_list.getStringTagByNameId(libed2k::FT_ATACCEPTED), std::string(""));  // incorrect type
     BOOST_CHECK_EQUAL(src_list.getStringTagByNameId(libed2k::FT_FILESIZE), std::string(""));    // tag not exists
+    BOOST_CHECK(src_list.getTagByName(libed2k::FT_ED2K_MEDIA_LENGTH));    // tag with name FT_ED2K_MEDIA_LENGTH exists
+    BOOST_CHECK_EQUAL(src_list.getTagByName(libed2k::FT_ED2K_MEDIA_LENGTH)->asInt(), n32);    // tag with name FT_ED2K_MEDIA_LENGTH exists
+    BOOST_CHECK(!src_list.getTagByName(libed2k::FT_ED2K_MEDIA_BITRATE));    // tag with name FT_ED2K_MEDIA_BITRATE not exists
+
+    if (boost::shared_ptr<libed2k::base_tag> p = src_list.getTagByName(libed2k::FT_ED2K_MEDIA_ARTIST))
+    {
+        BOOST_CHECK_EQUAL(p->asString(), "Charoff");
+    }
+    else
+    {
+        BOOST_CHECK(false);
+    }
+
 }
 
 BOOST_AUTO_TEST_CASE(test_packets)

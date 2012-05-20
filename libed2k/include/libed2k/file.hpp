@@ -45,12 +45,12 @@ namespace libed2k
     const std::string ED2KFTSTR_USER("User"); // eMule internal use only
 
     // Additional media meta data tags from eDonkeyHybrid (note also the uppercase/lowercase)
-    #define FT_ED2K_MEDIA_ARTIST    "Artist"    // <string>
-    #define FT_ED2K_MEDIA_ALBUM     "Album"     // <string>
-    #define FT_ED2K_MEDIA_TITLE     "Title"     // <string>
-    #define FT_ED2K_MEDIA_LENGTH    "length"    // <string> !!!
-    #define FT_ED2K_MEDIA_BITRATE   "bitrate"   // <uint32>
-    #define FT_ED2K_MEDIA_CODEC     "codec"     // <string>
+    const std::string FT_ED2K_MEDIA_ARTIST("Artist");    // <string>
+    const std::string FT_ED2K_MEDIA_ALBUM(     "Album");     // <string>
+    const std::string FT_ED2K_MEDIA_TITLE(     "Title");     // <string>
+    const std::string FT_ED2K_MEDIA_LENGTH(    "length");    // <string> !!!
+    const std::string FT_ED2K_MEDIA_BITRATE(   "bitrate");   // <uint32>
+    const std::string FT_ED2K_MEDIA_CODEC(     "codec");    // <string>
     // ?
     #define TAG_NSENT               "# Sent"
     #define TAG_ONIP                "ip"
