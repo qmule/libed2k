@@ -41,6 +41,8 @@ namespace libed2k
     const std::string ED2KFTSTR_ARCHIVE("Arc");  // *Mule internal use only
     const std::string ED2KFTSTR_CDIMAGE("Iso");  // *Mule internal use only
     const std::string ED2KFTSTR_EMULECOLLECTION("EmuleCollection");
+    const std::string ED2KFTSTR_FOLDER("Folder"); // Value for eD2K tag FT_FILETYPE
+    const std::string ED2KFTSTR_USER("User"); // eMule internal use only
 
     // Additional media meta data tags from eDonkeyHybrid (note also the uppercase/lowercase)
     #define FT_ED2K_MEDIA_ARTIST    "Artist"    // <string>
@@ -49,6 +51,12 @@ namespace libed2k
     #define FT_ED2K_MEDIA_LENGTH    "length"    // <string> !!!
     #define FT_ED2K_MEDIA_BITRATE   "bitrate"   // <uint32>
     #define FT_ED2K_MEDIA_CODEC     "codec"     // <string>
+    // ?
+    #define TAG_NSENT               "# Sent"
+    #define TAG_ONIP                "ip"
+    #define TAG_ONPORT              "port"
+
+
 
     const boost::uint8_t PR_VERYLOW     = 4;
     const boost::uint8_t PR_LOW         = 0;

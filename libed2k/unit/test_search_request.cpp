@@ -84,16 +84,36 @@ BOOST_AUTO_TEST_CASE(test_search_build)
     BOOST_CHECK(r5[4].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_AND));
     BOOST_CHECK(r5[5].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_AND));
     BOOST_CHECK(r5[6].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_AND));
-    BOOST_CHECK_EQUAL(r5[7].getInt32Value(), 10);
-    BOOST_CHECK_EQUAL(r5[8].getInt64Value(), 9999000000000UL);
-    BOOST_CHECK_EQUAL(r5[9].getInt32Value(), 300);
-    BOOST_CHECK_EQUAL(r5[10].getStrValue(), libed2k::ED2KFTSTR_PROGRAM);
+    BOOST_CHECK_EQUAL(r5[7].getStrValue(), libed2k::ED2KFTSTR_PROGRAM);
+    BOOST_CHECK_EQUAL(r5[8].getInt32Value(), 10);
+    BOOST_CHECK_EQUAL(r5[9].getInt64Value(), 9999000000000UL);
+    BOOST_CHECK_EQUAL(r5[10].getInt32Value(), 300);
     BOOST_CHECK_EQUAL(r5[11].getStrValue(), std::string("kad"));
     BOOST_CHECK_EQUAL(r5[12].getStrValue(), std::string("X1"));
     BOOST_CHECK_EQUAL(r5[13].getStrValue(), std::string("X2"));
     BOOST_CHECK_EQUAL(r5[14].getStrValue(), std::string("and"));
+}
 
+BOOST_AUTO_TEST_CASE(test_search_users_folders)
+{
+    // simple search one string with logical expressions
+    libed2k::search_request r1 =  libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_USER, "", "", 0, 0, "X1 X2");
+    BOOST_REQUIRE_EQUAL(r1.size(), 5);
+    BOOST_CHECK(r1[0].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_AND));
+    BOOST_CHECK(r1[1].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_AND));
+    BOOST_CHECK_EQUAL(r1[2].getStrValue(), std::string("'+++USERNICK+++'"));
+    BOOST_CHECK_EQUAL(r1[3].getStrValue(), std::string("X1"));
+    BOOST_CHECK_EQUAL(r1[4].getStrValue(), std::string("X2"));
 
+    libed2k::search_request r2 =  libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_FOLDER, "", "", 0, 0, "X1");
+    BOOST_REQUIRE_EQUAL(r2.size(), 5);
+    BOOST_CHECK(r2[0].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_AND));
+    BOOST_CHECK(r2[1].getOperator() == static_cast<libed2k::search_request_entry::SRE_Operation>(libed2k::search_request_entry::SRE_NOT));
+    BOOST_CHECK_EQUAL(r2[2].getStrValue(), std::string(libed2k::ED2KFTSTR_EMULECOLLECTION));
+    BOOST_CHECK_EQUAL(r2[3].getStrValue(), std::string("ED2K:\\"));
+    BOOST_CHECK_EQUAL(r2[4].getStrValue(), std::string("X1"));
+
+    BOOST_CHECK_THROW(libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_USER, "", "", 0, 0, "AND X1"), libed2k::libed2k_exception);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

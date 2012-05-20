@@ -55,59 +55,78 @@ namespace libed2k
             return (vPrefResult);
         }
 
-        if (nMinSize != 0)
+        // for users pass any parameters
+        if (strFileType == ED2KFTSTR_USER)
         {
-            vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, nMinSize));
+            vResult.push_back(search_request_entry("'+++USERNICK+++'"));
+            vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
         }
-
-        if (nMaxSize != 0)
+        else if (strFileType == ED2KFTSTR_FOLDER) // for folders we search emule collections exclude ed2k links
         {
-            ADD_AND()
-            vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_LESS, nMaxSize));
+            vResult.push_back(search_request_entry(FT_FILETYPE, ED2KFTSTR_EMULECOLLECTION));
+            vResult.push_back(search_request_entry(search_request_entry::SRE_NOT));
+            vResult.push_back(search_request_entry("ED2K:\\"));
         }
-
-        if (nSourcesCount != 0)
+        else
         {
-            ADD_AND()
-            vResult.push_back(search_request_entry(FT_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
-        }
-
-        if (!strFileType.empty())
-        {
-            ADD_AND()
-            if ((strFileType == ED2KFTSTR_ARCHIVE) || (strFileType == ED2KFTSTR_CDIMAGE))
+            if (!strFileType.empty())
             {
-                vResult.push_back(search_request_entry(FT_FILETYPE, ED2KFTSTR_PROGRAM));
+                if ((strFileType == ED2KFTSTR_ARCHIVE) || (strFileType == ED2KFTSTR_CDIMAGE))
+                {
+                    vResult.push_back(search_request_entry(FT_FILETYPE, ED2KFTSTR_PROGRAM));
+                }
+                else
+                {
+                    vResult.push_back(search_request_entry(FT_FILETYPE, strFileType)); // I don't check this value!
+                }
             }
-            else
+
+            // if type is not folder - process file parameters now
+            if (strFileType != ED2KFTSTR_EMULECOLLECTION)
             {
-                vResult.push_back(search_request_entry(FT_FILETYPE, strFileType)); // I don't check this value!
+
+                if (nMinSize != 0)
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, nMinSize));
+                }
+
+                if (nMaxSize != 0)
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_LESS, nMaxSize));
+                }
+
+                if (nSourcesCount != 0)
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
+                }
+
+                if (!strFileExtension.empty())
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_FILEFORMAT, strFileExtension)); // I don't check this value!
+                }
+
+                if (!strCodec.empty())
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_MEDIA_CODEC, strFileExtension)); // I don't check this value!
+                }
+
+                if (nMediaLength != 0)
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_MEDIA_LENGTH, strFileExtension)); // I don't check this value!
+                }
+
+                if (nMediaBitrate != 0)
+                {
+                    ADD_AND()
+                    vResult.push_back(search_request_entry(FT_MEDIA_BITRATE, strFileExtension)); // I don't check this value!
+                }
             }
-        }
-
-
-        if (!strFileExtension.empty())
-        {
-            ADD_AND()
-            vResult.push_back(search_request_entry(FT_FILEFORMAT, strFileExtension)); // I don't check this value!
-        }
-
-        if (!strCodec.empty())
-        {
-            ADD_AND()
-            vResult.push_back(search_request_entry(FT_MEDIA_CODEC, strFileExtension)); // I don't check this value!
-        }
-
-        if (nMediaLength != 0)
-        {
-            ADD_AND()
-            vResult.push_back(search_request_entry(FT_MEDIA_LENGTH, strFileExtension)); // I don't check this value!
-        }
-
-        if (nMediaBitrate != 0)
-        {
-            ADD_AND()
-            vResult.push_back(search_request_entry(FT_MEDIA_BITRATE, strFileExtension)); // I don't check this value!
         }
 
 
