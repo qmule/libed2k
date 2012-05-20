@@ -48,6 +48,10 @@ BOOST_AUTO_TEST_CASE(test_search_build)
     BOOST_CHECK_THROW(libed2k::generateSearchRequest(0,0,0, "", "", "", 0, 0, "X1 NOT"), libed2k::libed2k_exception);
     BOOST_CHECK_THROW(libed2k::generateSearchRequest(0,0,0, "", "", "", 0, 0, "X1 OR"), libed2k::libed2k_exception);
 
+    // check correct expression in case we have some prev parameters before query - first operand accepted
+    BOOST_CHECK_NO_THROW(libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_AUDIO, "", "", 0, 0, "NOT X1"));
+
+
     // check spaces truncating and linked values
     libed2k::search_request r3 = libed2k::generateSearchRequest(0,0,0, "", "", "", 0, 0, "X1  \"AND   \"  OR     XDATA  \"M\"M\"M\"   NOT   AAA");
     BOOST_REQUIRE_EQUAL(r3.size(), 9);
@@ -114,6 +118,14 @@ BOOST_AUTO_TEST_CASE(test_search_users_folders)
     BOOST_CHECK_EQUAL(r2[4].getStrValue(), std::string("X1"));
 
     BOOST_CHECK_THROW(libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_USER, "", "", 0, 0, "AND X1"), libed2k::libed2k_exception);
+}
+
+BOOST_AUTO_TEST_CASE(test_limits)
+{
+    // long string
+    BOOST_CHECK_THROW(libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_AUDIO, "1234567890122345678900000", "", 0, 0, "X1"), libed2k::libed2k_exception);
+    // too complex
+    BOOST_CHECK_THROW(libed2k::generateSearchRequest(40, 70, 20, libed2k::ED2KFTSTR_AUDIO, "", "", 0, 0, "X1 X2 X3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 y z d NOT K"), libed2k::libed2k_exception);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

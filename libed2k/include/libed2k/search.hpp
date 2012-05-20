@@ -6,6 +6,9 @@
 
 namespace libed2k
 {
+#define SEARCH_REQ_ELEM_LENGTH 20
+#define SEARCH_REQ_QUERY_LENGTH 450
+#define SEARCH_REQ_ELEM_COUNT  30
     /**
       * @param nMinSize - min size for result files, zero disable this parameter
       * @param nMaxSize - max size for result filesm zeto disable this parameter

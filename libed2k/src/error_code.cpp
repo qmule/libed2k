@@ -42,6 +42,8 @@ namespace libed2k
             "unclosed quotation mark",
             "operator incorrect place",
             "known file has invalid header on save/load"
+            "input string too large",
+            "search expression too complex"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

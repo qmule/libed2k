@@ -45,7 +45,16 @@ namespace libed2k
         if (!vResult.empty())\
         {\
             vResult.push_back(search_request_entry(search_request_entry::SRE_AND));\
-        }\
+        }
+
+        // check parameters
+        if (strFileType.length() > SEARCH_REQ_ELEM_LENGTH ||
+                strFileExtension.length() > SEARCH_REQ_ELEM_LENGTH ||
+                strCodec.length() > SEARCH_REQ_ELEM_LENGTH ||
+                strQuery.length() > SEARCH_REQ_QUERY_LENGTH)
+        {
+            throw libed2k_exception(errors::input_string_too_large);
+        }
 
         search_request vPrefResult;
         std::vector<search_request_entry> vResult;
@@ -129,7 +138,7 @@ namespace libed2k
             }
         }
 
-
+        size_t nBeforeCount = vResult.size();
         // extension
 
         bool bVerbatim = false; // verbatim mode collect all characters
@@ -215,6 +224,11 @@ namespace libed2k
                 strItem.erase(std::remove_if(strItem.begin(), strItem.end(), is_quote), strItem.end()); // remove all quotation marks
                 vResult.push_back(search_request_entry(strItem));
             }
+        }
+
+        if (vResult.size() - nBeforeCount > SEARCH_REQ_ELEM_COUNT)
+        {
+            throw libed2k_exception(errors::search_expression_too_complex);
         }
 
         std::vector<search_request_entry>::iterator itr = vResult.begin();
