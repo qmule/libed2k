@@ -113,7 +113,8 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
-
+        bool has_ip_address(const std::string& strAddress) const;
+        void send_message(const std::string& strMessage);
     private:
 
         // constructor method

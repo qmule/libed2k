@@ -181,12 +181,22 @@ namespace libed2k {
              */
             void post_search_request(search_request& sr);
 
+            /**
+              * after simple search call you can post request more search results
+             */
             void post_search_more_result_request();
+
+            /**
+              * send message to peer
+             */
+            void post_message(const std::string& nAddress, int nPort, const std::string& strMessage);
 
             /**
               * request sources for file
              */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
+
+
 
             /**
               * announce single entry

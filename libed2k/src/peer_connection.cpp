@@ -465,6 +465,17 @@ bool peer_connection::can_read(char* state) const
 	return (true);
 }
 
+bool peer_connection::has_ip_address(const std::string& strAddress) const
+{
+    return (m_remote.address() == boost::asio::ip::address::from_string(strAddress.c_str()));
+}
+
+void peer_connection::send_message(const std::string& strMessage)
+{
+    // TODO - implement it
+
+}
+
 void peer_connection::fill_send_buffer()
 {
     int buffer_size_watermark = 512;

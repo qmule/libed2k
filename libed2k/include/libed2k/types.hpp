@@ -36,7 +36,7 @@ namespace libtorrent {
 
 namespace libed2k
 {
-    typedef std::vector<char, boost::pool_allocator<char> > socket_buffer;
+    typedef std::vector<char > socket_buffer; //, boost::pool_allocator<char>
 
     typedef boost::asio::ip::tcp tcp;
     typedef boost::asio::ip::udp udp;

@@ -116,6 +116,11 @@ namespace libed2k {
          */
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
+        /**
+          * send message to peer
+         */
+        void post_message(const std::string& strAddress, int nPort, const std::string& strMessage);
+
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
 

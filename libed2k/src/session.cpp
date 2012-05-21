@@ -103,6 +103,12 @@ void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     m_impl->post_sources_request(hFile, nSize);
 }
 
+void session::post_message(const std::string& strAddress, int nPort, const std::string& strMessage)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->post_message(strAddress, nPort, strMessage);
+}
+
 transfer_handle session::find_transfer(const md4_hash & hash) const
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);

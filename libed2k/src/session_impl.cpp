@@ -1051,6 +1051,38 @@ void session_impl::post_search_more_result_request()
     m_server_connection->post_search_more_result_request();
 }
 
+void session_impl::post_message(const std::string& strAddress, int nPort, const std::string& strMessage)
+{
+    connection_map::iterator itr =
+            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, strAddress));
+
+    if (itr != m_connections.end())
+    {
+        itr->get()->send_message(strMessage);
+        return;
+    }
+
+    tcp::endpoint endp(boost::asio::ip::address::from_string(strAddress), nPort);
+    boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
+    setup_socket_buffers(*sock);
+
+    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, sock, endp, NULL));
+
+    if (!c->is_disconnecting())
+    {
+        // store connection in map only for real peers
+        if (m_server_connection->m_target.address() != endp.address())
+        {
+            m_connections.insert(c);
+        }
+
+        c->start();
+        c->send_message(strMessage);
+    }
+
+
+}
+
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_server_connection->post_sources_request(hFile, nSize);
