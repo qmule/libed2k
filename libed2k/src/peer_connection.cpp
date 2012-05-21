@@ -919,12 +919,16 @@ void peer_connection::on_file_status(const error_code& error)
 {
     if (!error)
     {
+        boost::shared_ptr<transfer> t = m_transfer.lock();
         client_file_status fs;
+
         decode_packet(fs);
+        if (fs.m_status.size() == 0)
+            fs.m_status.resize(t->num_pieces(), 1);
+
         DBG("file status answer "<< fs.m_hFile
             << ", [" << bitfield2string(fs.m_status) << "] <== " << m_remote);
 
-        boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == fs.m_hFile)
         {
             m_remote_hashset.pieces(fs.m_status);

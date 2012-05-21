@@ -898,16 +898,27 @@ else\
             boost::uint16_t bits;
             ar & m_hFile;
             ar & bits;
-            std::vector<char> buf(bits2bytes(bits));
-            ar.raw_read(&buf[0], buf.size());
-            m_status.assign(&buf[0], bits);
+            if (bits > 0)
+            {
+                std::vector<char> buf(bits2bytes(bits));
+                ar.raw_read(&buf[0], buf.size());
+                m_status.assign(&buf[0], bits);
+            }
         }
         void serialize(archive::ed2k_oarchive& ar)
         {
-            boost::uint16_t bits = m_status.size();
             ar & m_hFile;
-            ar & bits;
-            ar.raw_write(m_status.bytes(), bits2bytes(bits));
+            boost::uint16_t bits = m_status.size();
+            if (bits < m_status.count()) // part file
+            {
+                ar & bits;
+                ar.raw_write(m_status.bytes(), bits2bytes(bits));
+            }
+            else // complete file
+            {
+                bits = 0;
+                ar & bits;
+            }
         }
     };
 
