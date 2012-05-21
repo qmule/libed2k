@@ -48,7 +48,8 @@ namespace libed2k
             unclosed_quotation_mark,
             operator_incorrect_place,
             known_file_invalid_header,
-
+            input_string_too_large,
+            search_expression_too_complex,
             num_errors
         };
     }

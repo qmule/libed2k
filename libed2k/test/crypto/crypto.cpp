@@ -22,7 +22,7 @@ const unsigned char chPasswd[] =
 {
 '\x6A','\x00','\x58','\x00','\x37','\x00','\x72','\x00','\x2B','\x00','\x6E','\x00','\x49','\x00','\x55','\x00','\x4A','\x00','\x62','\x00','\x45','\x00','\x6D','\x00','\x54','\x00','\x51','\x00','\x73','\x00','\x66','\x00',
 '\x30','\x00','\x44','\x00','\x53','\x00','\x48','\x00','\x57','\x00','\x73','\x00','\x77','\x00','\x59','\x00','\x31','\x00','\x61','\x00','\x46','\x00','\x35','\x00','\x4C','\x00','\x2F','\x00','\x50','\x00','\x6D','\x00',
-'\x6F','\x00','\x6B','\x00','\x49','\x00','\x61','\x00','\x33','\x00','\x38','\x00','\x59','\x00','\x74','\x00','\x70','\x00','\x78','\x00','\x73','\x00','\x3D','\x00','\x0A','\x00','\x00','\x00'};
+'\x6F','\x00','\x6B','\x00','\x49','\x00','\x61','\x00','\x33','\x00','\x38','\x00','\x59','\x00','\x74','\x00','\x70','\x00','\x78','\x00','\x73','\x00','\x3D','\x00', '\x00', '\x00' }; //,'\x0A','\x00','\x00','\x00'};
 
 
 int main(int argc, char* argv[])
@@ -50,16 +50,18 @@ int main(int argc, char* argv[])
 
     DBG("Use key file: " << argv[1] << " and password: " << argv[2]);
 	std::string strFilename = argv[1];
-    std::wstring strSrc;
-    strSrc.assign((wchar_t*)chPasswd, sizeof(chPasswd)/2);
-    std::string strSrc2;
-    libtorrent::wchar_utf8(strSrc, strSrc2);
-    DBG("utf8 password: " << strSrc2);
-    char chBOM[] = {'\xEF', '\xBB', '\xBF'};
+    //std::wstring strSrc;
+    //strSrc.assign((wchar_t*)chPasswd, sizeof(chPasswd)/2);
+    //strSrc = argv[2];
 
-    std::string strBom;
-    strBom.assign(chBOM, sizeof(chBOM));
-    strSrc2 = strBom + strSrc2;
+    //libtorrent::wchar_utf8(strSrc, strSrc2);
+    std::string strSrc2 = argv[2];
+    DBG("utf8 password: " << strSrc2);
+    //char chBOM[] = {'\xEF', '\xBB', '\xBF'};
+
+    //std::string strBom;
+    //strBom.assign(chBOM, sizeof(chBOM));
+    
     //std::string strEPassword = is_crypto::EncryptPasswd(argv[2], strFilename.c_str());
     std::string strPassword = is_crypto::DecryptPasswd(strSrc2, strFilename);
 

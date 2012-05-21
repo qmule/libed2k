@@ -6,6 +6,9 @@
 
 namespace libed2k
 {
+#define SEARCH_REQ_ELEM_LENGTH 20
+#define SEARCH_REQ_QUERY_LENGTH 450
+#define SEARCH_REQ_ELEM_COUNT  30
     /**
       * @param nMinSize - min size for result files, zero disable this parameter
       * @param nMaxSize - max size for result filesm zeto disable this parameter
@@ -18,11 +21,13 @@ namespace libed2k
      */
     extern search_request generateSearchRequest(
         boost::uint64_t nMinSize, boost::uint64_t nMaxSize,
-        unsigned int nSourcesCount, const std::string& strFileType,
+        unsigned int nSourcesCount, 
+        unsigned int nCompleteSourcesCount,
+        const std::string& strFileType,
         const std::string& strFileExtension,
         const std::string& strCodec,
-        boost::uint32_t nMediaLength,
-        boost::uint32_t nMediaBitrate,
+        unsigned int nMediaLength,
+        unsigned int nMediaBitrate,
         const std::string& strQuery);
 
     /**

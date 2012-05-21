@@ -1076,6 +1076,53 @@ else\
         }
     };
 
+    struct client_message
+    {
+        enum { CLIENT_MAX_MESSAGE_LENGTH = 450 };
+
+
+        client_message(const std::string& strMessage)
+        {
+
+            m_nMsgLength = static_cast<boost::uint16_t>(strMessage.length());
+
+            if (m_nMsgLength > CLIENT_MAX_MESSAGE_LENGTH)
+            {
+                m_nMsgLength = CLIENT_MAX_MESSAGE_LENGTH;
+
+            }
+
+            m_strMessage.assign(strMessage, 0, m_nMsgLength);
+        }
+
+
+        template<typename Archive>
+        void save(Archive& ar)
+        {
+            ar & m_nMsgLength;
+            ar & m_strMessage;
+        }
+
+        template<typename Archive>
+        void load(Archive& ar)
+        {
+            ar & m_nMsgLength;
+
+            if (m_nMsgLength > CLIENT_MAX_MESSAGE_LENGTH)
+            {
+                m_nMsgLength = CLIENT_MAX_MESSAGE_LENGTH;
+            }
+
+            m_strMessage.resize(m_nMsgLength);
+            ar & m_strMessage;
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+
+        boost::uint16_t m_nMsgLength;
+        std::string     m_strMessage;
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
     };
@@ -1141,6 +1188,10 @@ else\
     };
     template<> struct packet_type<client_end_download> {
         static const proto_type value = OP_END_OF_DOWNLOAD;
+    };
+
+    template<> struct packet_type<client_message>{
+        static const proto_type value = OP_MESSAGE;
     };
 }
 
