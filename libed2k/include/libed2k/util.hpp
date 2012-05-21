@@ -29,6 +29,12 @@ namespace libed2k
         return ss.str();
     }
 
+    inline boost::uint32_t address2int(const ip::address& addr)
+    {
+        assert(addr.is_v4());
+        return htonl(addr.to_v4().to_ulong());
+    }
+
     extern std::string bitfield2string(const bitfield& bits);
 
     inline int round_up8(int v)

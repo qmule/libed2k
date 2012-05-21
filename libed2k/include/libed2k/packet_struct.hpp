@@ -795,15 +795,20 @@ else\
     {
         boost::uint8_t              m_nHashLength;          //!< clients hash length
         md4_hash                    m_hClient;              //!< hash
-        net_identifier              m_sNetIdentifier;       //!< client network identification
+        net_identifier              m_sClientNetId;         //!< client network identification
         tag_list<boost::uint32_t>   m_tlist;                //!< tag list for additional information
+        net_identifier              m_sServerNetId;         //!< client network identification
+
+        client_hello(): m_nHashLength(MD4_HASH_SIZE) {}
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
+            ar & m_nHashLength;
             ar & m_hClient;
-            ar & m_sNetIdentifier;
+            ar & m_sClientNetId;
             ar & m_tlist;
+            ar & m_sServerNetId;
         }
     };
 

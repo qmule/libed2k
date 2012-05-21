@@ -125,6 +125,7 @@ namespace libed2k {
             void close_connection(const peer_connection* p, const error_code& ec);
 
             unsigned short listen_port() const;
+            const tcp::endpoint& server() const;
 
             void abort();
 
@@ -135,10 +136,7 @@ namespace libed2k {
               * add transfer from current thread directly
              */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
-
-
-            std::vector<transfer_handle> add_transfer_dir(
-                const fs::path& dir, error_code& ec);
+            std::vector<transfer_handle> add_transfer_dir(const fs::path& dir, error_code& ec);
 
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }

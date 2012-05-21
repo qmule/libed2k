@@ -754,6 +754,11 @@ unsigned short session_impl::listen_port() const
     return m_listen_sockets.front().external_port;
 }
 
+const tcp::endpoint& session_impl::server() const
+{
+    return m_server_connection->m_target;
+}
+
 void session_impl::abort()
 {
     if (m_abort) return;

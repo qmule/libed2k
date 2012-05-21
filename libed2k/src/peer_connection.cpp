@@ -640,10 +640,12 @@ void peer_connection::write_hello()
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
     hello.m_hClient = settings.client_hash;
-    hello.m_sNetIdentifier.m_nIP = m_ses.m_client_id;
-    hello.m_sNetIdentifier.m_nPort = settings.listen_port;
+    hello.m_sClientNetId.m_nIP = m_ses.m_client_id;
+    hello.m_sClientNetId.m_nPort = settings.listen_port;
     hello.m_tlist.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
     hello.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+    hello.m_sServerNetId.m_nIP = address2int(m_ses.server().address());
+    hello.m_sServerNetId.m_nPort = m_ses.server().port();
 
     do_write(hello);
 }
@@ -793,7 +795,7 @@ void peer_connection::write_piece(const peer_request& r)
 
 void peer_connection::on_hello(const error_code& error)
 {
-    DBG("hello packet <== " << m_remote);
+    DBG("hello <== " << m_remote);
     if (!error)
     {
         write_hello_answer();
