@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, ED2KFTSTR_FOLDER, "", "", 0, 0, "A"/*"'+++USERNICK+++' A B"*/);
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "hpp"/*"'+++USERNICK+++' A B"*/);
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
@@ -181,23 +181,29 @@ int main(int argc, char* argv[])
             {
                 search_result_alert* p = dynamic_cast<search_result_alert*>(a.get());
                 // ok, prepare to get sources
-                p->m_list.dump();
-                DBG("Results count: " << p->m_list.m_collection.size());
+                //p->m_result.dump();
+                DBG("Results count: " << p->m_result.m_results_list.m_collection.size());
+
+                if (p->m_result.m_more_results_avaliable)
+                {
+                    DBG("More results: ");
+                    ses.post_search_more_result_request();
+                }
+
                 /*
                 for (int n = 0; n < p->m_list.m_collection.size(); n++)
                 {
 
                 }
 */
-                if (p->m_list.m_collection.size() > 10)
-                {
+                //if (p->m_list.m_collection.size() > 10)
+                //{
                     // generate continue request
                     //search_request sr2;
                     //ses.post_search_more_result_request();
-                }
+                //}
 
-                int nIndex = p->m_list.m_collection.size() - 1;
-
+                int nIndex = p->m_result.m_results_list.m_collection.size() - 1;
 
                 if (nIndex > 0)
                 {

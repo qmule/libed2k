@@ -160,6 +160,17 @@ namespace libed2k
         m_list.dump();
     }
 
+    void search_result::dump() const
+    {
+        DBG("search_result::dump()");
+        m_results_list.dump();
+
+        if (m_more_results_avaliable != 0)
+        {
+            DBG("More results avaliable");
+        }
+    }
+
     shared_file_entry::shared_file_entry()
     {
     }
