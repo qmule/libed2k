@@ -170,9 +170,27 @@ namespace libed2k
         void on_out_parts(const error_code& error);
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
-        void on_piece(const error_code& error);
         void on_end_download(const error_code& error);
 
+        template <typename Struct>
+        void on_sending_part(const error_code& error)
+        {
+            if (!error)
+            {
+                Struct sp;
+                decode_packet(sp);
+                DBG("part " << sp.m_hFile
+                    << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+                    << " <== " << m_remote);
+
+                peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
+                sequential_receive(r);
+            }
+            else
+            {
+                ERR("part error " << error.message() << " <== " << m_remote);
+            }
+        }
 
         // keep the io_service running as long as we
         // have peer connections

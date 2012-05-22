@@ -92,7 +92,10 @@ void peer_connection::reset()
     add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
     add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
     add_handler(OP_REQUESTPARTS_I64, boost::bind(&peer_connection::on_request_parts, this, _1));
-    add_handler(OP_SENDINGPART_I64, boost::bind(&peer_connection::on_piece, this, _1));
+    add_handler(OP_SENDINGPART,
+                boost::bind(&peer_connection::on_sending_part<client_sending_part_32>, this, _1));
+    add_handler(OP_SENDINGPART_I64,
+                boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
 }
 
@@ -789,7 +792,7 @@ void peer_connection::write_piece(const peer_request& r)
     sp.m_end_offset = range.second;
     do_write(sp);
 
-    DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+    DBG("part " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
         << " ==> " << m_remote);
 }
 
@@ -1104,24 +1107,6 @@ void peer_connection::on_request_parts(const error_code& error)
     else
     {
         ERR("request parts error " << error.message() << " <== " << m_remote);
-    }
-}
-
-void peer_connection::on_piece(const error_code& error)
-{
-    if (!error)
-    {
-        client_sending_part_64 sp;
-        decode_packet(sp);
-        DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
-            << " <== " << m_remote);
-
-        peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
-        sequential_receive(r);
-    }
-    else
-    {
-        ERR("piece error " << error.message() << " <== " << m_remote);
     }
 }
 
