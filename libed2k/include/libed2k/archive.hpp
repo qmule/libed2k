@@ -77,6 +77,11 @@ namespace libed2k
             {
             }
 
+            int bytes_left() const
+            {
+                return 0;
+            }
+
             std::ostream& container()
             {
                 return (m_container);
@@ -146,6 +151,14 @@ namespace libed2k
 
             ed2k_iarchive(std::istream& container) : m_container(container)
             {
+                m_container.seekg (0, std::ios::end);
+                m_length = m_container.tellg();
+                m_container.seekg (0, std::ios::beg);
+            }
+
+            int bytes_left() const
+            {
+                return m_length - m_container.tellg();
             }
 
             std::istream& container()
@@ -209,6 +222,8 @@ namespace libed2k
             {
                 val.serialize(*this);
             }
+
+            int m_length;
 
         };
     }

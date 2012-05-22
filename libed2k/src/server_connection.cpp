@@ -370,7 +370,7 @@ namespace libed2k
                         break;
                     case OP_IDCHANGE:
                     {
-                        id_change idc(m_in_header.m_size - 1);
+                        id_change idc;
                         ia >> idc;
 
                         m_nClientId = idc.m_nClientId;
@@ -405,7 +405,7 @@ namespace libed2k
                     }
                     case OP_SEARCHRESULT:
                     {
-                        search_file_list sfl;
+                        search_result sfl;
                         ia >> sfl;
                         m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
                         break;

@@ -17,7 +17,6 @@ namespace libed2k
 #define DECREMENT_READ(n, x) if (n >= sizeof(x))\
 {\
     ar & x; \
-    n -= sizeof(x);\
 }\
 else\
 {\
@@ -465,23 +464,20 @@ else\
         client_id_type  m_nClientId;
         boost::uint32_t m_nTCPFlags;
         boost::uint32_t m_nAuxPort;
-        size_t          m_nMaxSize;
 
-        id_change(size_t nMaxSize) :
-            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0), m_nMaxSize(nMaxSize)
+        id_change() :
+            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0)
         {
         }
 
+        // only for load
         template<typename Archive>
         void serialize(Archive& ar)
         {
-            size_t nCounter = m_nMaxSize;
             // always read/write client id;
             ar & m_nClientId;
-            nCounter -= sizeof(m_nClientId);
-
-            DECREMENT_READ(nCounter, m_nTCPFlags);
-            DECREMENT_READ(nCounter, m_nAuxPort);
+            DECREMENT_READ(ar.bytes_left(), m_nTCPFlags);
+            DECREMENT_READ(ar.bytes_left(), m_nAuxPort);
         }
     };
 
@@ -651,6 +647,37 @@ else\
     };
 
     typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
+
+    struct search_result
+    {
+        search_file_list    m_results_list;
+        char                m_more_results_avaliable;
+
+        // use only for load
+        template<typename Archive>
+        void load(Archive& ar)
+        {
+            m_more_results_avaliable = 0;
+            ar & m_results_list;
+
+            if (ar.bytes_left() == 1)
+            {
+                ar & m_more_results_avaliable;
+            }
+
+            DBG("search_result::serialize: bytes left: " << ar.bytes_left());
+        }
+
+        template<typename Archive>
+        void save(Archive& ar)
+        {
+            // do nothing
+        }
+
+        void dump() const;
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
 
     /**
       * request sources for file
