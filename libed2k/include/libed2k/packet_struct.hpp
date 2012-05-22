@@ -1136,73 +1136,95 @@ else\
 
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_hello_answer> {
         static const proto_type value = OP_HELLOANSWER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_request> {
         static const proto_type value = OP_REQUESTFILENAME;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_answer> {
         static const proto_type value = OP_REQFILENAMEANSWER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_description> {
         static const proto_type value = OP_FILEDESC;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_filestatus_request> {
         static const proto_type value = OP_SETREQFILEID;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_no_file> {
         static const proto_type value = OP_FILEREQANSNOFIL;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_status> {
         static const proto_type value = OP_FILESTATUS;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_hashset_request> {
         static const proto_type value = OP_HASHSETREQUEST;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_hashset_answer> {
         static const proto_type value = OP_HASHSETANSWER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_start_upload> {
         static const proto_type value = OP_STARTUPLOADREQ;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_queue_ranking> {
         static const proto_type value = OP_QUEUERANKING;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_accept_upload> {
         static const proto_type value = OP_ACCEPTUPLOADREQ;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_out_parts> {
         static const proto_type value = OP_OUTOFPARTREQS;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_cancel_transfer> {
         static const proto_type value = OP_CANCELTRANSFER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_request_parts_32> {
         static const proto_type value = OP_REQUESTPARTS;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_request_parts_64> {
         static const proto_type value = OP_REQUESTPARTS_I64;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_sending_part_32> {
         static const proto_type value = OP_SENDINGPART;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_sending_part_64> {
         static const proto_type value = OP_SENDINGPART_I64;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_compressed_part_32> {
         static const proto_type value = OP_COMPRESSEDPART;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_compressed_part_64> {
         static const proto_type value = OP_COMPRESSEDPART_I64;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_end_download> {
         static const proto_type value = OP_END_OF_DOWNLOAD;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
-
     template<> struct packet_type<client_message>{
         static const proto_type value = OP_MESSAGE;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
 }
 

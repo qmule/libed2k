@@ -209,6 +209,8 @@ namespace libed2k{
     void base_connection::do_write(T& t)
     {
         libed2k_header header;
+        header.m_protocol = packet_type<T>::protocol;
+
         std::string body;
         boost::iostreams::back_insert_device<std::string> inserter(body);
         boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
