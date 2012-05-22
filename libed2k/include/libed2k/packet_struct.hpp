@@ -17,7 +17,6 @@ namespace libed2k
 #define DECREMENT_READ(n, x) if (n >= sizeof(x))\
 {\
     ar & x; \
-    n -= sizeof(x);\
 }\
 else\
 {\
@@ -465,23 +464,20 @@ else\
         client_id_type  m_nClientId;
         boost::uint32_t m_nTCPFlags;
         boost::uint32_t m_nAuxPort;
-        size_t          m_nMaxSize;
 
-        id_change(size_t nMaxSize) :
-            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0), m_nMaxSize(nMaxSize)
+        id_change() :
+            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0)
         {
         }
 
+        // only for load
         template<typename Archive>
         void serialize(Archive& ar)
         {
-            size_t nCounter = m_nMaxSize;
             // always read/write client id;
             ar & m_nClientId;
-            nCounter -= sizeof(m_nClientId);
-
-            DECREMENT_READ(nCounter, m_nTCPFlags);
-            DECREMENT_READ(nCounter, m_nAuxPort);
+            DECREMENT_READ(ar.bytes_left(), m_nTCPFlags);
+            DECREMENT_READ(ar.bytes_left(), m_nAuxPort);
         }
     };
 
@@ -652,6 +648,37 @@ else\
 
     typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
 
+    struct search_result
+    {
+        search_file_list    m_results_list;
+        char                m_more_results_avaliable;
+
+        // use only for load
+        template<typename Archive>
+        void load(Archive& ar)
+        {
+            m_more_results_avaliable = 0;
+            ar & m_results_list;
+
+            if (ar.bytes_left() == 1)
+            {
+                ar & m_more_results_avaliable;
+            }
+
+            DBG("search_result::serialize: bytes left: " << ar.bytes_left());
+        }
+
+        template<typename Archive>
+        void save(Archive& ar)
+        {
+            // do nothing
+        }
+
+        void dump() const;
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
     /**
       * request sources for file
      */
@@ -795,15 +822,20 @@ else\
     {
         boost::uint8_t              m_nHashLength;          //!< clients hash length
         md4_hash                    m_hClient;              //!< hash
-        net_identifier              m_sNetIdentifier;       //!< client network identification
+        net_identifier              m_sClientNetId;         //!< client network identification
         tag_list<boost::uint32_t>   m_tlist;                //!< tag list for additional information
+        net_identifier              m_sServerNetId;         //!< client network identification
+
+        client_hello(): m_nHashLength(MD4_HASH_SIZE) {}
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
+            ar & m_nHashLength;
             ar & m_hClient;
-            ar & m_sNetIdentifier;
+            ar & m_sClientNetId;
             ar & m_tlist;
+            ar & m_sServerNetId;
         }
     };
 
@@ -893,16 +925,27 @@ else\
             boost::uint16_t bits;
             ar & m_hFile;
             ar & bits;
-            std::vector<char> buf(bits2bytes(bits));
-            ar.raw_read(&buf[0], buf.size());
-            m_status.assign(&buf[0], bits);
+            if (bits > 0)
+            {
+                std::vector<char> buf(bits2bytes(bits));
+                ar.raw_read(&buf[0], buf.size());
+                m_status.assign(&buf[0], bits);
+            }
         }
         void serialize(archive::ed2k_oarchive& ar)
         {
-            boost::uint16_t bits = m_status.size();
             ar & m_hFile;
-            ar & bits;
-            ar.raw_write(m_status.bytes(), bits2bytes(bits));
+            boost::uint16_t bits = m_status.size();
+            if (bits < m_status.count()) // part file
+            {
+                ar & bits;
+                ar.raw_write(m_status.bytes(), bits2bytes(bits));
+            }
+            else // complete file
+            {
+                bits = 0;
+                ar & bits;
+            }
         }
     };
 
@@ -1120,73 +1163,95 @@ else\
 
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_hello_answer> {
         static const proto_type value = OP_HELLOANSWER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_request> {
         static const proto_type value = OP_REQUESTFILENAME;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_answer> {
         static const proto_type value = OP_REQFILENAMEANSWER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_description> {
         static const proto_type value = OP_FILEDESC;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_filestatus_request> {
         static const proto_type value = OP_SETREQFILEID;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_no_file> {
         static const proto_type value = OP_FILEREQANSNOFIL;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_status> {
         static const proto_type value = OP_FILESTATUS;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_hashset_request> {
         static const proto_type value = OP_HASHSETREQUEST;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_hashset_answer> {
         static const proto_type value = OP_HASHSETANSWER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_start_upload> {
         static const proto_type value = OP_STARTUPLOADREQ;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_queue_ranking> {
         static const proto_type value = OP_QUEUERANKING;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_accept_upload> {
         static const proto_type value = OP_ACCEPTUPLOADREQ;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_out_parts> {
         static const proto_type value = OP_OUTOFPARTREQS;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_cancel_transfer> {
         static const proto_type value = OP_CANCELTRANSFER;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_request_parts_32> {
         static const proto_type value = OP_REQUESTPARTS;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_request_parts_64> {
         static const proto_type value = OP_REQUESTPARTS_I64;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_sending_part_32> {
         static const proto_type value = OP_SENDINGPART;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_sending_part_64> {
         static const proto_type value = OP_SENDINGPART_I64;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_compressed_part_32> {
         static const proto_type value = OP_COMPRESSEDPART;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_compressed_part_64> {
         static const proto_type value = OP_COMPRESSEDPART_I64;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_end_download> {
         static const proto_type value = OP_END_OF_DOWNLOAD;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
-
     template<> struct packet_type<client_message>{
         static const proto_type value = OP_MESSAGE;
+        static const proto_type protocol = OP_EDONKEYPROT;
     };
 }
 

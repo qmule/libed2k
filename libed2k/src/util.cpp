@@ -34,7 +34,7 @@ namespace libed2k
     std::pair<size_t, size_t> block_range(int piece, int block, size_t size)
     {
         size_t begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
-        size_t end = std::min(begin + BLOCK_SIZE, std::min((piece + 1) * PIECE_SIZE, size)) - 1;
+        size_t end = std::min(begin + BLOCK_SIZE, std::min((piece + 1) * PIECE_SIZE, size));
         assert(begin < end);
         return std::make_pair(begin, end);
     }

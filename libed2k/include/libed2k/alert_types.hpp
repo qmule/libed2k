@@ -159,7 +159,7 @@ namespace libed2k
     {
         const static int static_category = alert::server_notification;
 
-        search_result_alert(const search_file_list& plist) : m_list(plist){}
+        search_result_alert(const search_result& sresult) : m_result(sresult){}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return "search result from string"; }
@@ -170,7 +170,7 @@ namespace libed2k
             return (std::auto_ptr<alert>(new search_result_alert(*this)));
         }
 
-        search_file_list    m_list;
+        search_result    m_result;
     };
 
     struct mule_listen_failed_alert: alert

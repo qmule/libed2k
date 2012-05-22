@@ -17,7 +17,7 @@ peer_request mk_peer_request(size_t begin, size_t end)
     peer_request r;
     r.piece = begin / PIECE_SIZE;
     r.start = begin % PIECE_SIZE;
-    r.length = end - begin + 1;
+    r.length = end - begin;
     return r;
 }
 
@@ -92,7 +92,10 @@ void peer_connection::reset()
     add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
     add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
     add_handler(OP_REQUESTPARTS_I64, boost::bind(&peer_connection::on_request_parts, this, _1));
-    add_handler(OP_SENDINGPART_I64, boost::bind(&peer_connection::on_piece, this, _1));
+    add_handler(OP_SENDINGPART,
+                boost::bind(&peer_connection::on_sending_part<client_sending_part_32>, this, _1));
+    add_handler(OP_SENDINGPART_I64,
+                boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
 }
 
@@ -651,10 +654,12 @@ void peer_connection::write_hello()
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
     hello.m_hClient = settings.client_hash;
-    hello.m_sNetIdentifier.m_nIP = m_ses.m_client_id;
-    hello.m_sNetIdentifier.m_nPort = settings.listen_port;
+    hello.m_sClientNetId.m_nIP = m_ses.m_client_id;
+    hello.m_sClientNetId.m_nPort = settings.listen_port;
     hello.m_tlist.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
     hello.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+    hello.m_sServerNetId.m_nIP = address2int(m_ses.server().address());
+    hello.m_sServerNetId.m_nPort = m_ses.server().port();
 
     do_write(hello);
 }
@@ -798,13 +803,13 @@ void peer_connection::write_piece(const peer_request& r)
     sp.m_end_offset = range.second;
     do_write(sp);
 
-    DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+    DBG("part " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
         << " ==> " << m_remote);
 }
 
 void peer_connection::on_hello(const error_code& error)
 {
-    DBG("hello packet <== " << m_remote);
+    DBG("hello <== " << m_remote);
     if (!error)
     {
         write_hello_answer();
@@ -928,12 +933,16 @@ void peer_connection::on_file_status(const error_code& error)
 {
     if (!error)
     {
+        boost::shared_ptr<transfer> t = m_transfer.lock();
         client_file_status fs;
+
         decode_packet(fs);
+        if (fs.m_status.size() == 0)
+            fs.m_status.resize(t->num_pieces(), 1);
+
         DBG("file status answer "<< fs.m_hFile
             << ", [" << bitfield2string(fs.m_status) << "] <== " << m_remote);
 
-        boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == fs.m_hFile)
         {
             m_remote_hashset.pieces(fs.m_status);
@@ -1109,24 +1118,6 @@ void peer_connection::on_request_parts(const error_code& error)
     else
     {
         ERR("request parts error " << error.message() << " <== " << m_remote);
-    }
-}
-
-void peer_connection::on_piece(const error_code& error)
-{
-    if (!error)
-    {
-        client_sending_part_64 sp;
-        decode_packet(sp);
-        DBG("piece " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
-            << " <== " << m_remote);
-
-        peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
-        sequential_receive(r);
-    }
-    else
-    {
-        ERR("piece error " << error.message() << " <== " << m_remote);
     }
 }
 
