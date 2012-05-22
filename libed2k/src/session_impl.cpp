@@ -1073,19 +1073,12 @@ void session_impl::post_message(const std::string& strAddress, int nPort, const 
 
     boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, sock, endp, NULL));
 
-    if (!c->is_disconnecting())
-    {
-        // store connection in map only for real peers
-        if (m_server_connection->m_target.address() != endp.address())
-        {
-            m_connections.insert(c);
-        }
+    // forward message to peer - it will send after connection was completed
+    c->send_message(strMessage);
 
-        c->start();
-        c->send_message(strMessage);
-    }
-
-
+    m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
+                    boost::bind(&peer_connection::on_timeout, c),
+                    libtorrent::seconds(m_settings.peer_connect_timeout));
 }
 
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)

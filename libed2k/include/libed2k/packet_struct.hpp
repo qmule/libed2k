@@ -1114,25 +1114,20 @@ else\
         }
     };
 
+    // captcha result codes
+    const boost::uint8_t CA_NONE            = 0;
+    const boost::uint8_t CA_CHALLENGESENT   = 1;
+    const boost::uint8_t CA_CAPTCHASOLVED   = 2;
+    const boost::uint8_t CA_ACCEPTING       = 3;
+    const boost::uint8_t CA_CAPTCHARECV     = 4;
+    const boost::uint8_t CA_SOLUTIONSENT    = 5;
+
     struct client_message
     {
         enum { CLIENT_MAX_MESSAGE_LENGTH = 450 };
 
-
-        client_message(const std::string& strMessage)
-        {
-
-            m_nMsgLength = static_cast<boost::uint16_t>(strMessage.length());
-
-            if (m_nMsgLength > CLIENT_MAX_MESSAGE_LENGTH)
-            {
-                m_nMsgLength = CLIENT_MAX_MESSAGE_LENGTH;
-
-            }
-
-            m_strMessage.assign(strMessage, 0, m_nMsgLength);
-        }
-
+        client_message();
+        client_message(const std::string& strMessage);
 
         template<typename Archive>
         void save(Archive& ar)
@@ -1159,6 +1154,47 @@ else\
 
         boost::uint16_t m_nMsgLength;
         std::string     m_strMessage;
+    };
+
+    struct client_captcha_request
+    {
+        tag_list<boost::uint8_t>    m_list;
+        std::vector<unsigned char>  m_captcha;
+
+        template<typename Archive>
+        void save(Archive& ar)
+        {
+            ar & m_list;
+            for(size_t n = 0; n < m_captcha.size(); ++n)
+            {
+                ar & m_captcha[n];
+            }
+        }
+
+        template<typename Archive>
+        void load(Archive& ar)
+        {
+            ar & m_list;
+            m_captcha.resize(ar.bytes_left());
+
+            for(size_t n = 0; n < m_captcha.size(); ++n)
+            {
+                ar & m_captcha[n];
+            }
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
+    struct client_captcha_result
+    {
+        boost::uint8_t  m_captcha_result;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_captcha_result;
+        }
     };
 
     template<> struct packet_type<client_hello> {
@@ -1252,6 +1288,36 @@ else\
     template<> struct packet_type<client_message>{
         static const proto_type value = OP_MESSAGE;
         static const proto_type protocol = OP_EDONKEYPROT;
+    };
+
+    // helper for get type from item
+    template<typename T>
+    proto_type get_proto_type(const T& t)
+    {
+        return packet_type<T>::value;
+    }
+
+    /**
+      * this structure used for handle set of different structures
+     */
+    struct client_meta_packet
+    {
+        client_meta_packet(const client_message& cmessage);
+
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            if (m_proto == get_proto_type(m_message))
+            {
+                ar & m_message;
+                return;
+            }
+
+        }
+
+        client_message  m_message;
+        proto_type      m_proto;
     };
 }
 

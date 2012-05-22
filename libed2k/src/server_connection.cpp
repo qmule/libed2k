@@ -69,6 +69,7 @@ namespace libed2k
     {
         DBG("server_connection::close()");
         m_state = SC_OFFLINE;
+        m_write_order.clear();  // remove all incoming messages
         m_socket.close();
         m_deadline.cancel();
         m_name_lookup.cancel();

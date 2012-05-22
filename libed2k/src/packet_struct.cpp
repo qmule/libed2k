@@ -392,4 +392,27 @@ namespace libed2k
      {
      }
 
+    client_message::client_message() : m_nMsgLength(0)
+    {}
+
+    client_message::client_message(const std::string& strMessage)
+    {
+        m_nMsgLength = static_cast<boost::uint16_t>(strMessage.length());
+
+        if (m_nMsgLength > CLIENT_MAX_MESSAGE_LENGTH)
+        {
+            m_nMsgLength = CLIENT_MAX_MESSAGE_LENGTH;
+
+        }
+
+        m_strMessage.assign(strMessage, 0, m_nMsgLength);
+    }
+
+    client_meta_packet::client_meta_packet(const client_message& cmessage)
+    {
+        m_message = cmessage;
+        m_proto = get_proto_type(m_message);
+    }
+
+
 }

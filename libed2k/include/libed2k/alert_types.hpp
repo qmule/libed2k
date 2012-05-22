@@ -197,11 +197,50 @@ namespace libed2k
 
     };
 
-    struct peer_message_alert : alert
+    struct peer_alert : alert
     {
         const static int static_category = alert::peer_notification;
-        peer_message_alert(const std::string& strMessage, const net_identifier& npoint) : m_strMessage(strMessage), m_network_point(npoint){}
-                virtual int category() const { return static_category; }
+        peer_alert(const std::string& strAddress) : m_strAddress(strAddress)
+        {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new peer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("peer alert"); }
+        virtual char const* what() const { return "peer alert"; }
+
+        std::string m_strAddress;
+    };
+
+    // ?
+#if 0
+    struct peer_initialized_alert : peer_alert
+    {
+
+        virtual int category() const { return static_category | alert::status_notification; }
+        peer_initialized_alert(const std::string& strAddress, PEER_STATE state) : m_strAddress(strAddress), m_state(state)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new peer_initialized_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("peer state alert"); }
+        virtual char const* what() const { return "peer state alert"; }
+    };
+#endif
+
+    struct peer_message_alert : peer_alert
+    {
+        peer_message_alert(const std::string& strAddress, const std::string& strMessage) : peer_alert(strAddress), m_strMessage(strMessage)
+        {}
+
+        virtual int category() const { return static_category; }
 
         virtual std::auto_ptr<alert> clone() const
         {
@@ -212,7 +251,42 @@ namespace libed2k
         virtual char const* what() const { return "peer notification"; }
 
        std::string m_strMessage;
-       net_identifier m_network_point;
+    };
+
+    struct peer_captcha_request_alert : peer_alert
+    {
+        peer_captcha_request_alert(const std::string& strAddress, const std::vector<unsigned char>& captcha) : peer_alert(strAddress), m_captcha(captcha)
+        {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new peer_captcha_request_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("peer captcha request"); }
+        virtual char const* what() const { return "peer captcha request"; }
+
+        std::vector<unsigned char>  m_captcha;
+    };
+
+    struct peer_captcha_result_alert : peer_alert
+    {
+        peer_captcha_result_alert(const std::string& strAddress, boost::uint8_t nResult) : peer_alert(strAddress), m_nResult(nResult)
+        {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new peer_captcha_result_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("peer captcha result"); }
+        virtual char const* what() const { return "peer captcha result"; }
+
+        boost::uint8_t  m_nResult;
     };
 
 }
