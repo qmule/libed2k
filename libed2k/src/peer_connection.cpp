@@ -535,7 +535,7 @@ void peer_connection::sequential_receive(const peer_request& req)
     peer_request r = reqs.first;
     peer_request left = reqs.second;
 
-    if (r.length > 0 && !m_read_in_progress)
+    if (r.length > 0 && m_channel_state[download_channel] != bw_network)
     {
         if (!allocate_disk_receive_buffer(r.length))
         {
@@ -547,7 +547,7 @@ void peer_connection::sequential_receive(const peer_request& req)
             *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r, left)));
-        m_read_in_progress = true;
+        m_channel_state[download_channel] = bw_network;
     }
     else
         do_read();
@@ -557,8 +557,8 @@ void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
     assert(int(bytes_transferred) == r.length);
-    assert(m_read_in_progress);
-    m_read_in_progress = false;
+    assert(m_channel_state[download_channel] == bw_network);
+    m_channel_state[download_channel] = bw_idle;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
 

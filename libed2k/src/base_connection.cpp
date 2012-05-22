@@ -29,8 +29,8 @@ namespace libed2k
     void base_connection::reset()
     {
         m_deadline.expires_at(boost::posix_time::pos_infin);
-        m_write_in_progress = false;
-        m_read_in_progress = false;
+        m_channel_state[upload_channel] = bw_idle;
+        m_channel_state[download_channel] = bw_idle;
     }
 
     void base_connection::close(const error_code& ec)
@@ -42,14 +42,14 @@ namespace libed2k
 
     void base_connection::do_read()
     {
-        if (m_read_in_progress) return;
+        if (m_channel_state[download_channel] == bw_network) return;
 
         m_deadline.expires_from_now(
             boost::posix_time::seconds(m_ses.settings().peer_timeout));
         boost::asio::async_read(
             *m_socket, boost::asio::buffer(&m_in_header, header_size),
             boost::bind(&base_connection::on_read_header, self(), _1, _2));
-        m_read_in_progress = true;
+        m_channel_state[download_channel] = bw_network;
     }
 
     void base_connection::do_write()
@@ -59,8 +59,10 @@ namespace libed2k
 
     void base_connection::do_write(boost::function<void(const error_code&, size_t)> fun)
     {
+        if (m_channel_state[upload_channel] != bw_idle) return;
+
         // send the actual buffer
-        if (!m_write_in_progress && !m_send_buffer.empty())
+        if (!m_send_buffer.empty())
         {
             // check quota here
             int amount_to_send = m_send_buffer.size();
@@ -72,7 +74,7 @@ namespace libed2k
             const std::list<boost::asio::const_buffer>& buffers =
                 m_send_buffer.build_iovec(amount_to_send);
             boost::asio::async_write(*m_socket, buffers, make_write_handler(fun));
-            m_write_in_progress = true;
+            m_channel_state[upload_channel] = bw_network;
         }
     }
 
@@ -147,7 +149,7 @@ namespace libed2k
 
         if (!error)
         {
-            m_read_in_progress = false;
+            m_channel_state[download_channel] = bw_idle;
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
                 // unzip data
@@ -192,7 +194,7 @@ namespace libed2k
 
         if (!error) {
             m_send_buffer.pop_front(nSize);
-            m_write_in_progress = false;
+            m_channel_state[upload_channel] = bw_idle;
             do_write();
         }
         else

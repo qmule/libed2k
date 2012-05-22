@@ -129,8 +129,24 @@ namespace libed2k{
         socket_buffer m_in_gzip_container; //!< buffer for compressed data
         chained_buffer m_send_buffer;  //!< buffer for outgoing messages
         tcp::endpoint m_remote;
-        bool m_write_in_progress; //!< write indicator
-        bool m_read_in_progress;  //!< read indicator
+
+        enum channels
+        {
+            upload_channel,
+            download_channel,
+            num_channels
+        };
+
+        // bw_idle: the channel is not used
+        // bw_limit: the channel is waiting for quota
+        // bw_network: the channel is waiting for an async write
+        //   for read operation to complete
+        // bw_disk: the peer is waiting for the disk io thread
+        //   to catch up
+        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
+
+        // upload and download channel state
+        char m_channel_state[2];
         handler_map m_handlers;
 
         //
