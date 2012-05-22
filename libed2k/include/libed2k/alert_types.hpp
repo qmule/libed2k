@@ -197,6 +197,24 @@ namespace libed2k
 
     };
 
+    struct peer_message_alert : alert
+    {
+        const static int static_category = alert::peer_notification;
+        peer_message_alert(const std::string& strMessage, const net_identifier& npoint) : m_strMessage(strMessage), m_network_point(npoint){}
+                virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new peer_message_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("peer message"); }
+        virtual char const* what() const { return "peer notification"; }
+
+       std::string m_strMessage;
+       net_identifier m_network_point;
+    };
+
 }
 
 
