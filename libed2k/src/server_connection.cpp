@@ -1,6 +1,7 @@
-
+#include <zlib.h>
 #include <boost/lexical_cast.hpp>
 
+#include "libtorrent/gzip.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/transfer.hpp"
 #include "libed2k/session_impl.hpp"
@@ -68,6 +69,7 @@ namespace libed2k
     {
         DBG("server_connection::close()");
         m_state = SC_OFFLINE;
+        m_write_order.clear();  // remove all incoming messages
         m_socket.close();
         m_deadline.cancel();
         m_name_lookup.cancel();
@@ -186,7 +188,7 @@ namespace libed2k
         cs_login_request    login;
         //!< generate initial packet to server
         boost::uint32_t nVersion = 0x3c;
-        boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+        boost::uint32_t nCapability = /*CAPABLE_ZLIB */ CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
         boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
 
         login.m_hClient                 = settings.client_hash;
@@ -289,6 +291,7 @@ namespace libed2k
                 }
                 case OP_PACKEDPROT:
                 {
+                    DBG("Receive gzip container");
                     m_in_gzip_container.resize(m_in_header.m_size - 1);
                     boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_gzip_container[0], m_in_header.m_size - 1),
                             boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
@@ -317,14 +320,20 @@ namespace libed2k
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
                 // unzip data
-                int nRet = inflate_gzip(m_in_gzip_container, m_in_container, LIBED2K_SERVER_CONN_MAX_SIZE);
+                m_in_container.resize(m_in_gzip_container.size() * 10 + 300);
+                uLongf nSize = m_in_container.size();
+                int nRet = uncompress((Bytef*)&m_in_container[0], &nSize, (const Bytef*)&m_in_gzip_container[0], m_in_gzip_container.size());
 
-                if (nRet != Z_STREAM_END)
+
+                if (nRet != Z_OK)
                 {
+                    DBG("Unzip error: ");
                     //unpack error - pass packet
                     do_read();
                     return;
                 }
+
+                m_in_container.resize(nSize);
             }
 
             boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_container.size());

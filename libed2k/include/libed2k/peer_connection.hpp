@@ -113,7 +113,8 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
-
+        bool has_ip_address(const std::string& strAddress) const;
+        void send_message(const std::string& strMessage);
     private:
 
         // constructor method
@@ -171,6 +172,10 @@ namespace libed2k
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
         void on_end_download(const error_code& error);
+        void on_client_message(const error_code& error);
+        void on_client_captcha_request(const error_code& error);
+        void on_client_captcha_result(const error_code& error);
+
 
         template <typename Struct>
         void on_sending_part(const error_code& error)
@@ -263,6 +268,12 @@ namespace libed2k
         bool m_disconnecting;
 
         int m_disk_recv_buffer_size;
+
+        /**
+          * special order for client messages
+          *
+         */
+        std::deque<client_meta_packet>  m_messages_order;
     };
 
 }

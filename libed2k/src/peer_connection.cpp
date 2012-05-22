@@ -8,6 +8,7 @@
 #include "libed2k/transfer.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/util.hpp"
+#include "libed2k/alert_types.hpp"
 
 using namespace libed2k;
 namespace ip = boost::asio::ip;
@@ -97,6 +98,11 @@ void peer_connection::reset()
     add_handler(OP_SENDINGPART_I64,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
+
+    // clients talking
+    add_handler(OP_MESSAGE, boost::bind(&peer_connection::on_client_message, this, _1));
+    add_handler(OP_CHATCAPTCHAREQ, boost::bind(&peer_connection::on_client_captcha_request, this, _1));
+    add_handler(OP_CHATCAPTCHARES, boost::bind(&peer_connection::on_client_captcha_result, this, _1));
 }
 
 peer_connection::~peer_connection()
@@ -466,6 +472,16 @@ bool peer_connection::can_read(char* state) const
 {
     // TODO - should implement
 	return (true);
+}
+
+bool peer_connection::has_ip_address(const std::string& strAddress) const
+{
+    return (m_remote.address() == boost::asio::ip::address::from_string(strAddress.c_str()));
+}
+
+void peer_connection::send_message(const std::string& strMessage)
+{
+    m_messages_order.push_back(client_meta_packet(client_message(strMessage)));
 }
 
 void peer_connection::fill_send_buffer()
@@ -1123,3 +1139,57 @@ void peer_connection::on_end_download(const error_code& error)
         ERR("end download error " << error.message() << " <== " << m_remote);
     }
 }
+
+void peer_connection::on_client_message(const error_code& error)
+{
+    if (!error)
+    {
+        client_message cmsg;
+
+        if (decode_packet(cmsg))
+        {
+            m_ses.m_alerts.post_alert_should(peer_message_alert(m_remote.address().to_string(), cmsg.m_strMessage));
+        }
+    }
+    else
+    {
+        ERR("on client message error: " << error.message());
+    }
+}
+
+void peer_connection::on_client_captcha_request(const error_code& error)
+{
+    if (!error)
+    {
+        // generate captcha request signal
+        client_captcha_request ccr;
+
+        if (decode_packet(ccr))
+        {
+            m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(m_remote.address().to_string(), ccr.m_captcha));
+        }
+    }
+    else
+    {
+        ERR("on client captcha request error: " << error.message());
+    }
+}
+
+void peer_connection::on_client_captcha_result(const error_code& error)
+{
+    if (!error)
+    {
+        // generate captcha result alert
+        client_captcha_result ccr;
+
+        if (decode_packet(ccr))
+        {
+            m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(m_remote.address().to_string(), ccr.m_captcha_result));
+        }
+    }
+    else
+    {
+        ERR("on client captcha result error: " << error.message());
+    }
+}
+
