@@ -17,7 +17,7 @@ peer_request mk_peer_request(size_t begin, size_t end)
     peer_request r;
     r.piece = begin / PIECE_SIZE;
     r.start = begin % PIECE_SIZE;
-    r.length = end - begin + 1;
+    r.length = end - begin;
     return r;
 }
 
