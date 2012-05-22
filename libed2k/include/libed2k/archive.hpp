@@ -77,7 +77,7 @@ namespace libed2k
             {
             }
 
-            int bytes_left() const
+            size_t bytes_left() const
             {
                 return 0;
             }
@@ -156,7 +156,7 @@ namespace libed2k
                 m_container.seekg (0, std::ios::beg);
             }
 
-            int bytes_left() const
+            size_t bytes_left() const
             {
                 return m_length - m_container.tellg();
             }
