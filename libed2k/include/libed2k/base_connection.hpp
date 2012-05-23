@@ -60,7 +60,6 @@ namespace libed2k{
 
         void do_read();
         void do_write();
-        void do_write(boost::function<void(const error_code&, size_t)> fun);
 
         template<typename T>
         void do_write(T& t);
@@ -88,7 +87,7 @@ namespace libed2k{
         /**
          * order write handler - executed while message order not empty
          */
-        void on_write(const error_code& error, size_t nSize);
+        virtual void on_write(const error_code& error, size_t nSize);
 
         /**
          * deadline timer handler
@@ -130,23 +129,9 @@ namespace libed2k{
         chained_buffer m_send_buffer;  //!< buffer for outgoing messages
         tcp::endpoint m_remote;
 
-        enum channels
-        {
-            upload_channel,
-            download_channel,
-            num_channels
-        };
+        bool m_write_in_progress; //!< write indicator
+        bool m_read_in_progress;  //!< read indicator
 
-        // bw_idle: the channel is not used
-        // bw_limit: the channel is waiting for quota
-        // bw_network: the channel is waiting for an async write
-        //   for read operation to complete
-        // bw_disk: the peer is waiting for the disk io thread
-        //   to catch up
-        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
-
-        // upload and download channel state
-        char m_channel_state[2];
         handler_map m_handlers;
 
         //

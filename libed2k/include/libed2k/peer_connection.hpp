@@ -125,16 +125,17 @@ namespace libed2k
         bool add_request(piece_block const& b, int flags = 0);
         void send_block_requests();
 
-        void fill_send_buffer();
-        void sequential_send(const peer_request& r);
+        void send_part();
+        void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
-        void sequential_receive(const peer_request& r);
+        void receive_data(const peer_request& r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request r, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
-        void on_send_data(const error_code& error, std::size_t bytes_transferred);
-
+        // @override
+        // custom socket write handler
+        void on_write(const error_code& error, size_t nSize);
 
         // the following functions appends messages
         // to the send buffer
@@ -152,7 +153,7 @@ namespace libed2k
         void write_accept_upload();
         void write_cancel_transfer();
         void write_request_parts(client_request_parts_64 rp);
-        void write_piece(const peer_request& r);
+        void write_part(const peer_request& r);
 
         // protocol handlers
         void on_hello(const error_code& error);
@@ -176,7 +177,6 @@ namespace libed2k
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
 
-
         template <typename Struct>
         void on_sending_part(const error_code& error)
         {
@@ -189,7 +189,7 @@ namespace libed2k
                     << " <== " << m_remote);
 
                 peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
-                sequential_receive(r);
+                receive_data(r);
             }
             else
             {
@@ -274,6 +274,25 @@ namespace libed2k
           *
          */
         std::deque<client_meta_packet>  m_messages_order;
+
+        enum channels
+        {
+            upload_channel,
+            download_channel,
+            num_channels
+        };
+
+        // bw_idle: the channel is not used
+        // bw_limit: the channel is waiting for quota
+        // bw_network: the channel is waiting for an async write
+        //   for read operation to complete
+        // bw_disk: the peer is waiting for the disk io thread
+        //   to catch up
+        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
+
+        // upload and download channel state
+        char m_channel_state[2];
+
     };
 
 }

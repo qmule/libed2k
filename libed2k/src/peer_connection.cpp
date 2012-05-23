@@ -77,6 +77,9 @@ void peer_connection::reset()
     m_connection_ticket = -1;
     m_desired_queue_size = 1;
 
+    m_channel_state[upload_channel] = bw_idle;
+    m_channel_state[download_channel] = bw_idle;
+
     add_handler(OP_HELLO, boost::bind(&peer_connection::on_hello, this, _1));
     add_handler(OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, this, _1));
     add_handler(OP_REQUESTFILENAME, boost::bind(&peer_connection::on_file_request, this, _1));
@@ -484,20 +487,21 @@ void peer_connection::send_message(const std::string& strMessage)
     m_messages_order.push_back(client_meta_packet(client_message(strMessage)));
 }
 
-void peer_connection::fill_send_buffer()
+void peer_connection::send_part()
 {
-    int buffer_size_watermark = 512;
+    if (m_channel_state[upload_channel] != bw_idle) return;
 
+    int buffer_size_watermark = 512;
     if (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
     {
         const peer_request& req = m_requests.front();
-        write_piece(req);
-        sequential_send(req);
+        write_part(req);
+        send_data(req);
         m_requests.erase(m_requests.begin());
     }
 }
 
-void peer_connection::sequential_send(const peer_request& req)
+void peer_connection::send_data(const peer_request& req)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t) return;
@@ -510,6 +514,11 @@ void peer_connection::sequential_send(const peer_request& req)
     {
         t->filesystem().async_read(r, boost::bind(&peer_connection::on_disk_read_complete,
                                                   self_as<peer_connection>(), _1, _2, r, left));
+        m_channel_state[upload_channel] = bw_network;
+    }
+    else
+    {
+        m_channel_state[upload_channel] = bw_idle;
     }
 }
 
@@ -540,18 +549,18 @@ void peer_connection::on_disk_read_complete(
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
-    do_write(boost::bind(&peer_connection::on_send_data, self_as<peer_connection>(), _1, _2));
+    do_write();
 
-    sequential_send(left);
+    send_data(left);
 }
 
-void peer_connection::sequential_receive(const peer_request& req)
+void peer_connection::receive_data(const peer_request& req)
 {
     std::pair<peer_request, peer_request> reqs = split_request(req);
     peer_request r = reqs.first;
     peer_request left = reqs.second;
 
-    if (r.length > 0 && m_channel_state[download_channel] != bw_network)
+    if (r.length > 0)
     {
         if (!allocate_disk_receive_buffer(r.length))
         {
@@ -566,7 +575,10 @@ void peer_connection::sequential_receive(const peer_request& req)
         m_channel_state[download_channel] = bw_network;
     }
     else
+    {
+        m_channel_state[download_channel] = bw_idle;
         do_read();
+    }
 }
 
 void peer_connection::on_receive_data(
@@ -574,7 +586,6 @@ void peer_connection::on_receive_data(
 {
     assert(int(bytes_transferred) == r.length);
     assert(m_channel_state[download_channel] == bw_network);
-    m_channel_state[download_channel] = bw_idle;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
@@ -599,7 +610,7 @@ void peer_connection::on_receive_data(
                                           self_as<peer_connection>(), _1, _2, r, left, t));
 
     if (left.length > 0)
-        sequential_receive(left);
+        receive_data(left);
     else
     {
         bool was_finished = picker.is_piece_finished(r.piece);
@@ -617,16 +628,11 @@ void peer_connection::on_receive_data(
                 r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
         }
 
+        m_channel_state[download_channel] = bw_idle;
         do_read();
         request_block();
         send_block_requests();
     }
-}
-
-void peer_connection::on_send_data(const error_code& error, std::size_t bytes_transferred)
-{
-    base_connection::on_write(error, bytes_transferred);
-    fill_send_buffer();
 }
 
 void peer_connection::on_disk_write_complete(
@@ -649,6 +655,12 @@ void peer_connection::on_disk_write_complete(
         piece_picker& picker = t->picker();
         picker.mark_as_finished(block_finished, get_peer());
     }
+}
+
+void peer_connection::on_write(const error_code& error, size_t nSize)
+{
+    base_connection::on_write(error, nSize);
+    send_part();
 }
 
 void peer_connection::write_hello()
@@ -798,7 +810,7 @@ void peer_connection::write_request_parts(client_request_parts_64 rp)
     do_write(rp);
 }
 
-void peer_connection::write_piece(const peer_request& r)
+void peer_connection::write_part(const peer_request& r)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     client_sending_part_64 sp;
@@ -1118,7 +1130,7 @@ void peer_connection::on_request_parts(const error_code& error)
                 m_requests.push_back(mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
             }
         }
-        fill_send_buffer();
+        send_part();
     }
     else
     {
