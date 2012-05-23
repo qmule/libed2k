@@ -185,7 +185,9 @@ else\
         OP_REQUESTPARTS_I64         = 0xA3, // <HASH 16><start[3] 8*3><end[3] 8*3>
         OP_MULTIPACKET_EXT          = 0xA4,
         OP_CHATCAPTCHAREQ           = 0xA5,
-        OP_CHATCAPTCHARES           = 0xA6
+        OP_CHATCAPTCHARES           = 0xA6,
+        OP_ASKDIRCONTENTS           = 0xB2, // ismod
+        OP_ASKDIRCONTENTSANS        = 0xB3  // ismod
     };
 
     enum ED2KExtendedClientUDP
@@ -1197,6 +1199,22 @@ else\
         }
     };
 
+    struct client_directory_request
+    {
+        md4_hash    m_hash;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hash;
+        }
+    };
+
+    struct client_directory_answer
+    {
+
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1290,6 +1308,23 @@ else\
         static const proto_type protocol = OP_EDONKEYPROT;
     };
 
+    template<> struct packet_type<client_captcha_request>{
+        static const proto_type value   = OP_CHATCAPTCHAREQ;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_captcha_result>{
+        static const proto_type value   = OP_CHATCAPTCHARES;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_directory_request>{
+        static const proto_type value       = OP_ASKSHAREDFILESDIR;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_directory_answer>{
+        static const proto_type value       = OP_ASKSHAREDFILESANSWER;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+
     // helper for get type from item
     template<typename T>
     proto_type get_proto_type(const T& t)
@@ -1303,7 +1338,6 @@ else\
     struct client_meta_packet
     {
         client_meta_packet(const client_message& cmessage);
-
 
         template<typename Archive>
         void serialize(Archive& ar)
