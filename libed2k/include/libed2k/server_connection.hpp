@@ -52,7 +52,7 @@ namespace libed2k
         void post_search_request(search_request& ro);
         void post_search_more_result_request();
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
-        void post_announce(offer_files_list& offer_list);
+        void post_announce(shared_files_list& offer_list);
     private:
 
         /**

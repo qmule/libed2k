@@ -436,7 +436,6 @@ else\
       * empty structure for get servers list from server
      */
     typedef container_holder<boost::uint8_t, std::vector<net_identifier> > server_list;
-    typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > offer_files_list;
 
     /**
       * structure contain server IP/port, hash and some information tags
@@ -627,32 +626,11 @@ else\
         }
     };
 
-
-    /**
-      * structure contains one entry in search result list - it is server answer
-     */
-    struct search_file_entry
-    {
-    	md4_hash					m_hFile;		    //!< file hash
-    	net_identifier              m_network_point;    //!< client network identification
-    	tag_list<boost::uint32_t>	m_list;			    //!< tag list with additional data - file name,size,sources ...
-
-    	template<typename Archive>
-    	void serialize(Archive& ar)
-    	{
-    	    ar & m_hFile;
-    	    ar & m_network_point;
-    	    ar & m_list;
-    	}
-
-    	void dump() const;
-    };
-
-    typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
+    typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > shared_files_list;
 
     struct search_result
     {
-        search_file_list    m_results_list;
+        shared_files_list   m_results_list;
         char                m_more_results_avaliable;
 
         // use only for load
@@ -793,10 +771,10 @@ else\
     //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 
     template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
-    template<> struct packet_type<offer_files_list>         { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
+    template<> struct packet_type<shared_files_list>        { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
 
     template<> struct packet_type<search_request_block>     { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
-    template<> struct packet_type<search_file_list>         { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
+    template<> struct packet_type<search_result>            { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
     template<> struct packet_type<search_more_result>       { static const proto_type value = OP_QUERY_MORE_RESULT;  }; //!< search result from server
 
     template<> struct packet_type<get_file_sources>         { static const proto_type value = OP_GETSOURCES;    };      //!< file sources request to server
