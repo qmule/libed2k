@@ -20,6 +20,7 @@
 #include "libed2k/base_connection.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/error_code.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k
 {

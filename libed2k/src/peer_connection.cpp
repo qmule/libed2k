@@ -482,11 +482,34 @@ bool peer_connection::has_ip_address(const std::string& strAddress) const
 void peer_connection::send_message(const std::string& strMessage)
 {
     m_messages_order.push_back(client_meta_packet(client_message(strMessage)));
+
+    //if (m_send_buffer.empty())
+    // channel state == idle
+    {
+        fill_send_buffer();
+    }
 }
 
 void peer_connection::fill_send_buffer()
 {
     int buffer_size_watermark = 512;
+
+    if (!m_messages_order.empty())
+    {
+        // temp code for testing
+
+        switch(m_messages_order.front().m_proto)
+        {
+            case OP_MESSAGE:
+                 do_write(m_messages_order.front().m_message);
+                 break;
+            default:
+                break;
+
+        }
+
+        m_messages_order.pop_front();
+    }
 
     if (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
     {

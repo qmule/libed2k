@@ -1190,7 +1190,36 @@ else\
 
     struct client_directory_answer
     {
+        shared_files_list    m_files;
 
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_files;
+        }
+    };
+
+    // ismod files request
+    struct client_directory_content_request
+    {
+        md4_hash    m_hash;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hash;
+        }
+    };
+
+    // ismod files result
+    struct client_directory_content_result
+    {
+        shared_files_list   m_files;
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_files;
+        }
     };
 
     template<> struct packet_type<client_hello> {
@@ -1296,12 +1325,21 @@ else\
     };
     template<> struct packet_type<client_directory_request>{
         static const proto_type value       = OP_ASKSHAREDFILESDIR;
-        static const proto_type protocol    = OP_EMULEPROT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_directory_answer>{
         static const proto_type value       = OP_ASKSHAREDFILESANSWER;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_directory_content_request>{ // ismod
+        static const proto_type value       = OP_ASKDIRCONTENTS;
         static const proto_type protocol    = OP_EMULEPROT;
     };
+    template<> struct packet_type<client_directory_content_result>{  // ismod
+        static const proto_type value       = OP_ASKDIRCONTENTSANS;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+
 
     // helper for get type from item
     template<typename T>
