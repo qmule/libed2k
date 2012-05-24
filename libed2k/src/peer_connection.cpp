@@ -75,7 +75,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
-    m_desired_queue_size = 1;
+    m_desired_queue_size = 3;
 
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -549,13 +549,14 @@ void peer_connection::on_disk_read_complete(
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
-    do_write();
+    base_connection::do_write();
 
     send_data(left);
 }
 
 void peer_connection::receive_data(const peer_request& req)
 {
+    assert(!m_read_in_progress);
     std::pair<peer_request, peer_request> reqs = split_request(req);
     peer_request r = reqs.first;
     peer_request left = reqs.second;
@@ -573,6 +574,7 @@ void peer_connection::receive_data(const peer_request& req)
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r, left)));
         m_channel_state[download_channel] = bw_network;
+        m_read_in_progress = true;
     }
     else
     {
@@ -586,6 +588,8 @@ void peer_connection::on_receive_data(
 {
     assert(int(bytes_transferred) == r.length);
     assert(m_channel_state[download_channel] == bw_network);
+    assert(m_read_in_progress);
+    m_read_in_progress = false;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
 

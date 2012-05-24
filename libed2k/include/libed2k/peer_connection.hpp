@@ -137,6 +137,13 @@ namespace libed2k
         // custom socket write handler
         void on_write(const error_code& error, size_t nSize);
 
+        template<typename T>
+        void do_write(T& t)
+        {
+            assert(m_channel_state[upload_channel] == bw_idle);
+            base_connection::do_write(t);
+        }
+
         // the following functions appends messages
         // to the send buffer
         void write_hello();
