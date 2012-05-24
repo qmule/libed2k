@@ -619,7 +619,7 @@ BOOST_AUTO_TEST_CASE(test_list_getters)
 BOOST_AUTO_TEST_CASE(test_packets)
 {
     libed2k::shared_file_entry sh(libed2k::md4_hash::m_emptyMD4Hash, 100, 12);
-    libed2k::offer_files_list flist;
+    libed2k::shared_files_list flist;
     flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::m_emptyMD4Hash, 1,2));
     flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::m_emptyMD4Hash, 3,4));
     flist.m_collection.push_back(libed2k::shared_file_entry(libed2k::md4_hash::m_emptyMD4Hash, 4,5));
@@ -632,7 +632,7 @@ BOOST_AUTO_TEST_CASE(test_packets)
     sstream_out.seekg(0, std::ios::beg);
     libed2k::archive::ed2k_iarchive in_string_archive(sstream_out);
     libed2k::shared_file_entry dsh;
-    libed2k::offer_files_list flist2;
+    libed2k::shared_files_list flist2;
     in_string_archive >> dsh;
     in_string_archive >> flist2;
 

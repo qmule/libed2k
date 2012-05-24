@@ -1088,7 +1088,7 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
 
 void session_impl::announce(shared_file_entry& entry)
 {
-    offer_files_list offer_list;
+    shared_files_list offer_list;
     offer_list.add(entry);
     m_server_connection->post_announce(offer_list);
 }
@@ -1096,7 +1096,7 @@ void session_impl::announce(shared_file_entry& entry)
 void session_impl::announce_all()
 {
     DBG("session_impl::announce_all()");
-    offer_files_list offer_list;
+    shared_files_list offer_list;
 
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
@@ -1131,7 +1131,7 @@ void session_impl::server_ready(
     m_aux_port  = aux_port;
 
      // test code - for offer tests
-    offer_files_list olist;
+    shared_files_list olist;
     shared_file_entry sf;
     sf.m_hFile = md4_hash("49EC2B5DEF507DEA73E106FEDB9697EE");
     boost::uint32_t nFileSize = libed2k::PIECE_SIZE+1;

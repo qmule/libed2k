@@ -152,14 +152,6 @@ namespace libed2k
         m_list.dump();
     }
 
-    void search_file_entry::dump() const
-    {
-        DBG("search_file_entry::dump");
-        m_hFile.dump();
-        m_network_point.dump();
-        m_list.dump();
-    }
-
     void search_result::dump() const
     {
         DBG("search_result::dump()");
@@ -183,8 +175,10 @@ namespace libed2k
 
     void shared_file_entry::dump() const
     {
+        DBG("shared_file_entry::dump()");
         m_hFile.dump();
         m_network_point.dump();
+        m_list.dump();
     }
 
     void found_file_sources::dump() const

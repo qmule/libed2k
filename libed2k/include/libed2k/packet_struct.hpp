@@ -185,7 +185,9 @@ else\
         OP_REQUESTPARTS_I64         = 0xA3, // <HASH 16><start[3] 8*3><end[3] 8*3>
         OP_MULTIPACKET_EXT          = 0xA4,
         OP_CHATCAPTCHAREQ           = 0xA5,
-        OP_CHATCAPTCHARES           = 0xA6
+        OP_CHATCAPTCHARES           = 0xA6,
+        OP_ASKDIRCONTENTS           = 0xB2, // ismod
+        OP_ASKDIRCONTENTSANS        = 0xB3  // ismod
     };
 
     enum ED2KExtendedClientUDP
@@ -434,7 +436,6 @@ else\
       * empty structure for get servers list from server
      */
     typedef container_holder<boost::uint8_t, std::vector<net_identifier> > server_list;
-    typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > offer_files_list;
 
     /**
       * structure contain server IP/port, hash and some information tags
@@ -625,32 +626,11 @@ else\
         }
     };
 
-
-    /**
-      * structure contains one entry in search result list - it is server answer
-     */
-    struct search_file_entry
-    {
-    	md4_hash					m_hFile;		    //!< file hash
-    	net_identifier              m_network_point;    //!< client network identification
-    	tag_list<boost::uint32_t>	m_list;			    //!< tag list with additional data - file name,size,sources ...
-
-    	template<typename Archive>
-    	void serialize(Archive& ar)
-    	{
-    	    ar & m_hFile;
-    	    ar & m_network_point;
-    	    ar & m_list;
-    	}
-
-    	void dump() const;
-    };
-
-    typedef container_holder<boost::uint32_t, std::vector<search_file_entry> > search_file_list;
+    typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > shared_files_list;
 
     struct search_result
     {
-        search_file_list    m_results_list;
+        shared_files_list   m_results_list;
         char                m_more_results_avaliable;
 
         // use only for load
@@ -791,10 +771,10 @@ else\
     //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 
     template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
-    template<> struct packet_type<offer_files_list>         { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
+    template<> struct packet_type<shared_files_list>        { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
 
     template<> struct packet_type<search_request_block>     { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
-    template<> struct packet_type<search_file_list>         { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
+    template<> struct packet_type<search_result>            { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
     template<> struct packet_type<search_more_result>       { static const proto_type value = OP_QUERY_MORE_RESULT;  }; //!< search result from server
 
     template<> struct packet_type<get_file_sources>         { static const proto_type value = OP_GETSOURCES;    };      //!< file sources request to server
@@ -1197,6 +1177,51 @@ else\
         }
     };
 
+    struct client_directory_request
+    {
+        md4_hash    m_hash;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hash;
+        }
+    };
+
+    struct client_directory_answer
+    {
+        shared_files_list    m_files;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_files;
+        }
+    };
+
+    // ismod files request
+    struct client_directory_content_request
+    {
+        md4_hash    m_hash;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hash;
+        }
+    };
+
+    // ismod files result
+    struct client_directory_content_result
+    {
+        shared_files_list   m_files;
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_files;
+        }
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1290,6 +1315,32 @@ else\
         static const proto_type protocol = OP_EDONKEYPROT;
     };
 
+    template<> struct packet_type<client_captcha_request>{
+        static const proto_type value   = OP_CHATCAPTCHAREQ;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_captcha_result>{
+        static const proto_type value   = OP_CHATCAPTCHARES;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_directory_request>{
+        static const proto_type value       = OP_ASKSHAREDFILESDIR;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_directory_answer>{
+        static const proto_type value       = OP_ASKSHAREDFILESANSWER;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_directory_content_request>{ // ismod
+        static const proto_type value       = OP_ASKDIRCONTENTS;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_directory_content_result>{  // ismod
+        static const proto_type value       = OP_ASKDIRCONTENTSANS;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+
+
     // helper for get type from item
     template<typename T>
     proto_type get_proto_type(const T& t)
@@ -1303,7 +1354,6 @@ else\
     struct client_meta_packet
     {
         client_meta_packet(const client_message& cmessage);
-
 
         template<typename Archive>
         void serialize(Archive& ar)

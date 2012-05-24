@@ -485,13 +485,36 @@ bool peer_connection::has_ip_address(const std::string& strAddress) const
 void peer_connection::send_message(const std::string& strMessage)
 {
     m_messages_order.push_back(client_meta_packet(client_message(strMessage)));
+
+    //if (m_send_buffer.empty())
+    // channel state == idle
+    {
+        fill_send_buffer();
+    }
 }
 
-void peer_connection::send_part()
+void peer_connection::fill_send_buffer()
 {
     if (m_channel_state[upload_channel] != bw_idle) return;
-
     int buffer_size_watermark = 512;
+
+    if (!m_messages_order.empty())
+    {
+        // temp code for testing
+
+        switch(m_messages_order.front().m_proto)
+        {
+            case OP_MESSAGE:
+                 do_write(m_messages_order.front().m_message);
+                 break;
+            default:
+                break;
+
+        }
+
+        m_messages_order.pop_front();
+    }
+
     if (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
     {
         const peer_request& req = m_requests.front();
@@ -664,7 +687,7 @@ void peer_connection::on_disk_write_complete(
 void peer_connection::on_write(const error_code& error, size_t nSize)
 {
     base_connection::on_write(error, nSize);
-    send_part();
+    fill_send_buffer();
 }
 
 void peer_connection::write_hello()
@@ -1134,7 +1157,7 @@ void peer_connection::on_request_parts(const error_code& error)
                 m_requests.push_back(mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
             }
         }
-        send_part();
+        fill_send_buffer();
     }
     else
     {

@@ -109,7 +109,7 @@ namespace libed2k
         do_write(gfs);
     }
 
-    void server_connection::post_announce(offer_files_list& offer_list)
+    void server_connection::post_announce(shared_files_list& offer_list)
     {
         DBG("server_connection::post_announce: " << offer_list.m_collection.size());
         STATE_CMP(SC_TO_SERVER)

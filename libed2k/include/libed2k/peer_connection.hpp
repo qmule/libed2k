@@ -20,6 +20,7 @@
 #include "libed2k/base_connection.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/error_code.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k
 {
@@ -125,7 +126,7 @@ namespace libed2k
         bool add_request(piece_block const& b, int flags = 0);
         void send_block_requests();
 
-        void send_part();
+        void fill_send_buffer();
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void receive_data(const peer_request& r);
