@@ -442,4 +442,17 @@ boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::st
 	return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
 }
 
+bool is_string_tag(const boost::shared_ptr<base_tag> p)
+{
+    return ((p->getType() == TAGTYPE_STRING) || (p->getType() >= TAGTYPE_STR1 && p->getType() <= TAGTYPE_STR22));
+}
+
+bool is_int_tag(const boost::shared_ptr<base_tag> p)
+{
+    return ((p->getType() == TAGTYPE_UINT8) ||
+            (p->getType() == TAGTYPE_UINT16) ||
+            (p->getType() == TAGTYPE_UINT32) ||
+            (p->getType() == TAGTYPE_UINT64));
+}
+
 }

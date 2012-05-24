@@ -721,12 +721,12 @@ void peer_connection::write_hello()
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
     hello.m_hClient = settings.client_hash;
-    hello.m_sClientNetId.m_nIP = m_ses.m_client_id;
-    hello.m_sClientNetId.m_nPort = settings.listen_port;
-    hello.m_tlist.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
-    hello.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    hello.m_sServerNetId.m_nIP = address2int(m_ses.server().address());
-    hello.m_sServerNetId.m_nPort = m_ses.server().port();
+    hello.m_network_point.m_nIP = m_ses.m_client_id;
+    hello.m_network_point.m_nPort = settings.listen_port;
+    hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
+    hello.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+    hello.m_server_network_point.m_nIP = address2int(m_ses.server().address());
+    hello.m_server_network_point.m_nPort = m_ses.server().port();
 
     // generate options
     boost::uint32_t nOption2;
@@ -739,8 +739,8 @@ void peer_connection::write_hello()
 
     nOption2 = 0xFFFFFFFF; //(uSupportsCaptcha << 11) | (uSupportLargeFiles << 4);
 
-    hello.m_tlist.add_tag(make_typed_tag(nOption1, CT_EMULE_MISCOPTIONS1, true));
-    hello.m_tlist.add_tag(make_typed_tag(nOption2, CT_EMULE_MISCOPTIONS2, false));
+    hello.m_list.add_tag(make_typed_tag(nOption1, CT_EMULE_MISCOPTIONS1, true));
+    hello.m_list.add_tag(make_typed_tag(nOption2, CT_EMULE_MISCOPTIONS2, false));
 
     do_write(hello);
 }
@@ -752,8 +752,8 @@ void peer_connection::write_hello_answer()
     // prepare hello answer
     client_hello_answer cha;
     cha.m_hClient               = m_ses.settings().client_hash;
-    cha.m_sNetIdentifier.m_nIP  = 0;
-    cha.m_sNetIdentifier.m_nPort= m_ses.settings().listen_port;
+    cha.m_network_point.m_nIP  = 0;
+    cha.m_network_point.m_nPort= m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
     //boost::uint32_t nCapability = CAPABLE_AUXPORT | CAPABLE_NEWTAGS |
@@ -761,12 +761,12 @@ void peer_connection::write_hello_answer()
     //boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
     boost::uint32_t nUdpPort = 0;
 
-    cha.m_tlist.add_tag(
+    cha.m_list.add_tag(
         make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
-    cha.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    cha.m_tlist.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
-    cha.m_sServerIdentifier.m_nPort = m_ses.settings().server_port;
-    cha.m_sServerIdentifier.m_nIP   = m_ses.settings().server_ip;
+    cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
+    cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
+    cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
+    cha.m_server_network_point.m_nIP   = m_ses.settings().server_ip;
 
     do_write(cha);
 }
@@ -909,6 +909,138 @@ void peer_connection::on_hello_answer(const error_code& error)
         client_hello_answer cha;
         if (decode_packet(cha))
         {
+            // extract user info from packet
+            for (size_t n = 0; n < cha.m_list.count(); ++n)
+            {
+                const boost::shared_ptr<base_tag> p = cha.m_list[n];
+
+                switch(p->getNameId())
+                {
+                    case CT_NAME:
+                        m_strName    = p->asString();
+                        break;
+
+                    case CT_VERSION:
+                        m_nVersion  = p->asInt();
+                        break;
+
+                    case ET_MOD_VERSION:
+                        if (is_string_tag(p))
+                        {
+                            m_strModVersion = p->asString();
+                        }
+                        else if (is_int_tag(p))
+                        {
+                            m_nModVersion = p->asInt();
+                        }
+                        break;
+
+                    case CT_PORT:
+                        m_nPort = p->asInt();
+                        break;
+
+                    case CT_EMULE_UDPPORTS:
+                        m_nUDPPort = p->asInt() & 0xFFFF;
+                        //dwEmuleTags |= 1;
+                        break;
+
+                    case CT_EMULE_BUDDYIP:
+                        // 32 BUDDY IP
+                        m_nBuddyIP = p->asInt();
+                        break;
+
+                    case CT_EMULE_BUDDYUDP:
+                        m_nBuddyPort = p->asInt();
+                        break;
+
+                    case CT_EMULE_MISCOPTIONS1: {
+                        //  3 AICH Version (0 = not supported)
+                        //  1 Unicode
+                        //  4 UDP version
+                        //  4 Data compression version
+                        //  4 Secure Ident
+                        //  4 Source Exchange
+                        //  4 Ext. Requests
+                        //  4 Comments
+                        //   1 PeerCache supported
+                        //   1 No 'View Shared Files' supported
+                        //   1 MultiPacket
+                        //  1 Preview
+                        /*
+                        uint32 flags = temptag.GetInt();
+                        m_fSupportsAICH         = (flags >> (4*7+1)) & 0x07;
+                        m_bUnicodeSupport       = (flags >> 4*7) & 0x01;
+                        m_byUDPVer              = (flags >> 4*6) & 0x0f;
+                        m_byDataCompVer         = (flags >> 4*5) & 0x0f;
+                        m_bySupportSecIdent     = (flags >> 4*4) & 0x0f;
+                        m_bySourceExchange1Ver  = (flags >> 4*3) & 0x0f;
+                        m_byExtendedRequestsVer = (flags >> 4*2) & 0x0f;
+                        m_byAcceptCommentVer    = (flags >> 4*1) & 0x0f;
+                        m_fNoViewSharedFiles    = (flags >> 1*2) & 0x01;
+                        m_bMultiPacket          = (flags >> 1*1) & 0x01;
+                        m_fSupportsPreview      = (flags >> 1*0) & 0x01;
+                        dwEmuleTags |= 2;
+
+                        SecIdentSupRec +=  1;
+                        */
+                        break;
+                    }
+
+                    case CT_EMULE_MISCOPTIONS2:
+                        //  19 Reserved
+                        //   1 Direct UDP Callback supported and available
+                        //   1 Supports ChatCaptchas
+                        //   1 Supports SourceExachnge2 Packets, ignores SX1 Packet Version
+                        //   1 Requires CryptLayer
+                        //   1 Requests CryptLayer
+                        //   1 Supports CryptLayer
+                        //   1 Reserved (ModBit)
+                        //   1 Ext Multipacket (Hash+Size instead of Hash)
+                        //   1 Large Files (includes support for 64bit tags)
+                        //   4 Kad Version - will go up to version 15 only (may need to add another field at some point in the future)
+                        /*
+                        m_fDirectUDPCallback    = (temptag.GetInt() >> 12) & 0x01;
+                        m_fSupportsCaptcha      = (temptag.GetInt() >> 11) & 0x01;
+                        m_fSupportsSourceEx2    = (temptag.GetInt() >> 10) & 0x01;
+                        m_fRequiresCryptLayer   = (temptag.GetInt() >>  9) & 0x01;
+                        m_fRequestsCryptLayer   = (temptag.GetInt() >>  8) & 0x01;
+                        m_fSupportsCryptLayer   = (temptag.GetInt() >>  7) & 0x01;
+                        // reserved 1
+                        m_fExtMultiPacket   = (temptag.GetInt() >>  5) & 0x01;
+                        m_fSupportsLargeFiles   = (temptag.GetInt() >>  4) & 0x01;
+                        m_byKadVersion      = (temptag.GetInt() >>  0) & 0x0f;
+                        dwEmuleTags |= 8;
+
+                        m_fRequestsCryptLayer &= m_fSupportsCryptLayer;
+                        m_fRequiresCryptLayer &= m_fRequestsCryptLayer;
+       */
+                        break;
+
+                    // Special tag for Compat. Clients Misc options.
+                    case CT_EMULECOMPAT_OPTIONS:
+                        //  1 Operative System Info
+                        //  1 Value-based-type int tags (experimental!)
+                        //m_fValueBasedTypeTags   = (temptag.GetInt() >> 1*1) & 0x01;
+                        //m_fOsInfoSupport        = (temptag.GetInt() >> 1*0) & 0x01;
+                        break;
+
+                    case CT_EMULE_VERSION:
+                        //  8 Compatible Client ID
+                        //  7 Mjr Version (Doesn't really matter..)
+                        //  7 Min Version (Only need 0-99)
+                        //  3 Upd Version (Only need 0-5)
+                        //  7 Bld Version (Only need 0-99)
+                        //m_byCompatibleClient = (temptag.GetInt() >> 24);
+                        //m_nClientVersion = temptag.GetInt() & 0x00ffffff;
+                        //m_byEmuleVersion = 0x99;
+                        //m_fSharedDirectories = 1;
+                        //dwEmuleTags |= 4;
+                        break;
+                    default:
+                        break;
+                }
+            }// for
+
             m_ses.m_alerts.post_alert_should(peer_connected_alert(address2int(m_remote.address()), cha, m_active));
         }
 

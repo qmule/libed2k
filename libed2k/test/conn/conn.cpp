@@ -127,8 +127,8 @@ int main(int argc, char* argv[])
               << "---- press something other for process alerts " << std::endl;
 
 
-    ip::address a(ip::address::from_string("109.191.67.100"));
-    int nPort = 4665;
+    ip::address a(ip::address::from_string(/*"109.191.67.100"*/ "192.168.161.54"));
+    int nPort = 4662;
 
     DBG("addr: "<< int2ipstr(address2int(a)));
     std::string strUser;
@@ -267,6 +267,7 @@ int main(int argc, char* argv[])
             {
                 DBG("captcha request ");
                 FILE* fp = fopen("./captcha.bmp", "wb");
+
                 if (fp)
                 {
                     fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);

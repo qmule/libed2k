@@ -148,7 +148,7 @@ namespace libed2k
     {
         DBG("server_info_entry::dump");
         m_hServer.dump();
-        m_address.dump();
+        m_network_point.dump();
         m_list.dump();
     }
 

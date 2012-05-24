@@ -386,14 +386,14 @@ else\
     struct cs_login_request
     {
         md4_hash                    m_hClient;
-        net_identifier              m_sNetIdentifier;
+        net_identifier              m_network_point;
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hClient;
-            ar & m_sNetIdentifier;
+            ar & m_network_point;
             ar & m_list;
         }
     };
@@ -443,14 +443,14 @@ else\
     struct server_info_entry
     {
         md4_hash                    m_hServer;
-        net_identifier              m_address;
+        net_identifier              m_network_point;
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hServer;
-            ar & m_address;
+            ar & m_network_point;
             ar & m_list;
         }
 
@@ -802,9 +802,9 @@ else\
     {
         boost::uint8_t              m_nHashLength;          //!< clients hash length
         md4_hash                    m_hClient;              //!< hash
-        net_identifier              m_sClientNetId;         //!< client network identification
-        tag_list<boost::uint32_t>   m_tlist;                //!< tag list for additional information
-        net_identifier              m_sServerNetId;         //!< client network identification
+        net_identifier              m_network_point;        //!< client network identification
+        tag_list<boost::uint32_t>   m_list;                 //!< tag list for additional information
+        net_identifier              m_server_network_point; //!< client network identification
 
         client_hello(): m_nHashLength(MD4_HASH_SIZE) {}
 
@@ -813,26 +813,26 @@ else\
         {
             ar & m_nHashLength;
             ar & m_hClient;
-            ar & m_sClientNetId;
-            ar & m_tlist;
-            ar & m_sServerNetId;
+            ar & m_network_point;
+            ar & m_list;
+            ar & m_server_network_point;
         }
     };
 
     struct client_hello_answer
     {
         md4_hash                    m_hClient;
-        net_identifier              m_sNetIdentifier;
-        tag_list<boost::uint32_t>   m_tlist;
-        net_identifier              m_sServerIdentifier;
+        net_identifier              m_network_point;
+        tag_list<boost::uint32_t>   m_list;
+        net_identifier              m_server_network_point;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hClient;
-            ar & m_sNetIdentifier;
-            ar & m_tlist;
-            ar & m_sServerIdentifier;
+            ar & m_network_point;
+            ar & m_list;
+            ar & m_server_network_point;
         }
     };
 

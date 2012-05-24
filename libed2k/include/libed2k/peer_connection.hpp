@@ -304,6 +304,19 @@ namespace libed2k
         // upload and download channel state
         char m_channel_state[2];
 
+        // client information
+        std::string     m_strName;
+        int             m_nVersion;
+        std::string     m_strModVersion;
+        int             m_nModVersion;
+        int             m_nPort;
+        int             m_nUDPPort;
+        int             m_nBuddyUDP;
+        client_id_type  m_nBuddyIP;
+        int             m_nBuddyPort;
+
+
+
     };
 
 }
