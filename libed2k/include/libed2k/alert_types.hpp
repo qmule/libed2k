@@ -216,24 +216,24 @@ namespace libed2k
         std::string m_strAddress;
     };
 
-    // ?
-#if 0
-    struct peer_initialized_alert : peer_alert
+
+    struct peer_connected_alert : peer_alert
     {
 
         virtual int category() const { return static_category | alert::status_notification; }
-        peer_initialized_alert(const std::string& strAddress, PEER_STATE state) : m_strAddress(strAddress), m_state(state)
+        peer_connected_alert(const std::string& strAddress, bool bActive) : peer_alert(strAddress), m_active(bActive)
         {}
 
         virtual std::auto_ptr<alert> clone() const
         {
-            return std::auto_ptr<alert>(new peer_initialized_alert(*this));
+            return std::auto_ptr<alert>(new peer_connected_alert(*this));
         }
 
-        virtual std::string message() const { return std::string("peer state alert"); }
-        virtual char const* what() const { return "peer state alert"; }
+        virtual std::string message() const { return std::string("peer connected alert"); }
+        virtual char const* what() const { return "peer connected alert"; }
+        bool m_active;
     };
-#endif
+
 
     struct peer_message_alert : peer_alert
     {

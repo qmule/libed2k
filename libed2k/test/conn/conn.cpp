@@ -126,23 +126,39 @@ int main(int argc, char* argv[])
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
 
-    char c;
-    while ((c = std::cin.get()) != 'q')
+    std::string strUser;
+    while ((std::cin >> strUser))
     {
-        switch(c)
+        if (strUser == "quit")
         {
-        case 'd':
-            ses.server_conn_stop();
             break;
-        case 'c':
-            ses.server_conn_start();
-            break;
-        case 'f':
-            ses.post_search_request(order);
-            break;
-        default:
-            break;
-        };
+        }
+
+        if (!strUser.empty() && strUser.size() == 1)
+        {
+            switch(strUser.at(0))
+            {
+            case 'd':
+                ses.server_conn_stop();
+                break;
+            case 'c':
+                ses.server_conn_start();
+                break;
+            case 'f':
+                ses.post_search_request(order);
+                break;
+            case 'm':
+                ses.post_message("192.168.161.32", 4664, "Hello aMule");
+                break;
+            default:
+                break;
+            };
+        }
+
+        if (strUser.size() > 1)
+        {
+            ses.post_message("192.168.161.32", 4664, strUser);
+        }
 
 
         std::auto_ptr<alert> a = ses.pop_alert();
@@ -229,6 +245,23 @@ int main(int argc, char* argv[])
                     */
 
                 }
+            }
+            else if(dynamic_cast<peer_message_alert*>(a.get()))
+            {
+                peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
+                DBG("MSG: ADDR: " << p->m_strAddress << " MSG " << p->m_strMessage);
+            }
+            else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
+            {
+                DBG("captcha request ");
+            }
+            else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
+            {
+                DBG("captcha result " << p->m_nResult);
+            }
+            else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
+            {
+                DBG("peer connected: " << p->m_strAddress << " status: " << p->m_active);
             }
             else
             {

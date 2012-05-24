@@ -395,16 +395,7 @@ void peer_connection::connect(int ticket)
 
     m_connection_ticket = ticket;
 
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-    error_code ec;
-
     DBG("CONNECTING: " << m_remote);
-
-    if (!t)
-    {
-        disconnect(errors::transfer_aborted);
-        return;
-    }
 
     m_socket->async_connect(
         m_remote, boost::bind(&peer_connection::on_connect,
@@ -479,23 +470,29 @@ bool peer_connection::can_read(char* state) const
 
 bool peer_connection::has_ip_address(const std::string& strAddress) const
 {
+    DBG("peer_connection::has_ip_address(" << int2ipstr(address2int(m_remote.address())));
     return (m_remote.address() == boost::asio::ip::address::from_string(strAddress.c_str()));
 }
 
 void peer_connection::send_message(const std::string& strMessage)
 {
+    DBG("peer_connection::send_message()");
+
     m_messages_order.push_back(client_meta_packet(client_message(strMessage)));
 
-    //if (m_send_buffer.empty())
-    // channel state == idle
+    if (!is_closed())
     {
+        DBG("peer_connection::send_message(execute)");
         fill_send_buffer();
     }
 }
 
 void peer_connection::fill_send_buffer()
 {
+    DBG("peer_connection::fill_send_buffer");
+
     if (m_channel_state[upload_channel] != bw_idle) return;
+
     int buffer_size_watermark = 512;
 
     if (!m_messages_order.empty())
@@ -505,6 +502,7 @@ void peer_connection::fill_send_buffer()
         switch(m_messages_order.front().m_proto)
         {
             case OP_MESSAGE:
+                 DBG("peer_connection::write message: " << m_messages_order.front().m_message.m_strMessage);
                  do_write(m_messages_order.front().m_message);
                  break;
             default:
@@ -687,7 +685,6 @@ void peer_connection::on_disk_write_complete(
 void peer_connection::on_write(const error_code& error, size_t nSize)
 {
     base_connection::on_write(error, nSize);
-    fill_send_buffer();
 }
 
 void peer_connection::write_hello()
@@ -706,6 +703,11 @@ void peer_connection::write_hello()
     hello.m_sServerNetId.m_nPort = m_ses.server().port();
 
     do_write(hello);
+
+    if (!m_active)
+    {
+        m_ses.m_alerts.post_alert_should(peer_connected_alert(m_remote.address().to_string(), m_active));
+    }
 }
 
 void peer_connection::write_hello_answer()
@@ -871,7 +873,23 @@ void peer_connection::on_hello_answer(const error_code& error)
     {
         // peer handshake completed
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        write_file_request(t->hash());
+
+        // connection initialized
+        if (m_active)
+        {
+            m_ses.m_alerts.post_alert_should(peer_connected_alert(m_remote.address().to_string(), m_active));
+        }
+
+        if (t)
+        {
+            write_file_request(t->hash());
+            DBG("write file request");
+        }
+        else
+        {
+            DBG("fill send buffer");
+            fill_send_buffer();
+        }
     }
     else
     {

@@ -807,6 +807,7 @@ void session_impl::abort()
     m_io_service.post(boost::bind(&libtorrent::connection_queue::close, &m_half_open));
 
     DBG("connection queue: " << m_half_open.size());
+    DBG("without transfers connections size: " << m_connections.size());
 
     // abort all connections
     while (!m_connections.empty())
@@ -1058,6 +1059,7 @@ void session_impl::post_search_more_result_request()
 
 void session_impl::post_message(const std::string& strAddress, int nPort, const std::string& strMessage)
 {
+
     connection_map::iterator itr =
             std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, strAddress));
 
@@ -1071,10 +1073,11 @@ void session_impl::post_message(const std::string& strAddress, int nPort, const 
     boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
     setup_socket_buffers(*sock);
 
-    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, sock, endp, NULL));
+    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, boost::weak_ptr<transfer>(), sock, endp, NULL));
 
     // forward message to peer - it will send after connection was completed
     c->send_message(strMessage);
+    m_connections.insert(c);
 
     m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
                     boost::bind(&peer_connection::on_timeout, c),
