@@ -141,21 +141,21 @@ namespace libed2k
 
     void net_identifier::dump() const
     {
-        DBG("net_identifier::dump(IP=" << m_nIP << " port=" << m_nPort << ")");
+        DBG("net_identifier::dump(IP=" << int2ipstr(m_nIP) << " port=" << m_nPort << ")");
     }
 
     void server_info_entry::dump() const
     {
         DBG("server_info_entry::dump");
         m_hServer.dump();
-        m_address.dump();
+        m_network_point.dump();
         m_list.dump();
     }
 
     void search_result::dump() const
     {
         DBG("search_result::dump()");
-        m_results_list.dump();
+        m_files.dump();
 
         if (m_more_results_avaliable != 0)
         {
@@ -408,5 +408,10 @@ namespace libed2k
         m_proto = get_proto_type(m_message);
     }
 
+    client_meta_packet::client_meta_packet(const client_shared_files_request& frequest)
+    {
+        m_files_request = frequest;
+        m_proto = get_proto_type(m_files_request);
+    }
 
 }

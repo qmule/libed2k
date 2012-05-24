@@ -155,11 +155,14 @@ namespace libed2k
         error_code m_error;
     };
 
-    struct search_result_alert : alert
+    /**
+      * this alert throws on server search results and on user shared files
+     */
+    struct shared_files_alert : alert
     {
         const static int static_category = alert::server_notification;
 
-        search_result_alert(const search_result& sresult) : m_result(sresult){}
+        shared_files_alert(client_id_type nIP, const shared_files_list& files, bool more) : m_nIP(nIP), m_files(files), m_more(more){}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return "search result from string"; }
@@ -167,10 +170,12 @@ namespace libed2k
 
         virtual std::auto_ptr<alert> clone() const
         {
-            return (std::auto_ptr<alert>(new search_result_alert(*this)));
+            return (std::auto_ptr<alert>(new shared_files_alert(*this)));
         }
 
-        search_result    m_result;
+        client_id_type          m_nIP;
+        shared_files_list       m_files;
+        bool                    m_more;
     };
 
     struct mule_listen_failed_alert: alert
@@ -200,7 +205,7 @@ namespace libed2k
     struct peer_alert : alert
     {
         const static int static_category = alert::peer_notification;
-        peer_alert(const std::string& strAddress) : m_strAddress(strAddress)
+        peer_alert(client_id_type nIP) : m_nIP(nIP)
         {}
 
         virtual int category() const { return static_category; }
@@ -213,7 +218,7 @@ namespace libed2k
         virtual std::string message() const { return std::string("peer alert"); }
         virtual char const* what() const { return "peer alert"; }
 
-        std::string m_strAddress;
+        client_id_type m_nIP;
     };
 
 
@@ -221,7 +226,7 @@ namespace libed2k
     {
 
         virtual int category() const { return static_category | alert::status_notification; }
-        peer_connected_alert(const std::string& strAddress, bool bActive) : peer_alert(strAddress), m_active(bActive)
+        peer_connected_alert(client_id_type nIP, const client_hello_answer& cha, bool bActive) : peer_alert(nIP), m_hello_answer(cha), m_active(bActive)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -231,13 +236,14 @@ namespace libed2k
 
         virtual std::string message() const { return std::string("peer connected alert"); }
         virtual char const* what() const { return "peer connected alert"; }
+        client_hello_answer m_hello_answer;
         bool m_active;
     };
 
 
     struct peer_message_alert : peer_alert
     {
-        peer_message_alert(const std::string& strAddress, const std::string& strMessage) : peer_alert(strAddress), m_strMessage(strMessage)
+        peer_message_alert(client_id_type nIP, const std::string& strMessage) : peer_alert(nIP), m_strMessage(strMessage)
         {}
 
         virtual int category() const { return static_category; }
@@ -255,7 +261,7 @@ namespace libed2k
 
     struct peer_captcha_request_alert : peer_alert
     {
-        peer_captcha_request_alert(const std::string& strAddress, const std::vector<unsigned char>& captcha) : peer_alert(strAddress), m_captcha(captcha)
+        peer_captcha_request_alert(client_id_type nIP, const std::vector<unsigned char>& captcha) : peer_alert(nIP), m_captcha(captcha)
         {}
 
         virtual int category() const { return static_category; }
@@ -273,7 +279,7 @@ namespace libed2k
 
     struct peer_captcha_result_alert : peer_alert
     {
-        peer_captcha_result_alert(const std::string& strAddress, boost::uint8_t nResult) : peer_alert(strAddress), m_nResult(nResult)
+        peer_captcha_result_alert(client_id_type nIP, boost::uint8_t nResult) : peer_alert(nIP), m_nResult(nResult)
         {}
 
         virtual int category() const { return static_category; }

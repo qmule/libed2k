@@ -21,7 +21,11 @@ namespace libed2k
         return div_ceil(bits, 8);
     }
 
-    inline std::string int2ipstr(int ip)
+    /**
+      * this function convert network by order unsigned int IP address
+      * to network by order dot-notation string
+     */
+    inline std::string int2ipstr(unsigned int ip)
     {
         std::stringstream ss;
         ss << (ip & 0xFF) << "." << ((ip >> 8) & 0xFF) << "." 
@@ -29,6 +33,9 @@ namespace libed2k
         return ss.str();
     }
 
+    /**
+      * convert host byte order asio address uint to network order int ip
+     */
     inline boost::uint32_t address2int(const ip::address& addr)
     {
         assert(addr.is_v4());

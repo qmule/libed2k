@@ -114,8 +114,9 @@ namespace libed2k
                 case OP_EMULEPROT:
                 {
                     m_in_container.resize(m_in_header.m_size - 1);
-                    boost::asio::async_read(*m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
-                            boost::bind(&base_connection::on_read_packet, self(), _1, _2));
+                    boost::asio::async_read(
+                        *m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                        boost::bind(&base_connection::on_read_packet, self(), _1, _2));
                     break;
                 }
                 case OP_PACKEDPROT:

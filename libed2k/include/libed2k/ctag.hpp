@@ -599,6 +599,8 @@ boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, const s
 boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K);
 boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K);
 
+bool is_string_tag(const boost::shared_ptr<base_tag> p);
+bool is_int_tag(const boost::shared_ptr<base_tag> p);
 
 /**
   * class for tag list representation

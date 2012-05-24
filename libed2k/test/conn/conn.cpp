@@ -120,12 +120,17 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "hpp"/*"'+++USERNICK+++' A B"*/);
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "xxx"/*"'+++USERNICK+++' A B"*/);
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
 
+
+    ip::address a(ip::address::from_string(/*"109.191.67.100"*/ "192.168.161.54"));
+    int nPort = 4662;
+
+    DBG("addr: "<< int2ipstr(address2int(a)));
     std::string strUser;
     while ((std::cin >> strUser))
     {
@@ -148,7 +153,13 @@ int main(int argc, char* argv[])
                 ses.post_search_request(order);
                 break;
             case 'm':
-                ses.post_message("192.168.161.32", 4664, "Hello aMule");
+                ses.post_message(address2int(a), nPort, "Hello aMule");
+                break;
+            case 's':
+                ses.post_shared_files_request(address2int(a), nPort);
+                break;
+            case 'i':
+                ses.initialize_peer(address2int(a), nPort);
                 break;
             default:
                 break;
@@ -157,7 +168,7 @@ int main(int argc, char* argv[])
 
         if (strUser.size() > 1)
         {
-            ses.post_message("192.168.161.32", 4664, strUser);
+            ses.post_message(address2int(a), nPort, strUser);
         }
 
 
@@ -193,14 +204,15 @@ int main(int argc, char* argv[])
                 server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
                 DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
             }
-            else if (dynamic_cast<search_result_alert*>(a.get()))
+            else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
-                search_result_alert* p = dynamic_cast<search_result_alert*>(a.get());
+
                 // ok, prepare to get sources
                 //p->m_result.dump();
-                DBG("Results count: " << p->m_result.m_results_list.m_collection.size());
+                DBG("Results count: " << p->m_files.m_collection.size());
+                p->m_files.dump();
 
-                if (p->m_result.m_more_results_avaliable)
+                if (p->m_more)
                 {
                     DBG("More results: ");
                     ses.post_search_more_result_request();
@@ -219,10 +231,10 @@ int main(int argc, char* argv[])
                     //ses.post_search_more_result_request();
                 //}
 
-                int nIndex = p->m_result.m_results_list.m_collection.size() - 1;
+                //int nIndex = p->m_result.m_results_list.m_collection.size() - 1;
 
-                if (nIndex > 0)
-                {
+                //if (nIndex > 0)
+                //{
 
                     //DBG("Search related files");
 
@@ -244,16 +256,24 @@ int main(int argc, char* argv[])
                     }
                     */
 
-                }
+                //}
             }
             else if(dynamic_cast<peer_message_alert*>(a.get()))
             {
                 peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
-                DBG("MSG: ADDR: " << p->m_strAddress << " MSG " << p->m_strMessage);
+                DBG("MSG: ADDR: " << int2ipstr(p->m_nIP) << " MSG " << p->m_strMessage);
             }
             else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
             {
                 DBG("captcha request ");
+                FILE* fp = fopen("./captcha.bmp", "wb");
+
+                if (fp)
+                {
+                    fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
+                    fclose(fp);
+                }
+
             }
             else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
             {
@@ -261,7 +281,7 @@ int main(int argc, char* argv[])
             }
             else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
             {
-                DBG("peer connected: " << p->m_strAddress << " status: " << p->m_active);
+                DBG("peer connected: " << int2ipstr(p->m_nIP) << " status: " << p->m_active);
             }
             else
             {

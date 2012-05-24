@@ -187,14 +187,23 @@ namespace libed2k {
             /**
               * send message to peer
              */
-            void post_message(const std::string& nAddress, int nPort, const std::string& strMessage);
+            void post_message(client_id_type nIP, int nPort, const std::string& strMessage);
+
+            /**
+              * ask peer for shared files
+             */
+            void post_shared_files_request(client_id_type nIP, int nPort);
 
             /**
               * request sources for file
              */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
-
+            /**
+              * when peer already exists - simple return it
+              * when peer not exists connect and execute handshake
+             */
+            boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
             /**
               * announce single entry

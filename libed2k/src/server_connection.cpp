@@ -192,8 +192,8 @@ namespace libed2k
         boost::uint32_t nClientVersion  = (3 << 24) | (2 << 17) | (3 << 10) | (1 << 7);
 
         login.m_hClient                 = settings.client_hash;
-        login.m_sNetIdentifier.m_nIP    = 0;
-        login.m_sNetIdentifier.m_nPort  = settings.listen_port;
+        login.m_network_point.m_nIP     = 0;
+        login.m_network_point.m_nPort   = settings.listen_port;
 
         login.m_list.add_tag(make_string_tag(std::string(settings.client_name), CT_NAME, true));
         login.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
@@ -399,7 +399,7 @@ namespace libed2k
                         server_info_entry se;
                         ia >> se;
                         se.dump();
-                        m_ses.m_alerts.post_alert_should(server_identity_alert(se.m_hServer, se.m_address,
+                        m_ses.m_alerts.post_alert_should(server_identity_alert(se.m_hServer, se.m_network_point,
                                 se.m_list.getStringTagByNameId(ST_SERVERNAME),
                                 se.m_list.getStringTagByNameId(ST_DESCRIPTION)));
                         break;
@@ -416,7 +416,8 @@ namespace libed2k
                     {
                         search_result sfl;
                         ia >> sfl;
-                        m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
+
+                        m_ses.m_alerts.post_alert_should(shared_files_alert(address2int(m_target.address()), sfl.m_files, (sfl.m_more_results_avaliable != 0)));
                         break;
                     }
                     case OP_CALLBACKREQUESTED:

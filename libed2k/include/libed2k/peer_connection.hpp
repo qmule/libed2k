@@ -91,6 +91,7 @@ namespace libed2k
         // to false, and stop monitor writability
         void on_connect(const error_code& e);
         void on_error(const error_code& e);
+        virtual void close(const error_code& ec);
 
         // called when it's time for this peer_conncetion to actually
         // initiate the tcp connection. This may be postponed until
@@ -114,8 +115,9 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
-        bool has_ip_address(const std::string& strAddress) const;
+        bool has_ip_address(client_id_type nIP) const;
         void send_message(const std::string& strMessage);
+        void request_shared_files();
     private:
 
         // constructor method
@@ -178,6 +180,7 @@ namespace libed2k
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
         void on_end_download(const error_code& error);
+        void on_shared_files_answer(const error_code& error);
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
@@ -297,6 +300,19 @@ namespace libed2k
 
         // upload and download channel state
         char m_channel_state[2];
+
+        // client information
+        std::string     m_strName;
+        int             m_nVersion;
+        std::string     m_strModVersion;
+        int             m_nModVersion;
+        int             m_nPort;
+        int             m_nUDPPort;
+        int             m_nBuddyUDP;
+        client_id_type  m_nBuddyIP;
+        int             m_nBuddyPort;
+
+
 
     };
 

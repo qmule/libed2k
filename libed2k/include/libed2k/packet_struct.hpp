@@ -386,14 +386,14 @@ else\
     struct cs_login_request
     {
         md4_hash                    m_hClient;
-        net_identifier              m_sNetIdentifier;
+        net_identifier              m_network_point;
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hClient;
-            ar & m_sNetIdentifier;
+            ar & m_network_point;
             ar & m_list;
         }
     };
@@ -443,14 +443,14 @@ else\
     struct server_info_entry
     {
         md4_hash                    m_hServer;
-        net_identifier              m_address;
+        net_identifier              m_network_point;
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hServer;
-            ar & m_address;
+            ar & m_network_point;
             ar & m_list;
         }
 
@@ -630,7 +630,7 @@ else\
 
     struct search_result
     {
-        shared_files_list   m_results_list;
+        shared_files_list   m_files;
         char                m_more_results_avaliable;
 
         // use only for load
@@ -638,7 +638,7 @@ else\
         void load(Archive& ar)
         {
             m_more_results_avaliable = 0;
-            ar & m_results_list;
+            ar & m_files;
 
             if (ar.bytes_left() == 1)
             {
@@ -802,9 +802,9 @@ else\
     {
         boost::uint8_t              m_nHashLength;          //!< clients hash length
         md4_hash                    m_hClient;              //!< hash
-        net_identifier              m_sClientNetId;         //!< client network identification
-        tag_list<boost::uint32_t>   m_tlist;                //!< tag list for additional information
-        net_identifier              m_sServerNetId;         //!< client network identification
+        net_identifier              m_network_point;        //!< client network identification
+        tag_list<boost::uint32_t>   m_list;                 //!< tag list for additional information
+        net_identifier              m_server_network_point; //!< client network identification
 
         client_hello(): m_nHashLength(MD4_HASH_SIZE) {}
 
@@ -813,27 +813,48 @@ else\
         {
             ar & m_nHashLength;
             ar & m_hClient;
-            ar & m_sClientNetId;
-            ar & m_tlist;
-            ar & m_sServerNetId;
+            ar & m_network_point;
+            ar & m_list;
+            ar & m_server_network_point;
         }
     };
 
     struct client_hello_answer
     {
         md4_hash                    m_hClient;
-        net_identifier              m_sNetIdentifier;
-        tag_list<boost::uint32_t>   m_tlist;
-        net_identifier              m_sServerIdentifier;
+        net_identifier              m_network_point;
+        tag_list<boost::uint32_t>   m_list;
+        net_identifier              m_server_network_point;
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hClient;
-            ar & m_sNetIdentifier;
-            ar & m_tlist;
-            ar & m_sServerIdentifier;
+            ar & m_network_point;
+            ar & m_list;
+            ar & m_server_network_point;
         }
+    };
+
+    /**
+      * empty structure for file list requests
+     */
+    struct client_shared_files_request
+    {
+        template<typename Archive>
+        void serialize(Archive& ar){}
+    };
+
+    struct client_shared_files_answer
+    {
+        shared_files_list   m_files;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_files;
+        }
+
     };
 
     struct client_file_request
@@ -1230,6 +1251,14 @@ else\
         static const proto_type value = OP_HELLOANSWER;
         static const proto_type protocol = OP_EDONKEYPROT;
     };
+    template<> struct packet_type<client_shared_files_request> {
+        static const proto_type value   = OP_ASKSHAREDFILES;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_files_answer> {
+        static const proto_type value   = OP_ASKSHAREDFILESANSWER;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
     template<> struct packet_type<client_file_request> {
         static const proto_type value = OP_REQUESTFILENAME;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1354,6 +1383,7 @@ else\
     struct client_meta_packet
     {
         client_meta_packet(const client_message& cmessage);
+        client_meta_packet(const client_shared_files_request& frequest);
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -1364,9 +1394,16 @@ else\
                 return;
             }
 
+            if (m_proto == get_proto_type(m_files_request))
+            {
+                ar & m_files_request;
+                return;
+            }
+
         }
 
         client_message  m_message;
+        client_shared_files_request m_files_request;
         proto_type      m_proto;
     };
 }
