@@ -75,7 +75,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
-    m_desired_queue_size = 3;
+    m_desired_queue_size = 1;
 
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -682,11 +682,6 @@ void peer_connection::on_disk_write_complete(
     }
 }
 
-void peer_connection::on_write(const error_code& error, size_t nSize)
-{
-    base_connection::on_write(error, nSize);
-}
-
 void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
@@ -877,19 +872,12 @@ void peer_connection::on_hello_answer(const error_code& error)
         // connection initialized
         if (m_active)
         {
-            m_ses.m_alerts.post_alert_should(peer_connected_alert(m_remote.address().to_string(), m_active));
+            m_ses.m_alerts.post_alert_should(
+                peer_connected_alert(m_remote.address().to_string(), m_active));
         }
 
-        if (t)
-        {
-            write_file_request(t->hash());
-            DBG("write file request");
-        }
-        else
-        {
-            DBG("fill send buffer");
-            fill_send_buffer();
-        }
+        if (t) write_file_request(t->hash());
+        else fill_send_buffer();
     }
     else
     {

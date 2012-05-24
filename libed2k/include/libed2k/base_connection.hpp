@@ -87,7 +87,7 @@ namespace libed2k{
         /**
          * order write handler - executed while message order not empty
          */
-        virtual void on_write(const error_code& error, size_t nSize);
+        void on_write(const error_code& error, size_t nSize);
 
         /**
          * deadline timer handler

@@ -134,9 +134,6 @@ namespace libed2k
                                     peer_request r, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
-        // @override
-        // custom socket write handler
-        void on_write(const error_code& error, size_t nSize);
 
         template<typename T>
         void do_write(T& t)
