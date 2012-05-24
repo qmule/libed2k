@@ -162,7 +162,7 @@ namespace libed2k
     {
         const static int static_category = alert::server_notification;
 
-        shared_files_alert(const shared_files_list& files, char more) : m_files(files), m_more(more){}
+        shared_files_alert(client_id_type nIP, const shared_files_list& files, bool more) : m_nIP(nIP), m_files(files), m_more(more){}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return "search result from string"; }
@@ -173,8 +173,9 @@ namespace libed2k
             return (std::auto_ptr<alert>(new shared_files_alert(*this)));
         }
 
+        client_id_type          m_nIP;
         shared_files_list       m_files;
-        char                    m_more;
+        bool                    m_more;
     };
 
     struct mule_listen_failed_alert: alert

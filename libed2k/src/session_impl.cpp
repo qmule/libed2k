@@ -1062,6 +1062,11 @@ void session_impl::post_message(client_id_type nIP, int nPort, const std::string
     initialize_peer(nIP, nPort).get()->send_message(strMessage);
 }
 
+void session_impl::post_shared_files_request(client_id_type nIP, int nPort)
+{
+    initialize_peer(nIP, nPort).get()->request_shared_files();
+}
+
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_server_connection->post_sources_request(hFile, nSize);

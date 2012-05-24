@@ -408,5 +408,10 @@ namespace libed2k
         m_proto = get_proto_type(m_message);
     }
 
+    client_meta_packet::client_meta_packet(const client_shared_files_request& frequest)
+    {
+        m_files_request = frequest;
+        m_proto = get_proto_type(m_files_request);
+    }
 
 }

@@ -1383,6 +1383,7 @@ else\
     struct client_meta_packet
     {
         client_meta_packet(const client_message& cmessage);
+        client_meta_packet(const client_shared_files_request& frequest);
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -1393,9 +1394,16 @@ else\
                 return;
             }
 
+            if (m_proto == get_proto_type(m_files_request))
+            {
+                ar & m_files_request;
+                return;
+            }
+
         }
 
         client_message  m_message;
+        client_shared_files_request m_files_request;
         proto_type      m_proto;
     };
 }

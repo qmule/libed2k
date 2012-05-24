@@ -127,7 +127,8 @@ int main(int argc, char* argv[])
               << "---- press something other for process alerts " << std::endl;
 
 
-    ip::address a(ip::address::from_string("192.168.161.54"));
+    ip::address a(ip::address::from_string("109.191.67.100"));
+    int nPort = 4665;
 
     DBG("addr: "<< int2ipstr(address2int(a)));
     std::string strUser;
@@ -152,7 +153,13 @@ int main(int argc, char* argv[])
                 ses.post_search_request(order);
                 break;
             case 'm':
-                ses.post_message(address2int(a), 4662, "Hello aMule");
+                ses.post_message(address2int(a), nPort, "Hello aMule");
+                break;
+            case 's':
+                ses.post_shared_files_request(address2int(a), nPort);
+                break;
+            case 'i':
+                ses.initialize_peer(address2int(a), nPort);
                 break;
             default:
                 break;
@@ -161,7 +168,7 @@ int main(int argc, char* argv[])
 
         if (strUser.size() > 1)
         {
-            ses.post_message(address2int(a), 4662, strUser);
+            ses.post_message(address2int(a), nPort, strUser);
         }
 
 
@@ -259,6 +266,13 @@ int main(int argc, char* argv[])
             else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
             {
                 DBG("captcha request ");
+                FILE* fp = fopen("./captcha.bmp", "wb");
+                if (fp)
+                {
+                    fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
+                    fclose(fp);
+                }
+
             }
             else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
             {

@@ -109,6 +109,7 @@ void peer_connection::reset()
     add_handler(OP_SENDINGPART_I64,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
+    add_handler(OP_ASKSHAREDFILESANSWER, boost::bind(&peer_connection::on_shared_files_answer, this, _1));
 
     // clients talking
     add_handler(OP_MESSAGE, boost::bind(&peer_connection::on_client_message, this, _1));
@@ -496,15 +497,22 @@ void peer_connection::send_message(const std::string& strMessage)
 
     if (!is_closed())
     {
-        DBG("peer_connection::send_message(execute)");
+        fill_send_buffer();
+    }
+}
+
+void peer_connection::request_shared_files()
+{
+    m_messages_order.push_back(client_meta_packet(client_shared_files_request()));
+
+    if (!is_closed())
+    {
         fill_send_buffer();
     }
 }
 
 void peer_connection::fill_send_buffer()
 {
-    DBG("peer_connection::fill_send_buffer");
-
     if (m_channel_state[upload_channel] != bw_idle) return;
 
     int buffer_size_watermark = 512;
@@ -519,6 +527,10 @@ void peer_connection::fill_send_buffer()
                  DBG("peer_connection::write message: " << m_messages_order.front().m_message.m_strMessage);
                  do_write(m_messages_order.front().m_message);
                  break;
+            case OP_ASKSHAREDFILES:
+                DBG("peer_connection::write message: shared_file_list");
+                do_write(m_messages_order.front().m_files_request);
+                break;
             default:
                 break;
 
@@ -715,6 +727,20 @@ void peer_connection::write_hello()
     hello.m_tlist.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
     hello.m_sServerNetId.m_nIP = address2int(m_ses.server().address());
     hello.m_sServerNetId.m_nPort = m_ses.server().port();
+
+    // generate options
+    boost::uint32_t nOption2;
+    boost::uint32_t nOption1 = 0;
+    const boost::uint32_t uSupportsCaptcha       = 1;
+    const boost::uint32_t uSupportLargeFiles     = 1;
+    const boost::uint32_t uExtMultiPacket        = 1;
+
+
+
+    nOption2 = 0xFFFFFFFF; //(uSupportsCaptcha << 11) | (uSupportLargeFiles << 4);
+
+    hello.m_tlist.add_tag(make_typed_tag(nOption1, CT_EMULE_MISCOPTIONS1, true));
+    hello.m_tlist.add_tag(make_typed_tag(nOption2, CT_EMULE_MISCOPTIONS2, false));
 
     do_write(hello);
 }
@@ -1203,6 +1229,19 @@ void peer_connection::on_end_download(const error_code& error)
     else
     {
         ERR("end download error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_shared_files_answer(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_files_answer);
+        m_ses.m_alerts.post_alert_should(shared_files_alert(address2int(m_remote.address()), packet.m_files, false));
+    }
+    else
+    {
+        ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
     }
 }
 

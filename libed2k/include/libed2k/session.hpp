@@ -120,6 +120,8 @@ namespace libed2k {
           * send message to peer
          */
         void post_message(client_id_type nIP, int nPort, const std::string& strMessage);
+        void post_shared_files_request(client_id_type nIP, int nPort);
+        void initialize_peer(client_id_type nIP, int nPort);
 
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;

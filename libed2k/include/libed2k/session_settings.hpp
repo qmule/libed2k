@@ -9,7 +9,7 @@ namespace libed2k {
         typedef std::vector<std::pair<std::string, bool> >  fd_list;
 
         session_settings():
-            server_timeout(120),
+            server_timeout(220),
             peer_timeout(120),
             peer_connect_timeout(7),
             allow_multiple_connections_per_ip(false),
@@ -18,7 +18,7 @@ namespace libed2k {
             server_port(4661),
             listen_port(4662),
             client_name("http://www.aMule.org"),
-            server_keep_alive_timeout(20),
+            server_keep_alive_timeout(200),
             server_ip(0),
             server_reconnect_timeout(5),
             max_peerlist_size(4000),

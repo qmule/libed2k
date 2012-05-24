@@ -117,7 +117,7 @@ namespace libed2k
         bool can_read(char* state = 0) const;
         bool has_ip_address(client_id_type nIP) const;
         void send_message(const std::string& strMessage);
-
+        void request_shared_files();
     private:
 
         // constructor method
@@ -183,6 +183,7 @@ namespace libed2k
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
         void on_end_download(const error_code& error);
+        void on_shared_files_answer(const error_code& error);
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
