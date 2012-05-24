@@ -630,7 +630,7 @@ else\
 
     struct search_result
     {
-        shared_files_list   m_results_list;
+        shared_files_list   m_files;
         char                m_more_results_avaliable;
 
         // use only for load
@@ -638,7 +638,7 @@ else\
         void load(Archive& ar)
         {
             m_more_results_avaliable = 0;
-            ar & m_results_list;
+            ar & m_files;
 
             if (ar.bytes_left() == 1)
             {
@@ -834,6 +834,27 @@ else\
             ar & m_tlist;
             ar & m_sServerIdentifier;
         }
+    };
+
+    /**
+      * empty structure for file list requests
+     */
+    struct client_shared_files_request
+    {
+        template<typename Archive>
+        void serialize(Archive& ar){}
+    };
+
+    struct client_shared_files_answer
+    {
+        shared_files_list   m_files;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_files;
+        }
+
     };
 
     struct client_file_request
@@ -1229,6 +1250,14 @@ else\
     template<> struct packet_type<client_hello_answer> {
         static const proto_type value = OP_HELLOANSWER;
         static const proto_type protocol = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_files_request> {
+        static const proto_type value   = OP_ASKSHAREDFILES;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_files_answer> {
+        static const proto_type value   = OP_ASKSHAREDFILESANSWER;
+        static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_request> {
         static const proto_type value = OP_REQUESTFILENAME;

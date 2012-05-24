@@ -1057,11 +1057,11 @@ void session_impl::post_search_more_result_request()
     m_server_connection->post_search_more_result_request();
 }
 
-void session_impl::post_message(const std::string& strAddress, int nPort, const std::string& strMessage)
+void session_impl::post_message(client_id_type nIP, int nPort, const std::string& strMessage)
 {
 
     connection_map::iterator itr =
-            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, strAddress));
+            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, nIP));
 
     if (itr != m_connections.end())
     {
@@ -1069,7 +1069,7 @@ void session_impl::post_message(const std::string& strAddress, int nPort, const 
         return;
     }
 
-    tcp::endpoint endp(boost::asio::ip::address::from_string(strAddress), nPort);
+    tcp::endpoint endp(boost::asio::ip::address::from_string(int2ipstr(nIP)), nPort);
     boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
     setup_socket_buffers(*sock);
 

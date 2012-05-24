@@ -187,7 +187,7 @@ namespace libed2k {
             /**
               * send message to peer
              */
-            void post_message(const std::string& nAddress, int nPort, const std::string& strMessage);
+            void post_message(client_id_type nIP, int nPort, const std::string& strMessage);
 
             /**
               * request sources for file

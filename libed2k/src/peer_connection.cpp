@@ -468,10 +468,10 @@ bool peer_connection::can_read(char* state) const
 	return (true);
 }
 
-bool peer_connection::has_ip_address(const std::string& strAddress) const
+bool peer_connection::has_ip_address(client_id_type nIP) const
 {
-    DBG("peer_connection::has_ip_address(" << int2ipstr(address2int(m_remote.address())));
-    return (m_remote.address() == boost::asio::ip::address::from_string(strAddress.c_str()));
+    DBG("peer_connection::has_ip_address(" << m_remote.address().to_string());
+    return (address2int(m_remote.address()) == nIP);
 }
 
 void peer_connection::send_message(const std::string& strMessage)
@@ -706,7 +706,7 @@ void peer_connection::write_hello()
 
     if (!m_active)
     {
-        m_ses.m_alerts.post_alert_should(peer_connected_alert(m_remote.address().to_string(), m_active));
+        m_ses.m_alerts.post_alert_should(peer_connected_alert(address2int(m_remote.address()), m_active));
     }
 }
 
@@ -877,7 +877,7 @@ void peer_connection::on_hello_answer(const error_code& error)
         // connection initialized
         if (m_active)
         {
-            m_ses.m_alerts.post_alert_should(peer_connected_alert(m_remote.address().to_string(), m_active));
+            m_ses.m_alerts.post_alert_should(peer_connected_alert(address2int(m_remote.address()), m_active));
         }
 
         if (t)
@@ -1205,7 +1205,7 @@ void peer_connection::on_client_message(const error_code& error)
 
         if (decode_packet(cmsg))
         {
-            m_ses.m_alerts.post_alert_should(peer_message_alert(m_remote.address().to_string(), cmsg.m_strMessage));
+            m_ses.m_alerts.post_alert_should(peer_message_alert(address2int(m_remote.address()), cmsg.m_strMessage));
         }
     }
     else
@@ -1223,7 +1223,7 @@ void peer_connection::on_client_captcha_request(const error_code& error)
 
         if (decode_packet(ccr))
         {
-            m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(m_remote.address().to_string(), ccr.m_captcha));
+            m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(address2int(m_remote.address()), ccr.m_captcha));
         }
     }
     else
@@ -1241,7 +1241,7 @@ void peer_connection::on_client_captcha_result(const error_code& error)
 
         if (decode_packet(ccr))
         {
-            m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(m_remote.address().to_string(), ccr.m_captcha_result));
+            m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(address2int(m_remote.address()), ccr.m_captcha_result));
         }
     }
     else

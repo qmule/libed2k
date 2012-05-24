@@ -141,7 +141,7 @@ namespace libed2k
 
     void net_identifier::dump() const
     {
-        DBG("net_identifier::dump(IP=" << m_nIP << " port=" << m_nPort << ")");
+        DBG("net_identifier::dump(IP=" << int2ipstr(m_nIP) << " port=" << m_nPort << ")");
     }
 
     void server_info_entry::dump() const
@@ -155,7 +155,7 @@ namespace libed2k
     void search_result::dump() const
     {
         DBG("search_result::dump()");
-        m_results_list.dump();
+        m_files.dump();
 
         if (m_more_results_avaliable != 0)
         {

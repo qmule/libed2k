@@ -416,7 +416,7 @@ namespace libed2k
                     {
                         search_result sfl;
                         ia >> sfl;
-                        m_ses.m_alerts.post_alert_should(search_result_alert(sfl));
+                        m_ses.m_alerts.post_alert_should(shared_files_alert(sfl.m_files, sfl.m_more_results_avaliable));
                         break;
                     }
                     case OP_CALLBACKREQUESTED:
