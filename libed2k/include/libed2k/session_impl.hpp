@@ -194,7 +194,11 @@ namespace libed2k {
              */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
-
+            /**
+              * when peer already exists - simple return it
+              * when peer not exists connect and execute handshake
+             */
+            boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
             /**
               * announce single entry

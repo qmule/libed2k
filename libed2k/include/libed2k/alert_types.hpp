@@ -225,7 +225,7 @@ namespace libed2k
     {
 
         virtual int category() const { return static_category | alert::status_notification; }
-        peer_connected_alert(client_id_type nIP, bool bActive) : peer_alert(nIP), m_active(bActive)
+        peer_connected_alert(client_id_type nIP, const client_hello_answer& cha, bool bActive) : peer_alert(nIP), m_hello_answer(cha), m_active(bActive)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -235,6 +235,7 @@ namespace libed2k
 
         virtual std::string message() const { return std::string("peer connected alert"); }
         virtual char const* what() const { return "peer connected alert"; }
+        client_hello_answer m_hello_answer;
         bool m_active;
     };
 

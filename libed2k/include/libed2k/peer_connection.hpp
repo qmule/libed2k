@@ -91,6 +91,7 @@ namespace libed2k
         // to false, and stop monitor writability
         void on_connect(const error_code& e);
         void on_error(const error_code& e);
+        virtual void close(const error_code& ec);
 
         // called when it's time for this peer_conncetion to actually
         // initiate the tcp connection. This may be postponed until
@@ -116,6 +117,7 @@ namespace libed2k
         bool can_read(char* state = 0) const;
         bool has_ip_address(client_id_type nIP) const;
         void send_message(const std::string& strMessage);
+
     private:
 
         // constructor method

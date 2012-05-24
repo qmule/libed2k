@@ -42,7 +42,7 @@ namespace libed2k{
                         const tcp::endpoint& remote);
         virtual ~base_connection();
 
-        void close(const error_code& ec);
+        virtual void close(const error_code& ec);
 
         /**
          * connection closed when his socket is not opened

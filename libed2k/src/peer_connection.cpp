@@ -13,6 +13,14 @@
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
+#define DECODE_PACKET(packet_struct)\
+        packet_struct packet;\
+        if (!decode_packet(packet))\
+        {\
+            close(errors::decode_packet_error);\
+        }
+
+
 peer_request mk_peer_request(size_t begin, size_t end)
 {
     peer_request r;
@@ -323,13 +331,13 @@ void peer_connection::disconnect(error_code const& ec, int error)
     switch (error)
     {
     case 0:
-        DBG("*** CONNECTION CLOSED " << ec.message());
+        DBG("peer_connection::disconnect(*** CONNECTION CLOSED) " << ec.message());
         break;
     case 1:
-        DBG("*** CONNECTION FAILED " << ec.message());
+        DBG("peer_connection::disconnect*** CONNECTION FAILED) " << ec.message());
         break;
     case 2:
-        DBG("*** PEER ERROR " << ec.message());
+        DBG("peer_connection::disconnect*** PEER ERROR) " << ec.message());
         break;
     }
     // TODO: implement
@@ -385,7 +393,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
 
     DBG("peer_connection::disconnect: close");
     m_disconnecting = true;
-    close(ec);
+    base_connection::close(ec); // close transport
     m_ses.close_connection(this, ec);
 }
 
@@ -454,6 +462,12 @@ int peer_connection::picker_options() const
 void peer_connection::on_error(const error_code& error)
 {
     disconnect(error);
+}
+
+void peer_connection::close(const error_code& ec)
+{
+    DBG("peer_connection::close(" << ec << ")");
+    disconnect(ec);
 }
 
 bool peer_connection::can_write() const
@@ -703,11 +717,6 @@ void peer_connection::write_hello()
     hello.m_sServerNetId.m_nPort = m_ses.server().port();
 
     do_write(hello);
-
-    if (!m_active)
-    {
-        m_ses.m_alerts.post_alert_should(peer_connected_alert(address2int(m_remote.address()), m_active));
-    }
 }
 
 void peer_connection::write_hello_answer()
@@ -871,14 +880,14 @@ void peer_connection::on_hello_answer(const error_code& error)
     DBG("hello answer <== " << m_remote);
     if (!error)
     {
+        client_hello_answer cha;
+        if (decode_packet(cha))
+        {
+            m_ses.m_alerts.post_alert_should(peer_connected_alert(address2int(m_remote.address()), cha, m_active));
+        }
+
         // peer handshake completed
         boost::shared_ptr<transfer> t = m_transfer.lock();
-
-        // connection initialized
-        if (m_active)
-        {
-            m_ses.m_alerts.post_alert_should(peer_connected_alert(address2int(m_remote.address()), m_active));
-        }
 
         if (t)
         {
@@ -1201,12 +1210,9 @@ void peer_connection::on_client_message(const error_code& error)
 {
     if (!error)
     {
-        client_message cmsg;
 
-        if (decode_packet(cmsg))
-        {
-            m_ses.m_alerts.post_alert_should(peer_message_alert(address2int(m_remote.address()), cmsg.m_strMessage));
-        }
+        DECODE_PACKET(client_message)
+        m_ses.m_alerts.post_alert_should(peer_message_alert(address2int(m_remote.address()), packet.m_strMessage));
     }
     else
     {
@@ -1218,13 +1224,9 @@ void peer_connection::on_client_captcha_request(const error_code& error)
 {
     if (!error)
     {
-        // generate captcha request signal
-        client_captcha_request ccr;
+        DECODE_PACKET(client_captcha_request)
+        m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(address2int(m_remote.address()), packet.m_captcha));
 
-        if (decode_packet(ccr))
-        {
-            m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(address2int(m_remote.address()), ccr.m_captcha));
-        }
     }
     else
     {
@@ -1236,13 +1238,8 @@ void peer_connection::on_client_captcha_result(const error_code& error)
 {
     if (!error)
     {
-        // generate captcha result alert
-        client_captcha_result ccr;
-
-        if (decode_packet(ccr))
-        {
-            m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(address2int(m_remote.address()), ccr.m_captcha_result));
-        }
+        DECODE_PACKET(client_captcha_result)
+        m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(address2int(m_remote.address()), packet.m_captcha_result));
     }
     else
     {

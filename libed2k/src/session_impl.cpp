@@ -645,7 +645,7 @@ std::vector<transfer_handle> session_impl::get_transfers()
 
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
 {
-    DBG("CLOSING CONNECTION " << p->remote() << " : " << ec.message());
+    DBG("session_impl::close_connection(CLOSING CONNECTION " << p->remote() << " : " << ec.message() << ")");
     connection_map::iterator i =
         std::find_if(m_connections.begin(), m_connections.end(),
                      boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p);
@@ -1059,14 +1059,22 @@ void session_impl::post_search_more_result_request()
 
 void session_impl::post_message(client_id_type nIP, int nPort, const std::string& strMessage)
 {
+    initialize_peer(nIP, nPort).get()->send_message(strMessage);
+}
 
+void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
+{
+    m_server_connection->post_sources_request(hFile, nSize);
+}
+
+boost::intrusive_ptr<peer_connection> session_impl::initialize_peer(client_id_type nIP, int nPort)
+{
     connection_map::iterator itr =
-            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, nIP));
+                std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, nIP));
 
     if (itr != m_connections.end())
     {
-        itr->get()->send_message(strMessage);
-        return;
+        return *itr;
     }
 
     tcp::endpoint endp(boost::asio::ip::address::from_string(int2ipstr(nIP)), nPort);
@@ -1075,18 +1083,13 @@ void session_impl::post_message(client_id_type nIP, int nPort, const std::string
 
     boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, boost::weak_ptr<transfer>(), sock, endp, NULL));
 
-    // forward message to peer - it will send after connection was completed
-    c->send_message(strMessage);
     m_connections.insert(c);
 
     m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
                     boost::bind(&peer_connection::on_timeout, c),
                     libtorrent::seconds(m_settings.peer_connect_timeout));
-}
 
-void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
-{
-    m_server_connection->post_sources_request(hFile, nSize);
+    return (c);
 }
 
 void session_impl::announce(shared_file_entry& entry)
