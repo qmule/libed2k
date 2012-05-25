@@ -32,6 +32,51 @@ namespace libed2k
         class session_impl;
     }
 
+
+    struct misc_options
+    {
+        boost::uint32_t m_nAICHVersion;
+        boost::uint32_t m_nUnicodeSupport;
+        boost::uint32_t m_nUDPVer;
+        boost::uint32_t m_nDataCompVer;
+        boost::uint32_t m_nSupportSecIdent;
+        boost::uint32_t m_nSourceExchange1Ver;
+        boost::uint32_t m_nExtendedRequestsVer;
+        boost::uint32_t m_nAcceptCommentVer;
+        boost::uint32_t m_nNoViewSharedFiles;
+        boost::uint32_t m_nMultiPacket;
+        boost::uint32_t m_nSupportsPreview;
+
+        misc_options(boost::uint32_t opts);
+        boost::uint32_t generate() const;
+    };
+
+#define LARGE_FILE_OFFSET 4
+#define MULTIP_OFFSET     5
+#define SRC_EXT_OFFSET    10
+#define CAPTHA_OFFSET     11
+    class misc_options2
+    {
+    private:
+        boost::uint32_t m_options;
+    public:
+
+
+        misc_options2(boost::uint32_t opts);
+
+        bool support_captcha() const;
+        bool support_source_ext2() const;
+        bool support_ext_multipacket() const;
+        bool support_large_files() const;
+
+        void set_captcha();
+        void set_source_ext2();
+        void set_ext_multipacket();
+        void set_large_files();
+
+        boost::uint32_t generate() const;
+    };
+
     class peer_connection : public base_connection
     {
     public:
@@ -311,6 +356,10 @@ namespace libed2k
         int             m_nBuddyUDP;
         client_id_type  m_nBuddyIP;
         int             m_nBuddyPort;
+        int             m_nClientVersion;
+        int             m_nCompatibleClient;
+        bool            m_bOsInfoSupport;
+        bool            m_bValueBasedTypeTags;
 
 
 

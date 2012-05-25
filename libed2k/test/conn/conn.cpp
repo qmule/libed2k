@@ -120,14 +120,17 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "xxx"/*"'+++USERNICK+++' A B"*/);
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "'+++USERNICK+++' A ");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
 
 
-    ip::address a(ip::address::from_string(/*"109.191.67.100"*/ "192.168.161.54"));
+    std::string strAlex = "31.207.218.28";
+    std::string strDore = "192.168.161.54";
+    std::string strDiman = "88.206.52.81";
+    ip::address a(ip::address::from_string(strAlex.c_str()));
     int nPort = 4662;
 
     DBG("addr: "<< int2ipstr(address2int(a)));
