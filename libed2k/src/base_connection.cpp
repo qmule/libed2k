@@ -108,21 +108,22 @@ namespace libed2k
 
         if (!error)
         {
+            size_t size = service_size(m_in_header);
             switch(m_in_header.m_protocol)
             {
                 case OP_EDONKEYPROT:
                 case OP_EMULEPROT:
                 {
-                    m_in_container.resize(m_in_header.m_size - 1);
+                    m_in_container.resize(size);
                     boost::asio::async_read(
-                        *m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                        *m_socket, boost::asio::buffer(&m_in_container[0], size),
                         boost::bind(&base_connection::on_read_packet, self(), _1, _2));
                     break;
                 }
                 case OP_PACKEDPROT:
                 {
-                    m_in_gzip_container.resize(m_in_header.m_size - 1);
-                    boost::asio::async_read(*m_socket, boost::asio::buffer(&m_in_gzip_container[0], m_in_header.m_size - 1),
+                    m_in_gzip_container.resize(size);
+                    boost::asio::async_read(*m_socket, boost::asio::buffer(&m_in_gzip_container[0], size),
                             boost::bind(&base_connection::on_read_packet, self(), _1, _2));
                     break;
                 }
@@ -221,6 +222,18 @@ namespace libed2k
 
         // Put the actor back to sleep.
         m_deadline.async_wait(boost::bind(&base_connection::check_deadline, self()));
+    }
+
+    size_t base_connection::service_size(const libed2k_header& header)
+    {
+        size_t res;
+        if (header.m_type == OP_SENDINGPART)
+            res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+        else if(header.m_type == OP_SENDINGPART_I64)
+            res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
+        else
+            res = header.m_size - 1;
+        return res;
     }
 
     void base_connection::add_handler(proto_type ptype, packet_handler handler)

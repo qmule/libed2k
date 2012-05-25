@@ -94,6 +94,8 @@ namespace libed2k{
          */
         void check_deadline();
 
+        size_t service_size(const libed2k_header& header);
+
         /**
          * will call from external handlers for extract buffer into structure
          * on error return false
