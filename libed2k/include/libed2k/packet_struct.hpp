@@ -14,14 +14,14 @@
 namespace libed2k
 {
 
-#define DECREMENT_READ(n, x) if (n >= sizeof(x))\
-{\
-    ar & x; \
-}\
-else\
-{\
-    return;\
-}
+#define DECREMENT_READ(n, x) if (n >= sizeof(x))    \
+    {                                               \
+        ar & x;                                     \
+    }                                               \
+    else                                            \
+    {                                               \
+        return;                                     \
+    }
 
     // protocol type
     typedef boost::uint8_t  proto_type;

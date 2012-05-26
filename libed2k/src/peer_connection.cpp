@@ -13,13 +13,6 @@
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-#define DECODE_PACKET(packet_struct)\
-        packet_struct packet;\
-        if (!decode_packet(packet))\
-        {\
-            close(errors::decode_packet_error);\
-        }
-
 peer_request mk_peer_request(size_t begin, size_t end)
 {
     peer_request r;
@@ -102,13 +95,15 @@ void peer_connection::reset()
     add_handler(OP_ACCEPTUPLOADREQ, boost::bind(&peer_connection::on_accept_upload, this, _1));
     add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
     add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
-    add_handler(OP_REQUESTPARTS_I64, boost::bind(&peer_connection::on_request_parts, this, _1));
+    add_handler(OP_REQUESTPARTS,
+                boost::bind(&peer_connection::on_request_parts<client_request_parts_32>, this, _1));
+    add_handler(OP_REQUESTPARTS_I64,
+                boost::bind(&peer_connection::on_request_parts<client_request_parts_64>, this, _1));
     add_handler(OP_SENDINGPART,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_32>, this, _1));
     add_handler(OP_SENDINGPART_I64,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
-
     add_handler(OP_ASKSHAREDFILES, boost::bind(&peer_connection::on_shared_files_request, this, _1));
     add_handler(OP_ASKSHAREDFILESANSWER, boost::bind(&peer_connection::on_shared_files_answer, this, _1));
 
@@ -715,7 +710,6 @@ void peer_connection::write_hello()
     hello.m_server_network_point.m_nIP = address2int(m_ses.server().address());
     hello.m_server_network_point.m_nPort = m_ses.server().port();
 
-
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
 
@@ -885,10 +879,9 @@ void peer_connection::on_hello(const error_code& error)
 
 void peer_connection::on_hello_answer(const error_code& error)
 {
-    DBG("hello answer <== " << m_remote);
     if (!error)
     {
-        DECODE_PACKET(client_hello_answer);
+        DECODE_PACKET(client_hello_answer, packet);
 
         misc_options mo;
         misc_options2 mo2;
@@ -969,42 +962,43 @@ void peer_connection::on_hello_answer(const error_code& error)
 
         m_ses.m_alerts.post_alert_should(
             peer_connected_alert(address2int(m_remote.address()),
-                    m_strName,
-                    m_nVersion,
-                    m_strModVersion,
-                    m_nModVersion,
-                    m_nUDPPort,
-                    mo,
-                    mo2,
-                    m_active));
+                                 m_strName,
+                                 m_nVersion,
+                                 m_strModVersion,
+                                 m_nModVersion,
+                                 m_nUDPPort,
+                                 mo,
+                                 mo2,
+                                 m_active));
 
-        // peer handshake completed
-        boost::shared_ptr<transfer> t = m_transfer.lock();
-
-        if (t) write_file_request(t->hash());
-        else fill_send_buffer();
     }
     else
     {
-        ERR("hello answer received error " << error.message());
+        ERR("hello error " << error.message() << " <== " << m_remote);
     }
+
+    // peer handshake completed
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (t) write_file_request(t->hash());
+    else fill_send_buffer();
 }
 
 void peer_connection::on_file_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_file_request);
+        DECODE_PACKET(client_file_request, fr);
+        DBG("file request " << fr.m_hFile << " <== " << m_remote);
 
-        DBG("file request " << packet.m_hFile << " <== " << m_remote);
-        if (attach_to_transfer(packet.m_hFile))
+        if (attach_to_transfer(fr.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_status(packet.m_hFile, t->hashset().pieces());
+            write_file_status(fr.m_hFile, t->hashset().pieces());
         }
         else
         {
-            write_no_file(packet.m_hFile);
+            write_no_file(fr.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1018,11 +1012,11 @@ void peer_connection::on_file_answer(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_file_answer);
-
-        DBG("file answer " << packet.m_hFile << ", " << packet.m_filename.m_collection
+        DECODE_PACKET(client_file_answer, fa);
+        DBG("file answer " << fa.m_hFile << ", " << fa.m_filename.m_collection
             << " <== " << m_remote);
-        write_filestatus_request(packet.m_hFile);
+
+        write_filestatus_request(fa.m_hFile);
     }
     else
     {
@@ -1034,9 +1028,9 @@ void peer_connection::on_file_description(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_file_description);
-
-        DBG("file description " << packet.m_nRating << ", " << packet.m_sComment.m_collection << " <== " << m_remote);
+        DECODE_PACKET(client_file_description, packet);
+        DBG("file description " << packet.m_nRating << ", " 
+            << packet.m_sComment.m_collection << " <== " << m_remote);
     }
     else
     {
@@ -1048,8 +1042,9 @@ void peer_connection::on_no_file(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_no_file);
-        DBG("no file " << packet.m_hFile << m_remote);
+        DECODE_PACKET(client_no_file, nf);
+        DBG("no file " << nf.m_hFile << m_remote);
+
         disconnect(errors::file_unavaliable, 2);
     }
     else
@@ -1062,18 +1057,17 @@ void peer_connection::on_filestatus_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_filestatus_request);
-
-        DBG("file status request " << packet.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_filestatus_request, fr);
+        DBG("file status request " << fr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == packet.m_hFile)
+        if (t->hash() == fr.m_hFile)
         {
             write_file_status(t->hash(), t->hashset().pieces());
         }
         else
         {
-            write_no_file(packet.m_hFile);
+            write_no_file(fr.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1087,24 +1081,25 @@ void peer_connection::on_file_status(const error_code& error)
 {
     if (!error)
     {
+        DECODE_PACKET(client_file_status, fs);
+
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        DECODE_PACKET(client_file_status);
 
-        if (packet.m_status.size() == 0)
-            packet.m_status.resize(t->num_pieces(), 1);
+        if (fs.m_status.size() == 0)
+            fs.m_status.resize(t->num_pieces(), 1);
 
-        DBG("file status answer "<< packet.m_hFile
-            << ", [" << bitfield2string(packet.m_status) << "] <== " << m_remote);
+        DBG("file status answer "<< fs.m_hFile
+            << ", [" << bitfield2string(fs.m_status) << "] <== " << m_remote);
 
-        if (t->hash() == packet.m_hFile)
+        if (t->hash() == fs.m_hFile)
         {
-            m_remote_hashset.pieces(packet.m_status);
-            t->picker().inc_refcount(packet.m_status);
-            write_hashset_request(packet.m_hFile);
+            m_remote_hashset.pieces(fs.m_status);
+            t->picker().inc_refcount(fs.m_status);
+            write_hashset_request(fs.m_hFile);
         }
         else
         {
-            write_no_file(packet.m_hFile);
+            write_no_file(fs.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1118,18 +1113,17 @@ void peer_connection::on_hashset_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_hashset_request);
-
-        DBG("hash set request " << packet.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_hashset_request, hr);
+        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == packet.m_hFile)
+        if (t->hash() == hr.m_hFile)
         {
             write_hashset_answer(t->hash(), t->hashset().hashes());
         }
         else
         {
-            write_no_file(packet.m_hFile);
+            write_no_file(hr.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1143,19 +1137,18 @@ void peer_connection::on_hashset_answer(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_hashset_answer);
-
-        DBG("hash set answer " << packet.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_hashset_answer, ha);
+        DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == packet.m_hFile)
+        if (t->hash() == ha.m_hFile)
         {
-            m_remote_hashset.hashes(packet.m_vhParts.m_collection);
+            m_remote_hashset.hashes(ha.m_vhParts.m_collection);
             write_start_upload(t->hash());
         }
         else
         {
-            write_no_file(packet.m_hFile);
+            write_no_file(ha.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1169,18 +1162,17 @@ void peer_connection::on_start_upload(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_start_upload)
-
-        DBG("start upload " << packet.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_start_upload, su);
+        DBG("start upload " << su.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == packet.m_hFile)
+        if (t->hash() == su.m_hFile)
         {
             write_accept_upload();
         }
         else
         {
-            write_no_file(packet.m_hFile);
+            write_no_file(su.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1194,8 +1186,8 @@ void peer_connection::on_queue_ranking(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_queue_ranking);
-        DBG("queue ranking " << packet.m_nRank << " <== " << m_remote);
+        DECODE_PACKET(client_queue_ranking, qr);
+        DBG("queue ranking " << qr.m_nRank << " <== " << m_remote);
         // TODO: handle it
     }
     else
@@ -1222,7 +1214,7 @@ void peer_connection::on_out_parts(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_out_parts);
+        DECODE_PACKET(client_out_parts, op);
         DBG("out of parts <== " << m_remote);
     }
     else
@@ -1246,37 +1238,12 @@ void peer_connection::on_cancel_transfer(const error_code& error)
     }
 }
 
-void peer_connection::on_request_parts(const error_code& error)
-{
-    if (!error)
-    {
-        DECODE_PACKET(client_request_parts_64);
-        DBG("request parts " << packet.m_hFile << ": "
-            << "[" << packet.m_begin_offset[0] << ", " << packet.m_end_offset[0] << "]"
-            << "[" << packet.m_begin_offset[1] << ", " << packet.m_end_offset[1] << "]"
-            << "[" << packet.m_begin_offset[2] << ", " << packet.m_end_offset[2] << "]"
-            << " <== " << m_remote);
-        for (size_t i = 0; i < 3; ++i)
-        {
-            if (packet.m_begin_offset[i] < packet.m_end_offset[i])
-            {
-                m_requests.push_back(mk_peer_request(packet.m_begin_offset[i], packet.m_end_offset[i]));
-            }
-        }
-        fill_send_buffer();
-    }
-    else
-    {
-        ERR("request parts error " << error.message() << " <== " << m_remote);
-    }
-}
-
 void peer_connection::on_end_download(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_end_download);
-        DBG("end download " << packet.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_end_download, ed);
+        DBG("end download " << ed.m_hFile << " <== " << m_remote);
     }
     else
     {
@@ -1288,7 +1255,7 @@ void peer_connection::on_shared_files_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_shared_files_request);
+        DECODE_PACKET(client_shared_files_request, packet);
         send_throw_meta_order(m_ses.get_announces());
     }
     else
@@ -1301,8 +1268,9 @@ void peer_connection::on_shared_files_answer(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_shared_files_answer);
-        m_ses.m_alerts.post_alert_should(shared_files_alert(address2int(m_remote.address()), packet.m_files, false));
+        DECODE_PACKET(client_shared_files_answer, packet);
+        m_ses.m_alerts.post_alert_should(
+            shared_files_alert(address2int(m_remote.address()), packet.m_files, false));
     }
     else
     {
@@ -1315,8 +1283,9 @@ void peer_connection::on_client_message(const error_code& error)
     if (!error)
     {
 
-        DECODE_PACKET(client_message)
-        m_ses.m_alerts.post_alert_should(peer_message_alert(address2int(m_remote.address()), packet.m_strMessage));
+        DECODE_PACKET(client_message, packet)
+        m_ses.m_alerts.post_alert_should(
+            peer_message_alert(address2int(m_remote.address()), packet.m_strMessage));
     }
     else
     {
@@ -1328,8 +1297,9 @@ void peer_connection::on_client_captcha_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_captcha_request)
-        m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(address2int(m_remote.address()), packet.m_captcha));
+        DECODE_PACKET(client_captcha_request, packet)
+        m_ses.m_alerts.post_alert_should(
+            peer_captcha_request_alert(address2int(m_remote.address()), packet.m_captcha));
 
     }
     else
@@ -1342,8 +1312,9 @@ void peer_connection::on_client_captcha_result(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_captcha_result)
-        m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(address2int(m_remote.address()), packet.m_captcha_result));
+        DECODE_PACKET(client_captcha_result, packet)
+        m_ses.m_alerts.post_alert_should(
+            peer_captcha_result_alert(address2int(m_remote.address()), packet.m_captcha_result));
     }
     else
     {

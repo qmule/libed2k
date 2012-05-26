@@ -213,11 +213,12 @@ int main(int argc, char* argv[])
                 // ok, prepare to get sources
                 //p->m_result.dump();
                 DBG("Results count: " << p->m_files.m_collection.size());
-                p->m_files.dump();
+                //p->m_files.dump();
+                //sleep(1);
 
                 if (p->m_more)
                 {
-                    DBG("More results: ");
+                    DBG("Request more results");
                     ses.post_search_more_result_request();
                 }
 

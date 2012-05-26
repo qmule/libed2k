@@ -22,6 +22,14 @@
 #include "libed2k/error_code.hpp"
 #include "libed2k/packet_struct.hpp"
 
+
+#define DECODE_PACKET(packet_struct, name)       \
+    packet_struct name;                          \
+    if (!decode_packet(name))                    \
+    {                                            \
+        close(errors::decode_packet_error);      \
+    }
+
 namespace libed2k
 {
     class peer;
@@ -178,7 +186,6 @@ namespace libed2k
         void on_accept_upload(const error_code& error);
         void on_out_parts(const error_code& error);
         void on_cancel_transfer(const error_code& error);
-        void on_request_parts(const error_code& error);
         void on_end_download(const error_code& error);
         void on_shared_files_request(const error_code& error);
         void on_shared_files_answer(const error_code& error);
@@ -197,12 +204,38 @@ namespace libed2k
         }
 
         template <typename Struct>
+        void on_request_parts(const error_code& error)
+        {
+            if (!error)
+            {
+                DECODE_PACKET(Struct, rp);
+                DBG("request parts " << rp.m_hFile << ": "
+                    << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
+                    << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
+                    << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
+                    << " <== " << m_remote);
+                for (size_t i = 0; i < 3; ++i)
+                {
+                    if (rp.m_begin_offset[i] < rp.m_end_offset[i])
+                    {
+                        m_requests.push_back(
+                            mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
+                    }
+                }
+                fill_send_buffer();
+            }
+            else
+            {
+                ERR("request parts error " << error.message() << " <== " << m_remote);
+            }
+        }
+
+        template <typename Struct>
         void on_sending_part(const error_code& error)
         {
             if (!error)
             {
-                Struct sp;
-                decode_packet(sp);
+                DECODE_PACKET(Struct, sp);
                 DBG("part " << sp.m_hFile
                     << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
                     << " <== " << m_remote);

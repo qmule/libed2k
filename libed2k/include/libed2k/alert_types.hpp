@@ -12,7 +12,6 @@
 
 namespace libed2k
 {
-
     struct server_name_resolved_alert : alert
     {
         const static int static_category = alert::status_notification;

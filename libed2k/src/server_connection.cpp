@@ -32,7 +32,6 @@ namespace libed2k
         m_udp_socket(ses.m_io_service),
         m_udp_name_lookup(ses.m_io_service)
     {
-        //m_deadline.expires_at(boost::posix_time::pos_infin);
     }
 
     server_connection::~server_connection()

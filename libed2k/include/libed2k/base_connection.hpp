@@ -96,6 +96,14 @@ namespace libed2k{
 
         size_t service_size(const libed2k_header& header);
 
+        template <typename Struct>
+        size_t body_size(const Struct& s, const std::string& body)
+        { return body.size(); }
+
+        template<typename size_type>
+        size_t body_size(const client_sending_part<size_type>&s, const std::string& body)
+        { return body.size() + s.m_end_offset - s.m_begin_offset; }
+
         /**
          * will call from external handlers for extract buffer into structure
          * on error return false
@@ -224,7 +232,7 @@ namespace libed2k{
         oa << t;
         s.flush();
         // packet size without protocol type and packet body size field
-        header.m_size = body.size() + 1;
+        header.m_size = body_size(t, body) + 1;
         header.m_type = packet_type<T>::value;
 
         copy_send_buffer((char*)(&header), header_size);
