@@ -813,7 +813,7 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
 void peer_connection::write_hashset_answer(
     const md4_hash& file_hash, const std::vector<md4_hash>& hash_set)
 {
-    DBG("hashset ==> " << m_remote);
+    DBG("hashset[" << hash_set.size() << "] ==> " << m_remote);
     client_hashset_answer ha;
     ha.m_hFile = file_hash;
     ha.m_vhParts.m_collection = hash_set;
@@ -1129,7 +1129,7 @@ void peer_connection::on_hashset_request(const error_code& error)
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset().hashes());
+            write_hashset_answer(t->hash(), t->hashset().all_hashes());
         }
         else
         {
