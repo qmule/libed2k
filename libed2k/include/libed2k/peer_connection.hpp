@@ -22,6 +22,14 @@
 #include "libed2k/error_code.hpp"
 #include "libed2k/packet_struct.hpp"
 
+
+#define DECODE_PACKET(packet_struct, name)       \
+    packet_struct name;                          \
+    if (!decode_packet(name))                    \
+    {                                            \
+        close(errors::decode_packet_error);      \
+    }
+
 namespace libed2k
 {
     class peer;
@@ -336,6 +344,10 @@ namespace libed2k
         int             m_nBuddyUDP;
         client_id_type  m_nBuddyIP;
         int             m_nBuddyPort;
+        int             m_nClientVersion;
+        int             m_nCompatibleClient;
+        bool            m_bOsInfoSupport;
+        bool            m_bValueBasedTypeTags;
 
 
 

@@ -226,7 +226,23 @@ namespace libed2k
     {
 
         virtual int category() const { return static_category | alert::status_notification; }
-        peer_connected_alert(client_id_type nIP, const client_hello_answer& cha, bool bActive) : peer_alert(nIP), m_hello_answer(cha), m_active(bActive)
+        peer_connected_alert(client_id_type nIP,
+                            const std::string& strName,
+                            int nVersion,
+                            const std::string& strModVersion,
+                            int      nModVersion,
+                            int nUDPPort,
+                            const misc_options& mo,
+                            const misc_options2& mo2,
+                            bool bActive) : peer_alert(nIP),
+                                            m_strName(strName),
+                                            m_nVersion(nVersion),
+                                            m_strModVersion(strModVersion),
+                                            m_nModVersion(nModVersion),
+                                            m_nUDPPort(nUDPPort),
+                                            m_mo(mo),
+                                            m_mo2(mo2),
+                                            m_active(bActive)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -236,8 +252,30 @@ namespace libed2k
 
         virtual std::string message() const { return std::string("peer connected alert"); }
         virtual char const* what() const { return "peer connected alert"; }
-        client_hello_answer m_hello_answer;
+        std::string m_strName;
+        int         m_nVersion;
+        std::string m_strModVersion;
+        int         m_nModVersion;
+        int         m_nUDPPort;
+        misc_options    m_mo;
+        misc_options2   m_mo2;
         bool m_active;
+    };
+
+    struct peer_disconnected_alert : public peer_alert
+    {
+        virtual int category() const { return static_category | alert::status_notification; }
+        peer_disconnected_alert(client_id_type nIP, const error_code& ec) : peer_alert(nIP), m_ec(ec)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new peer_disconnected_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("peer disconnected alert"); }
+        virtual char const* what() const { return "peer disconnected alert"; }
+        error_code m_ec;
     };
 
 
