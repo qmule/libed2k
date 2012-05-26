@@ -1104,21 +1104,18 @@ void session_impl::announce(shared_file_entry& entry)
     m_server_connection->post_announce(offer_list);
 }
 
-void session_impl::announce_all()
+shared_files_list session_impl::get_announces() const
 {
-    DBG("session_impl::announce_all()");
     shared_files_list offer_list;
 
-    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
         if (t.is_finished())
             offer_list.add(t.getAnnounce());
     }
 
-    DBG("offer list size: " << offer_list.m_collection.size());
-
-    m_server_connection->post_announce(offer_list);
+    return (offer_list);
 }
 
 void session_impl::set_alert_mask(boost::uint32_t m)
@@ -1140,8 +1137,10 @@ void session_impl::server_ready(
     m_client_id = client_id;
     m_tcp_flags = tcp_flags;
     m_aux_port  = aux_port;
+    m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, aux_port));
 
      // test code - for offer tests
+    /*
     shared_files_list olist;
     shared_file_entry sf;
     sf.m_hFile = md4_hash("49EC2B5DEF507DEA73E106FEDB9697EE");
@@ -1163,10 +1162,7 @@ void session_impl::server_ready(
     }
 
     olist.m_collection.push_back(sf);
-
-    m_server_connection->post_announce(olist);
-
-    announce_all();
+    */
 }
 
 void session_impl::on_server_stopped()

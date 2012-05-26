@@ -180,10 +180,21 @@ namespace libed2k
         void on_cancel_transfer(const error_code& error);
         void on_request_parts(const error_code& error);
         void on_end_download(const error_code& error);
+        void on_shared_files_request(const error_code& error);
         void on_shared_files_answer(const error_code& error);
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
+
+        template<typename Struct>
+        void send_throw_meta_order(const Struct& s)
+        {
+            m_messages_order.push_back(client_meta_packet(s));
+            if (!is_closed())
+            {
+                fill_send_buffer();
+            }
+        }
 
         template <typename Struct>
         void on_sending_part(const error_code& error)

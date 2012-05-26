@@ -213,7 +213,7 @@ namespace libed2k {
             /**
               * announce all transfers entries
              */
-            void announce_all();
+            shared_files_list get_announces() const;
 
             // called when server connection is initialized
             void server_ready(boost::uint32_t client_id,

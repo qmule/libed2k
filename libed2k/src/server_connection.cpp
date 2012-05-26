@@ -76,7 +76,7 @@ namespace libed2k
         m_keep_alive.cancel();
         m_udp_socket.close();
         m_ses.on_server_stopped(); // inform session
-        m_ses.m_alerts.post_alert_should(server_connection_failed(ec));
+        m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
     const tcp::endpoint& server_connection::getServerEndpoint() const
@@ -387,11 +387,11 @@ namespace libed2k
                         m_nAuxPort  = idc.m_nAuxPort;
 
                         DBG("Client id: " << m_nClientId << " tcp flags: " << idc.m_nTCPFlags << " aux port " << idc.m_nAuxPort);
-
-                        if (m_ses.m_alerts.should_post<server_connection_initialized_alert>())
-                            m_ses.m_alerts.post_alert(server_connection_initialized_alert(idc.m_nClientId, idc.m_nTCPFlags, idc.m_nAuxPort));
                         m_state = SC_ONLINE;
-                        m_ses.server_ready(idc.m_nClientId, idc.m_nTCPFlags, idc.m_nAuxPort);
+
+                        // immediately announce files
+                        shared_files_list sfl = m_ses.get_announces();
+                        post_announce(sfl);
                         break;
                     }
                     case OP_SERVERIDENT:

@@ -136,21 +136,21 @@ namespace libed2k
     };
 
     /**
-      * emit when server down
+      * emit when server connection closed
      */
-    struct server_connection_failed : alert
+    struct server_connection_closed : alert
     {
         const static int static_category = alert::status_notification | alert::server_notification;
 
-        server_connection_failed(const error_code& error) : m_error(error){}
+        server_connection_closed(const error_code& error) : m_error(error){}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return m_error.message(); }
-        virtual char const* what() const { return "server connection failed"; }
+        virtual char const* what() const { return "server connection closed"; }
 
         virtual std::auto_ptr<alert> clone() const
         {
-            return (std::auto_ptr<alert>(new server_connection_failed(*this)));
+            return (std::auto_ptr<alert>(new server_connection_closed(*this)));
         }
 
         error_code m_error;

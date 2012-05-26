@@ -771,7 +771,11 @@ else\
     //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 
     template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
-    template<> struct packet_type<shared_files_list>        { static const proto_type value = OP_OFFERFILES;    };      //!< offer files to server
+    template<> struct packet_type<shared_files_list>        //!< offer files to server
+    {
+        static const proto_type value       = OP_OFFERFILES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
 
     template<> struct packet_type<search_request_block>     { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
     template<> struct packet_type<search_result>            { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
@@ -1384,6 +1388,7 @@ else\
     {
         client_meta_packet(const client_message& cmessage);
         client_meta_packet(const client_shared_files_request& frequest);
+        client_meta_packet(const shared_files_list& flist);
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -1404,6 +1409,7 @@ else\
 
         client_message  m_message;
         client_shared_files_request m_files_request;
+        shared_files_list           m_files_list;
         proto_type      m_proto;
     };
 

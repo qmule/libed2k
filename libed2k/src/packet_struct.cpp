@@ -414,6 +414,11 @@ namespace libed2k
         m_proto = get_proto_type(m_files_request);
     }
 
+    client_meta_packet::client_meta_packet(const shared_files_list& flist)
+    {
+        m_files_list = flist;
+        m_proto = get_proto_type(m_files_list);
+    }
 
     misc_options::misc_options()
     {

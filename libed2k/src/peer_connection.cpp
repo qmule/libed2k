@@ -108,6 +108,8 @@ void peer_connection::reset()
     add_handler(OP_SENDINGPART_I64,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
+
+    add_handler(OP_ASKSHAREDFILES, boost::bind(&peer_connection::on_shared_files_request, this, _1));
     add_handler(OP_ASKSHAREDFILESANSWER, boost::bind(&peer_connection::on_shared_files_answer, this, _1));
 
     // clients talking
@@ -491,24 +493,12 @@ bool peer_connection::has_ip_address(client_id_type nIP) const
 
 void peer_connection::send_message(const std::string& strMessage)
 {
-    DBG("peer_connection::send_message()");
-
-    m_messages_order.push_back(client_meta_packet(client_message(strMessage)));
-
-    if (!is_closed())
-    {
-        fill_send_buffer();
-    }
+    send_throw_meta_order(client_message(strMessage));
 }
 
 void peer_connection::request_shared_files()
 {
-    m_messages_order.push_back(client_meta_packet(client_shared_files_request()));
-
-    if (!is_closed())
-    {
-        fill_send_buffer();
-    }
+    send_throw_meta_order(client_meta_packet(client_shared_files_request()));
 }
 
 void peer_connection::fill_send_buffer()
@@ -519,21 +509,23 @@ void peer_connection::fill_send_buffer()
 
     if (!m_messages_order.empty())
     {
-        // temp code for testing
-
         switch(m_messages_order.front().m_proto)
         {
-            case OP_MESSAGE:
-                 DBG("peer_connection::write message: " << m_messages_order.front().m_message.m_strMessage);
+            case OP_MESSAGE:                                                    // message to user
+                 DBG("peer_connection::fill_send_buffer: " << m_messages_order.front().m_message.m_strMessage);
                  do_write(m_messages_order.front().m_message);
                  break;
-            case OP_ASKSHAREDFILES:
-                DBG("peer_connection::write message: shared_file_list");
+            case OP_ASKSHAREDFILES:                                             // ask shared files from user
+                DBG("peer_connection::fill_send_buffer: ask shared files");
                 do_write(m_messages_order.front().m_files_request);
                 break;
-            default:
+            case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
+                DBG("peer_connection::fill_send_buffer: offer files");
+                do_write(m_messages_order.front().m_files_list);
                 break;
-
+            default:
+                BOOST_ASSERT(false);
+                break;
         }
 
         m_messages_order.pop_front();
@@ -1289,6 +1281,19 @@ void peer_connection::on_end_download(const error_code& error)
     else
     {
         ERR("end download error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_shared_files_request(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_files_request);
+        send_throw_meta_order(m_ses.get_announces());
+    }
+    else
+    {
+        ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
     }
 }
 
