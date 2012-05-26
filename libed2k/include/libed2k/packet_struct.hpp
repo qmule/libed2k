@@ -14,14 +14,21 @@
 namespace libed2k
 {
 
-#define DECREMENT_READ(n, x) if (n >= sizeof(x))\
-{\
-    ar & x; \
-}\
-else\
-{\
-    return;\
-}
+#define DECODE_PACKET(packet_struct, name)       \
+    packet_struct name;                          \
+    if (!decode_packet(name))                    \
+    {                                            \
+        close(errors::decode_packet_error);      \
+    }
+
+#define DECREMENT_READ(n, x) if (n >= sizeof(x))    \
+    {                                               \
+        ar & x;                                     \
+    }                                               \
+    else                                            \
+    {                                               \
+        return;                                     \
+    }
 
     // protocol type
     typedef boost::uint8_t  proto_type;

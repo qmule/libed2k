@@ -13,14 +13,6 @@
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-#define DECODE_PACKET(packet_struct)\
-        packet_struct packet;\
-        if (!decode_packet(packet))\
-        {\
-            close(errors::decode_packet_error);\
-        }
-
-
 peer_request mk_peer_request(size_t begin, size_t end)
 {
     peer_request r;
@@ -103,13 +95,17 @@ void peer_connection::reset()
     add_handler(OP_ACCEPTUPLOADREQ, boost::bind(&peer_connection::on_accept_upload, this, _1));
     add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
     add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
-    add_handler(OP_REQUESTPARTS_I64, boost::bind(&peer_connection::on_request_parts, this, _1));
+    add_handler(OP_REQUESTPARTS,
+                boost::bind(&peer_connection::on_request_parts<client_request_parts_32>, this, _1));
+    add_handler(OP_REQUESTPARTS_I64,
+                boost::bind(&peer_connection::on_request_parts<client_request_parts_64>, this, _1));
     add_handler(OP_SENDINGPART,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_32>, this, _1));
     add_handler(OP_SENDINGPART_I64,
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
-    add_handler(OP_ASKSHAREDFILESANSWER, boost::bind(&peer_connection::on_shared_files_answer, this, _1));
+    add_handler(OP_ASKSHAREDFILESANSWER,
+                boost::bind(&peer_connection::on_shared_files_answer, this, _1));
 
     // clients talking
     add_handler(OP_MESSAGE, boost::bind(&peer_connection::on_client_message, this, _1));
@@ -898,166 +894,163 @@ void peer_connection::on_hello(const error_code& error)
 
 void peer_connection::on_hello_answer(const error_code& error)
 {
-    DBG("hello answer <== " << m_remote);
     if (!error)
     {
-        client_hello_answer cha;
-        if (decode_packet(cha))
+        DECODE_PACKET(client_hello_answer, cha);
+        DBG("hello answer <== " << m_remote);
+
+        // extract user info from packet
+        for (size_t n = 0; n < cha.m_list.count(); ++n)
         {
-            // extract user info from packet
-            for (size_t n = 0; n < cha.m_list.count(); ++n)
+            const boost::shared_ptr<base_tag> p = cha.m_list[n];
+
+            switch(p->getNameId())
             {
-                const boost::shared_ptr<base_tag> p = cha.m_list[n];
+            case CT_NAME:
+                m_strName    = p->asString();
+                break;
 
-                switch(p->getNameId())
+            case CT_VERSION:
+                m_nVersion  = p->asInt();
+                break;
+
+            case ET_MOD_VERSION:
+                if (is_string_tag(p))
                 {
-                    case CT_NAME:
-                        m_strName    = p->asString();
-                        break;
-
-                    case CT_VERSION:
-                        m_nVersion  = p->asInt();
-                        break;
-
-                    case ET_MOD_VERSION:
-                        if (is_string_tag(p))
-                        {
-                            m_strModVersion = p->asString();
-                        }
-                        else if (is_int_tag(p))
-                        {
-                            m_nModVersion = p->asInt();
-                        }
-                        break;
-
-                    case CT_PORT:
-                        m_nPort = p->asInt();
-                        break;
-
-                    case CT_EMULE_UDPPORTS:
-                        m_nUDPPort = p->asInt() & 0xFFFF;
-                        //dwEmuleTags |= 1;
-                        break;
-
-                    case CT_EMULE_BUDDYIP:
-                        // 32 BUDDY IP
-                        m_nBuddyIP = p->asInt();
-                        break;
-
-                    case CT_EMULE_BUDDYUDP:
-                        m_nBuddyPort = p->asInt();
-                        break;
-
-                    case CT_EMULE_MISCOPTIONS1: {
-                        //  3 AICH Version (0 = not supported)
-                        //  1 Unicode
-                        //  4 UDP version
-                        //  4 Data compression version
-                        //  4 Secure Ident
-                        //  4 Source Exchange
-                        //  4 Ext. Requests
-                        //  4 Comments
-                        //   1 PeerCache supported
-                        //   1 No 'View Shared Files' supported
-                        //   1 MultiPacket
-                        //  1 Preview
-                        /*
-                        uint32 flags = temptag.GetInt();
-                        m_fSupportsAICH         = (flags >> (4*7+1)) & 0x07;
-                        m_bUnicodeSupport       = (flags >> 4*7) & 0x01;
-                        m_byUDPVer              = (flags >> 4*6) & 0x0f;
-                        m_byDataCompVer         = (flags >> 4*5) & 0x0f;
-                        m_bySupportSecIdent     = (flags >> 4*4) & 0x0f;
-                        m_bySourceExchange1Ver  = (flags >> 4*3) & 0x0f;
-                        m_byExtendedRequestsVer = (flags >> 4*2) & 0x0f;
-                        m_byAcceptCommentVer    = (flags >> 4*1) & 0x0f;
-                        m_fNoViewSharedFiles    = (flags >> 1*2) & 0x01;
-                        m_bMultiPacket          = (flags >> 1*1) & 0x01;
-                        m_fSupportsPreview      = (flags >> 1*0) & 0x01;
-                        dwEmuleTags |= 2;
-
-                        SecIdentSupRec +=  1;
-                        */
-                        break;
-                    }
-
-                    case CT_EMULE_MISCOPTIONS2:
-                        //  19 Reserved
-                        //   1 Direct UDP Callback supported and available
-                        //   1 Supports ChatCaptchas
-                        //   1 Supports SourceExachnge2 Packets, ignores SX1 Packet Version
-                        //   1 Requires CryptLayer
-                        //   1 Requests CryptLayer
-                        //   1 Supports CryptLayer
-                        //   1 Reserved (ModBit)
-                        //   1 Ext Multipacket (Hash+Size instead of Hash)
-                        //   1 Large Files (includes support for 64bit tags)
-                        //   4 Kad Version - will go up to version 15 only (may need to add another field at some point in the future)
-                        /*
-                        m_fDirectUDPCallback    = (temptag.GetInt() >> 12) & 0x01;
-                        m_fSupportsCaptcha      = (temptag.GetInt() >> 11) & 0x01;
-                        m_fSupportsSourceEx2    = (temptag.GetInt() >> 10) & 0x01;
-                        m_fRequiresCryptLayer   = (temptag.GetInt() >>  9) & 0x01;
-                        m_fRequestsCryptLayer   = (temptag.GetInt() >>  8) & 0x01;
-                        m_fSupportsCryptLayer   = (temptag.GetInt() >>  7) & 0x01;
-                        // reserved 1
-                        m_fExtMultiPacket   = (temptag.GetInt() >>  5) & 0x01;
-                        m_fSupportsLargeFiles   = (temptag.GetInt() >>  4) & 0x01;
-                        m_byKadVersion      = (temptag.GetInt() >>  0) & 0x0f;
-                        dwEmuleTags |= 8;
-
-                        m_fRequestsCryptLayer &= m_fSupportsCryptLayer;
-                        m_fRequiresCryptLayer &= m_fRequestsCryptLayer;
-       */
-                        break;
-
-                    // Special tag for Compat. Clients Misc options.
-                    case CT_EMULECOMPAT_OPTIONS:
-                        //  1 Operative System Info
-                        //  1 Value-based-type int tags (experimental!)
-                        //m_fValueBasedTypeTags   = (temptag.GetInt() >> 1*1) & 0x01;
-                        //m_fOsInfoSupport        = (temptag.GetInt() >> 1*0) & 0x01;
-                        break;
-
-                    case CT_EMULE_VERSION:
-                        //  8 Compatible Client ID
-                        //  7 Mjr Version (Doesn't really matter..)
-                        //  7 Min Version (Only need 0-99)
-                        //  3 Upd Version (Only need 0-5)
-                        //  7 Bld Version (Only need 0-99)
-                        //m_byCompatibleClient = (temptag.GetInt() >> 24);
-                        //m_nClientVersion = temptag.GetInt() & 0x00ffffff;
-                        //m_byEmuleVersion = 0x99;
-                        //m_fSharedDirectories = 1;
-                        //dwEmuleTags |= 4;
-                        break;
-                    default:
-                        break;
+                    m_strModVersion = p->asString();
                 }
-            }// for
+                else if (is_int_tag(p))
+                {
+                    m_nModVersion = p->asInt();
+                }
+                break;
 
-            m_ses.m_alerts.post_alert_should(
-                peer_connected_alert(address2int(m_remote.address()), cha, m_active));
-        }
+            case CT_PORT:
+                m_nPort = p->asInt();
+                break;
 
-        // peer handshake completed
-        boost::shared_ptr<transfer> t = m_transfer.lock();
+            case CT_EMULE_UDPPORTS:
+                m_nUDPPort = p->asInt() & 0xFFFF;
+                //dwEmuleTags |= 1;
+                break;
 
-        if (t) write_file_request(t->hash());
-        else fill_send_buffer();
+            case CT_EMULE_BUDDYIP:
+                // 32 BUDDY IP
+                m_nBuddyIP = p->asInt();
+                break;
+
+            case CT_EMULE_BUDDYUDP:
+                m_nBuddyPort = p->asInt();
+                break;
+
+            case CT_EMULE_MISCOPTIONS1: {
+                //  3 AICH Version (0 = not supported)
+                //  1 Unicode
+                //  4 UDP version
+                //  4 Data compression version
+                //  4 Secure Ident
+                //  4 Source Exchange
+                //  4 Ext. Requests
+                //  4 Comments
+                //   1 PeerCache supported
+                //   1 No 'View Shared Files' supported
+                //   1 MultiPacket
+                //  1 Preview
+                /*
+                  uint32 flags = temptag.GetInt();
+                  m_fSupportsAICH         = (flags >> (4*7+1)) & 0x07;
+                  m_bUnicodeSupport       = (flags >> 4*7) & 0x01;
+                  m_byUDPVer              = (flags >> 4*6) & 0x0f;
+                  m_byDataCompVer         = (flags >> 4*5) & 0x0f;
+                  m_bySupportSecIdent     = (flags >> 4*4) & 0x0f;
+                  m_bySourceExchange1Ver  = (flags >> 4*3) & 0x0f;
+                  m_byExtendedRequestsVer = (flags >> 4*2) & 0x0f;
+                  m_byAcceptCommentVer    = (flags >> 4*1) & 0x0f;
+                  m_fNoViewSharedFiles    = (flags >> 1*2) & 0x01;
+                  m_bMultiPacket          = (flags >> 1*1) & 0x01;
+                  m_fSupportsPreview      = (flags >> 1*0) & 0x01;
+                  dwEmuleTags |= 2;
+
+                  SecIdentSupRec +=  1;
+                */
+                break;
+            }
+
+            case CT_EMULE_MISCOPTIONS2:
+                //  19 Reserved
+                //   1 Direct UDP Callback supported and available
+                //   1 Supports ChatCaptchas
+                //   1 Supports SourceExachnge2 Packets, ignores SX1 Packet Version
+                //   1 Requires CryptLayer
+                //   1 Requests CryptLayer
+                //   1 Supports CryptLayer
+                //   1 Reserved (ModBit)
+                //   1 Ext Multipacket (Hash+Size instead of Hash)
+                //   1 Large Files (includes support for 64bit tags)
+                //   4 Kad Version - will go up to version 15 only (may need to add another field at some point in the future)
+                /*
+                  m_fDirectUDPCallback    = (temptag.GetInt() >> 12) & 0x01;
+                  m_fSupportsCaptcha      = (temptag.GetInt() >> 11) & 0x01;
+                  m_fSupportsSourceEx2    = (temptag.GetInt() >> 10) & 0x01;
+                  m_fRequiresCryptLayer   = (temptag.GetInt() >>  9) & 0x01;
+                  m_fRequestsCryptLayer   = (temptag.GetInt() >>  8) & 0x01;
+                  m_fSupportsCryptLayer   = (temptag.GetInt() >>  7) & 0x01;
+                  // reserved 1
+                  m_fExtMultiPacket   = (temptag.GetInt() >>  5) & 0x01;
+                  m_fSupportsLargeFiles   = (temptag.GetInt() >>  4) & 0x01;
+                  m_byKadVersion      = (temptag.GetInt() >>  0) & 0x0f;
+                  dwEmuleTags |= 8;
+
+                  m_fRequestsCryptLayer &= m_fSupportsCryptLayer;
+                  m_fRequiresCryptLayer &= m_fRequestsCryptLayer;
+                */
+                break;
+
+                // Special tag for Compat. Clients Misc options.
+            case CT_EMULECOMPAT_OPTIONS:
+                //  1 Operative System Info
+                //  1 Value-based-type int tags (experimental!)
+                //m_fValueBasedTypeTags   = (temptag.GetInt() >> 1*1) & 0x01;
+                //m_fOsInfoSupport        = (temptag.GetInt() >> 1*0) & 0x01;
+                break;
+
+            case CT_EMULE_VERSION:
+                //  8 Compatible Client ID
+                //  7 Mjr Version (Doesn't really matter..)
+                //  7 Min Version (Only need 0-99)
+                //  3 Upd Version (Only need 0-5)
+                //  7 Bld Version (Only need 0-99)
+                //m_byCompatibleClient = (temptag.GetInt() >> 24);
+                //m_nClientVersion = temptag.GetInt() & 0x00ffffff;
+                //m_byEmuleVersion = 0x99;
+                //m_fSharedDirectories = 1;
+                //dwEmuleTags |= 4;
+                break;
+            default:
+                break;
+            }
+        }// for
+
+        m_ses.m_alerts.post_alert_should(
+            peer_connected_alert(address2int(m_remote.address()), cha, m_active));
     }
     else
     {
-        ERR("hello answer received error " << error.message());
+        ERR("hello error " << error.message() << " <== " << m_remote);
     }
+
+    // peer handshake completed
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (t) write_file_request(t->hash());
+    else fill_send_buffer();
 }
 
 void peer_connection::on_file_request(const error_code& error)
 {
     if (!error)
     {
-        client_file_request fr;
-        decode_packet(fr);
+        DECODE_PACKET(client_file_request, fr);
         DBG("file request " << fr.m_hFile << " <== " << m_remote);
         if (attach_to_transfer(fr.m_hFile))
         {
@@ -1080,8 +1073,7 @@ void peer_connection::on_file_answer(const error_code& error)
 {
     if (!error)
     {
-        client_file_answer fa;
-        decode_packet(fa);
+        DECODE_PACKET(client_file_answer, fa);
         DBG("file answer " << fa.m_hFile << ", " << fa.m_filename.m_collection
             << " <== " << m_remote);
         write_filestatus_request(fa.m_hFile);
@@ -1096,9 +1088,9 @@ void peer_connection::on_file_description(const error_code& error)
 {
     if (!error)
     {
-        client_file_description fd;
-        decode_packet(fd);
-        DBG("file description " << fd.m_nRating << ", " << fd.m_sComment.m_collection << " <== " << m_remote);
+        DECODE_PACKET(client_file_description, fd);
+        DBG("file description " << fd.m_nRating << ", "
+            << fd.m_sComment.m_collection << " <== " << m_remote);
     }
     else
     {
@@ -1110,8 +1102,7 @@ void peer_connection::on_no_file(const error_code& error)
 {
     if (!error)
     {
-        client_no_file nf;
-        decode_packet(nf);
+        DECODE_PACKET(client_no_file, nf);
         DBG("no file " << nf.m_hFile << m_remote);
         disconnect(errors::file_unavaliable, 2);
     }
@@ -1125,8 +1116,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 {
     if (!error)
     {
-        client_filestatus_request fr;
-        decode_packet(fr);
+        DECODE_PACKET(client_filestatus_request, fr);
         DBG("file status request " << fr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -1150,10 +1140,10 @@ void peer_connection::on_file_status(const error_code& error)
 {
     if (!error)
     {
-        boost::shared_ptr<transfer> t = m_transfer.lock();
-        client_file_status fs;
+        DECODE_PACKET(client_file_status, fs);
 
-        decode_packet(fs);
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+
         if (fs.m_status.size() == 0)
             fs.m_status.resize(t->num_pieces(), 1);
 
@@ -1182,8 +1172,7 @@ void peer_connection::on_hashset_request(const error_code& error)
 {
     if (!error)
     {
-        client_hashset_request hr;
-        decode_packet(hr);
+        DECODE_PACKET(client_hashset_request, hr);
         DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -1207,8 +1196,7 @@ void peer_connection::on_hashset_answer(const error_code& error)
 {
     if (!error)
     {
-        client_hashset_answer ha;
-        decode_packet(ha);
+        DECODE_PACKET(client_hashset_answer, ha);
         DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -1233,8 +1221,7 @@ void peer_connection::on_start_upload(const error_code& error)
 {
     if (!error)
     {
-        client_start_upload su;
-        decode_packet(su);
+        DECODE_PACKET(client_start_upload, su);
         DBG("start upload " << su.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -1258,8 +1245,7 @@ void peer_connection::on_queue_ranking(const error_code& error)
 {
     if (!error)
     {
-        client_queue_ranking qr;
-        decode_packet(qr);
+        DECODE_PACKET(client_queue_ranking, qr);
         DBG("queue ranking " << qr.m_nRank << " <== " << m_remote);
         // TODO: handle it
     }
@@ -1287,8 +1273,7 @@ void peer_connection::on_out_parts(const error_code& error)
 {
     if (!error)
     {
-        client_out_parts op;
-        decode_packet(op);
+        DECODE_PACKET(client_out_parts, op);
         DBG("out of parts <== " << m_remote);
     }
     else
@@ -1312,38 +1297,11 @@ void peer_connection::on_cancel_transfer(const error_code& error)
     }
 }
 
-void peer_connection::on_request_parts(const error_code& error)
-{
-    if (!error)
-    {
-        client_request_parts_64 rp;
-        decode_packet(rp);
-        DBG("request parts " << rp.m_hFile << ": "
-            << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
-            << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
-            << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
-            << " <== " << m_remote);
-        for (size_t i = 0; i < 3; ++i)
-        {
-            if (rp.m_begin_offset[i] < rp.m_end_offset[i])
-            {
-                m_requests.push_back(mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
-            }
-        }
-        fill_send_buffer();
-    }
-    else
-    {
-        ERR("request parts error " << error.message() << " <== " << m_remote);
-    }
-}
-
 void peer_connection::on_end_download(const error_code& error)
 {
     if (!error)
     {
-        client_end_download ed;
-        decode_packet(ed);
+        DECODE_PACKET(client_end_download, ed);
         DBG("end download " << ed.m_hFile << " <== " << m_remote);
     }
     else
@@ -1356,8 +1314,9 @@ void peer_connection::on_shared_files_answer(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_shared_files_answer);
-        m_ses.m_alerts.post_alert_should(shared_files_alert(address2int(m_remote.address()), packet.m_files, false));
+        DECODE_PACKET(client_shared_files_answer, packet);
+        m_ses.m_alerts.post_alert_should(
+            shared_files_alert(address2int(m_remote.address()), packet.m_files, false));
     }
     else
     {
@@ -1370,8 +1329,9 @@ void peer_connection::on_client_message(const error_code& error)
     if (!error)
     {
 
-        DECODE_PACKET(client_message)
-        m_ses.m_alerts.post_alert_should(peer_message_alert(address2int(m_remote.address()), packet.m_strMessage));
+        DECODE_PACKET(client_message, packet)
+        m_ses.m_alerts.post_alert_should(
+            peer_message_alert(address2int(m_remote.address()), packet.m_strMessage));
     }
     else
     {
@@ -1383,8 +1343,9 @@ void peer_connection::on_client_captcha_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_captcha_request)
-        m_ses.m_alerts.post_alert_should(peer_captcha_request_alert(address2int(m_remote.address()), packet.m_captcha));
+        DECODE_PACKET(client_captcha_request, packet)
+        m_ses.m_alerts.post_alert_should(
+            peer_captcha_request_alert(address2int(m_remote.address()), packet.m_captcha));
 
     }
     else
@@ -1397,8 +1358,9 @@ void peer_connection::on_client_captcha_result(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_captcha_result)
-        m_ses.m_alerts.post_alert_should(peer_captcha_result_alert(address2int(m_remote.address()), packet.m_captcha_result));
+        DECODE_PACKET(client_captcha_result, packet)
+        m_ses.m_alerts.post_alert_should(
+            peer_captcha_result_alert(address2int(m_remote.address()), packet.m_captcha_result));
     }
     else
     {
