@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
     std::string strAlex = "31.207.218.28";
     std::string strDore = "192.168.161.54";
     std::string strDiman = "88.206.52.81";
-    ip::address a(ip::address::from_string(strAlex.c_str()));
+    ip::address a(ip::address::from_string(strDore.c_str()));
     int nPort = 4662;
 
     DBG("addr: "<< int2ipstr(address2int(a)));
@@ -265,6 +265,10 @@ int main(int argc, char* argv[])
             {
                 peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
                 DBG("MSG: ADDR: " << int2ipstr(p->m_nIP) << " MSG " << p->m_strMessage);
+            }
+            else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
+            {
+                DBG("peer disconnected: " << libed2k::int2ipstr(p->m_nIP));
             }
             else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
             {

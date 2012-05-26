@@ -20,94 +20,6 @@ namespace ip = boost::asio::ip;
             close(errors::decode_packet_error);\
         }
 
-misc_options::misc_options(boost::uint32_t opts)
-{
-    m_nAICHVersion          = (opts >> (4*7+1)) & 0x07;
-    m_nUnicodeSupport       = (opts >> 4*7) & 0x01;
-    m_nUDPVer               = (opts >> 4*6) & 0x0f;
-    m_nDataCompVer          = (opts >> 4*5) & 0x0f;
-    m_nSupportSecIdent      = (opts >> 4*4) & 0x0f;
-    m_nSourceExchange1Ver   = (opts >> 4*3) & 0x0f;
-    m_nExtendedRequestsVer  = (opts >> 4*2) & 0x0f;
-    m_nAcceptCommentVer     = (opts >> 4*1) & 0x0f;
-    m_nNoViewSharedFiles    = (opts >> 1*2) & 0x01;
-    m_nMultiPacket          = (opts >> 1*1) & 0x01;
-    m_nSupportsPreview      = (opts >> 1*0) & 0x01;
-}
-
-#define MO_POS(x) \
-        opt_bits_count - 1 - x
-
-misc_options2::misc_options2(boost::uint32_t opts) : m_options(opts)
-{
-}
-
-
-bool misc_options2::support_captcha() const
-{
-    return ((m_options >> CAPTHA_OFFSET) & 0x01);
-}
-
-bool misc_options2::support_source_ext2() const
-{
-    return ((m_options >> SRC_EXT_OFFSET) & 0x01);
-}
-
-bool misc_options2::support_ext_multipacket() const
-{
-    return ((m_options >> MULTIP_OFFSET) & 0x01);
-}
-
-bool misc_options2::support_large_files() const
-{
-    return ((m_options >> LARGE_FILE_OFFSET) & 0x01);
-}
-
-void misc_options2::set_captcha()
-{
-    boost::uint32_t n = 1;
-    m_options |= n << CAPTHA_OFFSET;
-}
-
-void misc_options2::set_source_ext2()
-{
-    boost::uint32_t n = 1;
-    m_options |= n << SRC_EXT_OFFSET;
-}
-
-void misc_options2::set_ext_multipacket()
-{
-    boost::uint32_t n = 1;
-    m_options |= n << MULTIP_OFFSET;
-}
-
-void misc_options2::set_large_files()
-{
-    boost::uint32_t n = 1;
-    m_options |= n << LARGE_FILE_OFFSET;
-}
-
-boost::uint32_t misc_options2::generate() const
-{
-    return (m_options);
-}
-
-boost::uint32_t misc_options::generate() const
-{
-    return  ((m_nAICHVersion           << ((4*7)+1)) |
-            (m_nUnicodeSupport        << 4*7) |
-            (m_nUDPVer                << 4*6) |
-            (m_nDataCompVer           << 4*5) |
-            (m_nSupportSecIdent       << 4*4) |
-            (m_nSourceExchange1Ver    << 4*3) |
-            (m_nExtendedRequestsVer   << 4*2) |
-            (m_nAcceptCommentVer      << 4*1) |
-            (m_nNoViewSharedFiles     << 1*2) |
-            (m_nMultiPacket           << 1*1) |
-            (m_nSupportsPreview       << 1*0));
-}
-
-
 peer_request mk_peer_request(size_t begin, size_t end)
 {
     peer_request r;
@@ -483,6 +395,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     m_disconnecting = true;
     base_connection::close(ec); // close transport
     m_ses.close_connection(this, ec);
+    m_ses.m_alerts.post_alert_should(peer_disconnected_alert(address2int(m_remote.address()), ec));
 }
 
 void peer_connection::connect(int ticket)
@@ -983,91 +896,95 @@ void peer_connection::on_hello_answer(const error_code& error)
     DBG("hello answer <== " << m_remote);
     if (!error)
     {
-        client_hello_answer cha;
-        if (decode_packet(cha))
+        DECODE_PACKET(client_hello_answer);
+
+        misc_options mo;
+        misc_options2 mo2;
+        // extract user info from packet
+        for (size_t n = 0; n < packet.m_list.count(); ++n)
         {
-            // extract user info from packet
-            for (size_t n = 0; n < cha.m_list.count(); ++n)
+            const boost::shared_ptr<base_tag> p = packet.m_list[n];
+
+            switch(p->getNameId())
             {
-                const boost::shared_ptr<base_tag> p = cha.m_list[n];
+                case CT_NAME:
+                    m_strName    = p->asString();
+                    break;
 
-                switch(p->getNameId())
-                {
-                    case CT_NAME:
-                        m_strName    = p->asString();
-                        break;
+                case CT_VERSION:
+                    m_nVersion  = p->asInt();
+                    break;
 
-                    case CT_VERSION:
-                        m_nVersion  = p->asInt();
-                        break;
-
-                    case ET_MOD_VERSION:
-                        if (is_string_tag(p))
-                        {
-                            m_strModVersion = p->asString();
-                        }
-                        else if (is_int_tag(p))
-                        {
-                            m_nModVersion = p->asInt();
-                        }
-                        break;
-
-                    case CT_PORT:
-                        m_nPort = p->asInt();
-                        break;
-
-                    case CT_EMULE_UDPPORTS:
-                        m_nUDPPort = p->asInt() & 0xFFFF;
-                        //dwEmuleTags |= 1;
-                        break;
-
-                    case CT_EMULE_BUDDYIP:
-                        // 32 BUDDY IP
-                        m_nBuddyIP = p->asInt();
-                        break;
-
-                    case CT_EMULE_BUDDYUDP:
-                        m_nBuddyPort = p->asInt();
-                        break;
-
-                    case CT_EMULE_MISCOPTIONS1:
+                case ET_MOD_VERSION:
+                    if (is_string_tag(p))
                     {
-                        misc_options mo(p->asInt());
-                        break;
+                        m_strModVersion = p->asString();
                     }
-
-                    case CT_EMULE_MISCOPTIONS2:
+                    else if (is_int_tag(p))
                     {
-                        misc_options2 mo2(p->asInt());
-                        break;
+                        m_nModVersion = p->asInt();
                     }
+                    break;
 
-                    // Special tag for Compat. Clients Misc options.
-                    case CT_EMULECOMPAT_OPTIONS:
-                        //  1 Operative System Info
-                        //  1 Value-based-type int tags (experimental!)
-                        m_bValueBasedTypeTags   = (p->asInt() >> 1*1) & 0x01;
-                        m_bOsInfoSupport        = (p->asInt() >> 1*0) & 0x01;
-                        break;
+                case CT_PORT:
+                    m_nPort = p->asInt();
+                    break;
 
-                    case CT_EMULE_VERSION:
-                        //  8 Compatible Client ID
-                        //  7 Mjr Version (Doesn't really matter..)
-                        //  7 Min Version (Only need 0-99)
-                        //  3 Upd Version (Only need 0-5)
-                        //  7 Bld Version (Only need 0-99)
-                        m_nCompatibleClient = (p->asInt() >> 24);
-                        m_nClientVersion = p->asInt() & 0x00ffffff;
+                case CT_EMULE_UDPPORTS:
+                    m_nUDPPort = p->asInt() & 0xFFFF;
+                    //dwEmuleTags |= 1;
+                    break;
 
-                        break;
-                    default:
-                        break;
-                }
-            }// for
+                case CT_EMULE_BUDDYIP:
+                    // 32 BUDDY IP
+                    m_nBuddyIP = p->asInt();
+                    break;
 
-            m_ses.m_alerts.post_alert_should(
-                peer_connected_alert(address2int(m_remote.address()), cha, m_active));
-        }
+                case CT_EMULE_BUDDYUDP:
+                    m_nBuddyPort = p->asInt();
+                    break;
+
+                case CT_EMULE_MISCOPTIONS1:
+                    mo.load(p->asInt());
+                    break;
+
+                case CT_EMULE_MISCOPTIONS2:
+                    mo2.load(p->asInt());
+                    break;
+
+                // Special tag for Compat. Clients Misc options.
+                case CT_EMULECOMPAT_OPTIONS:
+                    //  1 Operative System Info
+                    //  1 Value-based-type int tags (experimental!)
+                    m_bValueBasedTypeTags   = (p->asInt() >> 1*1) & 0x01;
+                    m_bOsInfoSupport        = (p->asInt() >> 1*0) & 0x01;
+                    break;
+
+                case CT_EMULE_VERSION:
+                    //  8 Compatible Client ID
+                    //  7 Mjr Version (Doesn't really matter..)
+                    //  7 Min Version (Only need 0-99)
+                    //  3 Upd Version (Only need 0-5)
+                    //  7 Bld Version (Only need 0-99)
+                    m_nCompatibleClient = (p->asInt() >> 24);
+                    m_nClientVersion = p->asInt() & 0x00ffffff;
+
+                    break;
+                default:
+                    break;
+            }
+        }// for
+
+        m_ses.m_alerts.post_alert_should(
+            peer_connected_alert(address2int(m_remote.address()),
+                    m_strName,
+                    m_nVersion,
+                    m_strModVersion,
+                    m_nModVersion,
+                    m_nUDPPort,
+                    mo,
+                    mo2,
+                    m_active));
 
         // peer handshake completed
         boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -1085,17 +1002,17 @@ void peer_connection::on_file_request(const error_code& error)
 {
     if (!error)
     {
-        client_file_request fr;
-        decode_packet(fr);
-        DBG("file request " << fr.m_hFile << " <== " << m_remote);
-        if (attach_to_transfer(fr.m_hFile))
+        DECODE_PACKET(client_file_request);
+
+        DBG("file request " << packet.m_hFile << " <== " << m_remote);
+        if (attach_to_transfer(packet.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_status(fr.m_hFile, t->hashset().pieces());
+            write_file_status(packet.m_hFile, t->hashset().pieces());
         }
         else
         {
-            write_no_file(fr.m_hFile);
+            write_no_file(packet.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1109,11 +1026,11 @@ void peer_connection::on_file_answer(const error_code& error)
 {
     if (!error)
     {
-        client_file_answer fa;
-        decode_packet(fa);
-        DBG("file answer " << fa.m_hFile << ", " << fa.m_filename.m_collection
+        DECODE_PACKET(client_file_answer);
+
+        DBG("file answer " << packet.m_hFile << ", " << packet.m_filename.m_collection
             << " <== " << m_remote);
-        write_filestatus_request(fa.m_hFile);
+        write_filestatus_request(packet.m_hFile);
     }
     else
     {
@@ -1125,9 +1042,9 @@ void peer_connection::on_file_description(const error_code& error)
 {
     if (!error)
     {
-        client_file_description fd;
-        decode_packet(fd);
-        DBG("file description " << fd.m_nRating << ", " << fd.m_sComment.m_collection << " <== " << m_remote);
+        DECODE_PACKET(client_file_description);
+
+        DBG("file description " << packet.m_nRating << ", " << packet.m_sComment.m_collection << " <== " << m_remote);
     }
     else
     {
@@ -1139,9 +1056,8 @@ void peer_connection::on_no_file(const error_code& error)
 {
     if (!error)
     {
-        client_no_file nf;
-        decode_packet(nf);
-        DBG("no file " << nf.m_hFile << m_remote);
+        DECODE_PACKET(client_no_file);
+        DBG("no file " << packet.m_hFile << m_remote);
         disconnect(errors::file_unavaliable, 2);
     }
     else
@@ -1154,18 +1070,18 @@ void peer_connection::on_filestatus_request(const error_code& error)
 {
     if (!error)
     {
-        client_filestatus_request fr;
-        decode_packet(fr);
-        DBG("file status request " << fr.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_filestatus_request);
+
+        DBG("file status request " << packet.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == fr.m_hFile)
+        if (t->hash() == packet.m_hFile)
         {
             write_file_status(t->hash(), t->hashset().pieces());
         }
         else
         {
-            write_no_file(fr.m_hFile);
+            write_no_file(packet.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1180,24 +1096,23 @@ void peer_connection::on_file_status(const error_code& error)
     if (!error)
     {
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        client_file_status fs;
+        DECODE_PACKET(client_file_status);
 
-        decode_packet(fs);
-        if (fs.m_status.size() == 0)
-            fs.m_status.resize(t->num_pieces(), 1);
+        if (packet.m_status.size() == 0)
+            packet.m_status.resize(t->num_pieces(), 1);
 
-        DBG("file status answer "<< fs.m_hFile
-            << ", [" << bitfield2string(fs.m_status) << "] <== " << m_remote);
+        DBG("file status answer "<< packet.m_hFile
+            << ", [" << bitfield2string(packet.m_status) << "] <== " << m_remote);
 
-        if (t->hash() == fs.m_hFile)
+        if (t->hash() == packet.m_hFile)
         {
-            m_remote_hashset.pieces(fs.m_status);
-            t->picker().inc_refcount(fs.m_status);
-            write_hashset_request(fs.m_hFile);
+            m_remote_hashset.pieces(packet.m_status);
+            t->picker().inc_refcount(packet.m_status);
+            write_hashset_request(packet.m_hFile);
         }
         else
         {
-            write_no_file(fs.m_hFile);
+            write_no_file(packet.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1211,18 +1126,18 @@ void peer_connection::on_hashset_request(const error_code& error)
 {
     if (!error)
     {
-        client_hashset_request hr;
-        decode_packet(hr);
-        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_hashset_request);
+
+        DBG("hash set request " << packet.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == hr.m_hFile)
+        if (t->hash() == packet.m_hFile)
         {
             write_hashset_answer(t->hash(), t->hashset().hashes());
         }
         else
         {
-            write_no_file(hr.m_hFile);
+            write_no_file(packet.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1236,19 +1151,19 @@ void peer_connection::on_hashset_answer(const error_code& error)
 {
     if (!error)
     {
-        client_hashset_answer ha;
-        decode_packet(ha);
-        DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_hashset_answer);
+
+        DBG("hash set answer " << packet.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == ha.m_hFile)
+        if (t->hash() == packet.m_hFile)
         {
-            m_remote_hashset.hashes(ha.m_vhParts.m_collection);
+            m_remote_hashset.hashes(packet.m_vhParts.m_collection);
             write_start_upload(t->hash());
         }
         else
         {
-            write_no_file(ha.m_hFile);
+            write_no_file(packet.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1262,18 +1177,18 @@ void peer_connection::on_start_upload(const error_code& error)
 {
     if (!error)
     {
-        client_start_upload su;
-        decode_packet(su);
-        DBG("start upload " << su.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_start_upload)
+
+        DBG("start upload " << packet.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
-        if (t->hash() == su.m_hFile)
+        if (t->hash() == packet.m_hFile)
         {
             write_accept_upload();
         }
         else
         {
-            write_no_file(su.m_hFile);
+            write_no_file(packet.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
     }
@@ -1287,9 +1202,8 @@ void peer_connection::on_queue_ranking(const error_code& error)
 {
     if (!error)
     {
-        client_queue_ranking qr;
-        decode_packet(qr);
-        DBG("queue ranking " << qr.m_nRank << " <== " << m_remote);
+        DECODE_PACKET(client_queue_ranking);
+        DBG("queue ranking " << packet.m_nRank << " <== " << m_remote);
         // TODO: handle it
     }
     else
@@ -1316,8 +1230,7 @@ void peer_connection::on_out_parts(const error_code& error)
 {
     if (!error)
     {
-        client_out_parts op;
-        decode_packet(op);
+        DECODE_PACKET(client_out_parts);
         DBG("out of parts <== " << m_remote);
     }
     else
@@ -1345,18 +1258,17 @@ void peer_connection::on_request_parts(const error_code& error)
 {
     if (!error)
     {
-        client_request_parts_64 rp;
-        decode_packet(rp);
-        DBG("request parts " << rp.m_hFile << ": "
-            << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
-            << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
-            << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
+        DECODE_PACKET(client_request_parts_64);
+        DBG("request parts " << packet.m_hFile << ": "
+            << "[" << packet.m_begin_offset[0] << ", " << packet.m_end_offset[0] << "]"
+            << "[" << packet.m_begin_offset[1] << ", " << packet.m_end_offset[1] << "]"
+            << "[" << packet.m_begin_offset[2] << ", " << packet.m_end_offset[2] << "]"
             << " <== " << m_remote);
         for (size_t i = 0; i < 3; ++i)
         {
-            if (rp.m_begin_offset[i] < rp.m_end_offset[i])
+            if (packet.m_begin_offset[i] < packet.m_end_offset[i])
             {
-                m_requests.push_back(mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
+                m_requests.push_back(mk_peer_request(packet.m_begin_offset[i], packet.m_end_offset[i]));
             }
         }
         fill_send_buffer();
@@ -1371,9 +1283,8 @@ void peer_connection::on_end_download(const error_code& error)
 {
     if (!error)
     {
-        client_end_download ed;
-        decode_packet(ed);
-        DBG("end download " << ed.m_hFile << " <== " << m_remote);
+        DECODE_PACKET(client_end_download);
+        DBG("end download " << packet.m_hFile << " <== " << m_remote);
     }
     else
     {

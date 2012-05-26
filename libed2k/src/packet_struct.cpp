@@ -414,4 +414,109 @@ namespace libed2k
         m_proto = get_proto_type(m_files_request);
     }
 
+
+    misc_options::misc_options()
+    {
+        load(0);
+    }
+
+    misc_options::misc_options(boost::uint32_t opts)
+    {
+        load(opts);
+    }
+
+    void misc_options::load(boost::uint32_t opts)
+    {
+        m_nAICHVersion          = (opts >> (4*7+1)) & 0x07;
+        m_nUnicodeSupport       = (opts >> 4*7) & 0x01;
+        m_nUDPVer               = (opts >> 4*6) & 0x0f;
+        m_nDataCompVer          = (opts >> 4*5) & 0x0f;
+        m_nSupportSecIdent      = (opts >> 4*4) & 0x0f;
+        m_nSourceExchange1Ver   = (opts >> 4*3) & 0x0f;
+        m_nExtendedRequestsVer  = (opts >> 4*2) & 0x0f;
+        m_nAcceptCommentVer     = (opts >> 4*1) & 0x0f;
+        m_nNoViewSharedFiles    = (opts >> 1*2) & 0x01;
+        m_nMultiPacket          = (opts >> 1*1) & 0x01;
+        m_nSupportsPreview      = (opts >> 1*0) & 0x01;
+    }
+
+    misc_options2::misc_options2() : m_options(0)
+    {
+
+    }
+
+    misc_options2::misc_options2(boost::uint32_t opts) : m_options(opts)
+    {
+    }
+
+    void misc_options2::load(boost::uint32_t opts)
+    {
+        m_options = opts;
+    }
+
+    bool misc_options2::support_captcha() const
+    {
+        return ((m_options >> CAPTHA_OFFSET) & 0x01);
+    }
+
+    bool misc_options2::support_source_ext2() const
+    {
+        return ((m_options >> SRC_EXT_OFFSET) & 0x01);
+    }
+
+    bool misc_options2::support_ext_multipacket() const
+    {
+        return ((m_options >> MULTIP_OFFSET) & 0x01);
+    }
+
+    bool misc_options2::support_large_files() const
+    {
+        return ((m_options >> LARGE_FILE_OFFSET) & 0x01);
+    }
+
+    void misc_options2::set_captcha()
+    {
+        boost::uint32_t n = 1;
+        m_options |= n << CAPTHA_OFFSET;
+    }
+
+    void misc_options2::set_source_ext2()
+    {
+        boost::uint32_t n = 1;
+        m_options |= n << SRC_EXT_OFFSET;
+    }
+
+    void misc_options2::set_ext_multipacket()
+    {
+        boost::uint32_t n = 1;
+        m_options |= n << MULTIP_OFFSET;
+    }
+
+    void misc_options2::set_large_files()
+    {
+        boost::uint32_t n = 1;
+        m_options |= n << LARGE_FILE_OFFSET;
+    }
+
+    boost::uint32_t misc_options2::generate() const
+    {
+        return (m_options);
+    }
+
+    boost::uint32_t misc_options::generate() const
+    {
+        return  ((m_nAICHVersion           << ((4*7)+1)) |
+                (m_nUnicodeSupport        << 4*7) |
+                (m_nUDPVer                << 4*6) |
+                (m_nDataCompVer           << 4*5) |
+                (m_nSupportSecIdent       << 4*4) |
+                (m_nSourceExchange1Ver    << 4*3) |
+                (m_nExtendedRequestsVer   << 4*2) |
+                (m_nAcceptCommentVer      << 4*1) |
+                (m_nNoViewSharedFiles     << 1*2) |
+                (m_nMultiPacket           << 1*1) |
+                (m_nSupportsPreview       << 1*0));
+    }
+
+
 }
