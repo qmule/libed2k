@@ -722,11 +722,6 @@ void peer_connection::write_hello()
     // generate options
     boost::uint32_t nOption2;
     boost::uint32_t nOption1 = 0;
-    const boost::uint32_t uSupportsCaptcha       = 1;
-    const boost::uint32_t uSupportLargeFiles     = 1;
-    const boost::uint32_t uExtMultiPacket        = 1;
-
-
 
     nOption2 = 0xFFFFFFFF; //(uSupportsCaptcha << 11) | (uSupportLargeFiles << 4);
 
