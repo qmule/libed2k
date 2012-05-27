@@ -22,6 +22,14 @@ peer_request mk_peer_request(size_t begin, size_t end)
     return r;
 }
 
+std::pair<size_t, size_t> mk_range(const peer_request& r)
+{
+    size_t begin = r.piece * PIECE_SIZE + r.start;
+    size_t end = begin + r.length;
+    assert(begin < end);
+    return std::make_pair(begin, end);
+}
+
 std::pair<peer_request, peer_request> split_request(const peer_request& req)
 {
     peer_request r = req;
@@ -125,6 +133,10 @@ void peer_connection::init()
 
 void peer_connection::second_tick()
 {
+    if (!is_closed())
+    {
+        fill_send_buffer();
+    }
 }
 
 bool peer_connection::attach_to_transfer(const md4_hash& hash)
@@ -521,7 +533,8 @@ void peer_connection::fill_send_buffer()
         switch(m_messages_order.front().m_proto)
         {
             case OP_MESSAGE:
-                 DBG("peer_connection::write message: " << m_messages_order.front().m_message.m_strMessage);
+                 DBG("peer_connection::write message: "
+                     << m_messages_order.front().m_message.m_strMessage);
                  do_write(m_messages_order.front().m_message);
                  break;
             case OP_ASKSHAREDFILES:
@@ -864,7 +877,7 @@ void peer_connection::write_part(const peer_request& r)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     client_sending_part_64 sp;
-    std::pair<size_t, size_t> range = block_range(r.piece, r.start / BLOCK_SIZE, t->filesize());
+    std::pair<size_t, size_t> range = mk_range(r);
     sp.m_hFile = t->hash();
     sp.m_begin_offset = range.first;
     sp.m_end_offset = range.second;
