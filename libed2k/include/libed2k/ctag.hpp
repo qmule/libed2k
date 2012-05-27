@@ -49,6 +49,7 @@ const tg_nid_type FT_CORRUPTEDPARTS     = '\x24';    // <string>
 const tg_nid_type FT_DL_PREVIEW         = '\x25';
 const tg_nid_type FT_KADLASTPUBLISHNOTES= '\x26';    // <uint32>
 const tg_nid_type FT_AICH_HASH          = '\x27';
+const tg_nid_type FT_FILEHASH           = '\x28';
 const tg_nid_type FT_COMPLETE_SOURCES   = '\x30';    // nr. of sources which share a
 
 
@@ -216,6 +217,17 @@ template<> struct tag_type_number<float>            { static const tg_type value
 template<> struct tag_type_number<bool>             { static const tg_type value = TAGTYPE_BOOL;    };
 template<> struct tag_type_number<md4_hash>         { static const tg_type value = TAGTYPE_HASH16;  };
 
+template<typename T> struct tag_uniform_type_number;
+
+template<> struct tag_uniform_type_number<boost::uint8_t>   { static const tg_type value = TAGTYPE_UINT64;  };
+template<> struct tag_uniform_type_number<boost::uint16_t>  { static const tg_type value = TAGTYPE_UINT64;  };
+template<> struct tag_uniform_type_number<boost::uint32_t>  { static const tg_type value = TAGTYPE_UINT64;  };
+template<> struct tag_uniform_type_number<boost::uint64_t>  { static const tg_type value = TAGTYPE_UINT64;  };
+template<> struct tag_uniform_type_number<float>            { static const tg_type value = TAGTYPE_FLOAT32; };
+template<> struct tag_uniform_type_number<bool>             { static const tg_type value = TAGTYPE_BOOL;    };
+template<> struct tag_uniform_type_number<md4_hash>         { static const tg_type value = TAGTYPE_HASH16;  };
+
+
 template<typename size_type>
 class tag_list;
 
@@ -265,7 +277,15 @@ public:
     const std::string getName() const;
     tg_nid_type getNameId() const;
 
+    /**
+      * get real type of tag for new format dependents on size
+     */
     virtual tg_type getType() const = 0;
+
+    /**
+      * get uniform type of tag independent on size
+     */
+    virtual tg_type getUniformType() const = 0;
     virtual void load(archive::ed2k_iarchive& ar);
     virtual void save(archive::ed2k_oarchive& ar);
 
@@ -329,6 +349,11 @@ public:
     virtual tg_type getType() const
     {
         return tag_type_number<T>::value;
+    }
+
+    virtual tg_type getUniformType() const
+    {
+        return tag_uniform_type_number<T>::value;
     }
 
     // can't call one serialize because base class is split
@@ -496,6 +521,8 @@ public:
     }
 
     virtual tg_type getType() const;
+    virtual tg_type getUniformType() const;
+
     virtual bool is_equal(const base_tag* pt) const;
 
     operator std::string() const
@@ -550,6 +577,11 @@ public:
     virtual tg_type getType() const
     {
        return (TAGTYPE_BLOB);
+    }
+
+    virtual tg_type getUniformType() const
+    {
+        return (TAGTYPE_BLOB);
     }
 
     virtual bool is_equal(const base_tag* pt) const
@@ -612,6 +644,8 @@ class tag_list
 public:
     template<typename U>
     friend bool operator==(const tag_list<U>& t1, const tag_list<U>& t2);
+    template<typename U>
+    friend bool operator!=(const tag_list<U>& t1, const tag_list<U>& t2);
     tag_list();
     void add_tag(boost::shared_ptr<base_tag> ptag);
     size_t count() const;
@@ -631,6 +665,7 @@ public:
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
     void dump() const;
+
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 private:
     std::vector<boost::shared_ptr<base_tag> >   m_container;
@@ -870,22 +905,38 @@ void tag_list<size_type>::dump() const
 template<typename size_type>
 bool operator==(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
 {
-    // check sizes
     if (t1.count() != t2.count())
     {
         return (false);
     }
 
-    // check elements
-    for (size_t n = 0; n < t1.count(); n++)
+    for(size_t n = 0; n < t1.count(); ++n)
     {
-        if (!t1[n].get()->is_equal(t2[n].get()))
+        bool found = false;
+        boost::shared_ptr<base_tag> ptr = t1.m_container[n];
+
+        for (size_t m = 0; m < t2.count(); ++m)
+        {
+            if (t2.m_container[m]->is_equal(ptr.get()))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
         {
             return (false);
         }
     }
 
     return (true);
+}
+
+template<typename size_type>
+bool operator!=(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
+{
+    return (!(t1 == t2));
 }
 
 }

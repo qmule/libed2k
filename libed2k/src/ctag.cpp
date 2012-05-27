@@ -89,6 +89,7 @@ std::string taggIdtoString(tg_nid_type tid)
                     std::make_pair(FT_DL_PREVIEW,           std::string("FT_DL_PREVIEW")),
                     std::make_pair(FT_KADLASTPUBLISHNOTES,  std::string("FT_KADLASTPUBLISHNOTES")),
                     std::make_pair(FT_AICH_HASH,            std::string("FT_AICH_HASH")),
+                    std::make_pair(FT_FILEHASH,             std::string("FT_FILEHASH")),
                     std::make_pair(FT_COMPLETE_SOURCES,     std::string("FT_COMPLETE_SOURCES")),
                     std::make_pair(FT_PUBLISHINFO,          std::string("FT_PUBLISHINFO")),
                     std::make_pair(FT_ATTRANSFERRED,        std::string("FT_ATTRANSFERRED")),
@@ -211,7 +212,9 @@ tg_nid_type base_tag::getNameId() const
 
 bool base_tag::is_equal(const base_tag* pt) const
 {
-    return (pt->getType() == getType());
+    return (pt->getUniformType() == getUniformType() && // use uniform types for ignore by size type correction
+            m_nNameId == pt->getNameId() &&
+            m_strName == pt->getName());
 }
 
 void base_tag::dump() const
@@ -256,7 +259,7 @@ void base_tag::dump() const
         case TAGTYPE_STR14:
         case TAGTYPE_STR15:
         case TAGTYPE_STR16:
-            DBG("VALUE" << asString());
+            DBG("VALUE: \"" << asString() << "\"");
             break;
         default:
             DBG("Unknown type");
@@ -348,6 +351,11 @@ void string_tag::length2type()
 tg_type string_tag::getType() const
 {
     return (m_type);
+}
+
+tg_type string_tag::getUniformType() const
+{
+    return (TAGTYPE_STRING);
 }
 
 bool string_tag::is_equal(const base_tag* pt) const

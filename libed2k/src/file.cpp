@@ -913,4 +913,68 @@ namespace libed2k
         m_files.dump();
     }
 
+    bool emule_collection::operator==(const emule_collection& ec) const
+    {
+        if (m_nVersion != ec.m_nVersion || m_list != ec.m_list || m_files.m_size != ec.m_files.m_size)
+        {
+            return (false);
+        }
+
+        for (size_t n = 0; n < m_files.m_collection.size(); ++n)
+        {
+            if (m_files.m_collection[n] != ec.m_files.m_collection[n])
+            {
+                return (false);
+            }
+        }
+
+        return (true);
+    }
+
+    collection::collection(const std::string& strName) : m_strName(strName),
+            m_obsolete(false), m_saved(false)
+    {
+    }
+
+    void collection::load(const std::string& strWorkspace)
+    {
+        m_saved = true;
+    }
+
+    void collection::save(const std::string& strWorkspace)
+    {
+        m_saved = true;
+    }
+
+    bool collection::is_obsolete() const
+    {
+        return (m_obsolete);
+    }
+
+    void collection::set_obosolete()
+    {
+        m_obsolete = true;
+    }
+
+    void collection::add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile)
+    {
+        m_saved = false;
+    }
+
+    bool collection::operator==(const collection& c) const
+    {
+        return (m_strName == c.m_strName &&
+                m_content == c.m_content);
+    }
+
+    void collection_manager::load(const std::string& strWorkspace)
+    {
+
+    }
+
+    void collection_manager::set_collection(const collection& c)
+    {
+
+    }
+
 }

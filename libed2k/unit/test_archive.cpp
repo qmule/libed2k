@@ -296,14 +296,14 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
 
     libed2k::tag_list<boost::uint16_t> tl2;
     tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint8_t>('\xED', 0x10, true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint16_t>(0x0D0A, '\xED', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint64_t>(0x0807060504030201UL, '\xED', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("STRING", libed2k::TAGTYPE_STRING, '\x10', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("APPLE", libed2k::TAGTYPE_STR5, '\x10', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::array_tag(vBlob, '\x10', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<float>(fTemplate, '\x10', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<bool>(true, '\x10', true)));
-    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<libed2k::md4_hash>(md4, '\x10', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint16_t>(0x0D0A, '\x11', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<boost::uint64_t>(0x0807060504030201LL, "0123", true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("STRING", libed2k::TAGTYPE_STRING, "ABCD", true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::string_tag("APPLE", libed2k::TAGTYPE_STR5, "IVAN", true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::array_tag(vBlob, '\x0A', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<float>(fTemplate, '\x15', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<bool>(true, '\x15', true)));
+    tl2.add_tag(boost::shared_ptr<libed2k::base_tag>(new libed2k::typed_tag<libed2k::md4_hash>(md4, '\x20', true)));
 
     BOOST_CHECK(tl == tl2);
 
@@ -614,6 +614,39 @@ BOOST_AUTO_TEST_CASE(test_list_getters)
         BOOST_CHECK(false);
     }
 
+}
+
+BOOST_AUTO_TEST_CASE(test_tag_list_equals)
+{
+    boost::uint32_t n32 = 33;
+    boost::uint32_t n23 = 23;
+
+    libed2k::tag_list<boost::uint16_t> list1;
+    libed2k::tag_list<boost::uint16_t> list2;
+    libed2k::tag_list<boost::uint16_t> list3;
+    libed2k::tag_list<boost::uint16_t> list4;
+    libed2k::tag_list<boost::uint16_t> list5;
+
+    list1.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::CT_NAME, false));
+    list1.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ATACCEPTED, false));
+    list1.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ED2K_MEDIA_LENGTH, false));
+
+
+    list2.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ATACCEPTED, false));
+    list2.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ED2K_MEDIA_LENGTH, true));
+    list2.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::CT_NAME, true));
+
+    list3.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::CT_NAME, false));
+
+
+    list5.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::CT_NAME, false));
+    list5.add_tag(libed2k::make_typed_tag(n23, libed2k::FT_ATACCEPTED, false));
+    list5.add_tag(libed2k::make_typed_tag(n32, libed2k::FT_ED2K_MEDIA_LENGTH, false));
+
+    BOOST_CHECK(list1 == list2);
+    BOOST_CHECK(!(list1 == list3));
+    BOOST_CHECK(!(list2 == list4));
+    BOOST_CHECK(!(list1 == list5));
 }
 
 BOOST_AUTO_TEST_CASE(test_packets)

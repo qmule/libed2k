@@ -309,7 +309,42 @@ namespace libed2k
             ar & m_files;
         }
 
+        bool operator==(const emule_collection& ec) const;
         void dump() const;
+    };
+
+    /**
+      * class for manager one collection entry
+     */
+    class collection
+    {
+    public:
+        collection(const std::string& strName);
+        void add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile);
+
+        void load(const std::string& strWorkspace);
+        void save(const std::string& strWorkspace);
+        bool is_obsolete() const;
+        void set_obosolete();
+        bool operator==(const collection& c) const;
+    private:
+        std::string         m_strName;
+        bool                m_obsolete;
+        bool                m_saved;
+        emule_collection    m_content;
+    };
+
+    /**
+      * class to manage mule collections
+      *
+     */
+    class collection_manager
+    {
+    public:
+        void load(const std::string& strWorkspace);
+        void set_collection(const collection& c);
+    private:
+        std::vector<collection> m_collections;
     };
 
 }
