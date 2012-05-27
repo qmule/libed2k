@@ -647,4 +647,22 @@ BOOST_AUTO_TEST_CASE(test_packets)
     BOOST_CHECK(flist.m_collection[2].m_network_point.m_nPort == 5);
 }
 
+BOOST_AUTO_TEST_CASE(test_emule_collection)
+{
+    std::ifstream ifs("test_collection.emulecollection", std::ios_base::binary);
+
+    if (ifs)
+    {
+        libed2k::emule_collection ec;
+        libed2k::archive::ed2k_iarchive ifa(ifs);
+        BOOST_NOEXCEPT(ifa >> ec);
+        ec.dump();
+    }
+    else
+    {
+        BOOST_REQUIRE(false);
+    }
+
+}
+
 BOOST_AUTO_TEST_SUITE_END()

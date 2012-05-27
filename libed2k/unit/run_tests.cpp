@@ -65,11 +65,6 @@ BOOST_AUTO_TEST_CASE(test_file_functions)
 
 }
 
-BOOST_AUTO_TEST_CASE(test_options_bit_field)
-{
-
-}
-
 
 BOOST_AUTO_TEST_SUITE_END()
 

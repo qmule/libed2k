@@ -292,6 +292,26 @@ namespace libed2k
         boost::mutex m_mutex;
     };
 
+    /**
+      * structure for save/load binary emulecollection files
+     */
+    struct emule_collection
+    {
+        boost::uint32_t m_nVersion;
+        tag_list<boost::uint32_t>   m_list;
+        container_holder<boost::uint32_t, std::vector<tag_list<boost::uint32_t> > >   m_files;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nVersion;
+            ar & m_list;
+            ar & m_files;
+        }
+
+        void dump() const;
+    };
+
 }
 
 #endif //__FILE__HPP__

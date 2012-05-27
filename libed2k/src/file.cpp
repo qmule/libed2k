@@ -905,4 +905,12 @@ namespace libed2k
         }
     }
 
+    void emule_collection::dump() const
+    {
+        DBG("emule_collection::dump");
+        DBG("version: " << m_nVersion);
+        m_list.dump();
+        m_files.dump();
+    }
+
 }
