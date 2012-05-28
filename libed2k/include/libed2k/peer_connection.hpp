@@ -126,6 +126,8 @@ namespace libed2k
         bool has_ip_address(client_id_type nIP) const;
         void send_message(const std::string& strMessage);
         void request_shared_files();
+        void request_shared_directories();
+        void request_shared_directory_files(const std::string& strDirectory);
     private:
 
         // constructor method
@@ -190,6 +192,8 @@ namespace libed2k
         void on_shared_files_request(const error_code& error);
         void on_shared_files_answer(const error_code& error);
         void on_shared_files_denied(const error_code& error);
+        void on_shared_directories_answer(const error_code& error);
+        void on_shared_directory_files_answer(const error_code& error);
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);

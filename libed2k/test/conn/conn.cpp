@@ -161,6 +161,12 @@ int main(int argc, char* argv[])
             case 's':
                 ses.post_shared_files_request(address2int(a), nPort);
                 break;
+            case 'r':
+                ses.post_shared_directories_request(address2int(a), nPort);
+                break;
+            case 'e':
+                ses.post_shared_directory_files_request(address2int(a), nPort, "/home/d95a1/sqllib/samples/cpp");
+                break;
             case 'i':
                 ses.initialize_peer(address2int(a), nPort);
                 break;
@@ -206,6 +212,11 @@ int main(int argc, char* argv[])
             {
                 server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
                 DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
+            }
+            else if (shared_directory_files_alert* p = dynamic_cast<shared_directory_files_alert*>(a.get()))
+            {
+                DBG("shared dir files: " << int2ipstr(p->m_nIP) << " count " << p->m_files.m_collection.size());
+                p->m_files.dump();
             }
             else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
@@ -294,6 +305,15 @@ int main(int argc, char* argv[])
             else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
             {
                 DBG("peer denied access to shared files: " << int2ipstr(p->m_nIP));
+            }
+            else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
+            {
+                DBG("peer shared directories: " << int2ipstr(p->m_nIP) << " count: " << p->m_dirs.size());
+
+                for (size_t n = 0; n < p->m_dirs.size(); ++n)
+                {
+                    DBG("DIR: " << p->m_dirs[n]);
+                }
             }
             else
             {

@@ -115,6 +115,18 @@ void session::post_shared_files_request(client_id_type nIP, int nPort)
     m_impl->post_shared_files_request(nIP, nPort);
 }
 
+void session::post_shared_directories_request(client_id_type nIP, int nPort)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->post_shared_directories_request(nIP, nPort);
+}
+
+void session::post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->post_shared_directory_files_request(nIP, nPort, strDirectory);
+}
+
 void session::initialize_peer(client_id_type nIP, int nPort)
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);

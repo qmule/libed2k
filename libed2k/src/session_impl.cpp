@@ -1067,6 +1067,16 @@ void session_impl::post_shared_files_request(client_id_type nIP, int nPort)
     initialize_peer(nIP, nPort).get()->request_shared_files();
 }
 
+void session_impl::post_shared_directories_request(client_id_type nIP, int nPort)
+{
+    initialize_peer(nIP, nPort).get()->request_shared_directories();
+}
+
+void session_impl::post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory)
+{
+    initialize_peer(nIP, nPort).get()->request_shared_directory_files(strDirectory);
+}
+
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_server_connection->post_sources_request(hFile, nSize);

@@ -849,6 +849,12 @@ namespace libed2k
         void serialize(Archive& ar){}
     };
 
+    struct client_shared_directories_request
+    {
+        template<typename Archive>
+        void serialize(Archive& ar) {}
+    };
+
     struct client_shared_files_answer
     {
         shared_files_list   m_files;
@@ -858,7 +864,50 @@ namespace libed2k
         {
             ar & m_files;
         }
+    };
 
+    struct client_shared_directory_files
+    {
+        container_holder<boost::uint16_t, std::string>  m_directory;
+        client_shared_directory_files()
+        {
+
+        }
+
+        client_shared_directory_files(const std::string& strDirectory)
+        {
+            m_directory.m_collection = strDirectory;
+        }
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_directory;
+        }
+    };
+
+    struct client_shared_directories_answer
+    {
+        container_holder<boost::uint32_t, std::vector<container_holder<boost::uint16_t, std::string> > > m_dirs;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_dirs;
+        }
+    };
+
+    struct client_shared_directory_files_answer
+    {
+        container_holder<boost::uint16_t, std::string>  m_directory;
+        shared_files_list   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_directory;
+            ar & m_list;
+        }
     };
 
     /**
@@ -1268,8 +1317,24 @@ namespace libed2k
         static const proto_type value   = OP_ASKSHAREDFILES;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
+    template<> struct packet_type<client_shared_directories_request> {
+        static const proto_type value   = OP_ASKSHAREDDIRS;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_directory_files> {
+        static const proto_type value   = OP_ASKSHAREDFILESDIR;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
     template<> struct packet_type<client_shared_files_answer> {
         static const proto_type value   = OP_ASKSHAREDFILESANSWER;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_directories_answer> {
+        static const proto_type value   = OP_ASKSHAREDDIRSANS;
+        static const proto_type protocol= OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_directory_files_answer> {
+        static const proto_type value   = OP_ASKSHAREDFILESDIRANS;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_request> {
@@ -1314,7 +1379,7 @@ namespace libed2k
     };
     template<> struct packet_type<client_queue_ranking> {
         static const proto_type value = OP_QUEUERANKING;
-        static const proto_type protocol = OP_EDONKEYPROT;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_accept_upload> {
         static const proto_type value = OP_ACCEPTUPLOADREQ;
@@ -1369,10 +1434,6 @@ namespace libed2k
         static const proto_type value   = OP_CHATCAPTCHARES;
         static const proto_type protocol= OP_EMULEPROT;
     };
-    template<> struct packet_type<client_directory_request>{
-        static const proto_type value       = OP_ASKSHAREDFILESDIR;
-        static const proto_type protocol    = OP_EDONKEYPROT;
-    };
     template<> struct packet_type<client_directory_answer>{
         static const proto_type value       = OP_ASKSHAREDFILESANSWER;
         static const proto_type protocol    = OP_EDONKEYPROT;
@@ -1407,6 +1468,8 @@ namespace libed2k
     {
         client_meta_packet(const client_message& cmessage);
         client_meta_packet(const client_shared_files_request& frequest);
+        client_meta_packet(const client_shared_directories_request& drequest);
+        client_meta_packet(const client_shared_directory_files& frequest);
         client_meta_packet(const shared_files_list& flist);
 
         template<typename Archive>
@@ -1428,6 +1491,8 @@ namespace libed2k
 
         client_message  m_message;
         client_shared_files_request m_files_request;
+        client_shared_directories_request m_directories_request;
+        client_shared_directory_files     m_directory_files_request;
         shared_files_list           m_files_list;
         proto_type      m_proto;
     };

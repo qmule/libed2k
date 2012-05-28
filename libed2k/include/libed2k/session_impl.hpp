@@ -193,6 +193,8 @@ namespace libed2k {
               * ask peer for shared files
              */
             void post_shared_files_request(client_id_type nIP, int nPort);
+            void post_shared_directories_request(client_id_type nIP, int nPort);
+            void post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory);
 
             /**
               * request sources for file

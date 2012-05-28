@@ -116,7 +116,8 @@ void peer_connection::reset()
     add_handler(/*OP_ASKSHAREDDENIEDANS*/get_proto_pair<client_shared_files_denied>(), boost::bind(&peer_connection::on_shared_files_denied, this, _1));
 
     add_handler(/*OP_ASKSHAREDFILESANSWER*/get_proto_pair<client_shared_files_answer>(), boost::bind(&peer_connection::on_shared_files_answer, this, _1));
-
+    add_handler(get_proto_pair<client_shared_directories_answer>(), boost::bind(&peer_connection::on_shared_directories_answer, this, _1));
+    add_handler(get_proto_pair<client_shared_directory_files_answer>(), boost::bind(&peer_connection::on_shared_directory_files_answer, this, _1));
     // clients talking
     add_handler(/*OP_MESSAGE*/get_proto_pair<client_message>(), boost::bind(&peer_connection::on_client_message, this, _1));
     add_handler(/*OP_CHATCAPTCHAREQ*/get_proto_pair<client_captcha_request>(), boost::bind(&peer_connection::on_client_captcha_request, this, _1));
@@ -511,6 +512,16 @@ void peer_connection::request_shared_files()
     send_throw_meta_order(client_meta_packet(client_shared_files_request()));
 }
 
+void peer_connection::request_shared_directories()
+{
+    send_throw_meta_order(client_meta_packet(client_shared_directories_request()));
+}
+
+void peer_connection::request_shared_directory_files(const std::string& strDirectory)
+{
+    send_throw_meta_order(client_meta_packet(client_shared_directory_files(strDirectory)));
+}
+
 void peer_connection::fill_send_buffer()
 {
     if (m_channel_state[upload_channel] != bw_idle) return;
@@ -528,6 +539,14 @@ void peer_connection::fill_send_buffer()
             case OP_ASKSHAREDFILES:                                             // ask shared files from user
                 DBG("peer_connection::fill_send_buffer: ask shared files");
                 do_write(m_messages_order.front().m_files_request);
+                break;
+            case OP_ASKSHAREDDIRS:
+                DBG("peer_connection::fill_send_buffer: ask shared directories");
+                do_write(m_messages_order.front().m_directories_request);
+                break;
+            case OP_ASKSHAREDFILESDIR:
+                DBG("peer_connection::fill_send_buffer: ask shared directory files");
+                do_write(m_messages_order.front().m_directory_files_request);
                 break;
             case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
                 DBG("peer_connection::fill_send_buffer: offer files");
@@ -1302,7 +1321,34 @@ void peer_connection::on_shared_files_denied(const error_code& error)
     }
     else
     {
-        ERR("file answer error " << error.message() << " <== " << m_remote);
+        ERR("shared files denied answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_shared_directories_answer(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_directories_answer, sd);
+        m_ses.m_alerts.post_alert_should(shared_directories_alert(address2int(m_remote.address()), sd));
+    }
+    else
+    {
+        ERR("shared directories answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_shared_directory_files_answer(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_directory_files_answer, sdf);
+        m_ses.m_alerts.post_alert_should(shared_directory_files_alert(address2int(m_remote.address()), sdf.m_directory.m_collection,
+                sdf.m_list));
+    }
+    else
+    {
+        ERR("shared directories answer error " << error.message() << " <== " << m_remote);
     }
 }
 

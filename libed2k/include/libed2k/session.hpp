@@ -121,6 +121,8 @@ namespace libed2k {
          */
         void post_message(client_id_type nIP, int nPort, const std::string& strMessage);
         void post_shared_files_request(client_id_type nIP, int nPort);
+        void post_shared_directories_request(client_id_type nIP, int nPort);
+        void post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory);
         void initialize_peer(client_id_type nIP, int nPort);
 
         transfer_handle find_transfer(const md4_hash& hash) const;

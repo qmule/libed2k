@@ -414,6 +414,18 @@ namespace libed2k
         m_proto = get_proto_type(m_files_request);
     }
 
+    client_meta_packet::client_meta_packet(const client_shared_directories_request& drequest)
+    {
+        m_directories_request = drequest;
+        m_proto = get_proto_type(m_directories_request);
+    }
+
+    client_meta_packet::client_meta_packet(const client_shared_directory_files& frequest)
+    {
+        m_directory_files_request = frequest;
+        m_proto = get_proto_type(m_directory_files_request);
+    }
+
     client_meta_packet::client_meta_packet(const shared_files_list& flist)
     {
         m_files_list = flist;

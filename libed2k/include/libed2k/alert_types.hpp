@@ -160,7 +160,7 @@ namespace libed2k
      */
     struct shared_files_alert : alert
     {
-        const static int static_category = alert::server_notification;
+        const static int static_category = alert::server_notification | alert::peer_notification;
 
         shared_files_alert(client_id_type nIP, const shared_files_list& files, bool more) : m_nIP(nIP), m_files(files), m_more(more){}
         virtual int category() const { return static_category; }
@@ -176,6 +176,57 @@ namespace libed2k
         client_id_type          m_nIP;
         shared_files_list       m_files;
         bool                    m_more;
+    };
+
+    /**
+      * this alert throws on server search results and on user shared files
+     */
+    struct shared_directory_files_alert : shared_files_alert
+    {
+        const static int static_category = alert::peer_notification;
+
+        shared_directory_files_alert(client_id_type nIP, const std::string& strDirectory, const shared_files_list& files) :
+            shared_files_alert(nIP, files, false), m_strDirectory(strDirectory)
+        {
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "search result for directory from peer"; }
+        virtual char const* what() const { return "search result for directory from peer"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new shared_directory_files_alert(*this)));
+        }
+
+        std::string m_strDirectory;
+    };
+
+    struct shared_directories_alert : alert
+    {
+        const static int static_category = alert::peer_notification;
+
+        shared_directories_alert(client_id_type nIP, const client_shared_directories_answer& dirs) : m_nIP(nIP)
+        {
+            for (size_t n = 0; n < dirs.m_dirs.m_collection.size(); ++n)
+            {
+                m_dirs.push_back(dirs.m_dirs.m_collection[n].m_collection);
+            }
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "search result from string"; }
+        virtual char const* what() const { return "search result from server"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new shared_directories_alert(*this)));
+        }
+
+        client_id_type              m_nIP;
+        std::vector<std::string>    m_dirs;
     };
 
     struct mule_listen_failed_alert: alert
