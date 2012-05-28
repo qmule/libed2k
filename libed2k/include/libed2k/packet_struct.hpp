@@ -1411,7 +1411,7 @@ namespace libed2k
     };
     template<> struct packet_type<client_compressed_part_32> {
         static const proto_type value = OP_COMPRESSEDPART;
-        static const proto_type protocol = OP_EDONKEYPROT;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_compressed_part_64> {
         static const proto_type value = OP_COMPRESSEDPART_I64;

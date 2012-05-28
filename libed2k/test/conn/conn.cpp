@@ -213,24 +213,27 @@ int main(int argc, char* argv[])
                 server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
                 DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
             }
-            else if (shared_directory_files_alert* p = dynamic_cast<shared_directory_files_alert*>(a.get()))
-            {
-                DBG("shared dir files: " << int2ipstr(p->m_nIP) << " count " << p->m_files.m_collection.size());
-                p->m_files.dump();
-            }
             else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
+                DBG("RESULT: " << p->m_files.m_collection.size());
 
-                // ok, prepare to get sources
-                //p->m_result.dump();
-                DBG("Results count: " << p->m_files.m_collection.size());
-                p->m_files.dump();
-                //sleep(1);
-
-                if (p->m_more)
+                if (shared_directory_files_alert* p2 = dynamic_cast<shared_directory_files_alert*>(p))
                 {
-                    DBG("Request more results");
-                    ses.post_search_more_result_request();
+                    DBG("shared dir files: " << int2ipstr(p2->m_nIP) << " count " << p2->m_files.m_collection.size() << " for " << p2->m_strDirectory);
+                    //p->m_files.dump();
+                }
+                else
+                {
+
+                    // ok, prepare to get sources
+                    //p->m_result.dump();
+                    DBG("Results count: " << p->m_files.m_collection.size());
+
+                    if (p->m_more)
+                    {
+                        DBG("Request more results");
+                        ses.post_search_more_result_request();
+                    }
                 }
 
                 /*
