@@ -20,7 +20,7 @@ namespace libed2k {
     typedef libtorrent::storage_constructor_type storage_constructor_type;
 
     class session_settings;
-    class transfer_handle;
+    struct transfer_handle;
     namespace aux {
         class session_impl;
     }
