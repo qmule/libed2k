@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
     std::string strDore = "192.168.161.54";
     std::string strDiman = "88.206.52.81";
     ip::address a(ip::address::from_string(strDore.c_str()));
-    int nPort = 4662;
+    int nPort = 4665;
 
     DBG("addr: "<< int2ipstr(address2int(a)));
     std::string strUser;
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
                 // ok, prepare to get sources
                 //p->m_result.dump();
                 DBG("Results count: " << p->m_files.m_collection.size());
-                //p->m_files.dump();
+                p->m_files.dump();
                 //sleep(1);
 
                 if (p->m_more)
@@ -290,6 +290,10 @@ int main(int argc, char* argv[])
             else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
             {
                 DBG("peer connected: " << int2ipstr(p->m_nIP) << " status: " << p->m_active);
+            }
+            else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
+            {
+                DBG("peer denied access to shared files: " << int2ipstr(p->m_nIP));
             }
             else
             {

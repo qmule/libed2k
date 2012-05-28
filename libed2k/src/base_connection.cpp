@@ -42,7 +42,7 @@ namespace libed2k
 
     void base_connection::do_read()
     {
-        if (m_read_in_progress) return;
+        if (is_closed() || m_read_in_progress) return;
 
         m_deadline.expires_from_now(
             boost::posix_time::seconds(m_ses.settings().peer_timeout));
@@ -54,22 +54,20 @@ namespace libed2k
 
     void base_connection::do_write()
     {
-        // send the actual buffer
-        if (!m_write_in_progress && !m_send_buffer.empty())
-        {
-            // check quota here
-            int amount_to_send = m_send_buffer.size();
+        if (is_closed() || m_write_in_progress || m_send_buffer.empty()) return;
 
-            // set deadline timer
-            m_deadline.expires_from_now(
-                boost::posix_time::seconds(m_ses.settings().peer_timeout));
+        // check quota here
+        int amount_to_send = m_send_buffer.size();
 
-            const std::list<boost::asio::const_buffer>& buffers =
-                m_send_buffer.build_iovec(amount_to_send);
-            boost::asio::async_write(*m_socket, buffers, make_write_handler(
-                                         boost::bind(&base_connection::on_write, self(), _1, _2)));
-            m_write_in_progress = true;
-        }
+        // set deadline timer
+        m_deadline.expires_from_now(
+            boost::posix_time::seconds(m_ses.settings().peer_timeout));
+
+        const std::list<boost::asio::const_buffer>& buffers =
+            m_send_buffer.build_iovec(amount_to_send);
+        boost::asio::async_write(*m_socket, buffers, make_write_handler(
+                                     boost::bind(&base_connection::on_write, self(), _1, _2)));
+        m_write_in_progress = true;
     }
 
     void base_connection::copy_send_buffer(char const* buf, int size)

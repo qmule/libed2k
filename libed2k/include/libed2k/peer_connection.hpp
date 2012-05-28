@@ -189,6 +189,7 @@ namespace libed2k
         void on_end_download(const error_code& error);
         void on_shared_files_request(const error_code& error);
         void on_shared_files_answer(const error_code& error);
+        void on_shared_files_denied(const error_code& error);
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);

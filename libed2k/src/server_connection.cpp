@@ -432,7 +432,7 @@ namespace libed2k
                 do_read();
 
             }
-            catch(libed2k_exception& e)
+            catch(libed2k_exception&)
             {
                 ERR("packet parse error");
                 close(errors::decode_packet_error);

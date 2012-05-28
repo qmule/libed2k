@@ -32,7 +32,7 @@ namespace libed2k {
     class server_connection;
     class transfer;
     class add_transfer_params;
-    class transfer_handle;
+    struct transfer_handle;
 
     namespace aux
     {

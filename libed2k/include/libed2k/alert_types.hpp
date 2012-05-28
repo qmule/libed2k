@@ -284,8 +284,6 @@ namespace libed2k
         peer_message_alert(client_id_type nIP, const std::string& strMessage) : peer_alert(nIP), m_strMessage(strMessage)
         {}
 
-        virtual int category() const { return static_category; }
-
         virtual std::auto_ptr<alert> clone() const
         {
             return std::auto_ptr<alert>(new peer_message_alert(*this));
@@ -301,8 +299,6 @@ namespace libed2k
     {
         peer_captcha_request_alert(client_id_type nIP, const std::vector<unsigned char>& captcha) : peer_alert(nIP), m_captcha(captcha)
         {}
-
-        virtual int category() const { return static_category; }
 
         virtual std::auto_ptr<alert> clone() const
         {
@@ -320,8 +316,6 @@ namespace libed2k
         peer_captcha_result_alert(client_id_type nIP, boost::uint8_t nResult) : peer_alert(nIP), m_nResult(nResult)
         {}
 
-        virtual int category() const { return static_category; }
-
         virtual std::auto_ptr<alert> clone() const
         {
             return std::auto_ptr<alert>(new peer_captcha_result_alert(*this));
@@ -331,6 +325,20 @@ namespace libed2k
         virtual char const* what() const { return "peer captcha result"; }
 
         boost::uint8_t  m_nResult;
+    };
+
+    struct shared_files_access_denied : peer_alert
+    {
+        shared_files_access_denied(client_id_type nIP) : peer_alert(nIP){}
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "shared files access denied"; }
+        virtual char const* what() const { return "shared files access denied"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new shared_files_access_denied(*this)));
+        }
     };
 
 }

@@ -861,6 +861,15 @@ namespace libed2k
 
     };
 
+    /**
+      * client rejects our request
+     */
+    struct client_shared_files_denied
+    {
+        template<typename Archive>
+        void serialize(Archive& ar){}
+    };
+
     struct client_file_request
     {
         md4_hash m_hFile;
@@ -1270,6 +1279,10 @@ namespace libed2k
     template<> struct packet_type<client_file_answer> {
         static const proto_type value = OP_REQFILENAMEANSWER;
         static const proto_type protocol = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_shared_files_denied> {
+        static const proto_type value   = OP_ASKSHAREDDENIEDANS;
+        static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_file_description> {
         static const proto_type value = OP_FILEDESC;

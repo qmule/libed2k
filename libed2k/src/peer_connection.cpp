@@ -22,6 +22,14 @@ peer_request mk_peer_request(size_t begin, size_t end)
     return r;
 }
 
+std::pair<size_t, size_t> mk_range(const peer_request& r)
+{
+    size_t begin = r.piece * PIECE_SIZE + r.start;
+    size_t end = begin + r.length;
+    assert(begin < end);
+    return std::make_pair(begin, end);
+}
+
 std::pair<peer_request, peer_request> split_request(const peer_request& req)
 {
     peer_request r = req;
@@ -105,6 +113,8 @@ void peer_connection::reset()
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
     add_handler(OP_ASKSHAREDFILES, boost::bind(&peer_connection::on_shared_files_request, this, _1));
+    add_handler(OP_ASKSHAREDDENIEDANS, boost::bind(&peer_connection::on_shared_files_denied, this, _1));
+
     add_handler(OP_ASKSHAREDFILESANSWER, boost::bind(&peer_connection::on_shared_files_answer, this, _1));
 
     // clients talking
@@ -125,6 +135,10 @@ void peer_connection::init()
 
 void peer_connection::second_tick()
 {
+    if (!is_closed())
+    {
+        fill_send_buffer();
+    }
 }
 
 bool peer_connection::attach_to_transfer(const md4_hash& hash)
@@ -803,7 +817,7 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
 void peer_connection::write_hashset_answer(
     const md4_hash& file_hash, const std::vector<md4_hash>& hash_set)
 {
-    DBG("hashset ==> " << m_remote);
+    DBG("hashset[" << hash_set.size() << "] ==> " << m_remote);
     client_hashset_answer ha;
     ha.m_hFile = file_hash;
     ha.m_vhParts.m_collection = hash_set;
@@ -854,7 +868,7 @@ void peer_connection::write_part(const peer_request& r)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     client_sending_part_64 sp;
-    std::pair<size_t, size_t> range = block_range(r.piece, r.start / BLOCK_SIZE, t->filesize());
+    std::pair<size_t, size_t> range = mk_range(r);
     sp.m_hFile = t->hash();
     sp.m_begin_offset = range.first;
     sp.m_end_offset = range.second;
@@ -1119,7 +1133,7 @@ void peer_connection::on_hashset_request(const error_code& error)
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset().hashes());
+            write_hashset_answer(t->hash(), t->hashset().all_hashes());
         }
         else
         {
@@ -1275,6 +1289,19 @@ void peer_connection::on_shared_files_answer(const error_code& error)
     else
     {
         ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
+    }
+}
+
+void peer_connection::on_shared_files_denied(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_files_denied, sfd);
+        DBG("shared files access denied <== " << m_remote);
+    }
+    else
+    {
+        ERR("file answer error " << error.message() << " <== " << m_remote);
     }
 }
 
