@@ -1286,7 +1286,7 @@ namespace libed2k
     };
     template<> struct packet_type<client_file_description> {
         static const proto_type value = OP_FILEDESC;
-        static const proto_type protocol = OP_EDONKEYPROT;
+        static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_filestatus_request> {
         static const proto_type value = OP_SETREQFILEID;
@@ -1392,6 +1392,12 @@ namespace libed2k
     proto_type get_proto_type(const T& t)
     {
         return packet_type<T>::value;
+    }
+
+    template<typename T>
+    std::pair<proto_type, proto_type> get_proto_pair()
+    {
+        return std::make_pair(packet_type<T>::value, packet_type<T>::protocol);
     }
 
     /**

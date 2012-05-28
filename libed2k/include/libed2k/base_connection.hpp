@@ -125,10 +125,11 @@ namespace libed2k{
          * @param error code
          */
         typedef boost::function<void (const error_code&)> packet_handler;
-        // handler storage type
-        typedef std::map<proto_type, packet_handler> handler_map;
 
-        void add_handler(proto_type ptype, packet_handler handler);
+        // handler storage type - first argument opcode + protocol
+        typedef std::map<std::pair<proto_type, proto_type>, packet_handler> handler_map;
+
+        void add_handler(std::pair<proto_type, proto_type> ptype, packet_handler handler);
 
         aux::session_impl& m_ses;
         boost::shared_ptr<tcp::socket> m_socket;

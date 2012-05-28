@@ -88,39 +88,40 @@ void peer_connection::reset()
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
 
-    add_handler(OP_HELLO, boost::bind(&peer_connection::on_hello, this, _1));
-    add_handler(OP_HELLOANSWER, boost::bind(&peer_connection::on_hello_answer, this, _1));
-    add_handler(OP_REQUESTFILENAME, boost::bind(&peer_connection::on_file_request, this, _1));
-    add_handler(OP_REQFILENAMEANSWER, boost::bind(&peer_connection::on_file_answer, this, _1));
-    add_handler(OP_FILEDESC, boost::bind(&peer_connection::on_file_description, this, _1));
-    add_handler(OP_SETREQFILEID, boost::bind(&peer_connection::on_filestatus_request, this, _1));
-    add_handler(OP_FILEREQANSNOFIL, boost::bind(&peer_connection::on_no_file, this, _1));
-    add_handler(OP_FILESTATUS, boost::bind(&peer_connection::on_file_status, this, _1));
-    add_handler(OP_HASHSETREQUEST, boost::bind(&peer_connection::on_hashset_request, this, _1));
-    add_handler(OP_HASHSETANSWER, boost::bind(&peer_connection::on_hashset_answer, this, _1));
-    add_handler(OP_STARTUPLOADREQ, boost::bind(&peer_connection::on_start_upload, this, _1));
-    add_handler(OP_QUEUERANKING, boost::bind(&peer_connection::on_queue_ranking, this, _1));
-    add_handler(OP_ACCEPTUPLOADREQ, boost::bind(&peer_connection::on_accept_upload, this, _1));
-    add_handler(OP_OUTOFPARTREQS, boost::bind(&peer_connection::on_out_parts, this, _1));
-    add_handler(OP_CANCELTRANSFER, boost::bind(&peer_connection::on_cancel_transfer, this, _1));
-    add_handler(OP_REQUESTPARTS,
+    add_handler(std::make_pair(OP_HELLO, OP_EDONKEYPROT), boost::bind(&peer_connection::on_hello, this, _1));
+    add_handler(get_proto_pair<client_hello_answer>(), boost::bind(&peer_connection::on_hello_answer, this, _1));
+    add_handler(get_proto_pair<client_file_request>(), boost::bind(&peer_connection::on_file_request, this, _1));
+    add_handler(get_proto_pair<client_file_answer>(), boost::bind(&peer_connection::on_file_answer, this, _1));
+    add_handler(/*OP_FILEDESC*/get_proto_pair<client_file_description>(), boost::bind(&peer_connection::on_file_description, this, _1));
+    add_handler(/*OP_SETREQFILEID*/get_proto_pair<client_filestatus_request>(), boost::bind(&peer_connection::on_filestatus_request, this, _1));
+    add_handler(/*OP_FILEREQANSNOFIL*/get_proto_pair<client_no_file>(), boost::bind(&peer_connection::on_no_file, this, _1));
+    add_handler(/*OP_FILESTATUS*/get_proto_pair<client_file_status>(), boost::bind(&peer_connection::on_file_status, this, _1));
+    add_handler(/*OP_HASHSETREQUEST*/get_proto_pair<client_hashset_request>(), boost::bind(&peer_connection::on_hashset_request, this, _1));
+    add_handler(/*OP_HASHSETANSWER*/get_proto_pair<client_hashset_answer>(), boost::bind(&peer_connection::on_hashset_answer, this, _1));
+    add_handler(/*OP_STARTUPLOADREQ*/get_proto_pair<client_start_upload>(), boost::bind(&peer_connection::on_start_upload, this, _1));
+    add_handler(/*OP_QUEUERANKING*/get_proto_pair<client_queue_ranking>(), boost::bind(&peer_connection::on_queue_ranking, this, _1));
+    add_handler(std::make_pair(OP_ACCEPTUPLOADREQ, OP_EDONKEYPROT), boost::bind(&peer_connection::on_accept_upload, this, _1));
+    add_handler(/*OP_OUTOFPARTREQS*/get_proto_pair<client_out_parts>(), boost::bind(&peer_connection::on_out_parts, this, _1));
+    add_handler(std::make_pair(OP_CANCELTRANSFER, OP_EDONKEYPROT), boost::bind(&peer_connection::on_cancel_transfer, this, _1));
+    add_handler(/*OP_REQUESTPARTS*/get_proto_pair<client_request_parts_32>(),
                 boost::bind(&peer_connection::on_request_parts<client_request_parts_32>, this, _1));
-    add_handler(OP_REQUESTPARTS_I64,
+    add_handler(/*OP_REQUESTPARTS_I64*/get_proto_pair<client_request_parts_64>(),
                 boost::bind(&peer_connection::on_request_parts<client_request_parts_64>, this, _1));
-    add_handler(OP_SENDINGPART,
+    add_handler(/*OP_SENDINGPART*/get_proto_pair<client_sending_part_32>(),
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_32>, this, _1));
-    add_handler(OP_SENDINGPART_I64,
+    add_handler(/*OP_SENDINGPART_I64*/get_proto_pair<client_sending_part_64>(),
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
-    add_handler(OP_END_OF_DOWNLOAD, boost::bind(&peer_connection::on_end_download, this, _1));
-    add_handler(OP_ASKSHAREDFILES, boost::bind(&peer_connection::on_shared_files_request, this, _1));
-    add_handler(OP_ASKSHAREDDENIEDANS, boost::bind(&peer_connection::on_shared_files_denied, this, _1));
+    add_handler(/*OP_END_OF_DOWNLOAD*/get_proto_pair<client_end_download>(), boost::bind(&peer_connection::on_end_download, this, _1));
+    add_handler(/*OP_ASKSHAREDFILES*/get_proto_pair<client_shared_files_request>(), boost::bind(&peer_connection::on_shared_files_request, this, _1));
+    add_handler(/*OP_ASKSHAREDDENIEDANS*/get_proto_pair<client_shared_files_denied>(), boost::bind(&peer_connection::on_shared_files_denied, this, _1));
 
-    add_handler(OP_ASKSHAREDFILESANSWER, boost::bind(&peer_connection::on_shared_files_answer, this, _1));
+    add_handler(/*OP_ASKSHAREDFILESANSWER*/get_proto_pair<client_shared_files_answer>(), boost::bind(&peer_connection::on_shared_files_answer, this, _1));
 
     // clients talking
-    add_handler(OP_MESSAGE, boost::bind(&peer_connection::on_client_message, this, _1));
-    add_handler(OP_CHATCAPTCHAREQ, boost::bind(&peer_connection::on_client_captcha_request, this, _1));
-    add_handler(OP_CHATCAPTCHARES, boost::bind(&peer_connection::on_client_captcha_result, this, _1));
+    add_handler(/*OP_MESSAGE*/get_proto_pair<client_message>(), boost::bind(&peer_connection::on_client_message, this, _1));
+    add_handler(/*OP_CHATCAPTCHAREQ*/get_proto_pair<client_captcha_request>(), boost::bind(&peer_connection::on_client_captcha_request, this, _1));
+    add_handler(/*OP_CHATCAPTCHARES*/get_proto_pair<client_captcha_result>(), boost::bind(&peer_connection::on_client_captcha_result, this, _1));
+
 }
 
 peer_connection::~peer_connection()

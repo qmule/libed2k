@@ -159,7 +159,7 @@ namespace libed2k
             }
 
             //!< search appropriate dispatcher
-            handler_map::iterator itr = m_handlers.find(m_in_header.m_type);
+            handler_map::iterator itr = m_handlers.find(std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
 
             if (itr != m_handlers.end())
             {
@@ -234,7 +234,7 @@ namespace libed2k
         return res;
     }
 
-    void base_connection::add_handler(proto_type ptype, packet_handler handler)
+    void base_connection::add_handler(std::pair<proto_type, proto_type> ptype, packet_handler handler)
     {
         m_handlers.insert(make_pair(ptype, handler));
     }
