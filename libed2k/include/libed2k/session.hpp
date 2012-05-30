@@ -11,6 +11,7 @@
 #include "libed2k/fingerprint.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/peer_handle.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
@@ -98,6 +99,11 @@ namespace libed2k {
         // all transfer_handles must be destructed before the session is destructed!
         transfer_handle add_transfer(const add_transfer_params& params);
         std::vector<transfer_handle> add_transfer_dir(const fs::path& dir);
+        transfer_handle find_transfer(const md4_hash& hash) const;
+        std::vector<transfer_handle> get_transfers() const;
+
+        peer_handle add_peer(client_id_type nIP, int nPort);
+        peer_handle find_peer(client_id_type nIP) const;
 
         std::auto_ptr<alert> pop_alert();
         size_t set_alert_queue_size_limit(size_t queue_size_limit_);
@@ -124,9 +130,6 @@ namespace libed2k {
         void post_shared_directories_request(client_id_type nIP, int nPort);
         void post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory);
         void initialize_peer(client_id_type nIP, int nPort);
-
-        transfer_handle find_transfer(const md4_hash& hash) const;
-        std::vector<transfer_handle> get_transfers() const;
 
         int download_rate_limit() const;
         int upload_rate_limit() const;

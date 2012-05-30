@@ -60,6 +60,8 @@ namespace libed2k
 
         void init();
 
+        aux::session_impl& session() { return m_ses; }
+
         peer* get_peer() const { return m_peer; }
         void set_peer(peer* pi) { m_peer = pi; }
 
@@ -128,6 +130,13 @@ namespace libed2k
         void request_shared_files();
         void request_shared_directories();
         void request_shared_directory_files(const std::string& strDirectory);
+
+        misc_options get_misc_options() const { return m_misc_options; }
+        misc_options2 get_misc_options2() const { return m_misc_options2; }
+        std::string get_name() const { return m_strName; }
+        int get_version() const { return m_nVersion; }
+        int get_port() const { return m_nPort; }
+        bool is_active() const { return m_active; }
     private:
 
         // constructor method
@@ -365,8 +374,9 @@ namespace libed2k
         bool            m_bOsInfoSupport;
         bool            m_bValueBasedTypeTags;
 
-
-
+        // initialized in hello answer
+        misc_options    m_misc_options;
+        misc_options2   m_misc_options2;
     };
 
 }

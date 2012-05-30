@@ -19,6 +19,7 @@
 #include "libed2k/fingerprint.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/peer_handle.hpp"
 #include "libed2k/session_settings.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/util.hpp"
@@ -119,7 +120,9 @@ namespace libed2k {
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
+            boost::weak_ptr<peer_connection> find_peer(client_id_type nIP);
             transfer_handle find_transfer_handle(const md4_hash& hash);
+            peer_handle find_peer_handle(client_id_type nIP);
             std::vector<transfer_handle> get_transfers();
 
             void close_connection(const peer_connection* p, const error_code& ec);
@@ -136,6 +139,7 @@ namespace libed2k {
               * add transfer from current thread directly
              */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
+            peer_handle add_peer(client_id_type nIP, int nPort, error_code& ec);
             std::vector<transfer_handle> add_transfer_dir(const fs::path& dir, error_code& ec);
 
             int max_connections() const { return m_max_connections; }

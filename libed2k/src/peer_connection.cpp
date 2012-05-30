@@ -917,8 +917,6 @@ void peer_connection::on_hello_answer(const error_code& error)
     {
         DECODE_PACKET(client_hello_answer, packet);
 
-        misc_options mo;
-        misc_options2 mo2;
         // extract user info from packet
         for (size_t n = 0; n < packet.m_list.count(); ++n)
         {
@@ -964,11 +962,11 @@ void peer_connection::on_hello_answer(const error_code& error)
                     break;
 
                 case CT_EMULE_MISCOPTIONS1:
-                    mo.load(p->asInt());
+                    m_misc_options.load(p->asInt());
                     break;
 
                 case CT_EMULE_MISCOPTIONS2:
-                    mo2.load(p->asInt());
+                    m_misc_options2.load(p->asInt());
                     break;
 
                 // Special tag for Compat. Clients Misc options.
@@ -993,7 +991,7 @@ void peer_connection::on_hello_answer(const error_code& error)
                     break;
             }
         }// for
-
+/*
         m_ses.m_alerts.post_alert_should(
             peer_connected_alert(address2int(m_remote.address()),
                                  m_strName,
@@ -1004,6 +1002,7 @@ void peer_connection::on_hello_answer(const error_code& error)
                                  mo,
                                  mo2,
                                  m_active));
+                                 */
 
     }
     else

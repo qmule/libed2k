@@ -623,9 +623,23 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
+
+boost::weak_ptr<peer_connection> session_impl::find_peer(client_id_type nIP)
+{
+    connection_map::iterator itr =
+            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, nIP));
+    if (itr != m_connections.end())  {  return make_shared_from_intrusive(itr->get()); }
+    return boost::weak_ptr<peer_connection>();
+}
+
 transfer_handle session_impl::find_transfer_handle(const md4_hash& hash)
 {
     return transfer_handle(find_transfer(hash));
+}
+
+peer_handle session_impl::find_peer_handle(client_id_type nIP)
+{
+    return peer_handle(find_peer(nIP));
 }
 
 std::vector<transfer_handle> session_impl::get_transfers()
@@ -692,6 +706,38 @@ transfer_handle session_impl::add_transfer(
     //m_transfers.
 
     return transfer_handle(transfer_ptr);
+}
+
+peer_handle  session_impl::add_peer(client_id_type nIP, int nPort, error_code& ec)
+{
+    if (is_aborted())
+    {
+        ec = errors::session_is_closing;
+        return peer_handle();
+    }
+
+    boost::weak_ptr<peer_connection> ptr = find_peer(nIP);
+
+    // peer already connected
+    if (ptr.lock())
+    {
+        // already exists
+        return peer_handle(ptr);
+    }
+
+    tcp::endpoint endp(boost::asio::ip::address::from_string(int2ipstr(nIP)), nPort);
+    boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
+    setup_socket_buffers(*sock);
+
+    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, boost::weak_ptr<transfer>(), sock, endp, NULL));
+
+    m_connections.insert(c);
+
+    m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
+                    boost::bind(&peer_connection::on_timeout, c),
+                    libtorrent::seconds(m_settings.peer_connect_timeout));
+
+    return (peer_handle(make_shared_from_intrusive(c.get())));
 }
 
 std::vector<transfer_handle> session_impl::add_transfer_dir(
