@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\peer_connection_handle.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\policy.cpp"
 				>
 			</File>
@@ -296,6 +300,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\peer_connection.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\peer_connection_handle.hpp"
 				>
 			</File>
 			<File
