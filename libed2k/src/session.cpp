@@ -124,36 +124,6 @@ void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     m_impl->post_sources_request(hFile, nSize);
 }
 
-void session::post_message(client_id_type nIP, int nPort, const std::string& strMessage)
-{
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_message(nIP, nPort, strMessage);
-}
-
-void session::post_shared_files_request(client_id_type nIP, int nPort)
-{
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_shared_files_request(nIP, nPort);
-}
-
-void session::post_shared_directories_request(client_id_type nIP, int nPort)
-{
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_shared_directories_request(nIP, nPort);
-}
-
-void session::post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory)
-{
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_shared_directory_files_request(nIP, nPort, strDirectory);
-}
-
-void session::initialize_peer(client_id_type nIP, int nPort)
-{
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->initialize_peer(nIP, nPort);
-}
-
 transfer_handle session::find_transfer(const md4_hash & hash) const
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);

@@ -1120,55 +1120,9 @@ void session_impl::post_search_more_result_request()
     m_server_connection->post_search_more_result_request();
 }
 
-void session_impl::post_message(client_id_type nIP, int nPort, const std::string& strMessage)
-{
-    initialize_peer(nIP, nPort).get()->send_message(strMessage);
-}
-
-void session_impl::post_shared_files_request(client_id_type nIP, int nPort)
-{
-    initialize_peer(nIP, nPort).get()->request_shared_files();
-}
-
-void session_impl::post_shared_directories_request(client_id_type nIP, int nPort)
-{
-    initialize_peer(nIP, nPort).get()->request_shared_directories();
-}
-
-void session_impl::post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory)
-{
-    initialize_peer(nIP, nPort).get()->request_shared_directory_files(strDirectory);
-}
-
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_server_connection->post_sources_request(hFile, nSize);
-}
-
-boost::intrusive_ptr<peer_connection> session_impl::initialize_peer(client_id_type nIP, int nPort)
-{
-    connection_map::iterator itr =
-                std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_network_point, _1, net_identifier(nIP, 0)));
-
-    //find(m_connections.begin(), m_connections.end(), net_identifier(0,0));
-    if (itr != m_connections.end())
-    {
-        return *itr;
-    }
-
-    tcp::endpoint endp(boost::asio::ip::address::from_string(int2ipstr(nIP)), nPort);
-    boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
-    setup_socket_buffers(*sock);
-
-    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, boost::weak_ptr<transfer>(), sock, endp, NULL));
-
-    m_connections.insert(c);
-
-    m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
-                    boost::bind(&peer_connection::on_timeout, c),
-                    libtorrent::seconds(m_settings.peer_connect_timeout));
-
-    return (c);
 }
 
 void session_impl::announce(shared_file_entry& entry)

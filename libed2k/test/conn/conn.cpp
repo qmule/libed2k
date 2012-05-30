@@ -201,7 +201,6 @@ int main(int argc, char* argv[])
                 pch.get_shared_directories();
                 break;
             }
-                break;
             case 'e':
             {
                 if (pch.empty())

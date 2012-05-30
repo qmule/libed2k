@@ -88,7 +88,6 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(is_sequential_download(), false);
     }
 
-
     void transfer_handle::set_sequential_download(bool sd) const
     {
         LIBED2K_FORWARD(set_sequential_download(sd));

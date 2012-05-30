@@ -123,15 +123,6 @@ namespace libed2k {
          */
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
-        /**
-          * send message to peer
-         */
-        void post_message(client_id_type nIP, int nPort, const std::string& strMessage);
-        void post_shared_files_request(client_id_type nIP, int nPort);
-        void post_shared_directories_request(client_id_type nIP, int nPort);
-        void post_shared_directory_files_request(client_id_type nIP, int nPort, const std::string& strDirectory);
-        void initialize_peer(client_id_type nIP, int nPort);
-
         int download_rate_limit() const;
         int upload_rate_limit() const;
 
