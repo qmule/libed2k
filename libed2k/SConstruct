@@ -9,11 +9,12 @@ def globrec(rootdir, wildcard):
             matches.append(join(root, filename))
     return matches
 
-
 # Constants 
 incdir = 'include'
 srcdir = 'src'
 bindir = 'bin'
+libdir = 'lib'
+libname = 'ed2k'
 
 # Environment
 boostRoot      = os.getenv('BOOST_ROOT')
@@ -32,5 +33,5 @@ args = {
 
 env = Environment(**args)
 sources = globrec(srcdir, '*.cpp')
-ed2k_client = join('test', 'ed2k_client', 'ed2k_client.cpp')
-env.Program(join(bindir, 'ed2k_client'), sources + [ed2k_client])
+lib = env.StaticLibrary(join(libdir, libname), sources)
+env.Program(join(bindir, 'ed2k_client'), [join('test', 'ed2k_client', 'ed2k_client.cpp'), lib])
