@@ -55,19 +55,25 @@ std::vector<transfer_handle> session::add_transfer_dir(const fs::path& dir)
     return ret;
 }
 
-peer_handle session::add_peer(client_id_type nIP, int nPort)
+peer_connection_handle session::add_peer_connection(const net_identifier& np)
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);
     error_code ec;
-    peer_handle ret = m_impl->add_peer(nIP, nPort, ec);
+    peer_connection_handle ret = m_impl->add_peer_connection(np, ec);
     if (ec) throw libed2k_exception(ec);
     return ret;
 }
 
-peer_handle session::find_peer(client_id_type nIP) const
+peer_connection_handle session::find_peer_connection(const net_identifier& np) const
 {
     boost::mutex::scoped_lock l(m_impl->m_mutex);
-    return m_impl->find_peer_handle(nIP);
+    return m_impl->find_peer_connection_handle(np);
+}
+
+peer_connection_handle session::find_peer_connection(const md4_hash& hash) const
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    return m_impl->find_peer_connection_handle(hash);
 }
 
 std::auto_ptr<alert> session::pop_alert()

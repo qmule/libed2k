@@ -398,6 +398,7 @@ namespace libed2k
                         server_info_entry se;
                         ia >> se;
                         se.dump();
+                        m_hServer = se.m_hServer;
                         m_ses.m_alerts.post_alert_should(server_identity_alert(se.m_hServer, se.m_network_point,
                                 se.m_list.getStringTagByNameId(ST_SERVERNAME),
                                 se.m_list.getStringTagByNameId(ST_DESCRIPTION)));
@@ -416,7 +417,9 @@ namespace libed2k
                         search_result sfl;
                         ia >> sfl;
 
-                        m_ses.m_alerts.post_alert_should(shared_files_alert(address2int(m_target.address()), sfl.m_files, (sfl.m_more_results_avaliable != 0)));
+                        m_ses.m_alerts.post_alert_should(
+                                shared_files_alert(net_identifier(address2int(m_target.address()), m_target.port()), m_hServer,
+                                        sfl.m_files, (sfl.m_more_results_avaliable != 0)));
                         break;
                     }
                     case OP_CALLBACKREQUESTED:

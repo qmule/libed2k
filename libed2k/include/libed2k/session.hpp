@@ -11,7 +11,7 @@
 #include "libed2k/fingerprint.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/transfer_handle.hpp"
-#include "libed2k/peer_handle.hpp"
+#include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
@@ -102,8 +102,9 @@ namespace libed2k {
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
 
-        peer_handle add_peer(client_id_type nIP, int nPort);
-        peer_handle find_peer(client_id_type nIP) const;
+        peer_connection_handle add_peer_connection(const net_identifier& np);
+        peer_connection_handle find_peer_connection(const net_identifier& np) const;
+        peer_connection_handle find_peer_connection(const md4_hash& hash) const;
 
         std::auto_ptr<alert> pop_alert();
         size_t set_alert_queue_size_limit(size_t queue_size_limit_);

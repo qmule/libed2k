@@ -580,6 +580,7 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 
     // do not check transfers when edonkey server come to us
     // compare only by address
+    /*
     if (m_server_connection->m_target.address() != endp.address())
     {
         // check if we have any active transfers
@@ -597,6 +598,7 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
         }
 
     }
+    */
 
     setup_socket_buffers(*s);
 
@@ -624,12 +626,19 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
 }
 
 
-boost::weak_ptr<peer_connection> session_impl::find_peer(client_id_type nIP)
+boost::intrusive_ptr<peer_connection> session_impl::find_peer_connection(const net_identifier& np) const
 {
-    connection_map::iterator itr =
-            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, nIP));
-    if (itr != m_connections.end())  {  return make_shared_from_intrusive(itr->get()); }
-    return boost::weak_ptr<peer_connection>();
+    connection_map::const_iterator itr = std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_network_point, _1, np));
+    if (itr != m_connections.end())  {  return *itr; }
+    return boost::intrusive_ptr<peer_connection>();
+}
+
+boost::intrusive_ptr<peer_connection> session_impl::find_peer_connection(const md4_hash& hash) const
+{
+    connection_map::const_iterator itr =
+            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_hash, _1, hash));
+    if (itr != m_connections.end())  {  return *itr; }
+    return boost::intrusive_ptr<peer_connection>();
 }
 
 transfer_handle session_impl::find_transfer_handle(const md4_hash& hash)
@@ -637,9 +646,14 @@ transfer_handle session_impl::find_transfer_handle(const md4_hash& hash)
     return transfer_handle(find_transfer(hash));
 }
 
-peer_handle session_impl::find_peer_handle(client_id_type nIP)
+peer_connection_handle session_impl::find_peer_connection_handle(const net_identifier& np)
 {
-    return peer_handle(find_peer(nIP));
+    return peer_connection_handle(find_peer_connection(np), this);
+}
+
+peer_connection_handle session_impl::find_peer_connection_handle(const md4_hash& hash)
+{
+    return peer_connection_handle(find_peer_connection(hash), this);
 }
 
 std::vector<transfer_handle> session_impl::get_transfers()
@@ -708,24 +722,27 @@ transfer_handle session_impl::add_transfer(
     return transfer_handle(transfer_ptr);
 }
 
-peer_handle  session_impl::add_peer(client_id_type nIP, int nPort, error_code& ec)
+peer_connection_handle session_impl::add_peer_connection(net_identifier np, error_code& ec)
 {
+    DBG("session_impl::add_peer_connection");
+
     if (is_aborted())
     {
         ec = errors::session_is_closing;
-        return peer_handle();
+        return peer_connection_handle();
     }
 
-    boost::weak_ptr<peer_connection> ptr = find_peer(nIP);
+    boost::intrusive_ptr<peer_connection> ptr = find_peer_connection(np);
 
     // peer already connected
-    if (ptr.lock())
+    if (ptr)
     {
+        DBG("connection exists");
         // already exists
-        return peer_handle(ptr);
+        return peer_connection_handle(ptr, this);
     }
 
-    tcp::endpoint endp(boost::asio::ip::address::from_string(int2ipstr(nIP)), nPort);
+    tcp::endpoint endp(boost::asio::ip::address::from_string(int2ipstr(np.m_nIP)), np.m_nPort);
     boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
     setup_socket_buffers(*sock);
 
@@ -737,7 +754,7 @@ peer_handle  session_impl::add_peer(client_id_type nIP, int nPort, error_code& e
                     boost::bind(&peer_connection::on_timeout, c),
                     libtorrent::seconds(m_settings.peer_connect_timeout));
 
-    return (peer_handle(make_shared_from_intrusive(c.get())));
+    return (peer_connection_handle(c, this));
 }
 
 std::vector<transfer_handle> session_impl::add_transfer_dir(
@@ -1131,8 +1148,9 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
 boost::intrusive_ptr<peer_connection> session_impl::initialize_peer(client_id_type nIP, int nPort)
 {
     connection_map::iterator itr =
-                std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_ip_address, _1, nIP));
+                std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_network_point, _1, net_identifier(nIP, 0)));
 
+    //find(m_connections.begin(), m_connections.end(), net_identifier(0,0));
     if (itr != m_connections.end())
     {
         return *itr;

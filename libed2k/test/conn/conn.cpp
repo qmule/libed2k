@@ -10,6 +10,7 @@
 #include "libed2k/util.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/search.hpp"
+#include "libed2k/peer_connection_handle.hpp"
 
 using namespace libed2k;
 
@@ -135,6 +136,9 @@ int main(int argc, char* argv[])
 
     DBG("addr: "<< int2ipstr(address2int(a)));
     std::string strUser;
+    libed2k::peer_connection_handle pch;
+
+    net_identifier ni(address2int(a), nPort);
     while ((std::cin >> strUser))
     {
         if (strUser == "quit")
@@ -153,23 +157,73 @@ int main(int argc, char* argv[])
                 ses.server_conn_start();
                 break;
             case 'f':
-                ses.post_search_request(order);
-                break;
+                {
+                    if (pch.empty())
+                    {
+                        pch = ses.add_peer_connection(ni);
+                    }
+
+                    DBG("get shared files");
+                    pch.get_shared_files();
+                    break;
+                }
             case 'm':
-                ses.post_message(address2int(a), nPort, "Hello aMule");
+                {
+                    if (pch.empty())
+                    {
+                        DBG("pch empty - create it");
+                        pch = ses.add_peer_connection(ni);
+                    }
+
+                    DBG("pch send message");
+                    pch.send_message("Hello it is peer connection handle");
+                }
                 break;
             case 's':
-                ses.post_shared_files_request(address2int(a), nPort);
+            {
+                if (pch.empty())
+                {
+                    pch = ses.add_peer_connection(ni);
+                }
+
+                pch.get_shared_files();
+            }
                 break;
             case 'r':
-                ses.post_shared_directories_request(address2int(a), nPort);
+            {
+                if (pch.empty())
+                {
+                    pch = ses.add_peer_connection(ni);
+                }
+
+                DBG("get shared directories");
+
+                pch.get_shared_directories();
+                break;
+            }
                 break;
             case 'e':
-                ses.post_shared_directory_files_request(address2int(a), nPort, "/home/d95a1/sqllib/samples/cpp");
+            {
+                if (pch.empty())
+                {
+                    pch = ses.add_peer_connection(ni);
+                }
+
+                DBG("get shared files");
+                pch.get_shared_directory_files("/home/d95a1/sqllib/samples/cpp");
                 break;
+            }
             case 'i':
-                ses.initialize_peer(address2int(a), nPort);
+            {
+                pch = ses.find_peer_connection(ni);
+
+                if (pch.empty())
+                {
+                    DBG("peer connection not exists - add it");
+                    pch = ses.add_peer_connection(ni);
+                }
                 break;
+            }
             default:
                 break;
             };
@@ -177,7 +231,10 @@ int main(int argc, char* argv[])
 
         if (strUser.size() > 1)
         {
-            ses.post_message(address2int(a), nPort, strUser);
+            if (!pch.empty())
+            {
+                pch.send_message(strUser);
+            }
         }
 
 
@@ -219,7 +276,7 @@ int main(int argc, char* argv[])
 
                 if (shared_directory_files_alert* p2 = dynamic_cast<shared_directory_files_alert*>(p))
                 {
-                    DBG("shared dir files: " << int2ipstr(p2->m_nIP) << " count " << p2->m_files.m_collection.size() << " for " << p2->m_strDirectory);
+                    DBG("shared dir files: " << int2ipstr(p2->m_np.m_nIP) << " count " << p2->m_files.m_collection.size() << " for " << p2->m_strDirectory);
                     //p->m_files.dump();
                 }
                 else
@@ -279,11 +336,11 @@ int main(int argc, char* argv[])
             else if(dynamic_cast<peer_message_alert*>(a.get()))
             {
                 peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
-                DBG("MSG: ADDR: " << int2ipstr(p->m_nIP) << " MSG " << p->m_strMessage);
+                DBG("MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
             }
             else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
             {
-                DBG("peer disconnected: " << libed2k::int2ipstr(p->m_nIP));
+                DBG("peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
             }
             else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
             {
@@ -303,15 +360,15 @@ int main(int argc, char* argv[])
             }
             else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
             {
-                DBG("peer connected: " << int2ipstr(p->m_nIP) << " status: " << p->m_active);
+                DBG("peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
             }
             else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
             {
-                DBG("peer denied access to shared files: " << int2ipstr(p->m_nIP));
+                DBG("peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
             }
             else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
             {
-                DBG("peer shared directories: " << int2ipstr(p->m_nIP) << " count: " << p->m_dirs.size());
+                DBG("peer shared directories: " << int2ipstr(p->m_np.m_nIP) << " count: " << p->m_dirs.size());
 
                 for (size_t n = 0; n < p->m_dirs.size(); ++n)
                 {

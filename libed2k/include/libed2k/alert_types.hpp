@@ -155,80 +155,6 @@ namespace libed2k
         error_code m_error;
     };
 
-    /**
-      * this alert throws on server search results and on user shared files
-     */
-    struct shared_files_alert : alert
-    {
-        const static int static_category = alert::server_notification | alert::peer_notification;
-
-        shared_files_alert(client_id_type nIP, const shared_files_list& files, bool more) : m_nIP(nIP), m_files(files), m_more(more){}
-        virtual int category() const { return static_category; }
-
-        virtual std::string message() const { return "search result from string"; }
-        virtual char const* what() const { return "search result from server"; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return (std::auto_ptr<alert>(new shared_files_alert(*this)));
-        }
-
-        client_id_type          m_nIP;
-        shared_files_list       m_files;
-        bool                    m_more;
-    };
-
-    /**
-      * this alert throws on server search results and on user shared files
-     */
-    struct shared_directory_files_alert : shared_files_alert
-    {
-        const static int static_category = alert::peer_notification;
-
-        shared_directory_files_alert(client_id_type nIP, const std::string& strDirectory, const shared_files_list& files) :
-            shared_files_alert(nIP, files, false), m_strDirectory(strDirectory)
-        {
-        }
-
-        virtual int category() const { return static_category; }
-
-        virtual std::string message() const { return "search result for directory from peer"; }
-        virtual char const* what() const { return "search result for directory from peer"; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return (std::auto_ptr<alert>(new shared_directory_files_alert(*this)));
-        }
-
-        std::string m_strDirectory;
-    };
-
-    struct shared_directories_alert : alert
-    {
-        const static int static_category = alert::peer_notification;
-
-        shared_directories_alert(client_id_type nIP, const client_shared_directories_answer& dirs) : m_nIP(nIP)
-        {
-            for (size_t n = 0; n < dirs.m_dirs.m_collection.size(); ++n)
-            {
-                m_dirs.push_back(dirs.m_dirs.m_collection[n].m_collection);
-            }
-        }
-
-        virtual int category() const { return static_category; }
-
-        virtual std::string message() const { return "search result from string"; }
-        virtual char const* what() const { return "search result from server"; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return (std::auto_ptr<alert>(new shared_directories_alert(*this)));
-        }
-
-        client_id_type              m_nIP;
-        std::vector<std::string>    m_dirs;
-    };
-
     struct mule_listen_failed_alert: alert
     {
         mule_listen_failed_alert(tcp::endpoint const& ep, error_code const& ec):
@@ -256,7 +182,7 @@ namespace libed2k
     struct peer_alert : alert
     {
         const static int static_category = alert::peer_notification;
-        peer_alert(client_id_type nIP) : m_nIP(nIP)
+        peer_alert(const net_identifier& np, const md4_hash& hash) : m_np(np), m_hash(hash)
         {}
 
         virtual int category() const { return static_category; }
@@ -269,30 +195,95 @@ namespace libed2k
         virtual std::string message() const { return std::string("peer alert"); }
         virtual char const* what() const { return "peer alert"; }
 
-        client_id_type m_nIP;
+        net_identifier  m_np;
+        md4_hash        m_hash;
     };
 
+    /**
+      * this alert throws on server search results and on user shared files
+     */
+    struct shared_files_alert : peer_alert
+    {
+        const static int static_category = alert::server_notification | alert::peer_notification;
+
+        shared_files_alert(const net_identifier& np, const md4_hash& hash, const shared_files_list& files, bool more) :
+            peer_alert(np, hash),
+            m_files(files),
+            m_more(more){}
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "search result from string"; }
+        virtual char const* what() const { return "search result from server"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new shared_files_alert(*this)));
+        }
+
+        shared_files_list       m_files;
+        bool                    m_more;
+    };
+
+    struct shared_directories_alert : peer_alert
+    {
+        const static int static_category = alert::peer_notification;
+
+        shared_directories_alert(const net_identifier& np, const md4_hash& hash, const client_shared_directories_answer& dirs) :
+            peer_alert(np, hash)
+        {
+            for (size_t n = 0; n < dirs.m_dirs.m_collection.size(); ++n)
+            {
+                m_dirs.push_back(dirs.m_dirs.m_collection[n].m_collection);
+            }
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "search result from string"; }
+        virtual char const* what() const { return "search result from server"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new shared_directories_alert(*this)));
+        }
+
+        std::vector<std::string>    m_dirs;
+    };
+
+    /**
+      * this alert throws on server search results and on user shared files
+     */
+    struct shared_directory_files_alert : shared_files_alert
+    {
+        const static int static_category = alert::peer_notification;
+
+        shared_directory_files_alert(const net_identifier& np,
+                const md4_hash& hash,
+                const std::string& strDirectory,
+                const shared_files_list& files) :
+            shared_files_alert(np, hash, files, false), m_strDirectory(strDirectory)
+        {
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "search result for directory from peer"; }
+        virtual char const* what() const { return "search result for directory from peer"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new shared_directory_files_alert(*this)));
+        }
+
+        std::string m_strDirectory;
+    };
 
     struct peer_connected_alert : peer_alert
     {
 
         virtual int category() const { return static_category | alert::status_notification; }
-        peer_connected_alert(client_id_type nIP,
-                            const std::string& strName,
-                            int nVersion,
-                            const std::string& strModVersion,
-                            int      nModVersion,
-                            int nUDPPort,
-                            const misc_options& mo,
-                            const misc_options2& mo2,
-                            bool bActive) : peer_alert(nIP),
-                                            m_strName(strName),
-                                            m_nVersion(nVersion),
-                                            m_strModVersion(strModVersion),
-                                            m_nModVersion(nModVersion),
-                                            m_nUDPPort(nUDPPort),
-                                            m_mo(mo),
-                                            m_mo2(mo2),
+        peer_connected_alert(const net_identifier& np, const md4_hash& hash,
+                            bool bActive) : peer_alert(np, hash),
                                             m_active(bActive)
         {}
 
@@ -303,20 +294,15 @@ namespace libed2k
 
         virtual std::string message() const { return std::string("peer connected alert"); }
         virtual char const* what() const { return "peer connected alert"; }
-        std::string m_strName;
-        int         m_nVersion;
-        std::string m_strModVersion;
-        int         m_nModVersion;
-        int         m_nUDPPort;
-        misc_options    m_mo;
-        misc_options2   m_mo2;
         bool m_active;
     };
 
     struct peer_disconnected_alert : public peer_alert
     {
         virtual int category() const { return static_category | alert::status_notification; }
-        peer_disconnected_alert(client_id_type nIP, const error_code& ec) : peer_alert(nIP), m_ec(ec)
+        peer_disconnected_alert(const net_identifier& np,
+                const md4_hash& hash,
+                const error_code& ec) : peer_alert(np, hash), m_ec(ec)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -329,10 +315,10 @@ namespace libed2k
         error_code m_ec;
     };
 
-
     struct peer_message_alert : peer_alert
     {
-        peer_message_alert(client_id_type nIP, const std::string& strMessage) : peer_alert(nIP), m_strMessage(strMessage)
+        peer_message_alert(const net_identifier& np, const md4_hash& hash, const std::string& strMessage) :
+            peer_alert(np, hash), m_strMessage(strMessage)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -348,7 +334,8 @@ namespace libed2k
 
     struct peer_captcha_request_alert : peer_alert
     {
-        peer_captcha_request_alert(client_id_type nIP, const std::vector<unsigned char>& captcha) : peer_alert(nIP), m_captcha(captcha)
+        peer_captcha_request_alert(const net_identifier& np, const md4_hash& hash, const std::vector<unsigned char>& captcha) :
+            peer_alert(np, hash), m_captcha(captcha)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -364,7 +351,8 @@ namespace libed2k
 
     struct peer_captcha_result_alert : peer_alert
     {
-        peer_captcha_result_alert(client_id_type nIP, boost::uint8_t nResult) : peer_alert(nIP), m_nResult(nResult)
+        peer_captcha_result_alert(const net_identifier& np, const md4_hash& hash, boost::uint8_t nResult) :
+            peer_alert(np, hash), m_nResult(nResult)
         {}
 
         virtual std::auto_ptr<alert> clone() const
@@ -380,7 +368,9 @@ namespace libed2k
 
     struct shared_files_access_denied : peer_alert
     {
-        shared_files_access_denied(client_id_type nIP) : peer_alert(nIP){}
+        shared_files_access_denied(const net_identifier& np, const md4_hash& hash) :
+            peer_alert(np, hash)
+        {}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return "shared files access denied"; }

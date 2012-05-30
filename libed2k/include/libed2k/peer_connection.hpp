@@ -125,7 +125,7 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
-        bool has_ip_address(client_id_type nIP) const;
+
         void send_message(const std::string& strMessage);
         void request_shared_files();
         void request_shared_directories();
@@ -133,10 +133,16 @@ namespace libed2k
 
         misc_options get_misc_options() const { return m_misc_options; }
         misc_options2 get_misc_options2() const { return m_misc_options2; }
-        std::string get_name() const { return m_strName; }
-        int get_version() const { return m_nVersion; }
-        int get_port() const { return m_nPort; }
+
         bool is_active() const { return m_active; }
+        net_identifier get_network_point() const;
+        md4_hash get_connection_hash() const { return m_hClient; }
+        peer_connection_options get_options() const { return m_options; }
+
+        bool has_network_point(const net_identifier& np) const;
+        bool has_hash(const md4_hash& hash) const;
+        bool operator==(const net_identifier& np) const;
+        bool operator==(const md4_hash& hash) const;
     private:
 
         // constructor method
@@ -360,19 +366,8 @@ namespace libed2k
         char m_channel_state[2];
 
         // client information
-        std::string     m_strName;
-        int             m_nVersion;
-        std::string     m_strModVersion;
-        int             m_nModVersion;
-        int             m_nPort;
-        int             m_nUDPPort;
-        int             m_nBuddyUDP;
-        client_id_type  m_nBuddyIP;
-        int             m_nBuddyPort;
-        int             m_nClientVersion;
-        int             m_nCompatibleClient;
-        bool            m_bOsInfoSupport;
-        bool            m_bValueBasedTypeTags;
+        md4_hash        m_hClient;
+        peer_connection_options m_options;
 
         // initialized in hello answer
         misc_options    m_misc_options;

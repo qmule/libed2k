@@ -432,6 +432,17 @@ namespace libed2k
         m_proto = get_proto_type(m_files_list);
     }
 
+    peer_connection_options::peer_connection_options() : m_nVersion(0),
+                 m_nModVersion(0),
+                 m_nPort(0),
+                 m_nUDPPort(0),
+                 m_nBuddyUDP(0),
+                 m_nClientVersion(0),
+                 m_nCompatibleClient(0),
+                 m_bOsInfoSupport(false),
+                 m_bValueBasedTypeTags(false)
+    {}
+
     misc_options::misc_options()
     {
         load(0);

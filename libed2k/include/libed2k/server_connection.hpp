@@ -124,6 +124,7 @@ namespace libed2k
         boost::uint32_t                 m_nTCPFlags;
         boost::uint32_t                 m_nAuxPort;
         bool                            m_bInitialization;  //!< set true when we wait for connect
+        md4_hash                        m_hServer;
         tcp::socket                     m_socket;
         dtimer                          m_deadline;         //!< deadline timer for reading operations
 

@@ -42,6 +42,8 @@ namespace libed2k
             duplicate_peer_id,
             too_many_connections,
             invalid_transfer_handle,
+            invalid_peer_connection_handle,
+            session_pointer_is_null,
             // service errors
             filesize_is_zero,
             file_unavaliable,

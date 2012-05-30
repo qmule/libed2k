@@ -408,7 +408,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     m_disconnecting = true;
     base_connection::close(ec); // close transport
     m_ses.close_connection(this, ec);
-    m_ses.m_alerts.post_alert_should(peer_disconnected_alert(address2int(m_remote.address()), ec));
+    m_ses.m_alerts.post_alert_should(peer_disconnected_alert(get_network_point(), get_connection_hash(), ec));
 }
 
 void peer_connection::connect(int ticket)
@@ -473,6 +473,11 @@ int peer_connection::picker_options() const
     return ret;
 }
 
+net_identifier peer_connection::get_network_point() const
+{
+    return net_identifier(address2int(m_remote.address()), (m_active)?m_remote.port():m_options.m_nPort);
+}
+
 void peer_connection::on_error(const error_code& error)
 {
     disconnect(error);
@@ -496,10 +501,40 @@ bool peer_connection::can_read(char* state) const
 	return (true);
 }
 
-bool peer_connection::has_ip_address(client_id_type nIP) const
+bool peer_connection::has_network_point(const net_identifier& np) const
 {
-    DBG("peer_connection::has_ip_address(" << m_remote.address().to_string());
-    return (address2int(m_remote.address()) == nIP);
+    DBG("peer_connection::has_ip_address(" << m_remote.address().to_string() << ":" << (m_active?m_remote.port():m_options.m_nPort) <<  ")");
+    DBG("peer_connection::has_ip_address("  << int2ipstr(np.m_nIP) << ":" << np.m_nPort <<  ")");
+
+    bool bRet = false;
+
+    if (m_active)
+    {
+        bRet = (address2int(m_remote.address()) == np.m_nIP && m_remote.port() == np.m_nPort);
+    }
+    else
+    {
+        // for incoming connections we don't know real user port - use port from hello answer
+        bRet = (address2int(m_remote.address()) == np.m_nIP && m_options.m_nPort == np.m_nPort);
+    }
+
+    DBG("result: " << bRet);
+    return (bRet);
+}
+
+bool peer_connection::has_hash(const md4_hash& hash) const
+{
+    return (m_hClient == hash);
+}
+
+bool peer_connection::operator==(const net_identifier& np) const
+{
+    return has_network_point(np);
+}
+
+bool peer_connection::operator==(const md4_hash& hash) const
+{
+    return has_hash(hash);
 }
 
 void peer_connection::send_message(const std::string& strMessage)
@@ -903,6 +938,11 @@ void peer_connection::on_hello(const error_code& error)
     DBG("hello <== " << m_remote);
     if (!error)
     {
+        DECODE_PACKET(client_hello, hello);
+        // store user info
+        m_hClient = hello.m_hClient;
+        m_options.m_nPort = hello.m_network_point.m_nPort;
+        DBG("port << " << m_options.m_nPort);
         write_hello_answer();
     }
     else
@@ -925,40 +965,40 @@ void peer_connection::on_hello_answer(const error_code& error)
             switch(p->getNameId())
             {
                 case CT_NAME:
-                    m_strName    = p->asString();
+                    m_options.m_strName = p->asString();
                     break;
 
                 case CT_VERSION:
-                    m_nVersion  = p->asInt();
+                    m_options.m_nVersion  = p->asInt();
                     break;
 
                 case ET_MOD_VERSION:
                     if (is_string_tag(p))
                     {
-                        m_strModVersion = p->asString();
+                        m_options.m_strModVersion = p->asString();
                     }
                     else if (is_int_tag(p))
                     {
-                        m_nModVersion = p->asInt();
+                        m_options.m_nModVersion = p->asInt();
                     }
                     break;
 
                 case CT_PORT:
-                    m_nPort = p->asInt();
+                    m_options.m_nPort = p->asInt();
                     break;
 
                 case CT_EMULE_UDPPORTS:
-                    m_nUDPPort = p->asInt() & 0xFFFF;
+                    m_options.m_nUDPPort = p->asInt() & 0xFFFF;
                     //dwEmuleTags |= 1;
                     break;
 
                 case CT_EMULE_BUDDYIP:
                     // 32 BUDDY IP
-                    m_nBuddyIP = p->asInt();
+                    m_options.m_buddy_point.m_nIP = p->asInt();
                     break;
 
                 case CT_EMULE_BUDDYUDP:
-                    m_nBuddyPort = p->asInt();
+                    m_options.m_buddy_point.m_nPort = p->asInt();
                     break;
 
                 case CT_EMULE_MISCOPTIONS1:
@@ -973,8 +1013,8 @@ void peer_connection::on_hello_answer(const error_code& error)
                 case CT_EMULECOMPAT_OPTIONS:
                     //  1 Operative System Info
                     //  1 Value-based-type int tags (experimental!)
-                    m_bValueBasedTypeTags   = (p->asInt() >> 1*1) & 0x01;
-                    m_bOsInfoSupport        = (p->asInt() >> 1*0) & 0x01;
+                    m_options.m_bValueBasedTypeTags   = (p->asInt() >> 1*1) & 0x01;
+                    m_options.m_bOsInfoSupport        = (p->asInt() >> 1*0) & 0x01;
                     break;
 
                 case CT_EMULE_VERSION:
@@ -983,26 +1023,24 @@ void peer_connection::on_hello_answer(const error_code& error)
                     //  7 Min Version (Only need 0-99)
                     //  3 Upd Version (Only need 0-5)
                     //  7 Bld Version (Only need 0-99)
-                    m_nCompatibleClient = (p->asInt() >> 24);
-                    m_nClientVersion = p->asInt() & 0x00ffffff;
+                    m_options.m_nCompatibleClient = (p->asInt() >> 24);
+                    m_options.m_nClientVersion = p->asInt() & 0x00ffffff;
 
                     break;
                 default:
                     break;
             }
         }// for
-/*
+
+        m_hClient = packet.m_hClient;
+        DBG("peer_connection::on_hello_answer: " << m_options.m_strName << " port: " << m_options.m_nPort);
+
         m_ses.m_alerts.post_alert_should(
-            peer_connected_alert(address2int(m_remote.address()),
-                                 m_strName,
-                                 m_nVersion,
-                                 m_strModVersion,
-                                 m_nModVersion,
-                                 m_nUDPPort,
-                                 mo,
-                                 mo2,
+            peer_connected_alert(get_network_point(),
+                                 get_connection_hash(),
                                  m_active));
-                                 */
+
+
 
     }
     else
@@ -1303,7 +1341,7 @@ void peer_connection::on_shared_files_answer(const error_code& error)
     {
         DECODE_PACKET(client_shared_files_answer, packet);
         m_ses.m_alerts.post_alert_should(
-            shared_files_alert(address2int(m_remote.address()), packet.m_files, false));
+            shared_files_alert(get_network_point(), get_connection_hash(), packet.m_files, false));
     }
     else
     {
@@ -1329,7 +1367,7 @@ void peer_connection::on_shared_directories_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_directories_answer, sd);
-        m_ses.m_alerts.post_alert_should(shared_directories_alert(address2int(m_remote.address()), sd));
+        m_ses.m_alerts.post_alert_should(shared_directories_alert(get_network_point(), get_connection_hash(), sd));
     }
     else
     {
@@ -1342,7 +1380,9 @@ void peer_connection::on_shared_directory_files_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_directory_files_answer, sdf);
-        m_ses.m_alerts.post_alert_should(shared_directory_files_alert(address2int(m_remote.address()), sdf.m_directory.m_collection,
+        m_ses.m_alerts.post_alert_should(shared_directory_files_alert(get_network_point(),
+                get_connection_hash(),
+                sdf.m_directory.m_collection,
                 sdf.m_list));
     }
     else
@@ -1358,7 +1398,7 @@ void peer_connection::on_client_message(const error_code& error)
 
         DECODE_PACKET(client_message, packet)
         m_ses.m_alerts.post_alert_should(
-            peer_message_alert(address2int(m_remote.address()), packet.m_strMessage));
+            peer_message_alert(get_network_point(), get_connection_hash(), packet.m_strMessage));
     }
     else
     {
@@ -1372,7 +1412,7 @@ void peer_connection::on_client_captcha_request(const error_code& error)
     {
         DECODE_PACKET(client_captcha_request, packet)
         m_ses.m_alerts.post_alert_should(
-            peer_captcha_request_alert(address2int(m_remote.address()), packet.m_captcha));
+            peer_captcha_request_alert(get_network_point(), get_connection_hash(), packet.m_captcha));
 
     }
     else
@@ -1387,7 +1427,7 @@ void peer_connection::on_client_captcha_result(const error_code& error)
     {
         DECODE_PACKET(client_captcha_result, packet)
         m_ses.m_alerts.post_alert_should(
-            peer_captcha_result_alert(address2int(m_remote.address()), packet.m_captcha_result));
+            peer_captcha_result_alert(get_network_point(), get_connection_hash(), packet.m_captcha_result));
     }
     else
     {

@@ -36,6 +36,8 @@ namespace libed2k
             "duplicate peer id",
             "too many connections",
             "invalid transfer handle",
+            "invalid peer connection handle",
+            "session pointer is null",
             // service errors
             "file size is zero",
             "file not exists or is not regular file",

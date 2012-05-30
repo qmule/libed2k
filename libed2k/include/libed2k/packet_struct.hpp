@@ -351,6 +351,27 @@ namespace libed2k
             ar & m_nPort;
         }
 
+        bool operator==(const net_identifier& np) const
+        {
+            return (m_nIP == np.m_nIP && m_nPort == np.m_nPort);
+        }
+
+        bool operator!=(const net_identifier& np) const
+        {
+            return (m_nIP != np.m_nIP || m_nPort != np.m_nPort);
+        }
+
+        bool operator<(const net_identifier& np) const
+        {
+            if (m_nIP == np.m_nIP)
+            {
+                return (m_nPort < np.m_nPort);
+            }
+
+            return (m_nIP < np.m_nIP);
+        }
+
+        bool empty() const {return ((m_nIP == 0) || (m_nPort == 0)); }
         void dump() const;
     };
 
@@ -1497,6 +1518,29 @@ namespace libed2k
         proto_type      m_proto;
     };
 
+    /**
+      * peer connection internal structure
+     */
+    struct peer_connection_options
+    {
+        int             m_nVersion;
+        int             m_nModVersion;
+        int             m_nPort;
+        int             m_nUDPPort;
+        int             m_nBuddyUDP;
+        int             m_nClientVersion;
+        int             m_nCompatibleClient;
+        bool            m_bOsInfoSupport;
+        bool            m_bValueBasedTypeTags;
+        std::string     m_strName;
+        std::string     m_strModVersion;
+        net_identifier  m_buddy_point;
+        peer_connection_options();
+    };
+
+    /**
+      * peer connection internal structure
+     */
     struct misc_options
     {
         boost::uint32_t m_nAICHVersion;
@@ -1521,6 +1565,10 @@ namespace libed2k
 #define MULTIP_OFFSET     5
 #define SRC_EXT_OFFSET    10
 #define CAPTHA_OFFSET     11
+
+    /**
+      * peer connection internal structure
+     */
     class misc_options2
     {
     private:
