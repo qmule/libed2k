@@ -1569,7 +1569,7 @@ namespace libed2k
     /**
       * peer connection internal structure
      */
-    class misc_options2
+    struct misc_options2
     {
     private:
         boost::uint32_t m_options;
