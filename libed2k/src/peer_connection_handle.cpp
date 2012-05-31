@@ -33,7 +33,7 @@ namespace libed2k
 #define LIBED2K_PC_FORWARD(call) \
         if (!m_pses) {throw_null_session_pointer();}\
         boost::intrusive_ptr<peer_connection> pc = m_pses->find_peer_connection(m_np);\
-        if (!pc) throw_invalid_handle();\
+        if (!pc) throw_invalid_pc_handle();\
         session_impl::mutex_t::scoped_lock l(m_pses->m_mutex);\
         pc->call;
 
@@ -41,7 +41,7 @@ namespace libed2k
 #define LIBED2K_PC_FORWARD_RETURN(call, def) \
         if (!m_pses) {throw_null_session_pointer();}\
         boost::intrusive_ptr<peer_connection> pc = m_pses->find_peer_connection(m_np);\
-        if (!pc) throw_invalid_handle();\
+        if (!pc) throw_invalid_pc_handle();\
         session_impl::mutex_t::scoped_lock l(m_pses->m_mutex);\
         return pc->call;\
 
@@ -49,12 +49,12 @@ namespace libed2k
 #endif
 
 #ifndef BOOST_NO_EXCEPTIONS
-    void throw_invalid_handle()
+    inline void throw_invalid_pc_handle()
     {
         throw libed2k_exception(errors::invalid_transfer_handle);
     }
 
-    void throw_null_session_pointer()
+    inline void throw_null_session_pointer()
     {
         throw libed2k_exception(errors::session_pointer_is_null);
     }
