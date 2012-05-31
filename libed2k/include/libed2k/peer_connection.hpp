@@ -61,6 +61,7 @@ namespace libed2k
         void init();
 
         aux::session_impl& session() { return m_ses; }
+        boost::weak_ptr<transfer> get_transfer() { return m_transfer; }
 
         peer* get_peer() const { return m_peer; }
         void set_peer(peer* pi) { m_peer = pi; }
@@ -125,6 +126,8 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
+
+        bool is_seed() const;
 
         void send_message(const std::string& strMessage);
         void request_shared_files();

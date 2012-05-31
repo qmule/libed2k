@@ -21,6 +21,8 @@ namespace libed2k {
         // called when an incoming connection is accepted
         // false means the connection was refused or failed
         bool new_connection(peer_connection& c);
+        // the given connection was just closed
+        void connection_closed(const peer_connection& c);
 
         size_t num_peers() const { return m_peers.size(); }
         void set_connection(peer* p, peer_connection* c);

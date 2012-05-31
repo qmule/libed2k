@@ -501,6 +501,13 @@ bool peer_connection::can_read(char* state) const
 	return (true);
 }
 
+bool peer_connection::is_seed() const
+{
+    const bitfield& pieces = m_remote_hashset.pieces();
+    int pieces_count  = pieces.count();
+    return pieces_count == (int)pieces.size() && pieces_count > 0;
+}
+
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
     DBG("peer_connection::has_ip_address(" << m_remote.address().to_string() << ":" << (m_active?m_remote.port():m_options.m_nPort) <<  ")");
@@ -939,14 +946,13 @@ void peer_connection::write_part(const peer_request& r)
 
 void peer_connection::on_hello(const error_code& error)
 {
-    DBG("hello <== " << m_remote);
     if (!error)
     {
         DECODE_PACKET(client_hello, hello);
         // store user info
         m_hClient = hello.m_hClient;
         m_options.m_nPort = hello.m_network_point.m_nPort;
-        DBG("port << " << m_options.m_nPort);
+        DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
     }
     else
