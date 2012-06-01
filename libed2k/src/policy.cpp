@@ -116,7 +116,7 @@ bool policy::new_connection(peer_connection& c)
             else
             {
                 i->connection->disconnect(errors::duplicate_peer_id);
-                TORRENT_ASSERT(i->connection == 0);
+                assert(i->connection == 0);
             }
         }
 
@@ -156,6 +156,41 @@ bool policy::new_connection(peer_connection& c)
     i->connection = &c;
     return true;
 }
+
+// this is called whenever a peer connection is closed
+void policy::connection_closed(const peer_connection& c)
+{
+    peer* p = c.get_peer();
+
+    assert(
+        (std::find_if
+         (m_peers.begin(), m_peers.end(), match_peer_connection(c)) != m_peers.end()) == (p != 0));
+
+    // if we couldn't find the connection in our list, just ignore it.
+    if (p == 0) return;
+
+    assert(p->connection == &c);
+    assert(!is_connect_candidate(*p));
+
+    p->connection = 0;
+
+    if (is_connect_candidate(*p))
+        ++m_num_connect_candidates;
+
+    // if we're already a seed, it's not as important
+    // to keep all the possibly stale peers
+    // if we're not a seed, but we have too many peers
+    // start weeding the ones we only know from resume
+    // data first
+    // at this point it may be tempting to erase peers
+    // from the peer list, but keep in mind that we might
+    // have gotten to this point through new_connection, just
+    // disconnecting an old peer, relying on this policy::peer
+    // to still exist when we get back there, to assign the new
+    // peer connection pointer to it. The peer list must
+    // be left intact.
+}
+
 
 void policy::set_connection(peer* p, peer_connection* c)
 {

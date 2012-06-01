@@ -501,6 +501,13 @@ bool peer_connection::can_read(char* state) const
 	return (true);
 }
 
+bool peer_connection::is_seed() const
+{
+    const bitfield& pieces = m_remote_hashset.pieces();
+    int pieces_count  = pieces.count();
+    return pieces_count == (int)pieces.size() && pieces_count > 0;
+}
+
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
     DBG("peer_connection::has_ip_address(" << m_remote.address().to_string() << ":" << (m_active?m_remote.port():m_options.m_nPort) <<  ")");
@@ -729,10 +736,14 @@ void peer_connection::on_receive_data(
         // to disk or are in the disk write cache
         if (picker.is_piece_finished(r.piece) && !was_finished)
         {
-            boost::optional<const md4_hash&> ohash = m_remote_hashset.hash(r.piece);
-            assert(ohash);
+            boost::optional<const md4_hash&> hash;
+            if (t->filesize() < PIECE_SIZE)
+                hash = t->hash();
+            else
+                hash = m_remote_hashset.hash(r.piece);
+            assert(hash);
             t->async_verify_piece(
-                r.piece, *ohash, boost::bind(&transfer::piece_finished, t, r.piece, *ohash, _1));
+                r.piece, *hash, boost::bind(&transfer::piece_finished, t, r.piece, *hash, _1));
         }
 
         m_channel_state[download_channel] = bw_idle;
@@ -935,14 +946,13 @@ void peer_connection::write_part(const peer_request& r)
 
 void peer_connection::on_hello(const error_code& error)
 {
-    DBG("hello <== " << m_remote);
     if (!error)
     {
         DECODE_PACKET(client_hello, hello);
         // store user info
         m_hClient = hello.m_hClient;
         m_options.m_nPort = hello.m_network_point.m_nPort;
-        DBG("port << " << m_options.m_nPort);
+        DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
     }
     else
@@ -1033,7 +1043,8 @@ void peer_connection::on_hello_answer(const error_code& error)
         }// for
 
         m_hClient = packet.m_hClient;
-        DBG("peer_connection::on_hello_answer: " << m_options.m_strName << " port: " << m_options.m_nPort);
+        DBG("hello answer {name: " << m_options.m_strName
+            << ", port: " << m_options.m_nPort << "} <== " << m_remote);
 
         m_ses.m_alerts.post_alert_should(
             peer_connected_alert(get_network_point(),
@@ -1166,7 +1177,10 @@ void peer_connection::on_file_status(const error_code& error)
         {
             m_remote_hashset.pieces(fs.m_status);
             t->picker().inc_refcount(fs.m_status);
-            write_hashset_request(fs.m_hFile);
+            if (t->filesize() < PIECE_SIZE)
+                write_start_upload(fs.m_hFile);
+            else
+                write_hashset_request(fs.m_hFile);
         }
         else
         {

@@ -111,7 +111,6 @@ namespace libed2k
       * make UTF-8 string from native string
      */
     extern std::string convert_from_native(const std::string& s);
-
 }
 
 #endif

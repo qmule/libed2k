@@ -156,11 +156,43 @@ namespace libed2k
         return true;
     }
 
-    void transfer::remove_peer(peer_connection* p)
+    void transfer::remove_peer(peer_connection* c)
     {
         // TODO: implement
-        DBG("transfer::remove_peer(" << p << ")");
-        m_connections.erase(p);
+        DBG("transfer::remove_peer(" << c << ")");
+
+        std::set<peer_connection*>::iterator i = m_connections.find(c);
+        if (i == m_connections.end())
+        {
+            assert(false);
+            return;
+        }
+
+        if (ready_for_connections())
+        {
+            assert(c->get_transfer().lock().get() == this);
+
+            if (c->is_seed())
+            {
+                if (m_picker.get())
+                {
+                    m_picker->dec_refcount_all();
+                }
+            }
+            else
+            {
+                if (m_picker.get())
+                {
+                    const bitfield& pieces = c->remote_hashset().pieces();
+                    assert(pieces.count() < int(pieces.size()));
+                    m_picker->dec_refcount(pieces);
+                }
+            }
+        }
+
+        m_policy.connection_closed(*c);
+        c->set_peer(0);
+        m_connections.erase(c);
     }
 
     void transfer::disconnect_all(const error_code& ec)
