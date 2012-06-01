@@ -19,6 +19,15 @@ struct match_peer_endpoint
     tcp::endpoint const& m_ep;
 };
 
+struct match_peer_connection
+{
+    match_peer_connection(const peer_connection& c) : m_conn(c) {}
+
+    bool operator()(const peer* p) const
+	{ return p->connection == &m_conn; }
+
+    const peer_connection& m_conn;
+};
 
 policy::policy(transfer* t, const std::vector<peer_entry>& peer_list):
     m_transfer(t), m_num_connect_candidates(0)
