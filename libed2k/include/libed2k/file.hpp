@@ -293,6 +293,40 @@ namespace libed2k
     };
 
     /**
+      * rule policy
+     */
+    class rule
+    {
+    public:
+        enum rule_type
+        {
+            rt_plus,
+            rt_minus
+        };
+
+        rule(rule_type rt, const std::string& strPath);
+        ~rule();
+        rule* add_sub_rule(rule_type rt, const std::string& strPath);
+        const rule* get_parent() const;
+        const std::string get_filename() const;
+        const fs::path& get_path() const;
+        rule_type get_type() const;
+
+        /**
+          * when appropriate rule was found - return it,
+          * otherwise return NULL
+         */
+        rule* match(const fs::path& path);
+    private:
+        rule(rule_type rt, const std::string& strPath, rule* parent);
+        rule_type           m_type;
+        rule*               m_parent;
+        fs::path            m_path;
+        std::deque<rule*>   m_sub_rules;
+
+    };
+
+    /**
       * structure for save/load binary emulecollection files
      */
     struct emule_collection

@@ -905,6 +905,63 @@ namespace libed2k
         }
     }
 
+    rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), m_path(strPath)
+    {
+    }
+
+    rule::~rule()
+    {
+        for(std::deque<rule*>::iterator itr = m_sub_rules.begin(); itr != m_sub_rules.end(); ++itr)
+        {
+            delete *itr;
+        }
+    }
+
+    rule* rule::add_sub_rule(rule_type rt, const std::string& strPath)
+    {
+        if (match(strPath)) { return NULL; }
+
+        m_sub_rules.push_front(new rule(rt, strPath, this));
+        return m_sub_rules.front();
+    }
+
+    const rule* rule::get_parent() const
+    {
+        return (m_parent);
+    }
+
+    const std::string rule::get_filename() const
+    {
+        return (m_path.filename());
+    }
+
+    const fs::path& rule::get_path() const
+    {
+        return (m_path);
+    }
+
+    rule::rule_type rule::get_type() const
+    {
+        return m_type;
+    }
+
+    rule* rule::match(const fs::path& path)
+    {
+        for (std::deque<rule*>::iterator itr = m_sub_rules.begin(); itr != m_sub_rules.end(); ++itr)
+        {
+            if ((*itr)->get_path() == path)
+            {
+                return *itr;
+            }
+        }
+
+        return NULL;
+    }
+
+    rule::rule(rule_type rt, const std::string& strPath, rule* parent) : m_type(rt), m_parent(parent), m_path(strPath)
+    {
+    }
+
     void emule_collection::dump() const
     {
         DBG("emule_collection::dump");

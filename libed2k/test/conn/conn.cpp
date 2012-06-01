@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "'+++USERNICK+++' A ");
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "db2");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
@@ -150,6 +150,9 @@ int main(int argc, char* argv[])
         {
             switch(strUser.at(0))
             {
+            case 'l':
+                ses.post_search_request(order);
+                break;
             case 'd':
                 ses.server_conn_stop();
                 break;
@@ -248,7 +251,7 @@ int main(int argc, char* argv[])
                         << p->m_nClientId
                         << std::endl;
                 DBG("send search request");
-                //ses.post_search_request(order);
+                ses.post_search_request(order);
             }
             else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
             {
@@ -272,6 +275,7 @@ int main(int argc, char* argv[])
             else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
                 DBG("RESULT: " << p->m_files.m_collection.size());
+                p->m_files.dump();
 
                 if (shared_directory_files_alert* p2 = dynamic_cast<shared_directory_files_alert*>(p))
                 {

@@ -88,6 +88,10 @@ namespace libed2k {
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
 
+        /**
+          * rules for shared directories tree
+         */
+        std::deque<rule>    m_rules;
     };
 
 }
