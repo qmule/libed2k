@@ -905,7 +905,7 @@ namespace libed2k
         }
     }
 
-    rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), m_path(strPath)
+    rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), m_path(convert_to_native(bom_filter(strPath)))
     {
     }
 
@@ -919,10 +919,23 @@ namespace libed2k
 
     rule* rule::add_sub_rule(rule_type rt, const std::string& strPath)
     {
-        if (match(strPath)) { return NULL; }
+        fs::path path = get_path();
+        path /= convert_to_native(bom_filter(strPath));
 
-        m_sub_rules.push_front(new rule(rt, strPath, this));
+        return (append_rule(rt, path));
+    }
+
+    rule* rule::append_rule(rule_type rt, const fs::path& path)
+    {
+        if (match(path)) { return NULL; }
+
+        m_sub_rules.push_front(new rule(rt, path, this));
         return m_sub_rules.front();
+    }
+
+    rule::rule(rule_type rt, const fs::path& path, rule* parent) : m_type(rt), m_parent(parent), m_path(path)
+    {
+
     }
 
     const rule* rule::get_parent() const
@@ -932,7 +945,7 @@ namespace libed2k
 
     const std::string rule::get_filename() const
     {
-        return (m_path.filename());
+        return (convert_from_native(m_path.filename()));
     }
 
     const fs::path& rule::get_path() const
@@ -956,10 +969,6 @@ namespace libed2k
         }
 
         return NULL;
-    }
-
-    rule::rule(rule_type rt, const std::string& strPath, rule* parent) : m_type(rt), m_parent(parent), m_path(strPath)
-    {
     }
 
     void emule_collection::dump() const

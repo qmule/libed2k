@@ -306,11 +306,11 @@ namespace libed2k
 
         rule(rule_type rt, const std::string& strPath);
         ~rule();
-        rule* add_sub_rule(rule_type rt, const std::string& strPath);
         const rule* get_parent() const;
         const std::string get_filename() const;
         const fs::path& get_path() const;
         rule_type get_type() const;
+        rule* add_sub_rule(rule_type rt, const std::string& strPath);
 
         /**
           * when appropriate rule was found - return it,
@@ -318,7 +318,8 @@ namespace libed2k
          */
         rule* match(const fs::path& path);
     private:
-        rule(rule_type rt, const std::string& strPath, rule* parent);
+        rule* append_rule(rule_type rt, const fs::path& path);
+        rule(rule_type rt, const fs::path& path, rule* parent);
         rule_type           m_type;
         rule*               m_parent;
         fs::path            m_path;

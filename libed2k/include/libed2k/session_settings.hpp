@@ -1,7 +1,10 @@
 #ifndef __LIBED2K_SESSION_SETTINGS__
 #define __LIBED2K_SESSION_SETTINGS__
 
-namespace libed2k {
+#include "libed2k/file.hpp"
+
+namespace libed2k
+{
 
     class session_settings
     {
