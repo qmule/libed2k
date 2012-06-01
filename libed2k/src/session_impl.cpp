@@ -578,28 +578,6 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
         return;
     }
 
-    // do not check transfers when edonkey server come to us
-    // compare only by address
-    /*
-    if (m_server_connection->m_target.address() != endp.address())
-    {
-        // check if we have any active transfers
-        // if we don't reject the connection
-        if (m_transfers.empty())
-        {
-            DBG(" There are no transfers, disconnect");
-            return;
-        }
-
-        if (!has_active_transfer())
-        {
-            DBG("There are no active transfers, disconnect");
-            return;
-        }
-
-    }
-    */
-
     setup_socket_buffers(*s);
 
     boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, s, endp, NULL));

@@ -97,7 +97,7 @@ namespace libed2k
 
     bool transfer::want_more_connections() const
     {
-        return !m_abort && !is_paused() && m_policy.num_connect_candidates() > 0;
+        return !m_abort && !is_paused() && !is_seed() && m_policy.num_connect_candidates() > 0;
     }
 
     bool transfer::connect_to_peer(peer* peerinfo)
