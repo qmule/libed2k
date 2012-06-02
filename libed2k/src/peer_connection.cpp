@@ -90,6 +90,8 @@ void peer_connection::reset()
 
     add_handler(std::make_pair(OP_HELLO, OP_EDONKEYPROT), boost::bind(&peer_connection::on_hello, this, _1));
     add_handler(get_proto_pair<client_hello_answer>(), boost::bind(&peer_connection::on_hello_answer, this, _1));
+    add_handler(get_proto_pair<client_ext_hello>(), boost::bind(&peer_connection::on_ext_hello, this, _1));
+    add_handler(get_proto_pair<client_ext_hello_answer>(), boost::bind(&peer_connection::on_ext_hello_answer, this, _1));
     add_handler(get_proto_pair<client_file_request>(), boost::bind(&peer_connection::on_file_request, this, _1));
     add_handler(get_proto_pair<client_file_answer>(), boost::bind(&peer_connection::on_file_answer, this, _1));
     add_handler(/*OP_FILEDESC*/get_proto_pair<client_file_description>(), boost::bind(&peer_connection::on_file_description, this, _1));
@@ -779,7 +781,7 @@ void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
     const session_settings& settings = m_ses.settings();
-    boost::uint32_t nVersion = 0x3c;
+    boost::uint32_t nVersion = m_ses.settings().m_version;
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
     hello.m_hClient = settings.client_hash;
@@ -804,6 +806,13 @@ void peer_connection::write_hello()
     do_write(hello);
 }
 
+void peer_connection::write_ext_hello()
+{
+    client_ext_hello ceh;
+    ceh.m_nVersion = m_ses.settings().m_version;
+    do_write(ceh);
+}
+
 void peer_connection::write_hello_answer()
 {
     DBG("hello answer ==> " << m_remote);
@@ -825,6 +834,13 @@ void peer_connection::write_hello_answer()
     cha.m_server_network_point.m_nIP   = m_ses.settings().server_ip;
 
     do_write(cha);
+}
+
+void peer_connection::write_ext_hello_answer()
+{
+    client_ext_hello_answer ceha;
+    ceha.m_nVersion = m_ses.settings().m_version;  // write only version
+    do_write(ceha);
 }
 
 void peer_connection::write_file_request(const md4_hash& file_hash)
@@ -1051,7 +1067,7 @@ void peer_connection::on_hello_answer(const error_code& error)
                                  get_connection_hash(),
                                  m_active));
 
-
+        write_ext_hello();
 
     }
     else
@@ -1064,6 +1080,30 @@ void peer_connection::on_hello_answer(const error_code& error)
 
     if (t) write_file_request(t->hash());
     else fill_send_buffer();
+}
+
+void peer_connection::on_ext_hello(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_ext_hello, ext_hello);
+        DBG("peer_connection::on_ext_hello(" << ext_hello.m_nVersion << ")");
+        ext_hello.m_list.dump();
+        // store user info
+        //m_hClient = hello.m_hClient;
+        //m_options.m_nPort = hello.m_network_point.m_nPort;
+        //DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
+        write_ext_hello_answer();
+    }
+    else
+    {
+        ERR("hello packet received error " << error.message());
+    }
+}
+
+void peer_connection::on_ext_hello_answer(const error_code& error)
+{
+
 }
 
 void peer_connection::on_file_request(const error_code& error)

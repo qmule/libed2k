@@ -26,7 +26,8 @@ namespace libed2k
             server_reconnect_timeout(5),
             max_peerlist_size(4000),
             download_rate_limit(-1),
-            upload_rate_limit(-1)
+            upload_rate_limit(-1),
+            m_version(0x3c)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -81,6 +82,7 @@ namespace libed2k
          */
         int download_rate_limit;
         int upload_rate_limit;
+        unsigned short m_version;
 
         //!< known.met file
         std::string     m_known_file;
@@ -95,6 +97,7 @@ namespace libed2k
           * rules for shared directories tree
          */
         std::deque<rule>    m_rules;
+
     };
 
 }

@@ -861,6 +861,32 @@ namespace libed2k
         }
     };
 
+    struct client_ext_hello
+    {
+        boost::uint16_t m_nVersion;
+        tag_list<boost::uint32_t>   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nVersion;
+            ar & m_list;
+        }
+    };
+
+    struct client_ext_hello_answer
+    {
+        boost::uint16_t m_nVersion;
+        tag_list<boost::uint32_t>   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nVersion;
+            ar & m_list;
+        }
+    };
+
     /**
       * empty structure for file list requests
      */
@@ -1333,6 +1359,14 @@ namespace libed2k
     template<> struct packet_type<client_hello_answer> {
         static const proto_type value = OP_HELLOANSWER;
         static const proto_type protocol = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<client_ext_hello> {
+        static const proto_type value   = OP_EMULEINFO;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+    template<> struct packet_type<client_ext_hello_answer> {
+        static const proto_type value   = OP_EMULEINFOANSWER;
+        static const proto_type protocol= OP_EMULEPROT;
     };
     template<> struct packet_type<client_shared_files_request> {
         static const proto_type value   = OP_ASKSHAREDFILES;

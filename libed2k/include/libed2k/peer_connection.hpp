@@ -176,6 +176,8 @@ namespace libed2k
         // to the send buffer
         void write_hello();
         void write_hello_answer();
+        void write_ext_hello();
+        void write_ext_hello_answer();
         void write_file_request(const md4_hash& file_hash);
         void write_file_answer(const md4_hash& file_hash, const std::string& filename);
         void write_no_file(const md4_hash& file_hash);
@@ -193,6 +195,8 @@ namespace libed2k
         // protocol handlers
         void on_hello(const error_code& error);
         void on_hello_answer(const error_code& error);
+        void on_ext_hello(const error_code& error);
+        void on_ext_hello_answer(const error_code& error);
         void on_file_request(const error_code& error);
         void on_file_answer(const error_code& error);
         void on_file_description(const error_code& error);

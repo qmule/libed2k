@@ -99,10 +99,10 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
-    settings.server_keep_alive_timeout = 20;
+    settings.server_keep_alive_timeout = 300;
     settings.server_reconnect_timeout = 30;
     settings.server_hostname = argv[1];
-    settings.server_timeout = 25;
+    settings.server_timeout = 125;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
               << "---- press something other for process alerts " << std::endl;
 
 
-    std::string strAlex = "31.207.218.28";
+    std::string strAlex = "109.191.73.222";
     std::string strDore = "192.168.161.54";
     std::string strDiman = "88.206.52.81";
     ip::address a(ip::address::from_string(strDore.c_str()));
