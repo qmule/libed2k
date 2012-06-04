@@ -153,7 +153,7 @@ namespace libed2k
         void dump() const;
     };
 
-    typedef container_holder<boost::uint32_t, std::vector<known_file_entry> > known_file_list;
+    typedef container_holder<boost::uint32_t, std::deque<known_file_entry> > known_file_list;
 
     /**
       * full known.met file content
@@ -301,7 +301,8 @@ namespace libed2k
         enum rule_type
         {
             rt_plus,
-            rt_minus
+            rt_minus,
+            rt_asterisk
         };
 
         rule(rule_type rt, const std::string& strPath);
@@ -324,8 +325,8 @@ namespace libed2k
         rule*               m_parent;
         fs::path            m_path;
         std::deque<rule*>   m_sub_rules;
-
     };
+
 
     /**
       * structure for save/load binary emulecollection files
@@ -354,13 +355,15 @@ namespace libed2k
     class collection
     {
     public:
-        collection(const std::string& strName);
+        collection();
         void add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile);
 
         void load(const std::string& strWorkspace);
         void save(const std::string& strWorkspace);
         bool is_obsolete() const;
         void set_obosolete();
+        void set_name(const std::string& strName);
+        bool unnamed() const;
         bool operator==(const collection& c) const;
     private:
         std::string         m_strName;

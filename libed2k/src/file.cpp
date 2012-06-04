@@ -997,7 +997,7 @@ namespace libed2k
         return (true);
     }
 
-    collection::collection(const std::string& strName) : m_strName(strName),
+    collection::collection() : m_strName(""),
             m_obsolete(false), m_saved(false)
     {
     }
@@ -1022,8 +1022,17 @@ namespace libed2k
         m_obsolete = true;
     }
 
+    void collection::set_name(const std::string& strName)
+    {
+        m_strName = strName;
+    }
+
+    bool collection::unnamed() const { return m_strName.empty(); }
+
     void collection::add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile)
     {
+        if (m_strName.empty()) return;
+
         m_saved = false;
     }
 

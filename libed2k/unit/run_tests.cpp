@@ -77,9 +77,8 @@ BOOST_AUTO_TEST_CASE(test_rules_simple)
     libed2k::rule* sr2 = sr->add_sub_rule(libed2k::rule::rt_plus, "dir2");
 
     std::string strName;
-    const libed2k::rule* p = sr2;
-    strName = p->get_filename();
-    p = p->get_parent();
+    strName = sr2->get_filename();
+    const libed2k::rule* p = sr2->get_parent();
 
     while(p)
     {

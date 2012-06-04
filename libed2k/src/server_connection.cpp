@@ -68,7 +68,7 @@ namespace libed2k
     {
         DBG("server_connection::close()");
         m_state = SC_OFFLINE;
-        m_write_order.clear();  // remove all incoming messages
+        //m_write_order.clear();  // remove all incoming messages
         m_socket.close();
         m_deadline.cancel();
         m_name_lookup.cancel();
@@ -568,7 +568,7 @@ namespace libed2k
                }
 
            }
-           catch(libed2k_exception& e)
+           catch(libed2k_exception&)
            {
                ERR("packet parse error");
            }
