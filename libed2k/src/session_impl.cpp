@@ -278,17 +278,15 @@ void session_impl_base::load_state()
 
 }
 
-
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings): session_impl_base(settings),
-	m_mutex(),
-	m_half_open(m_io_service),
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
     m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
                   m_filepool, DISK_BLOCK_SIZE),   
+    m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
     m_client_id(0),

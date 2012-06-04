@@ -225,12 +225,6 @@ namespace libed2k {
             // called when server stopped
             void on_server_stopped();
 
-			// this is a list of half-open tcp connections
-            // (only outgoing connections)
-            // this has to be one of the last
-            // members to be destructed
-            libtorrent::connection_queue m_half_open;
-
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
@@ -264,6 +258,12 @@ namespace libed2k {
             // events to the io service, and needs to be
             // constructed after it.
             libtorrent::disk_io_thread m_disk_thread;
+
+            // this is a list of half-open tcp connections
+            // (only outgoing connections)
+            // this has to be one of the last
+            // members to be destructed
+            libtorrent::connection_queue m_half_open;
 
             // ed2k server connection
             boost::intrusive_ptr<server_connection> m_server_connection;
