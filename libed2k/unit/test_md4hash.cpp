@@ -33,14 +33,14 @@ BOOST_FIXTURE_TEST_CASE(test_conversion, test_md4_hash)
     std::string strHash1U = "000102030405F6C70B090A0B0C0D0F0D";
     m_test = libed2k::md4_hash::fromString(strHash1);
     BOOST_CHECK_EQUAL(strHash1U, m_test.toString());
-    BOOST_CHECK_THROW(m_test.fromString(std::string("000102030405F6C7XB09KA0B0C0D0F0D")), libed2k::libed2k_exception);
+    BOOST_CHECK(!libed2k::md4_hash::fromString(std::string("000102030405F6C7XB09KA0B0C0D0F0D")).defined());
 }
 
 BOOST_AUTO_TEST_CASE(test_compare)
 {
-    libed2k::md4_hash h1("000102030405060708090A0B0C0D0F0D");
-    libed2k::md4_hash h2("000102030405060708090A0B0C0D0F0D");
-    libed2k::md4_hash h3("0A0102030405060708090A0B0C0D0F0D");
+    libed2k::md4_hash h1 = libed2k::md4_hash::fromString("000102030405060708090A0B0C0D0F0D");
+    libed2k::md4_hash h2 = libed2k::md4_hash::fromString("000102030405060708090A0B0C0D0F0D");
+    libed2k::md4_hash h3 = libed2k::md4_hash::fromString("0A0102030405060708090A0B0C0D0F0D");
     BOOST_CHECK(h3[0] == '\x0A');
     BOOST_CHECK(h2[0] == '\x00');
     BOOST_CHECK(h1 == h2);

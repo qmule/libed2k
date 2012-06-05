@@ -1,3 +1,6 @@
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <map>
 #include <algorithm>
 #include <locale>
@@ -668,7 +671,7 @@ namespace libed2k
         // when we don't have last partial piece - add special hash
         if (!bPartial)
         {
-            m_vHash.push_back(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
+            m_vHash.push_back(md4_hash::fromString("31D6CFE0D16AE931B73C59D7E0C089C0"));
         }
 
         if (m_vHash.size() > 1)
@@ -782,7 +785,7 @@ namespace libed2k
                     atp.file_path = convert_from_native(p.string()); // we add transfer in UTF8 only!
 
                     bool    bPartial = false; // check last part in file not full
-                    uintmax_t nFileSize = boost::filesystem::file_size(p);
+                    uintmax_t nFileSize = fs::file_size(p);
                     atp.file_size = nFileSize;
 
                     if (nFileSize == 0)
@@ -971,7 +974,7 @@ namespace libed2k
         return NULL;
     }
 
-    void emule_collection::dump() const
+    void emule_binary_collection::dump() const
     {
         DBG("emule_collection::dump");
         DBG("version: " << m_nVersion);
@@ -979,7 +982,7 @@ namespace libed2k
         m_files.dump();
     }
 
-    bool emule_collection::operator==(const emule_collection& ec) const
+    bool emule_binary_collection::operator==(const emule_binary_collection& ec) const
     {
         if (m_nVersion != ec.m_nVersion || m_list != ec.m_list || m_files.m_size != ec.m_files.m_size)
         {
@@ -997,7 +1000,88 @@ namespace libed2k
         return (true);
     }
 
-    bool emule_text_collection::add_link(const std::string& strLink)
+    // static
+    emule_collection emule_collection::fromFile(const std::string& strFilename)
+    {
+        emule_collection ec;
+        std::ifstream ifs(strFilename.c_str(), std::ios_base::binary);
+
+        if (ifs)
+        {
+            try
+            {
+                emule_binary_collection ebc;
+                archive::ed2k_iarchive ifa(ifs);
+                ifa >> ebc;
+
+                for (size_t i = 0; i < ebc.m_files.m_collection.size(); ++i) // iterate each tag list
+                {
+                    emule_collection_entry ece;
+
+                    for (size_t j = 0; j < ebc.m_files.m_collection[i].count(); ++j)
+                    {
+                        const boost::shared_ptr<base_tag> p = ebc.m_files.m_collection[i][j];
+
+                        switch(p->getNameId())
+                        {
+                            case FT_FILENAME:
+                                ece.m_filename = p->asString();
+                                break;
+                            case FT_FILESIZE:
+                                ece.m_filesize = p->asInt();
+                                break;
+                            case FT_FILEHASH:
+                                ece.m_filehash = p->asHash();
+                                break;
+                            default:
+                                //pass unused flags
+                                break;
+                        }
+
+                    }
+
+                    if (ece.m_filehash.defined() && !ece.m_filename.empty())
+                    {
+                        ec.m_files.push_back(ece);
+                    }
+                }
+
+            }
+            catch(libed2k_exception& )
+            {
+                // hide exception and go to text loading
+            }
+
+            std::string line;
+            ifs.clear();
+            //ifs.open(strFilename.c_str(), std::ios_base::binary);
+            ifs.seekg(0, std::ios_base::beg);
+
+
+            while (std::getline(ifs, line, (char)10 /* LF */))
+            {
+                int last = line.size()-1;
+
+                if ((1 < last) && ((char)13 /* CR */ == line.at(last)))
+                {
+                    line.erase(last);
+                }
+
+                ec.add_link(line);
+            }
+
+        }
+
+        return (ec);
+    }
+
+    void emule_collection::save(const std::string& strFilename, bool binary /*false*/)
+    {
+        // generate collection
+
+    }
+
+    bool emule_collection::add_link(const std::string& strLink)
     {
         // 12345678901234       56       7 + 32 + 89 = 19+32=51
         // ed2k://|file|fileName|fileSize|fileHash|/
@@ -1038,30 +1122,45 @@ namespace libed2k
         }
 
         std::string fileHash = strLink.substr(iSize+1,32);
-
-        //return AddFile(fileName, fileSize, fileHash);
+        return add_file(fileName, fileSize, fileHash);
     }
 
-
-    bool emule_text_collection::add_file(const std::string& strFileName, boost::uint64_t nFileSize, const std::string& strFileHash)
+    bool emule_collection::add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash)
     {
         md4_hash hash;
 
-        if (strFileName.empty() || nFileSize == 0 || nFileSize > 0xffffffffLL || strFileHash.size() != md4_hash::hash_size*2)
+        if (strFilename.empty() || nFilesize == 0 || nFilesize > 0xffffffffLL || strFilehash.size() != md4_hash::hash_size*2)
         {
             return false;
         }
 
-        hash = md4_hash::fromString(strFileHash);
+        hash = md4_hash::fromString(strFilehash);
 
         if (!hash.defined())
         {
             return false;
         }
 
-        //vCollection.push_back(
-        //    CollectionFile(fileName, fileSize, fileHash));
+        m_files.push_back(emule_collection_entry(strFilename, nFilesize, hash));
+
         return true;
+    }
+
+    const std::string emule_collection::get_ed2k_link(size_t nIndex)
+    {
+        std::stringstream retvalue;
+
+        if (nIndex < m_files.size())
+        {
+            // ed2k://|file|fileName|fileSize|fileHash|/
+            retvalue
+            << "ed2k://|file|" << m_files.at(nIndex).m_filename
+            << "|" << m_files.at(nIndex).m_filesize
+            << "|" << m_files.at(nIndex).m_filehash.toString()
+            << "|/";
+        }
+
+        return retvalue.str();
     }
 
     collection::collection() : m_strName(""),

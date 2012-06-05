@@ -22,6 +22,25 @@
 using namespace libed2k;
 using namespace libed2k::aux;
 
+dictionary_entry::dictionary_entry(boost::uintmax_t nFilesize) : file_size(nFilesize),
+        m_accepted(0),
+        m_requested(0),
+        m_transferred(0),
+        m_priority(0),
+        m_already_processed(false)
+{
+}
+
+dictionary_entry::dictionary_entry() :
+        file_size(0),
+        m_accepted(0),
+        m_requested(0),
+        m_transferred(0),
+        m_priority(0),
+        m_already_processed(false)
+{
+}
+
 session_impl_base::session_impl_base(const session_settings& settings) :
         m_io_service(),
         m_settings(settings),
@@ -277,10 +296,54 @@ void session_impl_base::load_state()
 
 }
 
-void session_impl_base::scan_directory_tree(rule* base_rule)
+dictionary_entry session_impl_base::get_dictionary_entry(const fs::path& file)
+{
+    BOOST_ASSERT(fs::is_regular_file(file));
+    boost::uint32_t nChangeTS = fs::last_write_time(file);
+    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(nChangeTS, file.filename()));
+
+    if (itr != m_dictionary.end())
+    {
+        return (itr->second);
+    }
+
+    return m_dictionary.insert(std::make_pair(std::make_pair(nChangeTS, file.filename()), dictionary_entry(fs::file_size(file)))).first->second;
+}
+
+void session_impl_base::share_files(rule* base_rule)
 {
     BOOST_ASSERT(base_rule);
-    BOOST_ASSERT(fs::is_directory(base_rule->get_path()));  // we can start only on directories
+
+    error_code ec;
+    // share single file
+    if (fs::is_regular_file(base_rule->get_path()))
+    {
+        dictionary_entry de = get_dictionary_entry(base_rule->get_path());
+
+        if (de.m_already_processed)
+        {
+            // this file already processed
+            return;
+        }
+
+        de.m_already_processed = true;
+
+        if (de.m_hash.defined())
+        {
+            // add transfer
+            add_transfer_params atp;
+            atp.file_size = de.file_size;
+            atp.file_hash = de.m_hash;
+            atp.file_path = base_rule->get_path();
+            atp.piece_hash = de.piece_hash;
+            add_transfer(atp, ec);
+        }
+        else
+        {
+            // async add transfer by file monitor
+            m_fmon.m_order.push(base_rule->get_path());
+        }
+    }
 
     try
     {
@@ -310,13 +373,28 @@ void session_impl_base::scan_directory_tree(rule* base_rule)
             {
                 if (fs::is_regular_file(*itr))
                 {
-                    if (rule* pr = base_rule->match(*itr))
+                    if ((base_rule->match(*itr)) || (base_rule->get_type() != rule::rt_minus))
                     {
                         // add regular file
-                    }
-                    else if (base_rule->get_type() != rule::rt_minus)
-                    {
-                        // add regular file
+                        dictionary_entry de = get_dictionary_entry(*itr);
+
+                        if (de.m_already_processed)
+                        {
+                            // error
+
+                        }
+                        else
+                        {
+                            if (de.m_hash.defined())
+                            {
+                                // add file to collection and create transfer
+                            }
+                            else
+                            {
+                                // add file to collection and run file monitor
+                                m_fmon.m_order.push(*itr);
+                            }
+                        }
                     }
 
                     continue;
@@ -327,13 +405,13 @@ void session_impl_base::scan_directory_tree(rule* base_rule)
                     if (rule* pr = base_rule->match(*itr))
                     {
                         // scan next level
-                        scan_directory_tree(pr);
+                        share_files(pr);
                     }
                     else if (base_rule->get_type() == rule::rt_asterisk)
                     {
                         // recursive rule - generate new rule for this directory and run on it
                         rule* pr = base_rule->add_sub_rule(rule::rt_asterisk, itr->filename());
-                        scan_directory_tree(pr);
+                        share_files(pr);
                     }
                 }
             }
@@ -344,6 +422,104 @@ void session_impl_base::scan_directory_tree(rule* base_rule)
         ERR("file system error: " << e.what());
     }
 
+}
+
+void session_impl_base::load_dictionary()
+{
+    m_dictionary.clear();
+
+    if (!m_settings.m_known_file.empty())
+    {
+        fs::ifstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
+
+        if (fstream)
+        {
+
+            libed2k::archive::ed2k_iarchive ifa(fstream);
+
+            try
+            {
+                known_file_collection kfc;                  //!< structured data buffer
+                ifa >> kfc;
+
+                // generate transfers
+                for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
+                {
+                    // generate transfer
+                    dictionary_key key;
+                    dictionary_entry entry;
+
+                    key.first = kfc.m_known_file_list.m_collection[n].m_nLastChanged;
+                    entry.m_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
+
+                    if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
+                    {
+                        // when file contain only one hash - we save main hash directly into container
+                        entry.piece_hash.append(kfc.m_known_file_list.m_collection[n].m_hFile);
+                    }
+                    else
+                    {
+                        entry.piece_hash.all_hashes(
+                                kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection);
+                    }
+
+                    for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
+                    {
+                        const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
+
+                        switch(p->getNameId())
+                        {
+                            case FT_FILENAME:
+                            {
+                                // take only first file name tag
+                                if (key.second.empty())
+                                {
+                                    key.second = convert_to_native(bom_filter(p->asString()));  // dictionary contains names in native codepage
+                                }
+
+                                break;
+                            }
+                            case FT_FILESIZE:
+                                entry.file_size = p->asInt();
+                                break;
+                            case FT_ATTRANSFERRED:
+                                entry.m_transferred += p->asInt();
+                                break;
+                            case FT_ATTRANSFERREDHI:
+                                entry.m_transferred += (p->asInt() << 32);
+                                break;
+                            case FT_ATREQUESTED:
+                                entry.m_requested = p->asInt();
+                                break;
+                            case FT_ATACCEPTED:
+                                entry.m_accepted = p->asInt();
+                                break;
+                            case FT_ULPRIORITY:
+                                entry.m_priority = p->asInt();
+                                break;
+                            default:
+                                // ignore unused tags like
+                                // FT_PERMISSIONS
+                                // FT_AICH_HASH:
+                                // and all kad tags
+                                break;
+                        }
+                    }
+
+                    if (key.first != 0 && !key.second.empty())
+                    {
+                        // add new entry to dictionary
+                        m_dictionary.insert(std::make_pair(key, entry));
+                    }
+                }
+            }
+            catch(libed2k_exception& e)
+            {
+                // hide parse errors
+                ERR("session_impl_base::load_state: parse error " << e.what());
+            }
+        }
+    }
 }
 
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,

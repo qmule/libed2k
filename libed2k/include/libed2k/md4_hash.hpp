@@ -43,10 +43,10 @@ namespace libed2k{
     	    clear();
     	}
 
-    	md4_hash(const std::string strHash)
-    	{
-    	    fromString(strHash);
-    	}
+    	//md4_hash(const std::string strHash)
+    	//{
+    	//    fromString(strHash);
+    	//}
 
     	md4_hash(const std::vector<boost::uint8_t>& vHash)
     	{

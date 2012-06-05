@@ -43,11 +43,11 @@ namespace libed2k
         {
             m_bAfterSave = false;
             m_fmon.start();
-            m_vH.push_back(std::string("1AA8AFE3018B38D9B4D880D0683CCEB5"));
-            m_vH.push_back(std::string("E76BADB8F958D7685B4549D874699EE9"));
-            m_vH.push_back(std::string("49EC2B5DEF507DEA73E106FEDB9697EE"));
-            m_vH.push_back(std::string("9385DCEF4CB89FD5A4334F5034C28893"));
-            m_vH.push_back(std::string("9C7F988154D2C9AF16D92661756CF6B2"));
+            m_vH.push_back(libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5"));
+            m_vH.push_back(libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9"));
+            m_vH.push_back(libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE"));
+            m_vH.push_back(libed2k::md4_hash::fromString("9385DCEF4CB89FD5A4334F5034C28893"));
+            m_vH.push_back(libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"));
         }
 
         transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)

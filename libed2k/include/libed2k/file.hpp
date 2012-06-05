@@ -327,11 +327,30 @@ namespace libed2k
         std::deque<rule*>   m_sub_rules;
     };
 
+    struct emule_collection_entry
+    {
+        emule_collection_entry() : m_filename(""), m_filesize(0) {}
+        emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
+            m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
+        std::string     m_filename;
+        boost::uint64_t m_filesize;
+        md4_hash        m_filehash;
+    };
+
+    struct emule_collection
+    {
+        static emule_collection fromFile(const std::string& strFilename);
+        void save(const std::string& strFilename, bool binary = false);
+        bool add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash);
+        bool add_link(const std::string& strLink);
+        const std::string get_ed2k_link(size_t nIndex);
+        std::deque<emule_collection_entry> m_files;
+    };
 
     /**
       * structure for save/load binary emulecollection files
      */
-    struct emule_collection
+    struct emule_binary_collection
     {
         boost::uint32_t m_nVersion;
         tag_list<boost::uint32_t>   m_list;
@@ -345,14 +364,8 @@ namespace libed2k
             ar & m_files;
         }
 
-        bool operator==(const emule_collection& ec) const;
+        bool operator==(const emule_binary_collection& ec) const;
         void dump() const;
-    };
-
-    struct emule_text_collection
-    {
-        bool add_file(const std::string &strFileName, boost::uint64_t nFileSize, const std::string &strFileHash);
-        bool add_link(const std::string& strLink);
     };
 
     /**
@@ -375,7 +388,7 @@ namespace libed2k
         std::string         m_strName;
         bool                m_obsolete;
         bool                m_saved;
-        emule_collection    m_content;
+        emule_binary_collection    m_content;
     };
 
     /**

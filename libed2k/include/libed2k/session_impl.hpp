@@ -37,6 +37,20 @@ namespace libed2k {
 
     namespace aux
     {
+        struct dictionary_entry
+        {
+            dictionary_entry(boost::uintmax_t nFilesize);   // create and link
+            dictionary_entry();
+            boost::uintmax_t file_size;
+            boost::uint32_t m_accepted;
+            boost::uint32_t m_requested;
+            boost::uint64_t m_transferred;
+            boost::uint8_t  m_priority;
+            bool            m_already_processed;            // true when file processed or process in progress
+            md4_hash        m_hash;
+            hash_set        piece_hash;
+        };
+
         /**
           * class used for testing
          */
@@ -45,8 +59,12 @@ namespace libed2k {
         public:
             typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
-            typedef std::pair<boost::uint32_t, std::string> known_file_key;
-            typedef std::map<known_file_key, add_transfer_params> known_file_dictionary;
+
+            /**
+              * change time + filename(native codepage)
+             */
+            typedef std::pair<boost::uint32_t, std::string> dictionary_key;
+            typedef std::map<dictionary_key, dictionary_entry> files_dictionary;
 
 
             session_impl_base(const session_settings& settings);
@@ -73,7 +91,10 @@ namespace libed2k {
              */
             void load_state();
 
-            void scan_directory_tree(rule* base_rule);
+            void share_files(rule* base_rule);
+            dictionary_entry get_dictionary_entry(const fs::path& file);
+
+            void load_dictionary();
 
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
@@ -95,7 +116,12 @@ namespace libed2k {
               *
              */
             transfer_filename_map   m_transfers_filenames;
-            known_file_dictionary   m_dictionary;
+
+            /**
+              * special index for access to files by last write time + file name
+              * file name in native code page
+             */
+            files_dictionary   m_dictionary;
         };
 
 

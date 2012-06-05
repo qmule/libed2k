@@ -257,7 +257,7 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
     boost::shared_ptr<libed2k::base_tag> ptag(new libed2k::typed_tag<float>(10.6f, "XXX", true));
     float fTemplate = 1292.54f;
     const char* pData = (const char*)&fTemplate;
-    libed2k::md4_hash md4("000102030405060708090A0B0C0D0E0F");
+    libed2k::md4_hash md4 = libed2k::md4_hash::fromString("000102030405060708090A0B0C0D0E0F");
 
     std::vector<boost::uint8_t> vBlob;
     vBlob.push_back('\x0D');
@@ -682,20 +682,21 @@ BOOST_AUTO_TEST_CASE(test_packets)
 
 BOOST_AUTO_TEST_CASE(test_emule_collection)
 {
-    std::ifstream ifs("test_collection.emulecollection", std::ios_base::binary);
+   libed2k::emule_collection ec = libed2k::emule_collection::fromFile("test_collection.emulecollection");
+   BOOST_CHECK_EQUAL(ec.m_files.size(), 3);
+   BOOST_CHECK_EQUAL(ec.m_files.at(0).m_filename, "file3.txt");
+   BOOST_CHECK_EQUAL(ec.m_files.at(1).m_filename, "file2.txt");
+   BOOST_CHECK_EQUAL(ec.m_files.at(2).m_filename, "file1.txt");
 
-    if (ifs)
-    {
-        libed2k::emule_collection ec;
-        libed2k::archive::ed2k_iarchive ifa(ifs);
-        BOOST_NOEXCEPT(ifa >> ec);
-        ec.dump();
-    }
-    else
-    {
-        BOOST_REQUIRE(false);
-    }
+   libed2k::emule_collection ec_text = libed2k::emule_collection::fromFile("test_text_collection.emulecollection");
+   BOOST_CHECK_EQUAL(ec_text.m_files.size(), 3);
+   BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filename, "1.txt");
+   BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filename, "2.txt");
+   BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filename, "xxx.txt");
 
+   BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
+   BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"));
+   BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

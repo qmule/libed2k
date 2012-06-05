@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
         if (vm.count("file") && vm.count("hash") && vm.count("size"))
         {
             libed2k::add_transfer_params params;
-            params.file_hash = libed2k::md4_hash(vm["hash"].as<std::string>());
+            params.file_hash = libed2k::md4_hash::fromString(vm["hash"].as<std::string>());
             params.file_path = dir / vm["file"].as<fs::path>();
             params.file_size = vm["size"].as<size_t>();
             params.seed_mode = false;

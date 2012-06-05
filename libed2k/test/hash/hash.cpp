@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
     }
     else
     {
-        vH.push_back(md4_hash("31D6CFE0D16AE931B73C59D7E0C089C0"));
+        vH.push_back(md4_hash::fromString("31D6CFE0D16AE931B73C59D7E0C089C0"));
     }
 
     for(int n = 0; n < vH.size(); n++)
