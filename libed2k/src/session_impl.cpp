@@ -762,9 +762,11 @@ transfer_handle session_impl::add_transfer(
     transfer_ptr->start();
 
     m_transfers.insert(std::make_pair(params.file_hash, transfer_ptr));
-    //m_transfers.
 
-    return transfer_handle(transfer_ptr);
+    transfer_handle handle(transfer_ptr);
+    m_alerts.post_alert_should(added_transfer_alert(handle));
+
+    return handle;
 }
 
 peer_connection_handle session_impl::add_peer_connection(net_identifier np, error_code& ec)
