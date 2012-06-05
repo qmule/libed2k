@@ -316,7 +316,7 @@ void session_impl_base::scan_directory_tree(rule* base_rule)
                     }
                     else if (base_rule->get_type() != rule::rt_minus)
                     {
-                        // add reqular file
+                        // add regular file
                     }
 
                     continue;

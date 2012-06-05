@@ -1,8 +1,6 @@
 #ifndef __LIBED2K_SESSION_SETTINGS__
 #define __LIBED2K_SESSION_SETTINGS__
 
-#include "libed2k/file.hpp"
-
 namespace libed2k
 {
 
@@ -92,11 +90,6 @@ namespace libed2k
         fd_list m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
-
-        /**
-          * rules for shared directories tree
-         */
-        std::deque<rule>    m_rules;
 
     };
 

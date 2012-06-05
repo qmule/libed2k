@@ -997,6 +997,73 @@ namespace libed2k
         return (true);
     }
 
+    bool emule_text_collection::add_link(const std::string& strLink)
+    {
+        // 12345678901234       56       7 + 32 + 89 = 19+32=51
+        // ed2k://|file|fileName|fileSize|fileHash|/
+        if (strLink.size() < 51 || strLink.substr(0,13) != "ed2k://|file|" ||
+            strLink.substr(strLink.size()-2) != "|/")
+        {
+            return false;
+        }
+
+        size_t iName = strLink.find("|",13);
+
+        if (iName == std::string::npos)
+        {
+            return false;
+        }
+        std::string fileName = strLink.substr(13,iName-13);
+
+        size_t iSize = strLink.find("|",iName+1);
+
+        if (iSize == std::string::npos)
+        {
+            return false;
+        }
+
+        std::stringstream sFileSize;
+        sFileSize << strLink.substr(iName+1,iSize-iName-1);
+        uint64_t fileSize;
+
+        if ((sFileSize >> std::dec >> fileSize).fail())
+        {
+            return false;
+        }
+
+        size_t iHash = strLink.find("|",iSize+1);
+        if (iHash == std::string::npos)
+        {
+            return false;
+        }
+
+        std::string fileHash = strLink.substr(iSize+1,32);
+
+        //return AddFile(fileName, fileSize, fileHash);
+    }
+
+
+    bool emule_text_collection::add_file(const std::string& strFileName, boost::uint64_t nFileSize, const std::string& strFileHash)
+    {
+        md4_hash hash;
+
+        if (strFileName.empty() || nFileSize == 0 || nFileSize > 0xffffffffLL || strFileHash.size() != md4_hash::hash_size*2)
+        {
+            return false;
+        }
+
+        hash = md4_hash::fromString(strFileHash);
+
+        if (!hash.defined())
+        {
+            return false;
+        }
+
+        //vCollection.push_back(
+        //    CollectionFile(fileName, fileSize, fileHash));
+        return true;
+    }
+
     collection::collection() : m_strName(""),
             m_obsolete(false), m_saved(false)
     {

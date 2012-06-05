@@ -27,11 +27,11 @@ BOOST_FIXTURE_TEST_CASE(test_conversion, test_md4_hash)
 {
     std::string strHash1 = "000102030405060708090A0B0C0D0F0D";
     BOOST_REQUIRE(strHash1.size() == libed2k::MD4_HASH_SIZE*2);
-    m_test.fromString(strHash1);
+    m_test = libed2k::md4_hash::fromString(strHash1);
     BOOST_CHECK_EQUAL(strHash1, m_test.toString());
     strHash1  = "000102030405F6c70b090a0B0c0D0f0D";
     std::string strHash1U = "000102030405F6C70B090A0B0C0D0F0D";
-    m_test.fromString(strHash1);
+    m_test = libed2k::md4_hash::fromString(strHash1);
     BOOST_CHECK_EQUAL(strHash1U, m_test.toString());
     BOOST_CHECK_THROW(m_test.fromString(std::string("000102030405F6C7XB09KA0B0C0D0F0D")), libed2k::libed2k_exception);
 }

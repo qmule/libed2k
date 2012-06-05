@@ -349,6 +349,12 @@ namespace libed2k
         void dump() const;
     };
 
+    struct emule_text_collection
+    {
+        bool add_file(const std::string &strFileName, boost::uint64_t nFileSize, const std::string &strFileHash);
+        bool add_link(const std::string& strLink);
+    };
+
     /**
       * class for manager one collection entry
      */
@@ -382,7 +388,7 @@ namespace libed2k
         void load(const std::string& strWorkspace);
         void set_collection(const collection& c);
     private:
-        std::vector<collection> m_collections;
+        std::deque<collection> m_collections;
     };
 
 }

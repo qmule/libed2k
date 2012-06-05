@@ -96,14 +96,18 @@ namespace libed2k{
     	    memset(m_hash, 0, MD4_HASH_SIZE);
     	}
 
-    	void fromString(const std::string& strHash)
+    	static md4_hash fromString(const std::string& strHash)
     	{
     	    BOOST_ASSERT(strHash.size() == MD4_HASH_SIZE*2);
 
-    	    if (!libtorrent::from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)m_hash))
+    	    md4_hash hash;
+
+    	    if (!libtorrent::from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)hash.m_hash))
     	    {
-    	        throw libed2k_exception(errors::md4_hash_index_error);
+    	        return (md4_hash());
     	    }
+
+    	    return (hash);
     	}
 
     	std::string toString() const
