@@ -64,7 +64,6 @@ int main(int argc, char* argv[])
             params.file_path = dir / vm["file"].as<fs::path>();
             params.file_size = vm["size"].as<size_t>();
             params.seed_mode = false;
-            params.piece_hash.reset(libed2k::div_ceil(params.file_size, libed2k::PIECE_SIZE));
 
             if (vm.count("peer_ip") && vm.count("peer_port"))
             {

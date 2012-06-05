@@ -33,6 +33,9 @@ namespace libed2k
         m_transferred(p.m_transferred),
         m_priority(p.m_priority)
     {
+        if (m_hashset.pieces().size() == 0)
+            m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
+
         assert(m_hashset.pieces().size() == num_pieces());
     }
 

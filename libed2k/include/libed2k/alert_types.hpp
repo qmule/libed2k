@@ -382,6 +382,26 @@ namespace libed2k
         }
     };
 
+    struct added_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        added_transfer_alert(const transfer_handle& h) : m_handle(h) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new added_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("added transfer"); }
+        virtual char const* what() const { return "added transfer"; }
+
+        transfer_handle m_handle;
+    };
+
+
 }
 
 
