@@ -153,7 +153,7 @@ namespace libed2k
         void dump() const;
     };
 
-    typedef container_holder<boost::uint32_t, std::vector<known_file_entry> > known_file_list;
+    typedef container_holder<boost::uint32_t, std::deque<known_file_entry> > known_file_list;
 
     /**
       * full known.met file content
@@ -293,6 +293,42 @@ namespace libed2k
     };
 
     /**
+      * rule policy
+     */
+    class rule
+    {
+    public:
+        enum rule_type
+        {
+            rt_plus,
+            rt_minus,
+            rt_asterisk
+        };
+
+        rule(rule_type rt, const std::string& strPath);
+        ~rule();
+        const rule* get_parent() const;
+        const std::string get_filename() const;
+        const fs::path& get_path() const;
+        rule_type get_type() const;
+        rule* add_sub_rule(rule_type rt, const std::string& strPath);
+
+        /**
+          * when appropriate rule was found - return it,
+          * otherwise return NULL
+         */
+        rule* match(const fs::path& path);
+    private:
+        rule* append_rule(rule_type rt, const fs::path& path);
+        rule(rule_type rt, const fs::path& path, rule* parent);
+        rule_type           m_type;
+        rule*               m_parent;
+        fs::path            m_path;
+        std::deque<rule*>   m_sub_rules;
+    };
+
+
+    /**
       * structure for save/load binary emulecollection files
      */
     struct emule_collection
@@ -319,13 +355,15 @@ namespace libed2k
     class collection
     {
     public:
-        collection(const std::string& strName);
+        collection();
         void add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile);
 
         void load(const std::string& strWorkspace);
         void save(const std::string& strWorkspace);
         bool is_obsolete() const;
         void set_obosolete();
+        void set_name(const std::string& strName);
+        bool unnamed() const;
         bool operator==(const collection& c) const;
     private:
         std::string         m_strName;

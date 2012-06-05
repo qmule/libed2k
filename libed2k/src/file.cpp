@@ -905,6 +905,72 @@ namespace libed2k
         }
     }
 
+    rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), m_path(convert_to_native(bom_filter(strPath)))
+    {
+    }
+
+    rule::~rule()
+    {
+        for(std::deque<rule*>::iterator itr = m_sub_rules.begin(); itr != m_sub_rules.end(); ++itr)
+        {
+            delete *itr;
+        }
+    }
+
+    rule* rule::add_sub_rule(rule_type rt, const std::string& strPath)
+    {
+        fs::path path = get_path();
+        path /= convert_to_native(bom_filter(strPath));
+
+        return (append_rule(rt, path));
+    }
+
+    rule* rule::append_rule(rule_type rt, const fs::path& path)
+    {
+        if (match(path)) { return NULL; }
+
+        m_sub_rules.push_front(new rule(rt, path, this));
+        return m_sub_rules.front();
+    }
+
+    rule::rule(rule_type rt, const fs::path& path, rule* parent) : m_type(rt), m_parent(parent), m_path(path)
+    {
+
+    }
+
+    const rule* rule::get_parent() const
+    {
+        return (m_parent);
+    }
+
+    const std::string rule::get_filename() const
+    {
+        return (convert_from_native(m_path.filename()));
+    }
+
+    const fs::path& rule::get_path() const
+    {
+        return (m_path);
+    }
+
+    rule::rule_type rule::get_type() const
+    {
+        return m_type;
+    }
+
+    rule* rule::match(const fs::path& path)
+    {
+        for (std::deque<rule*>::iterator itr = m_sub_rules.begin(); itr != m_sub_rules.end(); ++itr)
+        {
+            if ((*itr)->get_path() == path)
+            {
+                return *itr;
+            }
+        }
+
+        return NULL;
+    }
+
     void emule_collection::dump() const
     {
         DBG("emule_collection::dump");
@@ -931,7 +997,7 @@ namespace libed2k
         return (true);
     }
 
-    collection::collection(const std::string& strName) : m_strName(strName),
+    collection::collection() : m_strName(""),
             m_obsolete(false), m_saved(false)
     {
     }
@@ -956,8 +1022,17 @@ namespace libed2k
         m_obsolete = true;
     }
 
+    void collection::set_name(const std::string& strName)
+    {
+        m_strName = strName;
+    }
+
+    bool collection::unnamed() const { return m_strName.empty(); }
+
     void collection::add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile)
     {
+        if (m_strName.empty()) return;
+
         m_saved = false;
     }
 

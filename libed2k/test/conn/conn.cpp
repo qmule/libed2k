@@ -100,10 +100,10 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
-    settings.server_keep_alive_timeout = 20;
+    settings.server_keep_alive_timeout = 300;
     settings.server_reconnect_timeout = 30;
     settings.server_hostname = argv[1];
-    settings.server_timeout = 25;
+    settings.server_timeout = 125;
     settings.server_port = atoi(argv[2]);
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
@@ -123,14 +123,14 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "'+++USERNICK+++' A ");
+    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "db2");
 
     std::cout << "---- libed2k_client started\n"
               << "---- press q to exit\n"
               << "---- press something other for process alerts " << std::endl;
 
 
-    std::string strAlex = "31.207.218.28";
+    std::string strAlex = "109.191.73.222";
     std::string strDore = "192.168.161.54";
     std::string strDiman = "88.206.52.81";
     ip::address a(ip::address::from_string(strDore.c_str()));
@@ -152,6 +152,9 @@ int main(int argc, char* argv[])
         {
             switch(strUser.at(0))
             {
+            case 'l':
+                ses.post_search_request(order);
+                break;
             case 'd':
                 ses.server_conn_stop();
                 break;
@@ -250,7 +253,7 @@ int main(int argc, char* argv[])
                         << p->m_nClientId
                         << std::endl;
                 DBG("send search request");
-                //ses.post_search_request(order);
+                ses.post_search_request(order);
             }
             else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
             {
@@ -274,6 +277,7 @@ int main(int argc, char* argv[])
             else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
                 DBG("RESULT: " << p->m_files.m_collection.size());
+                p->m_files.dump();
 
                 if (shared_directory_files_alert* p2 = dynamic_cast<shared_directory_files_alert*>(p))
                 {

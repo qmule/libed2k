@@ -1,7 +1,10 @@
 #ifndef __LIBED2K_SESSION_SETTINGS__
 #define __LIBED2K_SESSION_SETTINGS__
 
-namespace libed2k {
+#include "libed2k/file.hpp"
+
+namespace libed2k
+{
 
     class session_settings
     {
@@ -23,7 +26,8 @@ namespace libed2k {
             server_reconnect_timeout(5),
             max_peerlist_size(4000),
             download_rate_limit(-1),
-            upload_rate_limit(-1)
+            upload_rate_limit(-1),
+            m_version(0x3c)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -78,6 +82,7 @@ namespace libed2k {
          */
         int download_rate_limit;
         int upload_rate_limit;
+        unsigned short m_version;
 
         //!< known.met file
         std::string     m_known_file;
@@ -87,6 +92,11 @@ namespace libed2k {
         fd_list m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
+
+        /**
+          * rules for shared directories tree
+         */
+        std::deque<rule>    m_rules;
 
     };
 

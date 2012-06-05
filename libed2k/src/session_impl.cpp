@@ -275,6 +275,74 @@ void session_impl_base::load_state()
         }
     }
 
+}
+
+void session_impl_base::scan_directory_tree(rule* base_rule)
+{
+    BOOST_ASSERT(base_rule);
+    BOOST_ASSERT(fs::is_directory(base_rule->get_path()));  // we can start only on directories
+
+    try
+    {
+        collection c;
+
+        // generate collection name only when directory was shared
+        if (base_rule->get_type() != rule::rt_minus)
+        {
+            std::string strName = base_rule->get_filename();
+            const rule* p = base_rule->get_parent();
+
+            while(p)
+            {
+                strName = p->get_filename() + std::string("-") + strName;
+                p = p->get_parent();
+            }
+
+            c.set_name(strName);
+        }
+
+        std::deque<fs::path> fpaths;
+        if (fs::exists(base_rule->get_path()))
+        {
+            std::copy(fs::directory_iterator(base_rule->get_path()), fs::directory_iterator(), std::back_inserter(fpaths));
+
+            for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); ++itr)
+            {
+                if (fs::is_regular_file(*itr))
+                {
+                    if (rule* pr = base_rule->match(*itr))
+                    {
+                        // add regular file
+                    }
+                    else if (base_rule->get_type() != rule::rt_minus)
+                    {
+                        // add reqular file
+                    }
+
+                    continue;
+                }
+
+                if (fs::is_directory(*itr))
+                {
+                    if (rule* pr = base_rule->match(*itr))
+                    {
+                        // scan next level
+                        scan_directory_tree(pr);
+                    }
+                    else if (base_rule->get_type() == rule::rt_asterisk)
+                    {
+                        // recursive rule - generate new rule for this directory and run on it
+                        rule* pr = base_rule->add_sub_rule(rule::rt_asterisk, itr->filename());
+                        scan_directory_tree(pr);
+                    }
+                }
+            }
+        }
+    }
+    catch(fs::filesystem_error& e)
+    {
+        ERR("file system error: " << e.what());
+    }
 
 }
 

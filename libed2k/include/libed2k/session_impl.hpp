@@ -45,6 +45,9 @@ namespace libed2k {
         public:
             typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
+            typedef std::pair<boost::uint32_t, std::string> known_file_key;
+            typedef std::map<known_file_key, add_transfer_params> known_file_dictionary;
+
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
@@ -70,6 +73,8 @@ namespace libed2k {
              */
             void load_state();
 
+            void scan_directory_tree(rule* base_rule);
+
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
             // them
@@ -89,7 +94,8 @@ namespace libed2k {
               * this map contains files what will moved to hashing
               *
              */
-            transfer_filename_map m_transfers_filenames;
+            transfer_filename_map   m_transfers_filenames;
+            known_file_dictionary   m_dictionary;
         };
 
 

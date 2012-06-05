@@ -65,6 +65,36 @@ BOOST_AUTO_TEST_CASE(test_file_functions)
 
 }
 
+BOOST_AUTO_TEST_CASE(test_rules_simple)
+{
+    libed2k::rule r(libed2k::rule::rt_plus, "string");
+    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "xxxx"));
+    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "yyyy"));
+    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "zzzz"));
+    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "xxxx") == NULL);
+    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "zzzz") == NULL);
+    libed2k::rule* sr = r.add_sub_rule(libed2k::rule::rt_minus, "dir1");
+    libed2k::rule* sr2 = sr->add_sub_rule(libed2k::rule::rt_plus, "dir2");
+
+    std::string strName;
+    strName = sr2->get_filename();
+    const libed2k::rule* p = sr2->get_parent();
+
+    while(p)
+    {
+        strName = p->get_filename() + std::string("-") + strName;
+        p = p->get_parent();
+    }
+
+    BOOST_CHECK_EQUAL(strName, "string-dir1-dir2");
+
+    BOOST_CHECK(r.match("string/xxxx"));
+    BOOST_CHECK(r.match("string/yyyy"));
+    BOOST_CHECK(r.match("string/zzzz"));
+    BOOST_CHECK(r.match("string/xxxx4") == NULL);
+
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
