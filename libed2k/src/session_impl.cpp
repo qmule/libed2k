@@ -793,13 +793,14 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
     boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_io_service));
     setup_socket_buffers(*sock);
 
-    boost::intrusive_ptr<peer_connection> c(new peer_connection(*this, boost::weak_ptr<transfer>(), sock, endp, NULL));
+    boost::intrusive_ptr<peer_connection> c(
+        new peer_connection(*this, boost::weak_ptr<transfer>(), sock, endp, NULL));
 
     m_connections.insert(c);
 
     m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
-                    boost::bind(&peer_connection::on_timeout, c),
-                    libtorrent::seconds(m_settings.peer_connect_timeout));
+                        boost::bind(&peer_connection::on_timeout, c),
+                        libtorrent::seconds(m_settings.peer_connect_timeout));
 
     return (peer_connection_handle(c, this));
 }

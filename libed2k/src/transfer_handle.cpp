@@ -63,6 +63,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(hash(), empty_hash);
     }
 
+    fs::path transfer_handle::filepath() const
+    {
+        LIBED2K_FORWARD_RETURN(filepath(), fs::path());
+    }
+
     bool transfer_handle::is_seed() const
     {
         LIBED2K_FORWARD_RETURN(is_seed(), false);
@@ -86,6 +91,11 @@ namespace libed2k
     bool transfer_handle::is_sequential_download() const
     {
         LIBED2K_FORWARD_RETURN(is_sequential_download(), false);
+    }
+
+    transfer_status transfer_handle::status() const
+    {
+        LIBED2K_FORWARD_RETURN(status(), transfer_status());
     }
 
     void transfer_handle::set_sequential_download(bool sd) const

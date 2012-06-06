@@ -46,8 +46,10 @@ namespace libed2k {
         size_t filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
 
+        transfer_handle handle();
         void start();
         void abort();
+        void set_state(transfer_status::state_t s);
 
         aux::session_impl& session() { return m_ses; }
 
@@ -88,6 +90,8 @@ namespace libed2k {
         }
 
         bool is_aborted() const { return m_abort; }
+        transfer_status::state_t state() const { return m_state; }
+        transfer_status status() const;
 
         /**
           * TODO - need implement it
@@ -241,7 +245,11 @@ namespace libed2k {
         size_t m_filesize;
         boost::uint32_t m_file_type;
 
+        // determines the storage state for this transfer.
         storage_mode_t m_storage_mode;
+
+        // the state of this transfer (queued, checking, downloading, etc.)
+        transfer_status::state_t m_state;
 
         // Indicates whether transfer will download anything
         bool m_seed_mode;
