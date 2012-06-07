@@ -45,8 +45,22 @@ namespace libed2k {
             m_accepted(0),
             m_requested(0),
             m_transferred(0),
-            m_priority(0)
+            m_priority(0),
+            m_collection_name("")
         {}
+
+        add_transfer_params(const std::string& collection_name):
+                    file_size(0),
+                    resume_data(0),
+                    storage_mode(storage_mode_sparse),
+                    duplicate_is_error(false),
+                    seed_mode(false),
+                    m_accepted(0),
+                    m_requested(0),
+                    m_transferred(0),
+                    m_priority(0),
+                    m_collection_name(collection_name)
+                {}
 
         md4_hash file_hash;
         hash_set piece_hash;
@@ -62,6 +76,7 @@ namespace libed2k {
         boost::uint32_t m_requested;
         boost::uint64_t m_transferred;
         boost::uint8_t  m_priority;
+        std::string     m_collection_name;
 
         bool operator==(const add_transfer_params& t) const
         {
@@ -72,7 +87,8 @@ namespace libed2k {
                     m_accepted == t.m_accepted &&
                     m_requested == t.m_requested &&
                     m_transferred == t.m_transferred &&
-                    m_priority  == t.m_priority
+                    m_priority  == t.m_priority &&
+                    m_collection_name == t.m_collection_name
                     );
         }
 

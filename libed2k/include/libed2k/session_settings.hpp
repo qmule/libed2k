@@ -90,6 +90,7 @@ namespace libed2k
         fd_list m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
+        std::string m_collections_directory;
 
     };
 

@@ -43,11 +43,6 @@ namespace libed2k{
     	    clear();
     	}
 
-    	//md4_hash(const std::string strHash)
-    	//{
-    	//    fromString(strHash);
-    	//}
-
     	md4_hash(const std::vector<boost::uint8_t>& vHash)
     	{
             size_t nSize = (vHash.size()> MD4_HASH_SIZE)?MD4_HASH_SIZE:vHash.size();

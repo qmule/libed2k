@@ -284,7 +284,7 @@ void session_impl_base::load_state()
             // add file name to control map in native code page
             m_transfers_filenames.insert(std::make_pair(std::make_pair(itr->leaf(), nLastChangeTime), md4_hash(md4_hash::m_emptyMD4Hash)));            
             // go to hashing - send fs in native code page - will be converted to utf8 by monitor
-            m_fmon.m_order.push(*itr);
+            m_fmon.m_order.push(std::make_pair(std::string(""), *itr));
         }
 
         if (ec.value() == errors::session_is_closing)
@@ -341,33 +341,36 @@ void session_impl_base::share_files(rule* base_rule)
         else
         {
             // async add transfer by file monitor
-            m_fmon.m_order.push(base_rule->get_path());
+            m_fmon.m_order.push(std::make_pair(std::string(""), base_rule->get_path()));
         }
     }
 
     try
     {
-        collection c;
-
-        // generate collection name only when directory was shared
-        if (base_rule->get_type() != rule::rt_minus)
-        {
-            std::string strName = base_rule->get_filename();
-            const rule* p = base_rule->get_parent();
-
-            while(p)
-            {
-                strName = p->get_filename() + std::string("-") + strName;
-                p = p->get_parent();
-            }
-
-            c.set_name(strName);
-        }
-
+        emule_collection ecoll;
         std::deque<fs::path> fpaths;
+
         if (fs::exists(base_rule->get_path()))
         {
             std::copy(fs::directory_iterator(base_rule->get_path()), fs::directory_iterator(), std::back_inserter(fpaths));
+
+            // generate collection name
+            if (base_rule->get_type() != rule::rt_minus && !fpaths.empty() && !m_settings.m_collections_directory.empty())
+            {
+                std::stringstream sstr;
+
+                std::string strName = base_rule->get_filename();
+                const rule* p = base_rule->get_parent();
+
+                while(p)
+                {
+                    strName = p->get_filename() + std::string("-") + strName;
+                    p = p->get_parent();
+                }
+
+                sstr << strName << "-" << fpaths.size() << ".emulecollection";
+                ecoll.m_name = sstr.str();
+            }
 
             for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); ++itr)
             {
@@ -380,19 +383,25 @@ void session_impl_base::share_files(rule* base_rule)
 
                         if (de.m_already_processed)
                         {
-                            // error
-
+                            // warning
+                            add_transfer_params atp(ecoll.m_name);
+                            atp.file_size = de.file_size;
+                            atp.file_hash = de.m_hash;
+                            atp.file_path = base_rule->get_path();
+                            atp.piece_hash = de.piece_hash;
+                            add_transfer(atp, ec);
                         }
                         else
                         {
                             if (de.m_hash.defined())
                             {
                                 // add file to collection and create transfer
+
                             }
                             else
                             {
                                 // add file to collection and run file monitor
-                                m_fmon.m_order.push(*itr);
+                                m_fmon.m_order.push(std::make_pair(ecoll.m_name, *itr));
                             }
                         }
                     }
@@ -415,6 +424,11 @@ void session_impl_base::share_files(rule* base_rule)
                     }
                 }
             }
+        }
+
+        if (!ecoll.m_name.empty())
+        {
+            // we have initialized collection -
         }
     }
     catch(fs::filesystem_error& e)

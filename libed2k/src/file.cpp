@@ -769,23 +769,24 @@ namespace libed2k
         {
             while(1)
             {
-                fs::path p = m_order.popWait(); // this is native code page                
+                std::pair<std::string, fs::path> collection_fp = m_order.popWait(); // this is native code page
 
-                DBG("file_monitor::operator(): " << p.string());
+                DBG("file_monitor::operator(): " << collection_fp.second.string());
 
                 try
                 {
                     add_transfer_params atp;
+                    atp.m_collection_name = collection_fp.first;
 
-                    if (!fs::exists(p) || !fs::is_regular_file(p))
+                    if (!fs::exists(collection_fp.second) || !fs::is_regular_file(collection_fp.second))
                     {
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    atp.file_path = convert_from_native(p.string()); // we add transfer in UTF8 only!
+                    atp.file_path = convert_from_native(collection_fp.second.string()); // we add transfer in UTF8 only!
 
                     bool    bPartial = false; // check last part in file not full
-                    uintmax_t nFileSize = fs::file_size(p);
+                    uintmax_t nFileSize = fs::file_size(collection_fp.second);
                     atp.file_size = nFileSize;
 
                     if (nFileSize == 0)
@@ -796,7 +797,7 @@ namespace libed2k
 
                     bio::mapped_file_params mf_param;
                     mf_param.flags  = bio::mapped_file_base::readonly;
-                    mf_param.path   = p.string();
+                    mf_param.path   = collection_fp.second.string();
                     mf_param.length = 0;
 
 
@@ -1052,11 +1053,10 @@ namespace libed2k
                 // hide exception and go to text loading
             }
 
-            std::string line;
+            // normalize stream after previous errors
             ifs.clear();
-            //ifs.open(strFilename.c_str(), std::ios_base::binary);
             ifs.seekg(0, std::ios_base::beg);
-
+            std::string line;
 
             while (std::getline(ifs, line, (char)10 /* LF */))
             {
@@ -1144,6 +1144,11 @@ namespace libed2k
         m_files.push_back(emule_collection_entry(strFilename, nFilesize, hash));
 
         return true;
+    }
+
+    void emule_collection::add_file(const std::string& strFilename, boost::uint64_t nFilesize)
+    {
+        m_files.push_back(emule_collection_entry(strFilename, nFilesize));
     }
 
     const std::string emule_collection::get_ed2k_link(size_t nIndex)

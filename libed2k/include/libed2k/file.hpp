@@ -222,7 +222,7 @@ namespace libed2k
         {
             DBG("monitor:: cancel");
             boost::mutex::scoped_lock lock(m_monitorMutex);
-            std::queue<fs::path> empty;
+            std::queue<Data> empty;
             std::swap(m_queue, empty );
             m_cancelled = true;
             m_signal.notify_one();
@@ -283,7 +283,7 @@ namespace libed2k
 
         void operator()();
 
-        monitor_order<fs::path>  m_order;
+        monitor_order<std::pair<std::string, fs::path> >  m_order;
 
     private:
         volatile bool           m_bCancel;
@@ -327,26 +327,6 @@ namespace libed2k
         std::deque<rule*>   m_sub_rules;
     };
 
-    struct emule_collection_entry
-    {
-        emule_collection_entry() : m_filename(""), m_filesize(0) {}
-        emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
-            m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
-        std::string     m_filename;
-        boost::uint64_t m_filesize;
-        md4_hash        m_filehash;
-    };
-
-    struct emule_collection
-    {
-        static emule_collection fromFile(const std::string& strFilename);
-        void save(const std::string& strFilename, bool binary = false);
-        bool add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash);
-        bool add_link(const std::string& strLink);
-        const std::string get_ed2k_link(size_t nIndex);
-        std::deque<emule_collection_entry> m_files;
-    };
-
     /**
       * structure for save/load binary emulecollection files
      */
@@ -366,6 +346,50 @@ namespace libed2k
 
         bool operator==(const emule_binary_collection& ec) const;
         void dump() const;
+    };
+
+    /**
+      * one file collection entry
+     */
+    struct emule_collection_entry
+    {
+        emule_collection_entry() : m_filename(""), m_filesize(0) {}
+        emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize) : m_filename(strFilename), m_filesize(nFilesize) {}
+        emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
+            m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
+        std::string     m_filename;
+        boost::uint64_t m_filesize;
+        md4_hash        m_filehash;
+    };
+
+    /**
+      * files collection
+     */
+    struct emule_collection
+    {
+        static emule_collection fromFile(const std::string& strFilename);
+        void save(const std::string& strFilename, bool binary = false);
+
+        /**
+          * add known file
+         */
+        bool add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash);
+
+        /**
+          * add file before hashing
+         */
+        void add_file(const std::string& strFilename, boost::uint64_t nFilesize);
+        bool add_link(const std::string& strLink);
+
+        const std::string get_ed2k_link(size_t nIndex);
+
+        bool operator==(const std::string& strName) const
+        {
+            return (m_name == strName);
+        }
+
+        std::string                         m_name;
+        std::deque<emule_collection_entry>  m_files;
     };
 
     /**
@@ -398,10 +422,16 @@ namespace libed2k
     class collection_manager
     {
     public:
+        typedef std::map<std::string, emule_collection> collections_map;
         void load(const std::string& strWorkspace);
         void set_collection(const collection& c);
+
+        /**
+          * when file hash was calculated we update it in collection
+         */
+        void update_collection(const std::string& strName, const md4_hash& hash);
     private:
-        std::deque<collection> m_collections;
+        collections_map m_collections;
     };
 
 }
