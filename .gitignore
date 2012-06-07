@@ -1,5 +1,6 @@
 /bin/
-out.txt
+/.sconsign.dblite
+/out.txt
 # Compiled Object files
 *.slo
 *.lo
