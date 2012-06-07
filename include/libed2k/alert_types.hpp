@@ -403,7 +403,29 @@ namespace libed2k
         transfer_handle m_handle;
     };
 
+    struct state_changed_alert : alert
+    {
+        const static int static_category = alert::status_notification;
 
+        state_changed_alert(
+            const transfer_handle& h, transfer_status::state_t new_state,
+            transfer_status::state_t old_state):
+            m_handle(h), m_new_state(new_state), m_old_state(old_state) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new state_changed_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("changed transfer state"); }
+        virtual char const* what() const { return "changed transfer state"; }
+
+        transfer_handle m_handle;
+        transfer_status::state_t m_new_state;
+        transfer_status::state_t m_old_state;
+    };
 }
 
 

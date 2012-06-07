@@ -51,6 +51,8 @@ namespace libed2k {
                 m_peers.begin(), m_peers.end(), a, peer_address_compare());
         }
 
+        peers_t::iterator find_connect_candidate();
+
         bool is_connect_candidate(peer const& p) const;
 
         peers_t m_peers;

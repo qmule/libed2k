@@ -26,6 +26,7 @@ namespace libtorrent {
     struct bitfield;
     struct has_block;
     class file_storage;
+    struct torrent_status;
 
     namespace aux{
         class eh_initializer;
@@ -57,6 +58,7 @@ namespace libed2k
     typedef libtorrent::bitfield bitfield;
     typedef libtorrent::has_block has_block;
     typedef libtorrent::file_storage file_storage;
+    typedef libtorrent::torrent_status transfer_status;
 
     namespace detail = libtorrent::detail;
 

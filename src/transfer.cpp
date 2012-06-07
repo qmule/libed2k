@@ -8,6 +8,7 @@
 #include "libed2k/constants.hpp"
 #include "libed2k/util.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/alert_types.hpp"
 
 namespace libed2k
 {
@@ -25,6 +26,7 @@ namespace libed2k
         m_filepath(p.file_path),
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
+        m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
         m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash())),
@@ -43,6 +45,11 @@ namespace libed2k
     {
         if (!m_connections.empty())
             disconnect_all(errors::transfer_aborted);
+    }
+
+    transfer_handle transfer::handle()
+    {
+        return transfer_handle(shared_from_this());
     }
 
     void transfer::start()
@@ -80,6 +87,13 @@ namespace libed2k
         //    set_state(transfer_status::queued_for_checking);
 
         m_owning_storage = 0;
+    }
+
+    void transfer::set_state(transfer_status::state_t s)
+    {
+        if (m_state == s) return;
+        m_ses.m_alerts.post_alert_should(state_changed_alert(handle(), s, m_state));
+        m_state = s;
     }
 
     bool transfer::want_more_peers() const
@@ -187,8 +201,8 @@ namespace libed2k
                 if (m_picker.get())
                 {
                     const bitfield& pieces = c->remote_hashset().pieces();
-                    assert(pieces.count() < int(pieces.size()));
-                    m_picker->dec_refcount(pieces);
+                    if (pieces.size() > 0)
+                        m_picker->dec_refcount(pieces);
                 }
             }
         }
@@ -250,7 +264,7 @@ namespace libed2k
     {
         m_picker.reset();
 
-        //set_state(torrent_status::seeding);
+        set_state(transfer_status::seeding);
         //if (!m_announcing) return;
 
         //announce_with_tracker();
@@ -263,7 +277,7 @@ namespace libed2k
         DBG("file transfer '" << m_filepath.filename() << "' completed");
         //TODO: post alert
 
-        //set_state(transfer_status::finished);
+        set_state(transfer_status::finished);
         //set_queue_position(-1);
 
         // we have to call completed() before we start
@@ -297,7 +311,7 @@ namespace libed2k
 
     void transfer::resume()
     {
-
+        set_state(transfer_status::downloading);
     }
 
     void transfer::set_upload_limit(int limit)
@@ -337,6 +351,32 @@ namespace libed2k
     bool transfer::is_paused() const
     {
         return m_paused || m_ses.is_paused();
+    }
+
+    transfer_status transfer::status() const
+    {
+        transfer_status st;
+
+        st.seed_mode = m_seed_mode;
+        st.paused = m_paused;
+
+        st.total_wanted = filesize();
+        st.total_done = std::min<size_t>(num_have() * PIECE_SIZE, st.total_wanted);
+        st.total_wanted_done = st.total_done;
+
+        st.num_peers = (int)std::count_if(
+            m_connections.begin(), m_connections.end(),
+            !boost::bind(&peer_connection::is_connecting, _1));
+
+        st.list_peers = m_policy.num_peers();
+        //st.list_seeds = m_policy.num_seeds();
+        st.connect_candidates = m_policy.num_connect_candidates();
+        st.num_connections = m_connections.size();
+        //st.connections_limit = m_max_connections;
+
+        st.state = m_state;
+
+        return st;
     }
 
     void transfer::on_files_released(int ret, disk_io_job const& j)
@@ -381,6 +421,7 @@ namespace libed2k
 
         // TODO: checking resume data
 
+        if (!is_seed()) set_state(transfer_status::downloading);
     }
 
     void transfer::second_tick()

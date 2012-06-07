@@ -211,9 +211,25 @@ void policy::set_connection(peer* p, peer_connection* c)
 bool policy::connect_one_peer()
 {
     // TODO: should be smarter
-    return !m_peers.empty() && m_transfer->connect_to_peer(*m_peers.begin());
+    peers_t::iterator i = find_connect_candidate();
+    if (i == m_peers.end()) return false;
+    peer& p = **i;
+
+    if (!m_transfer->connect_to_peer(&p))
+    {
+        return false;
+    }
+
+    return true;
 }
 
+policy::peers_t::iterator policy::find_connect_candidate()
+{
+    for(peers_t::iterator pi = m_peers.begin(); pi != m_peers.end(); ++pi)
+        if (is_connect_candidate(**pi)) return pi;
+
+    return m_peers.end();
+}
 
 bool policy::is_connect_candidate(peer const& p) const
 {

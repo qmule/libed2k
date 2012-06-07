@@ -30,13 +30,15 @@ namespace libed2k
         transfer_handle() {}
 
         md4_hash hash() const;
+        fs::path filepath() const;
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;
         bool is_aborted() const;
         bool is_sequential_download() const;
-        void set_sequential_download(bool sd) const;
+        transfer_status status() const;
 
+        void set_sequential_download(bool sd) const;
         void set_upload_limit(int limit) const;
         int upload_limit() const;
         void set_download_limit(int limit) const;
