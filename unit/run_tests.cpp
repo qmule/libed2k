@@ -95,6 +95,17 @@ BOOST_AUTO_TEST_CASE(test_rules_simple)
 
 }
 
+BOOST_AUTO_TEST_CASE(test_rule_prefix)
+{
+    libed2k::rule r(libed2k::rule::rt_plus, "one/two/three");
+    libed2k::rule r2(libed2k::rule::rt_plus, "d:\\one\\two/three\\");
+    libed2k::rule r3(libed2k::rule::rt_plus, "D:\\one\\two/three\\/second///:\\");
+
+    BOOST_CHECK_EQUAL(r.get_directory_prefix(), "onetwothree");
+    BOOST_CHECK_EQUAL(r2.get_directory_prefix(), "donetwothree");
+    BOOST_CHECK_EQUAL(r3.get_directory_prefix(), "Donetwothreesecond");
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

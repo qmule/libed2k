@@ -46,7 +46,6 @@ namespace libed2k {
             boost::uint32_t m_requested;
             boost::uint64_t m_transferred;
             boost::uint8_t  m_priority;
-            bool            m_already_processed;            // true when file processed or process in progress
             md4_hash        m_hash;
             hash_set        piece_hash;
         };
@@ -80,6 +79,7 @@ namespace libed2k {
             virtual void post_transfer(add_transfer_params const& );
 
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
+            virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path) = 0;
 
             /**
               * save transfers to disk
@@ -92,6 +92,10 @@ namespace libed2k {
             void load_state();
 
             void share_files(rule* base_rule);
+
+            /**
+              * this method implements move semantic - when element found it will be erased
+             */
             dictionary_entry get_dictionary_entry(const fs::path& file);
 
             void load_dictionary();
@@ -122,6 +126,12 @@ namespace libed2k {
               * file name in native code page
              */
             files_dictionary   m_dictionary;
+
+            /**
+              * pending collections list - when collection changes status from pending
+              * it will remove from deque
+             */
+            std::deque<pending_collection>  m_pending_collections;
         };
 
 
@@ -152,6 +162,7 @@ namespace libed2k {
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
+            virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path);
             transfer_handle find_transfer_handle(const md4_hash& hash);
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);

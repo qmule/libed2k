@@ -23,7 +23,7 @@ namespace libed2k
         m_net_interface(net_interface.address(), 0),
         m_filehash(p.file_hash),
         m_hashset(p.piece_hash),
-        m_filepath(p.file_path),
+        m_filepath(convert_from_native(p.file_path.string())),
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),

@@ -783,7 +783,7 @@ namespace libed2k
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    atp.file_path = convert_from_native(collection_fp.second.string()); // we add transfer in UTF8 only!
+                    atp.file_path = collection_fp.second; // codepage will be change to UTF-8 in add transfer method!
 
                     bool    bPartial = false; // check last part in file not full
                     uintmax_t nFileSize = fs::file_size(collection_fp.second);
@@ -911,6 +911,12 @@ namespace libed2k
 
     rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), m_path(convert_to_native(bom_filter(strPath)))
     {
+        m_directory_prefix = strPath;
+
+        // erase all directory separators and disk separators
+        m_directory_prefix.erase(std::remove(m_directory_prefix.begin(), m_directory_prefix.end(), '\\'), m_directory_prefix.end());
+        m_directory_prefix.erase(std::remove(m_directory_prefix.begin(), m_directory_prefix.end(), '/'), m_directory_prefix.end());
+        m_directory_prefix.erase(std::remove(m_directory_prefix.begin(), m_directory_prefix.end(), ':'), m_directory_prefix.end());
     }
 
     rule::~rule()
@@ -950,6 +956,11 @@ namespace libed2k
     const std::string rule::get_filename() const
     {
         return (convert_from_native(m_path.filename()));
+    }
+
+    const std::string& rule::get_directory_prefix() const
+    {
+        return (m_directory_prefix);
     }
 
     const fs::path& rule::get_path() const
@@ -1005,7 +1016,7 @@ namespace libed2k
     emule_collection emule_collection::fromFile(const std::string& strFilename)
     {
         emule_collection ec;
-        std::ifstream ifs(strFilename.c_str(), std::ios_base::binary);
+        std::ifstream ifs(strFilename.c_str(), std::ios_base::in | std::ios_base::binary);
 
         if (ifs)
         {
@@ -1048,7 +1059,7 @@ namespace libed2k
                 }
 
             }
-            catch(libed2k_exception& )
+            catch(const libed2k_exception& )
             {
                 // hide exception and go to text loading
             }
@@ -1073,6 +1084,12 @@ namespace libed2k
         }
 
         return (ec);
+    }
+
+    //static
+    std::string emule_collection::get_ebd2k_link(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash)
+    {
+
     }
 
     void emule_collection::save(const std::string& strFilename, bool binary /*false*/)
@@ -1146,11 +1163,6 @@ namespace libed2k
         return true;
     }
 
-    void emule_collection::add_file(const std::string& strFilename, boost::uint64_t nFilesize)
-    {
-        m_files.push_back(emule_collection_entry(strFilename, nFilesize));
-    }
-
     const std::string emule_collection::get_ed2k_link(size_t nIndex)
     {
         std::stringstream retvalue;
@@ -1168,59 +1180,27 @@ namespace libed2k
         return retvalue.str();
     }
 
-    collection::collection() : m_strName(""),
-            m_obsolete(false), m_saved(false)
+    bool emule_collection::operator==(const std::deque<pending_file>& files) const
     {
+        if (files.size() != m_files.size())
+        {
+            return false;
+        }
+
+        std::deque<md4_hash> hashes;
+        hashes.resize(files.size());
+
+        std::transform(files.begin(), files.end(), hashes.begin(), std::ptr_fun(&take_second<fs::path, md4_hash>));
+
+        for (std::deque<emule_collection_entry>::const_iterator itr = m_files.begin();
+                itr != m_files.end(); ++itr)
+        {
+            if (std::find(hashes.begin(), hashes.end(), itr->m_filehash) == hashes.end())
+            {
+                return false;
+            }
+        }
+
+        return (true);
     }
-
-    void collection::load(const std::string& strWorkspace)
-    {
-        m_saved = true;
-    }
-
-    void collection::save(const std::string& strWorkspace)
-    {
-        m_saved = true;
-    }
-
-    bool collection::is_obsolete() const
-    {
-        return (m_obsolete);
-    }
-
-    void collection::set_obosolete()
-    {
-        m_obsolete = true;
-    }
-
-    void collection::set_name(const std::string& strName)
-    {
-        m_strName = strName;
-    }
-
-    bool collection::unnamed() const { return m_strName.empty(); }
-
-    void collection::add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile)
-    {
-        if (m_strName.empty()) return;
-
-        m_saved = false;
-    }
-
-    bool collection::operator==(const collection& c) const
-    {
-        return (m_strName == c.m_strName &&
-                m_content == c.m_content);
-    }
-
-    void collection_manager::load(const std::string& strWorkspace)
-    {
-
-    }
-
-    void collection_manager::set_collection(const collection& c)
-    {
-
-    }
-
 }

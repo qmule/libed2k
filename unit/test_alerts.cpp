@@ -10,6 +10,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <libtorrent/torrent_handle.hpp>
 #include "libed2k/alert.hpp"
 #include "libed2k/alert_types.hpp"
 

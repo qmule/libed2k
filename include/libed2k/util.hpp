@@ -87,6 +87,19 @@ namespace libed2k
         return (nId < HIGHEST_LOWID_ED2K);
     }
 
+    template<typename T1, typename T2>
+    inline const T2& take_second(const std::pair<T1, T2> &pair)
+    {
+        return pair.second;
+    }
+
+    template<typename T1, typename T2>
+    inline const T1& take_first(const std::pair<T1, T2> &pair)
+    {
+        return pair.first;
+    }
+
+
     /**
       * @param vSrc     - incoming data buffer
       * @param vDst     - outgoing data buffer

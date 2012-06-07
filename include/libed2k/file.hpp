@@ -16,6 +16,7 @@
 
 namespace libed2k
 {
+
     ///////////////////////////////////////////////////////////////////////////////
     // ED2K File Type
     //
@@ -308,7 +309,12 @@ namespace libed2k
         rule(rule_type rt, const std::string& strPath);
         ~rule();
         const rule* get_parent() const;
+
+        /**
+          * strings in utf-8 codepage
+         */
         const std::string get_filename() const;
+        const std::string& get_directory_prefix() const;
         const fs::path& get_path() const;
         rule_type get_type() const;
         rule* add_sub_rule(rule_type rt, const std::string& strPath);
@@ -324,7 +330,53 @@ namespace libed2k
         rule_type           m_type;
         rule*               m_parent;
         fs::path            m_path;
+        std::string         m_directory_prefix;
         std::deque<rule*>   m_sub_rules;
+    };
+
+    /**
+      * this entry used to generate pending entry for async hash + publishing
+     */
+    typedef std::pair<fs::path, md4_hash> pending_file;
+
+    struct pending_collection
+    {
+        std::string                 m_strName;  //!< collection name
+        std::deque<pending_file>    m_files;
+
+        pending_collection(const std::string& strName) : m_strName(strName) {}
+
+        /**
+          * return collection status
+         */
+        bool is_pending() const
+        {
+            for (std::deque<pending_file>::const_iterator itr = m_files.begin(); itr != m_files.end(); ++itr)
+            {
+                if (!itr->second.defined())
+                {
+                    return (true);
+                }
+            }
+
+            return (false);
+        }
+
+        /**
+          * update element in pending list and return if success
+         */
+        bool update(const fs::path& p, const md4_hash& hash)
+        {
+            std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), std::make_pair(p, md4_hash()));
+
+            if (itr != m_files.end())
+            {
+                itr->second = hash;
+                return (true);
+            }
+
+            return (false);
+        }
     };
 
     /**
@@ -357,6 +409,11 @@ namespace libed2k
         emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize) : m_filename(strFilename), m_filesize(nFilesize) {}
         emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
             m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
+
+        /**
+          * collection entry has incompleted status and waits for completion
+         */
+        bool is_pending() const { return !m_filehash.defined(); }
         std::string     m_filename;
         boost::uint64_t m_filesize;
         md4_hash        m_filehash;
@@ -368,72 +425,21 @@ namespace libed2k
     struct emule_collection
     {
         static emule_collection fromFile(const std::string& strFilename);
+        static std::string get_ebd2k_link(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash);
         void save(const std::string& strFilename, bool binary = false);
 
         /**
           * add known file
          */
         bool add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash);
-
-        /**
-          * add file before hashing
-         */
-        void add_file(const std::string& strFilename, boost::uint64_t nFilesize);
         bool add_link(const std::string& strLink);
 
         const std::string get_ed2k_link(size_t nIndex);
 
-        bool operator==(const std::string& strName) const
-        {
-            return (m_name == strName);
-        }
-
+        bool operator==(const std::deque<pending_file>& files) const;
         std::string                         m_name;
         std::deque<emule_collection_entry>  m_files;
     };
-
-    /**
-      * class for manager one collection entry
-     */
-    class collection
-    {
-    public:
-        collection();
-        void add_file(const std::string& strFilename, size_t nFilesize, const md4_hash& hFile);
-
-        void load(const std::string& strWorkspace);
-        void save(const std::string& strWorkspace);
-        bool is_obsolete() const;
-        void set_obosolete();
-        void set_name(const std::string& strName);
-        bool unnamed() const;
-        bool operator==(const collection& c) const;
-    private:
-        std::string         m_strName;
-        bool                m_obsolete;
-        bool                m_saved;
-        emule_binary_collection    m_content;
-    };
-
-    /**
-      * class to manage mule collections
-      *
-     */
-    class collection_manager
-    {
-    public:
-        typedef std::map<std::string, emule_collection> collections_map;
-        void load(const std::string& strWorkspace);
-        void set_collection(const collection& c);
-
-        /**
-          * when file hash was calculated we update it in collection
-         */
-        void update_collection(const std::string& strName, const md4_hash& hash);
-    private:
-        collections_map m_collections;
-    };
-
 }
 
 #endif //__FILE__HPP__

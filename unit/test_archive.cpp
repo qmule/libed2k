@@ -697,6 +697,17 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
    BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
    BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"));
    BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
+
+   libed2k::pending_collection pc("some");
+   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
+   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
+   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79")));
+   BOOST_CHECK(!pc.is_pending());
+   BOOST_CHECK(ec_text == pc.m_files);
+   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F17879")));
+   BOOST_CHECK(!(ec_text == pc.m_files));
+   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash()));
+   BOOST_CHECK(pc.is_pending());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

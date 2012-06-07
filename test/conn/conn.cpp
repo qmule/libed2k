@@ -3,11 +3,14 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+
+#include <libtorrent/torrent_handle.hpp>
+
 #include "libed2k/log.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/session_settings.hpp"
-#include "libed2k/alert_types.hpp"
 #include "libed2k/util.hpp"
+#include "libed2k/alert_types.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/search.hpp"
 #include "libed2k/peer_connection_handle.hpp"
