@@ -769,14 +769,14 @@ namespace libed2k
         {
             while(1)
             {
-                std::pair<std::string, fs::path> collection_fp = m_order.popWait(); // this is native code page
+                std::pair<fs::path, fs::path> collection_fp = m_order.popWait(); // this is native code page
 
                 DBG("file_monitor::operator(): " << collection_fp.second.string());
 
                 try
                 {
                     add_transfer_params atp;
-                    atp.m_collection_name = collection_fp.first;
+                    atp.m_collection_path = collection_fp.first;
 
                     if (!fs::exists(collection_fp.second) || !fs::is_regular_file(collection_fp.second))
                     {
@@ -1028,7 +1028,9 @@ namespace libed2k
 
                 for (size_t i = 0; i < ebc.m_files.m_collection.size(); ++i) // iterate each tag list
                 {
-                    emule_collection_entry ece;
+                    std::string strFilename;
+                    boost::uint64_t nFilesize = 0;
+                    md4_hash        hFile;
 
                     for (size_t j = 0; j < ebc.m_files.m_collection[i].count(); ++j)
                     {
@@ -1037,13 +1039,13 @@ namespace libed2k
                         switch(p->getNameId())
                         {
                             case FT_FILENAME:
-                                ece.m_filename = p->asString();
+                                strFilename = p->asString();
                                 break;
                             case FT_FILESIZE:
-                                ece.m_filesize = p->asInt();
+                                nFilesize = p->asInt();
                                 break;
                             case FT_FILEHASH:
-                                ece.m_filehash = p->asHash();
+                                hFile = p->asHash();
                                 break;
                             default:
                                 //pass unused flags
@@ -1052,9 +1054,9 @@ namespace libed2k
 
                     }
 
-                    if (ece.m_filehash.defined() && !ece.m_filename.empty())
+                    if (!strFilename.empty() && hFile.defined())
                     {
-                        ec.m_files.push_back(ece);
+                        ec.m_files.push_back(emule_collection_entry(strFilename, nFilesize, hFile));
                     }
                 }
 
@@ -1098,6 +1100,25 @@ namespace libed2k
         << "|/";
 
         return (retvalue.str());
+    }
+
+    emule_collection_entry pending2collectionentry(const pending_file& f)
+    {
+        if (!f.second.defined())
+        {
+            // internal error
+            throw libed2k_exception(errors::pending_file_entry_in_transform);
+        }
+
+        return emule_collection_entry(convert_from_native(f.first.filename()), fs::file_size(f.first), f.second);
+    }
+
+    //static
+    emule_collection emule_collection::fromPending(const pending_collection& pending)
+    {
+        emule_collection ecoll;
+        std::transform(pending.m_files.begin(), pending.m_files.end(), std::back_inserter(ecoll.m_files), std::ptr_fun(&pending2collectionentry));
+        return ecoll;
     }
 
     bool emule_collection::save(const std::string& strFilename, bool binary /*false*/)

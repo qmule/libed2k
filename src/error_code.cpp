@@ -45,7 +45,8 @@ namespace libed2k
             "operator incorrect place",
             "known file has invalid header on save/load"
             "input string too large",
-            "search expression too complex"
+            "search expression too complex",
+            "pending file entry in transform"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

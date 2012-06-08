@@ -716,6 +716,24 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     BOOST_CHECK(ec == incoming_ec);
     incoming_ec = libed2k::emule_collection::fromFile("./binary_test.emulecollection");
     BOOST_CHECK(ec == incoming_ec);
+
+    {
+        std::ofstream f1("./file1");
+        std::ofstream f2("./file2");
+        f1 << "TEST 1";
+        f2 << "TEST 2   ";
+    }
+
+    // check transformations
+    libed2k::pending_collection pc2("pc2");
+    pc2.m_files.push_back(std::make_pair(libed2k::fs::path("./file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
+    pc2.m_files.push_back(std::make_pair(libed2k::fs::path("./file2"), libed2k::md4_hash()));
+    BOOST_CHECK_THROW(libed2k::emule_collection::fromPending(pc2), libed2k::libed2k_exception);
+    pc2.m_files.back().second = libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79");
+    BOOST_CHECK_NO_THROW(libed2k::emule_collection::fromPending(pc2));
+    libed2k::emule_collection ec_trans = libed2k::emule_collection::fromPending(pc2);
+    BOOST_CHECK(ec_trans == pc2.m_files);
 }
+
 
 BOOST_AUTO_TEST_SUITE_END()

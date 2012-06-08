@@ -284,7 +284,10 @@ namespace libed2k
 
         void operator()();
 
-        monitor_order<std::pair<std::string, fs::path> >  m_order;
+        /**
+          * collection path, file path
+         */
+        monitor_order<std::pair<fs::path, fs::path> >  m_order;
 
     private:
         volatile bool           m_bCancel;
@@ -341,10 +344,10 @@ namespace libed2k
 
     struct pending_collection
     {
-        std::string                 m_strName;  //!< collection name
+        fs::path                    m_path;
         std::deque<pending_file>    m_files;
 
-        pending_collection(const std::string& strName) : m_strName(strName) {}
+        pending_collection(const fs::path& p) : m_path(p) {}
 
         /**
           * return collection status
@@ -405,8 +408,6 @@ namespace libed2k
      */
     struct emule_collection_entry
     {
-        emule_collection_entry() : m_filename(""), m_filesize(0) {}
-        emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize) : m_filename(strFilename), m_filesize(nFilesize) {}
         emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
             m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
 
@@ -417,10 +418,6 @@ namespace libed2k
                     m_filehash == ce.m_filehash);
         }
 
-        /**
-          * collection entry has incompleted status and waits for completion
-         */
-        bool is_pending() const { return !m_filehash.defined(); }
         std::string     m_filename;
         boost::uint64_t m_filesize;
         md4_hash        m_filehash;
@@ -440,6 +437,11 @@ namespace libed2k
           * generate ed2k link from collection item
          */
         static std::string toLink(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hFile);
+
+        /**
+          * generate emule collection from pending collection
+         */
+        static emule_collection fromPending(const pending_collection& pending);
 
 
         bool save(const std::string& strFilename, bool binary = false);

@@ -341,7 +341,7 @@ void session_impl_base::share_files(rule* base_rule)
         else
         {
             // async add transfer by file monitor
-            m_fmon.m_order.push(std::make_pair(std::string(""), base_rule->get_path()));
+            m_fmon.m_order.push(std::make_pair(fs::path(), base_rule->get_path()));
         }
     }
 
@@ -374,6 +374,7 @@ void session_impl_base::share_files(rule* base_rule)
                 }
 
                 sstr << strCollectionName << "-" << fpaths.size() << ".emulecollection";
+                strCollectionName = sstr.str();
             }
 
             // we have collection name - generate collection path
@@ -381,11 +382,19 @@ void session_impl_base::share_files(rule* base_rule)
             {
                 collection_path = convert_to_native(bom_filter(m_settings.m_collections_directory));
                 collection_path /= convert_to_native(bom_filter(strPrefix));
+
+                // create directory for collection
+                if (!fs::exists(collection_path))
+                {
+                    // create directory
+                    fs::create_directory(collection_path);
+                }
+
                 collection_path /= convert_to_native(bom_filter(strCollectionName));
             }
 
             // prepare pending collection
-            pending_collection pc(strCollectionName);
+            pending_collection pc(collection_path);
 
             for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); ++itr)
             {
@@ -406,7 +415,7 @@ void session_impl_base::share_files(rule* base_rule)
                         if (de.m_hash.defined())
                         {
                             // add file to collection and create transfer
-                            add_transfer_params atp(strCollectionName);
+                            add_transfer_params atp(collection_path);
                             atp.file_size = de.file_size;
                             atp.file_hash = de.m_hash;
                             atp.file_path = base_rule->get_path();
@@ -417,7 +426,7 @@ void session_impl_base::share_files(rule* base_rule)
                         {
                             // add file to collection and run file monitor
                             pc.m_files.push_back(pending_file(*itr, md4_hash()));
-                            m_fmon.m_order.push(std::make_pair(strCollectionName, *itr));
+                            m_fmon.m_order.push(std::make_pair(collection_path, *itr));
                         }
 
                     }
@@ -458,7 +467,7 @@ void session_impl_base::share_files(rule* base_rule)
                     // simple remove item from dictionary if it exists
                     dictionary_entry de = get_dictionary_entry(collection_path);
 
-                    // scan transfers
+                    // add current collection to pending list
                     m_pending_collections.push_back(pc);
                 }
                 else
@@ -468,30 +477,41 @@ void session_impl_base::share_files(rule* base_rule)
                     // we already have collection on disk
                     if (boost::shared_ptr<transfer> p = find_transfer(collection_path).lock())
                     {
-                        // transfer exists but collection changed
                         if (ecoll == pc.m_files)
                         {
+                            // do nothing
                         }
                         else
                         {
+                            // transfer exists but collection changed
                             p->abort();
-                            // save collection to disk
+                            // save collection to disk and run hasher
+                            emule_collection::fromPending(pc).save(collection_path.string(), false);
                             // run hash
-                            m_fmon.m_order.push(std::make_pair(strCollectionName, collection_path));
+                            m_fmon.m_order.push(std::make_pair(collection_path, collection_path));
                         }
                     }
                     else
                     {
                         // transfer not exists
+                        dictionary_entry de = get_dictionary_entry(collection_path);
 
                         if (ecoll == pc.m_files)
                         {
                             // add transfer for collection
+                            // add file to collection and create transfer
+                            //add_transfer_params atp(fs::path());
+                            //atp.file_size = ;
+                            //atp.file_hash = de.m_hash;
+                            //atp.file_path = collection_path;
+                            //atp.piece_hash = de.piece_hash;
+                            //add_transfer(atp, ec);
                         }
                         else
                         {
                             // save collection and run hash
-                            m_fmon.m_order.push(std::make_pair(strCollectionName, collection_path));
+                            emule_collection::fromPending(pc).save(collection_path.string(), false);
+                            m_fmon.m_order.push(std::make_pair(collection_path, collection_path));
                         }
                     }
                 }
@@ -1033,23 +1053,27 @@ transfer_handle session_impl::add_transfer(
     }
 
     // check pending collections only when transfer has collection link
-    if (!params.m_collection_name.empty())
+    if (!params.m_collection_path.empty())
     {
         for (std::deque<pending_collection>::iterator itr = m_pending_collections.begin();
                 itr != m_pending_collections.end(); ++itr)
         {
-            if (itr->m_strName == params.m_collection_name)             // find collection
+            if (itr->m_path == params.m_collection_path)                // find collection
             {
                 if (itr->update(params.file_path, params.file_hash))    // update file in collection
                 {
                     if (!itr->is_pending())                             // save collection it it changes status
                     {
-
+                        emule_collection::fromPending(*itr).save(itr->m_path.string(), false);
                         m_pending_collections.erase(itr);               // remove collection from pending list
                     }
-
-                    break;
                 }
+                else
+                {
+                    // warning ! - collection doesn't contains transfer!
+                }
+
+                break;
             }
         }
     }

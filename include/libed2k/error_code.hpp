@@ -52,6 +52,7 @@ namespace libed2k
             known_file_invalid_header,
             input_string_too_large,
             search_expression_too_complex,
+            pending_file_entry_in_transform,
             num_errors
         };
     }
