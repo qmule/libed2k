@@ -410,6 +410,13 @@ namespace libed2k
         emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
             m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
 
+        bool operator==(const emule_collection_entry& ce) const
+        {
+            return (m_filename == ce.m_filename &&
+                    m_filesize == ce.m_filesize &&
+                    m_filehash == ce.m_filehash);
+        }
+
         /**
           * collection entry has incompleted status and waits for completion
          */
@@ -424,8 +431,18 @@ namespace libed2k
      */
     struct emule_collection
     {
+        /**
+          * restore collection from file
+         */
         static emule_collection fromFile(const std::string& strFilename);
-        void save(const std::string& strFilename, bool binary = false);
+
+        /**
+          * generate ed2k link from collection item
+         */
+        static std::string toLink(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hFile);
+
+
+        bool save(const std::string& strFilename, bool binary = false);
 
         /**
           * add known file
@@ -436,6 +453,7 @@ namespace libed2k
         const std::string get_ed2k_link(size_t nIndex);
 
         bool operator==(const std::deque<pending_file>& files) const;
+        bool operator==(const emule_collection& ecoll) const;
         std::string                         m_name;
         std::deque<emule_collection_entry>  m_files;
     };
