@@ -220,6 +220,8 @@ namespace libed2k {
 
         // will initialize the storage and the piece-picker
         void init();
+        void bytes_done(transfer_status& st) const;
+        int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
 
         // a back reference to the session
         // this transfer belongs to.

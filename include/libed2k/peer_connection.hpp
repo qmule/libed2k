@@ -16,6 +16,7 @@
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
+#include <libtorrent/piece_block_progress.hpp>
 
 #include "libed2k/base_connection.hpp"
 #include "libed2k/types.hpp"
@@ -146,6 +147,10 @@ namespace libed2k
         bool has_hash(const md4_hash& hash) const;
         bool operator==(const net_identifier& np) const;
         bool operator==(const md4_hash& hash) const;
+
+        boost::optional<piece_block_progress> downloading_piece_progress() {
+            return boost::optional<piece_block_progress>();
+        }
     private:
 
         // constructor method

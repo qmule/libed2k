@@ -360,9 +360,7 @@ namespace libed2k
         st.seed_mode = m_seed_mode;
         st.paused = m_paused;
 
-        st.total_wanted = filesize();
-        st.total_done = std::min<size_t>(num_have() * PIECE_SIZE, st.total_wanted);
-        st.total_wanted_done = st.total_done;
+        bytes_done(st);
 
         st.num_peers = (int)std::count_if(
             m_connections.begin(), m_connections.end(),
@@ -377,6 +375,104 @@ namespace libed2k
         st.state = m_state;
 
         return st;
+    }
+
+    // fills in total_wanted, total_wanted_done and total_done
+    void transfer::bytes_done(transfer_status& st) const
+    {
+        st.total_wanted = filesize();
+        st.total_done = std::min<size_t>(num_have() * PIECE_SIZE, st.total_wanted);
+        st.total_wanted_done = st.total_done;
+
+        if (!m_picker) return;
+
+        const int last_piece = num_pieces() - 1;
+
+        // if we have the last piece, we have to correct
+        // the amount we have, since the first calculation
+        // assumed all pieces were of equal size
+        if (m_picker->have_piece(last_piece))
+        {
+            int corr = filesize() % PIECE_SIZE - PIECE_SIZE;
+            assert(corr <= 0);
+            assert(corr > -int(PIECE_SIZE));
+            st.total_done += corr;
+            if (m_picker->piece_priority(last_piece) != 0)
+            {
+                assert(st.total_wanted_done >= int(PIECE_SIZE));
+                st.total_wanted_done += corr;
+            }
+        }
+        assert(st.total_wanted >= st.total_wanted_done);
+
+        const std::vector<piece_picker::downloading_piece>& dl_queue =
+            m_picker->get_download_queue();
+
+        const int blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+
+        // look at all unfinished pieces and add the completed
+        // blocks to our 'done' counter
+        for (std::vector<piece_picker::downloading_piece>::const_iterator i =
+                 dl_queue.begin(); i != dl_queue.end(); ++i)
+        {
+            int corr = 0;
+            int index = i->index;
+            // completed pieces are already accounted for
+            if (m_picker->have_piece(index)) continue;
+            assert(i->finished <= m_picker->blocks_in_piece(index));
+
+            for (int j = 0; j < blocks_per_piece; ++j)
+            {
+                if (i->info[j].state == piece_picker::block_info::state_writing ||
+                    i->info[j].state == piece_picker::block_info::state_finished)
+                {
+                    corr += block_bytes_wanted(piece_block(index, j));
+                }
+                assert(corr >= 0);
+                assert(index != last_piece || j < m_picker->blocks_in_last_piece() ||
+                       i->info[j].state != piece_picker::block_info::state_finished);
+            }
+
+            st.total_done += corr;
+            if (m_picker->piece_priority(index) > 0)
+                st.total_wanted_done += corr;
+        }
+
+        std::map<piece_block, int> downloading_piece;
+        for (std::set<peer_connection*>::const_iterator i = m_connections.begin();
+             i != m_connections.end(); ++i)
+        {
+            peer_connection* pc = *i;
+            boost::optional<piece_block_progress> p = pc->downloading_piece_progress();
+            if (!p) continue;
+
+            if (m_picker->have_piece(p->piece_index))
+                continue;
+
+            piece_block block(p->piece_index, p->block_index);
+            if (m_picker->is_finished(block))
+                continue;
+
+            std::map<piece_block, int>::iterator dp = downloading_piece.find(block);
+            if (dp != downloading_piece.end())
+            {
+                if (dp->second < p->bytes_downloaded)
+                    dp->second = p->bytes_downloaded;
+            }
+            else
+            {
+                downloading_piece[block] = p->bytes_downloaded;
+            }
+        }
+
+        for (std::map<piece_block, int>::iterator i = downloading_piece.begin();
+             i != downloading_piece.end(); ++i)
+        {
+            int done = std::min(block_bytes_wanted(i->first), i->second);
+            st.total_done += done;
+            if (m_picker->piece_priority(i->first.piece_index) != 0)
+                st.total_wanted_done += done;
+        }
     }
 
     void transfer::on_files_released(int ret, disk_io_job const& j)
