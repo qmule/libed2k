@@ -425,7 +425,6 @@ namespace libed2k
     struct emule_collection
     {
         static emule_collection fromFile(const std::string& strFilename);
-        static std::string get_ebd2k_link(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash);
         void save(const std::string& strFilename, bool binary = false);
 
         /**

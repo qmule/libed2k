@@ -1,4 +1,4 @@
-#include <iostream>
+#include <sstream>
 #include <fstream>
 #include <string>
 #include <map>
@@ -1086,12 +1086,6 @@ namespace libed2k
         return (ec);
     }
 
-    //static
-    std::string emule_collection::get_ebd2k_link(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash)
-    {
-
-    }
-
     void emule_collection::save(const std::string& strFilename, bool binary /*false*/)
     {
         // generate collection
@@ -1125,7 +1119,7 @@ namespace libed2k
 
         std::stringstream sFileSize;
         sFileSize << strLink.substr(iName+1,iSize-iName-1);
-        uint64_t fileSize;
+        boost::uint64_t fileSize;
 
         if ((sFileSize >> std::dec >> fileSize).fail())
         {
