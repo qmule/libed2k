@@ -41,12 +41,20 @@ policy::policy(transfer* t, const std::vector<peer_entry>& peer_list):
 
 peer* policy::add_peer(const tcp::endpoint& ep)
 {
-    peer* p = (peer*)m_transfer->session().m_peer_pool.malloc();
-    new (p) peer(ep, true);
-    m_peers.push_back(p);
+    peers_t::iterator pe = std::find_if(m_peers.begin(), m_peers.end(), match_peer_endpoint(ep));
+    peer* p;
 
-    if (is_connect_candidate(*p))
-        ++m_num_connect_candidates;
+    if (pe == m_peers.end())
+    {
+        peer* p = (peer*)m_transfer->session().m_peer_pool.malloc();
+        new (p) peer(ep, true);
+        m_peers.push_back(p);
+
+        if (is_connect_candidate(*p))
+            ++m_num_connect_candidates;
+    }
+    else
+        p = *pe;
 
     return p;
 }
