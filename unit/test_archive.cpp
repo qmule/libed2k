@@ -682,32 +682,40 @@ BOOST_AUTO_TEST_CASE(test_packets)
 
 BOOST_AUTO_TEST_CASE(test_emule_collection)
 {
-   libed2k::emule_collection ec = libed2k::emule_collection::fromFile("test_collection.emulecollection");
-   BOOST_CHECK_EQUAL(ec.m_files.size(), 3);
-   BOOST_CHECK_EQUAL(ec.m_files.at(0).m_filename, "file3.txt");
-   BOOST_CHECK_EQUAL(ec.m_files.at(1).m_filename, "file2.txt");
-   BOOST_CHECK_EQUAL(ec.m_files.at(2).m_filename, "file1.txt");
+    libed2k::emule_collection ec = libed2k::emule_collection::fromFile("test_collection.emulecollection");
+    BOOST_REQUIRE_EQUAL(ec.m_files.size(), 3);
+    BOOST_CHECK_EQUAL(ec.m_files.at(0).m_filename, "file3.txt");
+    BOOST_CHECK_EQUAL(ec.m_files.at(1).m_filename, "file2.txt");
+    BOOST_CHECK_EQUAL(ec.m_files.at(2).m_filename, "file1.txt");
 
-   libed2k::emule_collection ec_text = libed2k::emule_collection::fromFile("test_text_collection.emulecollection");
-   BOOST_CHECK_EQUAL(ec_text.m_files.size(), 3);
-   BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filename, "1.txt");
-   BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filename, "2.txt");
-   BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filename, "xxx.txt");
+    libed2k::emule_collection ec_text = libed2k::emule_collection::fromFile("test_text_collection.emulecollection");
+    BOOST_REQUIRE_EQUAL(ec_text.m_files.size(), 3);
+    BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filename, "1.txt");
+    BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filename, "2.txt");
+    BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filename, "xxx.txt");
 
-   BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
-   BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"));
-   BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
+    BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
+    BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"));
+    BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
 
-   libed2k::pending_collection pc("some");
-   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
-   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
-   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79")));
-   BOOST_CHECK(!pc.is_pending());
-   BOOST_CHECK(ec_text == pc.m_files);
-   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F17879")));
-   BOOST_CHECK(!(ec_text == pc.m_files));
-   pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash()));
-   BOOST_CHECK(pc.is_pending());
+    libed2k::pending_collection pc("some");
+    pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
+    pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
+    pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79")));
+    BOOST_CHECK(!pc.is_pending());
+    BOOST_CHECK(ec_text == pc.m_files);
+    pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F17879")));
+    BOOST_CHECK(!(ec_text == pc.m_files));
+    pc.m_files.push_back(std::make_pair(libed2k::fs::path("file1"), libed2k::md4_hash()));
+    BOOST_CHECK(pc.is_pending());
+
+    BOOST_CHECK(ec.save("./txt_test.emulecollection", false));
+    BOOST_CHECK(ec.save("./binary_test.emulecollection", true));
+
+    libed2k::emule_collection incoming_ec = libed2k::emule_collection::fromFile("./txt_test.emulecollection");
+    BOOST_CHECK(ec == incoming_ec);
+    incoming_ec = libed2k::emule_collection::fromFile("./binary_test.emulecollection");
+    BOOST_CHECK(ec == incoming_ec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

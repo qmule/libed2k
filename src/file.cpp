@@ -1086,10 +1086,66 @@ namespace libed2k
         return (ec);
     }
 
-    void emule_collection::save(const std::string& strFilename, bool binary /*false*/)
+    // static
+    std::string emule_collection::toLink(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hFile)
     {
-        // generate collection
+        std::stringstream retvalue;
+        // ed2k://|file|fileName|fileSize|fileHash|/
+        retvalue
+        << "ed2k://|file|" << strFilename
+        << "|" << nFilesize
+        << "|" << hFile.toString()
+        << "|/";
 
+        return (retvalue.str());
+    }
+
+    bool emule_collection::save(const std::string& strFilename, bool binary /*false*/)
+    {
+        // don't save empty collections
+        if (m_files.empty())
+        {
+            return false;
+        }
+
+        // generate collection
+        std::ofstream fstr(strFilename.c_str(), std::ios_base::out | std::ios_base::binary);
+
+        if (fstr)
+        {
+            if (binary)
+            {
+                emule_binary_collection ebc;
+                ebc.m_files.m_collection.resize(m_files.size());
+
+                for (size_t n = 0; n < m_files.size(); ++n)
+                {
+                    ebc.m_files.m_collection[n].add_tag(make_string_tag(m_files[n].m_filename, FT_FILENAME, true));
+                    ebc.m_files.m_collection[n].add_tag(make_typed_tag(m_files[n].m_filesize, FT_FILESIZE, true));
+                    ebc.m_files.m_collection[n].add_tag(make_typed_tag(m_files[n].m_filehash, FT_FILEHASH, true));
+                }
+
+                archive::ed2k_oarchive foa(fstr);
+                foa << ebc;
+            }
+            else
+            {
+                for (size_t n = 0; n < m_files.size(); ++n)
+                {
+                    if (n != 0)
+                    {
+                        fstr << "\n";
+                    }
+
+                    fstr << get_ed2k_link(n);
+                }
+            }
+
+            return true;
+
+        }
+
+        return (false);
     }
 
     bool emule_collection::add_link(const std::string& strLink)
@@ -1159,19 +1215,12 @@ namespace libed2k
 
     const std::string emule_collection::get_ed2k_link(size_t nIndex)
     {
-        std::stringstream retvalue;
-
         if (nIndex < m_files.size())
         {
-            // ed2k://|file|fileName|fileSize|fileHash|/
-            retvalue
-            << "ed2k://|file|" << m_files.at(nIndex).m_filename
-            << "|" << m_files.at(nIndex).m_filesize
-            << "|" << m_files.at(nIndex).m_filehash.toString()
-            << "|/";
+            return emule_collection::toLink(m_files.at(nIndex).m_filename, m_files.at(nIndex).m_filesize, m_files.at(nIndex).m_filehash);
         }
 
-        return retvalue.str();
+        return std::string("");
     }
 
     bool emule_collection::operator==(const std::deque<pending_file>& files) const
@@ -1196,5 +1245,15 @@ namespace libed2k
         }
 
         return (true);
+    }
+
+    bool emule_collection::operator==(const emule_collection& ecoll) const
+    {
+        if (m_files.size() != ecoll.m_files.size())
+        {
+            return (false);
+        }
+
+        return std::equal(m_files.begin(), m_files.end(), ecoll.m_files.begin());
     }
 }
