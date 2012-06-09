@@ -698,14 +698,14 @@ void peer_connection::receive_data(const peer_request& req)
 void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
+    if (is_disconnecting()) return;
+
     assert(int(bytes_transferred) == r.length);
     assert(m_channel_state[download_channel] == bw_network);
     assert(m_read_in_progress);
     m_read_in_progress = false;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
-
-    if (is_disconnecting()) return;
     if (t->is_seed()) return;
 
     piece_picker& picker = t->picker();

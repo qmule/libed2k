@@ -76,6 +76,10 @@ namespace libed2k
             validate();
             return *this;
         }
+
+        operator I&() { return m_it; }
+        operator const I&() const { return m_it; }
+
     private:
         void validate() {
             if (m_it == m_cont.end()) m_it = m_cont.begin();

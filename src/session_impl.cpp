@@ -1092,6 +1092,27 @@ transfer_handle session_impl::add_transfer(
     return handle;
 }
 
+void session_impl::remove_transfer(const transfer_handle& h, int options)
+{
+    boost::shared_ptr<transfer> tptr = h.m_transfer.lock();
+    if (!tptr) return;
+
+    transfer_map::iterator i = m_transfers.find(tptr->hash());
+
+    if (i != m_transfers.end())
+    {
+        transfer& t = *i->second;
+        if (options & session::delete_files)
+            t.delete_files();
+        t.abort();
+
+        if (i == m_next_connect_transfer) ++m_next_connect_transfer;
+
+        //t.set_queue_position(-1);
+        m_transfers.erase(i);
+    }
+}
+
 peer_connection_handle session_impl::add_peer_connection(net_identifier np, error_code& ec)
 {
     DBG("session_impl::add_peer_connection");

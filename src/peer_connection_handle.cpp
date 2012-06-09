@@ -105,7 +105,6 @@ namespace libed2k
         LIBED2K_PC_FORWARD_RETURN(get_options(), peer_connection_options())
     }
 
-
     misc_options peer_connection_handle::get_misc_options() const
     {
         LIBED2K_PC_FORWARD_RETURN(get_misc_options(), misc_options())

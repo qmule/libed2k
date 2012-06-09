@@ -28,8 +28,10 @@ namespace libed2k
             // transport errors
             "session is closing",
             "duplicate transfer",
+            "transfer paused",
             "transfer finished",
             "transfer aborted",
+            "transfer removed",
             "stopping transfer",
             "timed out",
             "connection to itself",

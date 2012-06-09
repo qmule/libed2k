@@ -104,6 +104,12 @@ namespace libed2k {
     class session
     {
     public:
+        enum options_t
+        {
+            none = 0,
+            delete_files = 1
+        };
+
         session(const fingerprint& id, const char* listen_interface,
                 const session_settings& settings)
         {
@@ -116,6 +122,7 @@ namespace libed2k {
         std::vector<transfer_handle> add_transfer_dir(const fs::path& dir);
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
+        void remove_transfer(const transfer_handle& h, int options = none);
 
         peer_connection_handle add_peer_connection(const net_identifier& np);
         peer_connection_handle find_peer_connection(const net_identifier& np) const;

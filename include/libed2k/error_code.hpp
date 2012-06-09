@@ -34,8 +34,10 @@ namespace libed2k
             // transport errors
             session_is_closing,
             duplicate_transfer,
+            transfer_paused,
             transfer_finished,
             transfer_aborted,
+            transfer_removed,
             stopping_transfer,
             timed_out,
             self_connection,

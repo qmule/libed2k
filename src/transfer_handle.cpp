@@ -56,6 +56,10 @@ namespace libed2k
     }
 #endif
 
+    bool transfer_handle::is_valid() const
+    {
+        return !m_transfer.expired();
+    }
 
     md4_hash transfer_handle::hash() const
     {
@@ -130,7 +134,7 @@ namespace libed2k
 
     void transfer_handle::resume() const
     {
-
+        LIBED2K_FORWARD(resume());
     }
 
     size_t transfer_handle::num_pieces() const

@@ -70,7 +70,7 @@ namespace libed2k
 
         // disconnect all peers and close all
         // files belonging to the torrents
-        //disconnect_all(errors::transfer_aborted);
+        disconnect_all(errors::transfer_aborted);
 
         // post a message to the main thread to destruct
         // the torrent object from there
@@ -83,8 +83,8 @@ namespace libed2k
 
         //dequeue_transfer_check();
 
-        //if (m_state == transfer_status::checking_files)
-        //    set_state(transfer_status::queued_for_checking);
+        if (m_state == transfer_status::checking_files)
+            set_state(transfer_status::queued_for_checking);
 
         m_owning_storage = 0;
     }
@@ -306,12 +306,35 @@ namespace libed2k
 
     void transfer::pause()
     {
+        if (m_paused) return;
+        m_paused = true;
+        if (m_ses.is_paused()) return;
 
+        DBG("pause transfer {hash: " << hash() << "}");
+
+        // this will make the storage close all
+        // files and flush all cached data
+        if (m_owning_storage.get())
+        {
+            assert(m_storage);
+            m_storage->async_release_files(
+                boost::bind(&transfer::on_transfer_paused, shared_from_this(), _1, _2));
+            m_storage->async_clear_read_cache();
+        }
+        else
+        {
+            m_ses.m_alerts.post_alert_should(paused_transfer_alert(handle()));
+        }
+
+        disconnect_all(errors::transfer_paused);
     }
 
     void transfer::resume()
     {
-        set_state(transfer_status::downloading);
+        if (!m_paused) return;
+        DBG("resume transfer {hash: " << hash() << "}");
+        m_paused = false;
+        m_ses.m_alerts.post_alert_should(resumed_transfer_alert(handle()));
     }
 
     void transfer::set_upload_limit(int limit)
@@ -332,6 +355,20 @@ namespace libed2k
     int transfer::download_limit() const
     {
         return 0;
+    }
+
+    void transfer::delete_files()
+    {
+        DBG("deleting files in transfer");
+
+        disconnect_all(errors::transfer_removed);
+
+        if (m_owning_storage.get())
+        {
+            assert(m_storage);
+            m_storage->async_delete_files(
+                boost::bind(&transfer::on_files_deleted, shared_from_this(), _1, _2));
+        }
     }
 
     void transfer::set_sequential_download(bool sd)
@@ -480,10 +517,27 @@ namespace libed2k
         // do nothing
     }
 
+    void transfer::on_files_deleted(int ret, disk_io_job const& j)
+    {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (ret != 0)
+            m_ses.m_alerts.post_alert_should(delete_failed_transfer_alert(handle(), j.error));
+        else
+            m_ses.m_alerts.post_alert_should(deleted_transfer_alert(handle(), hash()));
+    }
+
     void transfer::on_transfer_aborted(int ret, disk_io_job const& j)
     {
         // the transfer should be completely shut down now, and the
         // destructor has to be called from the main thread
+    }
+
+    void transfer::on_transfer_paused(int ret, disk_io_job const& j)
+    {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        m_ses.m_alerts.post_alert_should(paused_transfer_alert(handle()));
     }
 
     void transfer::on_disk_error(disk_io_job const& j, peer_connection* c)

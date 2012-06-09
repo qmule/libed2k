@@ -403,6 +403,86 @@ namespace libed2k
         transfer_handle m_handle;
     };
 
+    struct paused_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        paused_transfer_alert(const transfer_handle& h) : m_handle(h) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new paused_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("paused transfer"); }
+        virtual char const* what() const { return "paused transfer"; }
+
+        transfer_handle m_handle;
+    };
+
+    struct resumed_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        resumed_transfer_alert(const transfer_handle& h) : m_handle(h) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new resumed_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("resumed transfer"); }
+        virtual char const* what() const { return "resumed transfer"; }
+
+        transfer_handle m_handle;
+    };
+
+    struct deleted_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        deleted_transfer_alert(const transfer_handle& h, const md4_hash& hash):
+            m_handle(h), m_hash(hash) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new deleted_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("deleted transfer"); }
+        virtual char const* what() const { return "deleted transfer"; }
+
+        transfer_handle m_handle;
+        md4_hash m_hash;
+    };
+
+    struct delete_failed_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        delete_failed_transfer_alert(const transfer_handle& h, const error_code& error):
+            m_handle(h), m_error(error) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new delete_failed_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("delete failed transfer"); }
+        virtual char const* what() const { return "delete failed transfer"; }
+
+        transfer_handle m_handle;
+        error_code m_error;
+    };
+
     struct state_changed_alert : alert
     {
         const static int static_category = alert::status_notification;
