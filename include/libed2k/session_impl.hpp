@@ -80,6 +80,7 @@ namespace libed2k {
 
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
             virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path) = 0;
+            virtual void remove_transfer(const transfer_handle& h, int options) = 0;
 
             /**
               * save transfers to disk
@@ -182,6 +183,7 @@ namespace libed2k {
               * add transfer from current thread directly
              */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
+            virtual void remove_transfer(const transfer_handle& h, int options);
 
             /**
               * find peer connections

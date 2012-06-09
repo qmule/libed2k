@@ -56,6 +56,10 @@ namespace libed2k
     }
 #endif
 
+    bool transfer_handle::is_valid() const
+    {
+        return !m_transfer.expired();
+    }
 
     md4_hash transfer_handle::hash() const
     {

@@ -29,6 +29,8 @@ namespace libed2k
 
         transfer_handle() {}
 
+        bool is_valid() const;
+
         md4_hash hash() const;
         fs::path filepath() const;
         bool is_seed() const;

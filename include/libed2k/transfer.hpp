@@ -102,6 +102,7 @@ namespace libed2k {
         int upload_limit() const;
         void set_download_limit(int limit);
         int download_limit() const;
+        void delete_files();
 
         void set_sequential_download(bool sd);
         bool is_sequential_download() const { return m_sequential_download; }
@@ -215,6 +216,7 @@ namespace libed2k {
 
     private:
         void on_files_released(int ret, disk_io_job const& j);
+        void on_files_deleted(int ret, disk_io_job const& j);
 		void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void on_transfer_aborted(int ret, disk_io_job const& j);
         void on_transfer_paused(int ret, disk_io_job const& j);

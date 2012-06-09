@@ -37,6 +37,7 @@ namespace libed2k
             transfer_paused,
             transfer_finished,
             transfer_aborted,
+            transfer_removed,
             stopping_transfer,
             timed_out,
             self_connection,
