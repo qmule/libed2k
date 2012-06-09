@@ -49,6 +49,7 @@ namespace libed2k {
         {}
 
         add_transfer_params(const fs::path& cpath):
+                    m_collection_path(cpath),
                     file_size(0),
                     resume_data(0),
                     storage_mode(storage_mode_sparse),
@@ -57,13 +58,30 @@ namespace libed2k {
                     m_accepted(0),
                     m_requested(0),
                     m_transferred(0),
-                    m_priority(0),
-                    m_collection_path(cpath)
+                    m_priority(0)
                 {}
+
+        add_transfer_params(const md4_hash& hash, const hash_set& hset, size_t nSize, const fs::path& cpath, const fs::path& fpath) :
+            file_hash(hash),
+            piece_hash(hset),
+            file_path(fpath),
+            m_collection_path(cpath),
+            file_size(nSize),
+            resume_data(0),
+            storage_mode(storage_mode_sparse),
+            duplicate_is_error(false),
+            seed_mode(false),
+            m_accepted(0),
+            m_requested(0),
+            m_transferred(0),
+            m_priority(0)
+        {
+        }
 
         md4_hash file_hash;
         hash_set piece_hash;
         fs::path file_path; // in UTF8 always!
+        fs::path m_collection_path;
         size_t file_size;
         std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
@@ -75,7 +93,6 @@ namespace libed2k {
         boost::uint32_t m_requested;
         boost::uint64_t m_transferred;
         boost::uint8_t  m_priority;
-        fs::path        m_collection_path;
 
         bool operator==(const add_transfer_params& t) const
         {

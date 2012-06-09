@@ -330,13 +330,7 @@ void session_impl_base::share_files(rule* base_rule)
 
         if (de.m_hash.defined())
         {
-            // add transfer
-            add_transfer_params atp;
-            atp.file_size = de.file_size;
-            atp.file_hash = de.m_hash;
-            atp.file_path = base_rule->get_path();
-            atp.piece_hash = de.piece_hash;
-            add_transfer(atp, ec);
+            add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, fs::path(), base_rule->get_path()), ec);
         }
         else
         {
@@ -414,13 +408,7 @@ void session_impl_base::share_files(rule* base_rule)
 
                         if (de.m_hash.defined())
                         {
-                            // add file to collection and create transfer
-                            add_transfer_params atp(collection_path);
-                            atp.file_size = de.file_size;
-                            atp.file_hash = de.m_hash;
-                            atp.file_path = base_rule->get_path();
-                            atp.piece_hash = de.piece_hash;
-                            add_transfer(atp, ec);
+                            add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, collection_path, base_rule->get_path()), ec);
                         }
                         else
                         {
@@ -498,14 +486,7 @@ void session_impl_base::share_files(rule* base_rule)
 
                         if (ecoll == pc.m_files)
                         {
-                            // add transfer for collection
-                            // add file to collection and create transfer
-                            //add_transfer_params atp(fs::path());
-                            //atp.file_size = ;
-                            //atp.file_hash = de.m_hash;
-                            //atp.file_path = collection_path;
-                            //atp.piece_hash = de.piece_hash;
-                            //add_transfer(atp, ec);
+                            add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, fs::path(), collection_path), ec);
                         }
                         else
                         {
@@ -1070,7 +1051,7 @@ transfer_handle session_impl::add_transfer(
                 }
                 else
                 {
-                    // warning ! - collection doesn't contains transfer!
+                    ERR("collection in transfer doesn't exists in pending list! ");
                 }
 
                 break;

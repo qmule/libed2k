@@ -19,6 +19,7 @@ void add_transfer_params::dump() const
         " priority: " << m_priority);
 }
 
+
 void session::init(const fingerprint& id, const char* listen_interface,
                    const session_settings& settings)
 {

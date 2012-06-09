@@ -27,6 +27,7 @@ namespace libed2k
             session_impl_test(const session_settings& settings);
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
             virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path);
+            virtual void remove_transfer(const transfer_handle& h, int options);
             void stop();
             void wait();
             void run();
@@ -89,6 +90,11 @@ namespace libed2k
         boost::weak_ptr<transfer> session_impl_test::find_transfer(const fs::path& path)
         {
             return boost::weak_ptr<transfer>();
+        }
+
+        void session_impl_test::remove_transfer(const transfer_handle& h, int options)
+        {
+
         }
 
         void session_impl_test::stop()
