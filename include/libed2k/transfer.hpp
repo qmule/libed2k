@@ -217,6 +217,7 @@ namespace libed2k {
         void on_files_released(int ret, disk_io_job const& j);
 		void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void on_transfer_aborted(int ret, disk_io_job const& j);
+        void on_transfer_paused(int ret, disk_io_job const& j);
 
         // will initialize the storage and the piece-picker
         void init();

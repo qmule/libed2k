@@ -306,12 +306,35 @@ namespace libed2k
 
     void transfer::pause()
     {
+        if (m_paused) return;
+        m_paused = true;
+        if (m_ses.is_paused()) return;
 
+        DBG("pause transfer {hash: " << hash() << "}");
+
+        // this will make the storage close all
+        // files and flush all cached data
+        if (m_owning_storage.get())
+        {
+            assert(m_storage);
+            m_storage->async_release_files(
+                boost::bind(&transfer::on_transfer_paused, shared_from_this(), _1, _2));
+            m_storage->async_clear_read_cache();
+        }
+        else
+        {
+            m_ses.m_alerts.post_alert_should(paused_transfer_alert(handle()));
+        }
+
+        disconnect_all(errors::transfer_paused);
     }
 
     void transfer::resume()
     {
-        set_state(transfer_status::downloading);
+        if (!m_paused) return;
+        DBG("resume transfer {hash: " << hash() << "}");
+        m_paused = false;
+        m_ses.m_alerts.post_alert_should(resumed_transfer_alert(handle()));
     }
 
     void transfer::set_upload_limit(int limit)
@@ -484,6 +507,11 @@ namespace libed2k
     {
         // the transfer should be completely shut down now, and the
         // destructor has to be called from the main thread
+    }
+
+    void transfer::on_transfer_paused(int ret, disk_io_job const& j)
+    {
+        m_ses.m_alerts.post_alert_should(paused_transfer_alert(handle()));
     }
 
     void transfer::on_disk_error(disk_io_job const& j, peer_connection* c)

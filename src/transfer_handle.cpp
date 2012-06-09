@@ -130,7 +130,7 @@ namespace libed2k
 
     void transfer_handle::resume() const
     {
-
+        LIBED2K_FORWARD(resume());
     }
 
     size_t transfer_handle::num_pieces() const
