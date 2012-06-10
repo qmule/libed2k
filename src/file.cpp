@@ -937,7 +937,10 @@ namespace libed2k
 
     rule* rule::append_rule(rule_type rt, const fs::path& path)
     {
-        if (match(path)) { return NULL; }
+        if (rule* p = find_rule(path))
+        {
+            return (p);
+        }
 
         m_sub_rules.push_front(new rule(rt, path, this));
         return m_sub_rules.front();
@@ -963,6 +966,29 @@ namespace libed2k
         return (m_directory_prefix);
     }
 
+    std::pair<std::string, std::string> rule::generate_recursive_data() const
+    {
+        // when directory has status (-) it doesn't public collection
+        if (m_type == rule::rt_minus)
+        {
+            return std::make_pair(std::string(""), std::string(""));
+        }
+
+        std::string strPrefix;
+        std::string strRecName = get_filename();
+
+        const rule* p = get_parent();
+
+        while(p)
+        {
+            strRecName = p->get_filename() + std::string("-") + strRecName;
+            strPrefix = p->get_directory_prefix();
+            p = p->get_parent();
+        }
+
+        return (std::make_pair(strRecName, strPrefix));
+    }
+
     const fs::path& rule::get_path() const
     {
         return (m_path);
@@ -973,7 +999,44 @@ namespace libed2k
         return m_type;
     }
 
-    rule* rule::match(const fs::path& path)
+    bool rule::match(const fs::path& path)
+    {
+        for (std::deque<rule*>::iterator itr = m_sub_rules.begin(); itr != m_sub_rules.end(); ++itr)
+        {
+            if ((*itr)->get_path() == path)
+            {
+                DBG("rule::match: " << (*itr)->get_path().string() << " with " << path.string());
+
+                if (fs::is_directory(path))
+                {
+                    return true;
+                }
+
+                if ((*itr)->get_type() == rule::rt_minus)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+        }
+
+        if (fs::is_directory(path) && m_type == rule::rt_asterisk)
+        {
+            return (true);
+        }
+
+        if (fs::is_regular_file(path) && m_type != rule::rt_minus)
+        {
+            return (true);
+        }
+
+        return false;
+    }
+
+    rule* rule::find_rule(const fs::path& path)
     {
         for (std::deque<rule*>::iterator itr = m_sub_rules.begin(); itr != m_sub_rules.end(); ++itr)
         {

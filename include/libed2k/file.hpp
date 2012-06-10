@@ -318,15 +318,26 @@ namespace libed2k
          */
         const std::string get_filename() const;
         const std::string& get_directory_prefix() const;
+
+        /**
+          * return recursive name and directory prefix
+         */
+        std::pair<std::string, std::string> generate_recursive_data() const;
         const fs::path& get_path() const;
         rule_type get_type() const;
         rule* add_sub_rule(rule_type rt, const std::string& strPath);
 
         /**
-          * when appropriate rule was found - return it,
-          * otherwise return NULL
+          * when appropriate rule was found - return true
+          * otherwise return false
+          * compare only with files and directories
          */
-        rule* match(const fs::path& path);
+        bool match(const fs::path& path);
+
+        /**
+          * find appropriate rule - used for directories
+         */
+        rule* find_rule(const fs::path& path);
     private:
         rule* append_rule(rule_type rt, const fs::path& path);
         rule(rule_type rt, const fs::path& path, rule* parent);

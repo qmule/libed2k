@@ -67,14 +67,13 @@ BOOST_AUTO_TEST_CASE(test_file_functions)
 
 BOOST_AUTO_TEST_CASE(test_rules_simple)
 {
-    libed2k::rule r(libed2k::rule::rt_plus, "string");
-    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "xxxx"));
-    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "yyyy"));
-    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "zzzz"));
-    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "xxxx") == NULL);
-    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "zzzz") == NULL);
-    libed2k::rule* sr = r.add_sub_rule(libed2k::rule::rt_minus, "dir1");
-    libed2k::rule* sr2 = sr->add_sub_rule(libed2k::rule::rt_plus, "dir2");
+    libed2k::rule r(libed2k::rule::rt_plus, "./test_share");
+    BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "pub1"));
+    //BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "./test_share"));
+   // BOOST_CHECK(r.add_sub_rule(libed2k::rule::rt_minus, "./test_share/pub3"));
+
+    libed2k::rule* sr = r.add_sub_rule(libed2k::rule::rt_minus, "pub3");
+    libed2k::rule* sr2 = sr->add_sub_rule(libed2k::rule::rt_plus, "pub4");
 
     std::string strName;
     strName = sr2->get_filename();
@@ -86,12 +85,12 @@ BOOST_AUTO_TEST_CASE(test_rules_simple)
         p = p->get_parent();
     }
 
-    BOOST_CHECK_EQUAL(strName, "string-dir1-dir2");
+    BOOST_CHECK_EQUAL(strName, "test_share-pub3-pub4");
 
-    BOOST_CHECK(r.match("string/xxxx"));
-    BOOST_CHECK(r.match("string/yyyy"));
-    BOOST_CHECK(r.match("string/zzzz"));
-    BOOST_CHECK(r.match("string/xxxx4") == NULL);
+    //BOOST_CHECK(r.match("file11"));
+    //BOOST_CHECK(r.match("pub"));
+    //BOOST_CHECK(r.match("./test_share/pub3"));
+    //BOOST_CHECK(!r.match("./test_share/pub5"));
 
 }
 
@@ -106,6 +105,41 @@ BOOST_AUTO_TEST_CASE(test_rule_prefix)
     BOOST_CHECK_EQUAL(r3.get_directory_prefix(), "Donetwothreesecond");
 }
 
+
+BOOST_AUTO_TEST_CASE(test_rule_recursion)
+{
+    libed2k::rule r(libed2k::rule::rt_plus, "/tmp");
+    libed2k::rule* p = r.add_sub_rule(libed2k::rule::rt_minus, "pub1")->add_sub_rule(libed2k::rule::rt_plus, "pub2");
+    std::pair<std::string, std::string> pres = p->generate_recursive_data();
+    BOOST_CHECK_EQUAL(pres.first, std::string("tmp-pub1-pub2"));    // recursive name
+    BOOST_CHECK_EQUAL(pres.second, std::string("tmp"));             // base path
+}
+
+BOOST_AUTO_TEST_CASE(test_rule_matching)
+{
+    libed2k::fs::path root_path = libed2k::fs::initial_path();
+    root_path /= "test_share";
+    BOOST_REQUIRE(libed2k::fs::exists(root_path));
+    libed2k::rule root(libed2k::rule::rt_plus, root_path.string());
+    //root.add_sub_rule(libed2k::rule::rt_plus, "pub1");
+    //root.add_sub_rule(libed2k::rule::rt_minus, "pub2");
+    //root.add_sub_rule(libed2k::rule::rt_asterisk, "pub3");
+
+    std::deque<libed2k::fs::path> fpaths;
+    std::copy(libed2k::fs::directory_iterator(root_path), libed2k::fs::directory_iterator(), std::back_inserter(fpaths));
+    BOOST_CHECK_EQUAL(fpaths.size(), 6);
+    fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&libed2k::rule::match, &root, _1)), fpaths.end());
+    BOOST_REQUIRE_EQUAL(fpaths.size(), 3);
+    libed2k::fs::path f1 = root_path;
+    libed2k::fs::path f2 = root_path;
+    libed2k::fs::path f3 = root_path;
+    f1 /= "file.txt";
+    f2 /= "file2.txt";
+    f3 /= "file3.txt";
+    BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f1) != fpaths.end());
+    BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f2) != fpaths.end());
+    BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f3) != fpaths.end());
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

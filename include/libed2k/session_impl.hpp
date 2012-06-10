@@ -69,6 +69,7 @@ namespace libed2k {
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
 
+            virtual void abort();
 
             const session_settings& settings() const { return m_settings; }
             session_settings& settings() { return m_settings; }
@@ -101,10 +102,17 @@ namespace libed2k {
 
             void load_dictionary();
 
+            void update_pendings(const add_transfer_params& atp);
+
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
             // them
             mutable boost::asio::io_service m_io_service;
+
+            // set to true when the session object
+            // is being destructed and the thread
+            // should exit
+            bool m_abort;
 
             // the settings for the client
             session_settings m_settings;
@@ -174,7 +182,7 @@ namespace libed2k {
             unsigned short listen_port() const;
             const tcp::endpoint& server() const;
 
-            void abort();
+            virtual void abort();
 
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }
@@ -346,11 +354,6 @@ namespace libed2k {
             boost::uint32_t m_client_id;
             boost::uint32_t m_tcp_flags;
             boost::uint32_t m_aux_port;
-
-            // set to true when the session object
-            // is being destructed and the thread
-            // should exit
-            bool m_abort;
 
 			// is true if the session is paused
 			bool m_paused;

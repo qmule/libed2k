@@ -32,6 +32,7 @@ namespace libed2k
             void wait();
             void run();
             void save();    // this method emulated save_state in session_base
+            const std::deque<pending_collection>& get_pending_collections() const;
 
             int                 m_hash_count;
             boost::mutex        m_mutex;
@@ -55,6 +56,8 @@ namespace libed2k
         transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)
         {
             boost::mutex::scoped_lock lock(m_mutex);
+            DBG("addtransfer: " << t.file_path.string() << " collection: " << t.m_collection_path.string());
+            //return (transfer_handle(boost::weak_ptr<transfer>()));
 
             // after save we load all files from known.met
             if (m_bAfterSave)
@@ -73,10 +76,10 @@ namespace libed2k
 
                 DBG("add hash for: " << convert_to_native(t.file_path.string()));
 
-                BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
-                m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
-                BOOST_CHECK(m_vH.size() == (5 - m_hash_count));
-                m_vParams.push_back(t);
+                //BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
+                //m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
+                //BOOST_CHECK(m_vH.size() == (5 - m_hash_count));
+                //m_vParams.push_back(t);
 
                 if (m_hash_count == 5)
                 {
@@ -160,6 +163,11 @@ namespace libed2k
                 BOOST_REQUIRE(false);
             }
 
+        }
+
+        const std::deque<pending_collection>& session_impl_test::get_pending_collections() const
+        {
+            return m_pending_collections;
         }
 
     }
@@ -354,6 +362,81 @@ BOOST_AUTO_TEST_CASE(test_session)
     drop_directory_tree();
     libed2k::fs::path p = "known.met";
     libed2k::fs::remove(p);
+}
+
+BOOST_AUTO_TEST_CASE(test_shared_files)
+{
+    // generate directory tree
+
+    /**
+      *    pub1(+)
+      *    file1
+      *    file2
+      *    file3(-)
+      *    pub2(-)
+      *        file21(+)
+      *        file22(+)
+      *    pub3(*)
+      *        file31
+      *        file32
+      *        pub4
+      *            file41
+      *            file42
+      *            pub5
+      *                file51
+      *                file52
+      * share
+     */
+
+    // create collections directory
+    libed2k::fs::path collect_path = libed2k::fs::initial_path();
+    collect_path /= "collections";
+    DBG(collect_path.string());
+    libed2k::fs::create_directory(collect_path);
+    BOOST_REQUIRE(libed2k::fs::exists(collect_path));
+
+    // generate rules
+    libed2k::fs::path root_path = libed2k::fs::initial_path();
+    root_path /= "test_share";
+    BOOST_REQUIRE(libed2k::fs::exists(root_path));
+    DBG("Root is: " << root_path.string());
+
+    // root
+    libed2k::rule root(libed2k::rule::rt_plus, root_path.string());
+    root.add_sub_rule(libed2k::rule::rt_minus, "file.txt");
+
+    // pub 1
+    libed2k::rule* p = root.add_sub_rule(libed2k::rule::rt_plus, "pub1");
+
+    // pub 2
+    libed2k::rule* p2 = root.add_sub_rule(libed2k::rule::rt_minus, "pub2");
+    libed2k::rule* f21 = p2->add_sub_rule(libed2k::rule::rt_plus, "file21");
+    libed2k::rule* f22 = p2->add_sub_rule(libed2k::rule::rt_plus, "file22");
+
+    // pub 3
+    root.add_sub_rule(libed2k::rule::rt_asterisk, "pub3");
+
+    // prepare session
+    libed2k::session_settings s;
+    s.m_collections_directory = collect_path.string();
+    libed2k::aux::session_impl_test st(s);
+    //st.stop();
+    st.share_files(&root);
+
+    // check pendings list
+    for (std::deque<libed2k::pending_collection>::const_iterator itr = st.get_pending_collections().begin();
+            itr != st.get_pending_collections().end(); ++itr)
+    {
+        DBG("PENDING: " << itr->m_path.filename() << " size: " << itr->m_files.size());
+    }
+
+    while(st.m_hash_count < 5)
+    {
+        st.m_io_service.run_one();
+        st.m_io_service.reset();
+    }
+
+    st.wait();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
