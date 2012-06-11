@@ -70,6 +70,8 @@ namespace libed2k
         if (m_abort) return;
         m_abort = true;
 
+        DBG("abort transfer {hash: " << hash() << "}");
+
         // disconnect all peers and close all
         // files belonging to the torrents
         disconnect_all(errors::transfer_aborted);
