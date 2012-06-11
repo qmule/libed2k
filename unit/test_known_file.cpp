@@ -33,16 +33,20 @@ namespace libed2k
             void run();
             void save();    // this method emulated save_state in session_base
             const std::deque<pending_collection>& get_pending_collections() const;
+            void on_timer();
 
+            bool                m_ready;
             int                 m_hash_count;
             boost::mutex        m_mutex;
             boost::condition    m_signal;
             std::vector<md4_hash> m_vH;
             std::vector<add_transfer_params> m_vParams;
             bool                m_bAfterSave;
+            boost::asio::deadline_timer m_timer;
         };
 
-        session_impl_test::session_impl_test(const session_settings& settings) : session_impl_base(settings), m_hash_count(0)
+        session_impl_test::session_impl_test(const session_settings& settings) : session_impl_base(settings), m_ready(true), m_hash_count(0),
+                m_timer(m_io_service,  boost::posix_time::seconds(5))
         {
             m_bAfterSave = false;
             m_fmon.start();
@@ -51,6 +55,7 @@ namespace libed2k
             m_vH.push_back(libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE"));
             m_vH.push_back(libed2k::md4_hash::fromString("9385DCEF4CB89FD5A4334F5034C28893"));
             m_vH.push_back(libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"));
+            m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
         }
 
         transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)
@@ -73,6 +78,7 @@ namespace libed2k
             {
                 // now all files were loaded by file monitor
                 ++m_hash_count;
+                update_pendings(t);
 
                 DBG("add hash for: " << convert_to_native(t.file_path.string()));
 
@@ -81,10 +87,16 @@ namespace libed2k
                 //BOOST_CHECK(m_vH.size() == (5 - m_hash_count));
                 //m_vParams.push_back(t);
 
-                if (m_hash_count == 5)
+                //m_timer.expires_at(m_timer.expires_at() + boost::posix_time::seconds(5));
+                //m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
+                m_timer.expires_from_now(boost::posix_time::seconds(5));
+
+                /*
+                if (m_hash_count == 11)
                 {
                     m_signal.notify_all();
                 }
+                */
             }
 
             return (transfer_handle(boost::weak_ptr<transfer>()));
@@ -111,11 +123,7 @@ namespace libed2k
         void session_impl_test::wait()
         {
             boost::mutex::scoped_lock lock(m_mutex);
-
-            if (m_hash_count < 5)
-            {
-                m_signal.wait(lock);
-            }
+            m_signal.wait(lock);
         }
 
         void session_impl_test::run()
@@ -170,6 +178,23 @@ namespace libed2k
             return m_pending_collections;
         }
 
+        void session_impl_test::on_timer()
+        {
+
+            if (m_timer.expires_at() <= dtimer::traits_type::now())
+            {
+                DBG("Timer expired");
+                m_timer.expires_at(boost::posix_time::pos_infin);
+                m_ready = false;
+                m_signal.notify_all();
+                //m_timer.cancel();
+                //m_io_service.stop();
+                return;
+            }
+
+            // Put the actor back to sleep.
+            m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
+        }
     }
 }
 
@@ -367,7 +392,6 @@ BOOST_AUTO_TEST_CASE(test_session)
 BOOST_AUTO_TEST_CASE(test_shared_files)
 {
     // generate directory tree
-
     /**
       *    pub1(+)
       *    file1
@@ -391,9 +415,17 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     // create collections directory
     libed2k::fs::path collect_path = libed2k::fs::initial_path();
     collect_path /= "collections";
-    DBG(collect_path.string());
+
     libed2k::fs::create_directory(collect_path);
     BOOST_REQUIRE(libed2k::fs::exists(collect_path));
+
+    /*
+    "test_share-pub3-pub4-pub5_2.emulecollection"
+    "test_share-pub3-pub4_2.emulecollection"
+    "test_share-pub3_2.emulecollection"
+    "test_share-pub1_1.emulecollection"
+    "test_share_2.emulecollection"
+    */
 
     // generate rules
     libed2k::fs::path root_path = libed2k::fs::initial_path();
@@ -423,20 +455,23 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     //st.stop();
     st.share_files(&root);
 
-    // check pendings list
-    for (std::deque<libed2k::pending_collection>::const_iterator itr = st.get_pending_collections().begin();
-            itr != st.get_pending_collections().end(); ++itr)
-    {
-        DBG("PENDING: " << itr->m_path.filename() << " size: " << itr->m_files.size());
-    }
+    BOOST_CHECK(st.get_pending_collections().size() == 5);
 
-    while(st.m_hash_count < 5)
+    // check pendings list
+    //for (std::deque<libed2k::pending_collection>::const_iterator itr = st.get_pending_collections().begin();
+    //        itr != st.get_pending_collections().end(); ++itr)
+    //{
+    //    DBG("PENDING: " << itr->m_path.filename() << " size: " << itr->m_files.size());
+    //}
+
+    while(st.m_ready)
     {
         st.m_io_service.run_one();
         st.m_io_service.reset();
     }
 
-    st.wait();
+    BOOST_CHECK(st.get_pending_collections().size() == 0);
+    //st.wait();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

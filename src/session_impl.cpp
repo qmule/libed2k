@@ -81,6 +81,12 @@ void session_impl_base::save_state() const
     for (transfer_map::const_iterator i = m_transfers.begin(),
             end(m_transfers.end()); i != end; ++i)
     {
+        // don't save unfinished transfers in known.met
+        if (!i->second->is_finished())
+        {
+            continue;
+        }
+
         try
         {
             kfc.m_known_file_list.add(known_file_entry(i->second->hash(),
@@ -378,12 +384,7 @@ void session_impl_base::share_files(rule* base_rule)
                 DBG("ENTRY: " << itr->string());
             }
 
-            int nFilesCount = 0;
-
-            for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
-            {
-                if (fs::is_regular(*itr)) ++nFilesCount;
-            }
+            int nFilesCount = std::count_if(fpaths.begin(), fpaths.end(), std::ptr_fun(dref_is_regular_file));
 
             std::pair<std::string, std::string> name_prefix = base_rule->generate_recursive_data();
             DBG("name prefix: " << name_prefix.first.c_str() <<
@@ -644,9 +645,11 @@ void session_impl_base::update_pendings(const add_transfer_params& atp)
             {
                 if (itr->update(atp.file_path, atp.file_hash))    // update file in collection
                 {
+                    DBG("session_impl_base::update_pendings: " << atp.m_collection_path.string());
                     if (!itr->is_pending())                             // if collection changes status we will save it
                     {
                         emule_collection::fromPending(*itr).save(itr->m_path.string(), false);
+                        m_fmon.m_order.push(std::make_pair(fs::path(), itr->m_path));
                         m_pending_collections.erase(itr);               // remove collection from pending list
                     }
                 }

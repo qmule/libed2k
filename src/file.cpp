@@ -974,7 +974,7 @@ namespace libed2k
             return std::make_pair(std::string(""), std::string(""));
         }
 
-        std::string strPrefix;
+        std::string strPrefix  = get_directory_prefix();
         std::string strRecName = get_filename();
 
         const rule* p = get_parent();
