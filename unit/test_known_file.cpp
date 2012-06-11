@@ -136,7 +136,6 @@ namespace libed2k
         {
             m_hash_count = 0;
             m_bAfterSave = true;
-            m_transfers_filenames.clear();
             DBG("session_impl::save_state()");
             known_file_collection kfc;
 
@@ -210,6 +209,7 @@ namespace libed2k
         {
             return m_dictionary;
         }
+
     }
 }
 
@@ -366,42 +366,6 @@ BOOST_AUTO_TEST_CASE(test_file_monitor)
     s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
     libed2k::aux::session_impl_test st(s);
     st.stop();
-}
-
-BOOST_AUTO_TEST_CASE(test_session)
-{
-    //LOGGER_INIT()
-    return; // temporary unavaliable
-    setlocale(LC_CTYPE, "");
-
-    libed2k::session_settings s;
-
-    s.m_known_file = "known.met";
-    s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
-
-    create_directory_tree();
-
-    libed2k::aux::session_impl_test st(s);
-    st.load_state();
-
-    while(st.m_hash_count < 5)
-    {
-        st.m_io_service.run_one();
-        st.m_io_service.reset();
-    }
-
-    st.wait();
-    st.stop();
-
-    // file monitor was stopped
-    st.save();
-    st.load_state();
-    BOOST_CHECK_EQUAL(st.m_hash_count, 5);
-
-
-    drop_directory_tree();
-    libed2k::fs::path p = "known.met";
-    libed2k::fs::remove(p);
 }
 
 BOOST_AUTO_TEST_CASE(test_shared_files)

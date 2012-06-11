@@ -136,12 +136,6 @@ namespace libed2k {
             file_monitor    m_fmon;
 
             /**
-              * this map contains files what will moved to hashing
-              *
-             */
-            transfer_filename_map   m_transfers_filenames;
-
-            /**
               * special index for access to files by last write time + file name
               * file name in native code page
              */
