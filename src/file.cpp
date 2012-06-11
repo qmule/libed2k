@@ -769,7 +769,7 @@ namespace libed2k
         {
             while(1)
             {
-                std::pair<fs::path, fs::path> collection_fp = m_order.popWait(); // this is native code page
+                std::pair<fs::path, fs::path> collection_fp = m_order.popWait(); // this is UTF-8 code page
 
                 DBG("file_monitor::operator(): " << collection_fp.second.string());
 
@@ -783,7 +783,7 @@ namespace libed2k
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    atp.file_path = collection_fp.second; // codepage will be change to UTF-8 in add transfer method!
+                    atp.file_path = collection_fp.second;
 
                     bool    bPartial = false; // check last part in file not full
                     uintmax_t nFileSize = fs::file_size(collection_fp.second);
@@ -797,7 +797,7 @@ namespace libed2k
 
                     bio::mapped_file_params mf_param;
                     mf_param.flags  = bio::mapped_file_base::readonly;
-                    mf_param.path   = collection_fp.second.string();
+                    mf_param.path   = convert_to_native(bom_filter(collection_fp.second.string())); // generate native name for working in filesystem
                     mf_param.length = 0;
 
 
@@ -1173,7 +1173,7 @@ namespace libed2k
             throw libed2k_exception(errors::pending_file_entry_in_transform);
         }
 
-        return emule_collection_entry(convert_from_native(f.first.filename()), fs::file_size(f.first), f.second);
+        return emule_collection_entry(f.first.filename(), fs::file_size(f.first), f.second);
     }
 
     //static

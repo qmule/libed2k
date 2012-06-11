@@ -61,10 +61,10 @@ namespace libed2k {
 
             /**
               * change time + filename(native codepage)
+              * dictionary implement move semantics - when you get result dictionary lose it
              */
             typedef std::pair<boost::uint32_t, std::string> dictionary_key;
             typedef std::map<dictionary_key, dictionary_entry> files_dictionary;
-
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();

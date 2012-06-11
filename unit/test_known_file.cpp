@@ -34,13 +34,15 @@ namespace libed2k
             void save();    // this method emulated save_state in session_base
             const std::deque<pending_collection>& get_pending_collections() const;
             void on_timer();
+            const std::deque<add_transfer_params>& get_transfers_map() const;
+            const session_impl_base::files_dictionary& get_dictionary() const;
 
             bool                m_ready;
             int                 m_hash_count;
             boost::mutex        m_mutex;
             boost::condition    m_signal;
             std::vector<md4_hash> m_vH;
-            std::vector<add_transfer_params> m_vParams;
+            std::deque<add_transfer_params> m_vParams;
             bool                m_bAfterSave;
             boost::asio::deadline_timer m_timer;
         };
@@ -72,20 +74,19 @@ namespace libed2k
                 t.dump();
                 BOOST_CHECK(std::find(m_vParams.begin(), m_vParams.end(), t) != m_vParams.end());
                 m_vParams.erase(std::remove(m_vParams.begin(), m_vParams.end(), t), m_vParams.end());
-                BOOST_CHECK(m_vParams.size() == (5 - m_hash_count));
             }
             else
             {
                 // now all files were loaded by file monitor
                 ++m_hash_count;
                 update_pendings(t);
+                m_vParams.push_back(t);
 
                 DBG("add hash for: " << convert_to_native(t.file_path.string()));
 
                 //BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
                 //m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
                 //BOOST_CHECK(m_vH.size() == (5 - m_hash_count));
-                //m_vParams.push_back(t);
 
                 //m_timer.expires_at(m_timer.expires_at() + boost::posix_time::seconds(5));
                 //m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
@@ -139,7 +140,7 @@ namespace libed2k
             DBG("session_impl::save_state()");
             known_file_collection kfc;
 
-            std::vector<add_transfer_params>::iterator itr = m_vParams.begin();
+            std::deque<add_transfer_params>::iterator itr = m_vParams.begin();
 
             while(itr != m_vParams.end())
             {
@@ -171,6 +172,10 @@ namespace libed2k
                 BOOST_REQUIRE(false);
             }
 
+            // restart timer
+            m_timer.expires_from_now(boost::posix_time::seconds(5));
+            m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
+            m_ready = true;
         }
 
         const std::deque<pending_collection>& session_impl_test::get_pending_collections() const
@@ -194,6 +199,16 @@ namespace libed2k
 
             // Put the actor back to sleep.
             m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
+        }
+
+        const std::deque<add_transfer_params>& session_impl_test::get_transfers_map() const
+        {
+            return m_vParams;
+        }
+
+        const session_impl_base::files_dictionary& session_impl_test::get_dictionary() const
+        {
+            return m_dictionary;
         }
     }
 }
@@ -391,6 +406,7 @@ BOOST_AUTO_TEST_CASE(test_session)
 
 BOOST_AUTO_TEST_CASE(test_shared_files)
 {
+    setlocale(LC_CTYPE, "");
     // generate directory tree
     /**
       *    pub1(+)
@@ -419,6 +435,11 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     libed2k::fs::create_directory(collect_path);
     BOOST_REQUIRE(libed2k::fs::exists(collect_path));
 
+    create_directory_tree();
+    libed2k::fs::path russian_path = libed2k::fs::initial_path();
+    russian_path /= libed2k::convert_to_native(libed2k::bom_filter(chRussianDirectory));
+    BOOST_REQUIRE(libed2k::fs::exists(russian_path));
+
     /*
     "test_share-pub3-pub4-pub5_2.emulecollection"
     "test_share-pub3-pub4_2.emulecollection"
@@ -434,7 +455,7 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     DBG("Root is: " << root_path.string());
 
     // root
-    libed2k::rule root(libed2k::rule::rt_plus, root_path.string());
+    libed2k::rule root(libed2k::rule::rt_plus, libed2k::convert_to_native(libed2k::bom_filter(root_path.string())));
     root.add_sub_rule(libed2k::rule::rt_minus, "file.txt");
 
     // pub 1
@@ -448,14 +469,20 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     // pub 3
     root.add_sub_rule(libed2k::rule::rt_asterisk, "pub3");
 
+    // russian rule
+    libed2k::rule russian_root(libed2k::rule::rt_asterisk, libed2k::convert_to_native(libed2k::bom_filter(russian_path.string())));
+
     // prepare session
     libed2k::session_settings s;
+    s.m_known_file = "known.met";
     s.m_collections_directory = collect_path.string();
     libed2k::aux::session_impl_test st(s);
-    //st.stop();
-    st.share_files(&root);
 
-    BOOST_CHECK(st.get_pending_collections().size() == 5);
+    st.share_files(&root);
+    st.share_files(&russian_root);
+
+    // five in root and one in russian
+    BOOST_CHECK(st.get_pending_collections().size() == 6);
 
     while(st.m_ready)
     {
@@ -464,6 +491,35 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     }
 
     BOOST_CHECK(st.get_pending_collections().size() == 0);
+    BOOST_CHECK(st.get_transfers_map().size() == 22);
+
+    st.save();
+    st.load_dictionary();
+    BOOST_CHECK_EQUAL(st.get_dictionary().size(), 22);
+
+    // ok, share next
+    st.share_files(&root);
+    st.share_files(&russian_root);
+    BOOST_CHECK(st.get_pending_collections().size() == 0); // we haven't pending collections - all collections on disk
+
+    while(st.m_ready)
+    {
+        st.m_io_service.run_one();
+        st.m_io_service.reset();
+    }
+
+    DBG("count " << st.get_transfers_map().size());
+    BOOST_CHECK(st.get_transfers_map().size() == 0);    // all added files were matched
+
+    for (size_t i = 0; i < st.get_transfers_map().size(); i++)
+    {
+        DBG("content: " << st.get_transfers_map().at(i).file_path.string());
+    }
+
+
+    drop_directory_tree();
+    libed2k::fs::path knownp = "known.met";
+    libed2k::fs::remove(knownp);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

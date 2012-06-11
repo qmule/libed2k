@@ -349,15 +349,19 @@ namespace libed2k
 
     /**
       * this entry used to generate pending entry for async hash + publishing
+      * entry contains path in UTF-8 code page
      */
     typedef std::pair<fs::path, md4_hash> pending_file;
 
+    /**
+      * structure store files in utf-8
+     */
     struct pending_collection
     {
         fs::path                    m_path;
         std::deque<pending_file>    m_files;
 
-        pending_collection(const fs::path& p) : m_path(p) {}
+        pending_collection(const fs::path& p) : m_path(convert_from_native(p.string())) {}
 
         /**
           * return collection status
