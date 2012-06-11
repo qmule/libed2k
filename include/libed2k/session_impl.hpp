@@ -96,6 +96,17 @@ namespace libed2k {
             void share_files(rule* base_rule);
 
             /**
+              * start share transaction - all transfers marks as obsolete
+             */
+            void begin_share_transaction();
+
+            /**
+              * finish share transaction - all obsolete transfers will be aborted
+             */
+            void end_share_transaction();
+
+
+            /**
               * this method implements move semantic - when element found it will be erased
              */
             dictionary_entry get_dictionary_entry(const fs::path& file);

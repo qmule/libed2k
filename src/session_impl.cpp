@@ -350,7 +350,7 @@ void session_impl_base::share_files(rule* base_rule)
         // first - search file in transfers
         if (boost::shared_ptr<transfer> p = find_transfer(base_rule->get_path()).lock())
         {
-            // file already in transfer list - pass it
+            p->set_obsolete(false);
             return;
         }
 
@@ -423,6 +423,7 @@ void session_impl_base::share_files(rule* base_rule)
                     // first search file in transfers
                     if (boost::shared_ptr<transfer> p = find_transfer(base_rule->get_path()).lock())
                     {
+                        p->set_obsolete(false); // mark transfer as active
                         if (bCollectionActive ) pc.m_files.push_back(pending_file(*itr, p->hash()));
                         continue;
                     }
@@ -489,7 +490,7 @@ void session_impl_base::share_files(rule* base_rule)
                     {
                         if (ecoll == pc.m_files)
                         {
-                            // do nothing
+                            p->set_obsolete(false);
                         }
                         else
                         {
@@ -533,6 +534,28 @@ void session_impl_base::share_files(rule* base_rule)
         ERR("file system error: " << e.what());
     }
 
+}
+
+void session_impl_base::begin_share_transaction()
+{
+    for (transfer_map::const_iterator i = m_transfers.begin(),
+                end(m_transfers.end()); i != end; ++i)
+        {
+            i->second->set_obsolete(true);
+        }
+}
+
+void session_impl_base::end_share_transaction()
+{
+    // abort all obsolete transfers
+    for (transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
+    {
+        if (i->second->is_obsolete())
+        {
+            i->second->abort();
+        }
+    }
 }
 
 void session_impl_base::load_dictionary()

@@ -457,13 +457,6 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
 
     BOOST_CHECK(st.get_pending_collections().size() == 5);
 
-    // check pendings list
-    //for (std::deque<libed2k::pending_collection>::const_iterator itr = st.get_pending_collections().begin();
-    //        itr != st.get_pending_collections().end(); ++itr)
-    //{
-    //    DBG("PENDING: " << itr->m_path.filename() << " size: " << itr->m_files.size());
-    //}
-
     while(st.m_ready)
     {
         st.m_io_service.run_one();
@@ -471,7 +464,6 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     }
 
     BOOST_CHECK(st.get_pending_collections().size() == 0);
-    //st.wait();
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -16,6 +16,8 @@ namespace libed2k
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
         m_ses(ses),
+        m_obsolete(false),
+        m_announced(false),
         m_abort(false),
         m_paused(false),
         m_sequential_download(false),
@@ -94,6 +96,14 @@ namespace libed2k
         if (m_state == s) return;
         m_ses.m_alerts.post_alert_should(state_changed_alert(handle(), s, m_state));
         m_state = s;
+    }
+
+    void transfer::set_obsolete(bool obsolete)
+    {
+        if (is_finished())
+        {
+            m_obsolete = obsolete;
+        }
     }
 
     bool transfer::want_more_peers() const

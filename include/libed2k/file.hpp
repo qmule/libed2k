@@ -298,6 +298,8 @@ namespace libed2k
 
     /**
       * rule policy
+      * this class works in native codepage!
+      * all incoming strings converts from utf-8 to native
      */
     class rule
     {
@@ -313,9 +315,6 @@ namespace libed2k
         ~rule();
         const rule* get_parent() const;
 
-        /**
-          * strings in utf-8 codepage
-         */
         const std::string get_filename() const;
         const std::string& get_directory_prefix() const;
 

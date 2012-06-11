@@ -958,7 +958,7 @@ namespace libed2k
 
     const std::string rule::get_filename() const
     {
-        return (convert_from_native(m_path.filename()));
+        return (m_path.filename());
     }
 
     const std::string& rule::get_directory_prefix() const
