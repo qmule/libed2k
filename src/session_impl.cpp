@@ -991,7 +991,8 @@ std::vector<transfer_handle> session_impl::get_transfers()
 
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
 {
-    DBG("session_impl::close_connection(CLOSING CONNECTION " << p->remote() << " : " << ec.message() << ")");
+    DBG("session_impl::close_connection(CLOSING CONNECTION "
+        << p->remote() << " : " << ec.message() << ")");
     connection_map::iterator i =
         std::find_if(m_connections.begin(), m_connections.end(),
                      boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p);
@@ -1082,10 +1083,11 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
             t.delete_files();
         t.abort();
 
-        if (i == m_next_connect_transfer) ++m_next_connect_transfer;
+        if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
 
         //t.set_queue_position(-1);
         m_transfers.erase(i);
+        m_next_connect_transfer.validate();
     }
 }
 
@@ -1337,6 +1339,8 @@ void session_impl::connect_new_peers()
         int max_connections_per_second = 10;
         int steps_since_last_connect = 0;
         int num_transfers = int(m_transfers.size());
+        m_next_connect_transfer.validate();
+
         for (;;)
         {
             transfer& t = *m_next_connect_transfer->second;

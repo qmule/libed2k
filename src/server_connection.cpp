@@ -213,6 +213,8 @@ namespace libed2k
         APP("found peers for hash: " << sources.m_hFile);
         boost::shared_ptr<transfer> t = m_ses.find_transfer(sources.m_hFile).lock();
 
+        if (!t) return;
+
         for (std::vector<net_identifier>::const_iterator i =
                  sources.m_sources.m_collection.begin();
              i != sources.m_sources.m_collection.end(); ++i)

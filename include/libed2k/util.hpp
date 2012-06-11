@@ -67,7 +67,6 @@ namespace libed2k
         }
 
         typename C::value_type* operator->() {
-            validate();
             return m_it.operator->();
         }
 
@@ -77,10 +76,14 @@ namespace libed2k
             return *this;
         }
 
+        cyclic_iterator& inc() {
+            ++m_it;
+            return *this;
+        }
+
         operator I&() { return m_it; }
         operator const I&() const { return m_it; }
 
-    private:
         void validate() {
             if (m_it == m_cont.end()) m_it = m_cont.begin();
         }
