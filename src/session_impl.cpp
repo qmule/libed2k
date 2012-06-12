@@ -253,9 +253,9 @@ void session_impl_base::share_files(rule* base_rule)
                     else
                     {
                         // recursive rule - generate new rule for this directory and run on it
-                        rule* pr = base_rule->add_sub_rule(rule::rt_asterisk, itr->filename());
-                        DBG("new rule: " << pr->get_path().string());
-                        share_files(pr);
+                        rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, itr->filename());
+                        DBG("new rule: " << prr->get_path().string());
+                        share_files(prr);
                     }
                 }
             }
