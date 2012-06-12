@@ -27,7 +27,6 @@ namespace libed2k {
         size_t num_peers() const { return m_peers.size(); }
         void set_connection(peer* p, peer_connection* c);
         bool connect_one_peer();
-        int num_connect_candidates() const { return m_num_connect_candidates; }
 
     private:
 
@@ -57,14 +56,6 @@ namespace libed2k {
 
         peers_t m_peers;
         transfer* m_transfer;
-
-        // The number of peers in our peer list
-        // that are connect candidates. i.e. they're
-        // not already connected and they have not
-        // yet reached their max try count and they
-        // have the connectable state (we have a listen
-        // port for them).
-        int m_num_connect_candidates;
 
         // this was the state of the torrent the
         // last time we recalculated the number of

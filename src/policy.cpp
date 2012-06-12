@@ -11,10 +11,10 @@ using namespace libed2k;
 struct match_peer_endpoint
 {
     match_peer_endpoint(tcp::endpoint const& ep): m_ep(ep)
-	{}
+    {}
 
     bool operator()(const peer* p) const
-	{ return p->endpoint == m_ep; }
+    { return p->endpoint == m_ep; }
 
     tcp::endpoint const& m_ep;
 };
@@ -24,13 +24,13 @@ struct match_peer_connection
     match_peer_connection(const peer_connection& c) : m_conn(c) {}
 
     bool operator()(const peer* p) const
-	{ return p->connection == &m_conn; }
+    { return p->connection == &m_conn; }
 
     const peer_connection& m_conn;
 };
 
 policy::policy(transfer* t, const std::vector<peer_entry>& peer_list):
-    m_transfer(t), m_num_connect_candidates(0)
+    m_transfer(t)
 {
     for (std::vector<peer_entry>::const_iterator pi = peer_list.begin();
          pi != peer_list.end(); ++pi)
@@ -49,9 +49,6 @@ peer* policy::add_peer(const tcp::endpoint& ep)
         peer* p = (peer*)m_transfer->session().m_peer_pool.malloc();
         new (p) peer(ep, true);
         m_peers.push_back(p);
-
-        if (is_connect_candidate(*p))
-            ++m_num_connect_candidates;
     }
     else
         p = *pe;
@@ -136,12 +133,6 @@ bool policy::new_connection(peer_connection& c)
                 assert(i->connection == 0);
             }
         }
-
-        if (is_connect_candidate(*i))
-        {
-            m_num_connect_candidates--;
-            if (m_num_connect_candidates < 0) m_num_connect_candidates = 0;
-        }
     }
     else
     {
@@ -191,9 +182,6 @@ void policy::connection_closed(const peer_connection& c)
 
     p->connection = 0;
 
-    if (is_connect_candidate(*p))
-        ++m_num_connect_candidates;
-
     // if we're already a seed, it's not as important
     // to keep all the possibly stale peers
     // if we're not a seed, but we have too many peers
@@ -211,9 +199,7 @@ void policy::connection_closed(const peer_connection& c)
 
 void policy::set_connection(peer* p, peer_connection* c)
 {
-    const bool was_conn_cand = is_connect_candidate(*p);
     p->connection = c;
-    if (was_conn_cand) --m_num_connect_candidates;
 }
 
 bool policy::connect_one_peer()
@@ -249,7 +235,11 @@ bool policy::is_connect_candidate(peer const& p) const
         )
         return false;
 
-//    aux::session_impl const& ses = m_transfer->session();
+    const aux::session_impl& ses = m_transfer->session();
+    // is there connection to this peer
+    boost::intrusive_ptr<peer_connection> c = ses.find_peer_connection(p.endpoint);
+    if (c) return false;
+
 //    if (ses.m_port_filter.access(p.port) & port_filter::blocked)
 //        return false;
 

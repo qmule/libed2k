@@ -129,15 +129,11 @@ namespace libed2k
         return (chOperations[so]);
     }
 
-    net_identifier::net_identifier() : m_nIP(0), m_nPort(0)
-    {
-
-    }
-
-    net_identifier::net_identifier(boost::uint32_t nIP, boost::uint16_t nPort) : m_nIP(nIP), m_nPort(nPort)
-    {
-
-    }
+    net_identifier::net_identifier() : m_nIP(0), m_nPort(0) {}
+    net_identifier::net_identifier(boost::uint32_t nIP, boost::uint16_t nPort):
+        m_nIP(nIP), m_nPort(nPort) {}
+    net_identifier::net_identifier(const tcp::endpoint& ep):
+        m_nIP(address2int(ep.address())), m_nPort(ep.port()) {}
 
     void net_identifier::dump() const
     {

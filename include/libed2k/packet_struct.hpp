@@ -343,6 +343,7 @@ namespace libed2k
 
         net_identifier();
         net_identifier(boost::uint32_t nIP, boost::uint16_t nPort);
+        net_identifier(const tcp::endpoint& ep);
 
         template<typename Archive>
         void serialize(Archive& ar)

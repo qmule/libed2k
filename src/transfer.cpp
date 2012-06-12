@@ -116,7 +116,7 @@ namespace libed2k
 
     bool transfer::want_more_connections() const
     {
-        return !m_abort && !is_paused() && !is_seed() && m_policy.num_connect_candidates() > 0;
+        return !m_abort && !is_paused() && !is_seed();
     }
 
     bool transfer::connect_to_peer(peer* peerinfo)
@@ -407,7 +407,7 @@ namespace libed2k
 
         st.list_peers = m_policy.num_peers();
         //st.list_seeds = m_policy.num_seeds();
-        st.connect_candidates = m_policy.num_connect_candidates();
+        //st.connect_candidates = m_policy.num_connect_candidates();
         st.num_connections = m_connections.size();
         //st.connections_limit = m_max_connections;
 
