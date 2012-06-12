@@ -452,14 +452,11 @@ namespace libed2k
 
    void server_connection::check_deadline()
    {
-       DBG("server_connection::check_deadline()");
-
        if (!m_socket.is_open())
        {
            return;
        }
 
-       DBG("server_connection::check_deadline: check deadline");
        // Check whether the deadline has passed. We compare the deadline against
        // the current time since a new asynchronous operation may have moved the
        // deadline before this actor had a chance to run.

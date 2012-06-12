@@ -512,9 +512,6 @@ bool peer_connection::is_seed() const
 
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
-    DBG("peer_connection::has_ip_address(" << m_remote.address().to_string() << ":" << (m_active?m_remote.port():m_options.m_nPort) <<  ")");
-    DBG("peer_connection::has_ip_address("  << int2ipstr(np.m_nIP) << ":" << np.m_nPort <<  ")");
-
     bool bRet = false;
 
     if (m_active)
@@ -527,7 +524,6 @@ bool peer_connection::has_network_point(const net_identifier& np) const
         bRet = (address2int(m_remote.address()) == np.m_nIP && m_options.m_nPort == np.m_nPort);
     }
 
-    DBG("result: " << bRet);
     return (bRet);
 }
 
