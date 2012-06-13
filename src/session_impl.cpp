@@ -113,18 +113,11 @@ void session_impl_base::save_state() const
     }
 }
 
-dictionary_entry session_impl_base::get_dictionary_entry(const fs::path& file)
+dictionary_entry session_impl_base::get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename)
 {
-    //BOOST_ASSERT(fs::is_regular_file(file));
 
     dictionary_entry de;
-    if (!fs::is_regular_file(file) || !fs::exists(file))
-    {
-        return de;
-    }
-
-    boost::uint32_t nChangeTS = fs::last_write_time(file);
-    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(nChangeTS, file.filename()));
+    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(change_time, strFilename));
 
     if (itr != m_dictionary.end())
     {
@@ -143,6 +136,8 @@ void session_impl_base::share_files(rule* base_rule)
     // share single file
     if (fs::is_regular_file(base_rule->get_path()))
     {
+        boost::uint32_t nChangeTime = fs::last_write_time(base_rule->get_path());
+
         fs::path upath = convert_from_native(base_rule->get_path().string());
         // first - search file in transfers
         if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
@@ -151,7 +146,8 @@ void session_impl_base::share_files(rule* base_rule)
             return;
         }
 
-        dictionary_entry de = get_dictionary_entry(upath);
+        // we can't operate
+        dictionary_entry de = get_dictionary_entry(nChangeTime, upath.filename());
 
         if (de.m_hash.defined())
         {
@@ -172,6 +168,8 @@ void session_impl_base::share_files(rule* base_rule)
             fs::path collection_path;
             std::deque<fs::path> fpaths;
             bool bCollectionActive = false;
+
+            boost::uint32_t nCollectionChangeTime = 0;
 
             std::copy(fs::directory_iterator(base_rule->get_path()), fs::directory_iterator(), std::back_inserter(fpaths));
             fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&rule::match, base_rule, _1)), fpaths.end());
@@ -201,6 +199,10 @@ void session_impl_base::share_files(rule* base_rule)
                 std::stringstream sstr;
                 sstr << name_prefix.first << "_" << nFilesCount << ".emulecollection";
                 collection_path /= sstr.str();
+                if (fs::exists(collection_path) && fs::is_regular_file(collection_path))
+                {
+                    nCollectionChangeTime = fs::last_write_time(collection_path);
+                }
             }
 
             // generate utf-8 collection path
@@ -211,6 +213,7 @@ void session_impl_base::share_files(rule* base_rule)
 
             for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
             {
+                boost::uint32_t nChangeTime = fs::last_write_time(*itr);
                 fs::path upath = convert_from_native(itr->string());
 
                 // process regular file
@@ -226,7 +229,7 @@ void session_impl_base::share_files(rule* base_rule)
                         continue;
                     }
 
-                    dictionary_entry de = get_dictionary_entry(upath);
+                    dictionary_entry de = get_dictionary_entry(nChangeTime, upath.filename());
 
                     if (de.m_hash.defined())
                     {
@@ -277,7 +280,7 @@ void session_impl_base::share_files(rule* base_rule)
                     }
 
                     // simple remove item from dictionary if it exists
-                    dictionary_entry de = get_dictionary_entry(pc.m_path);
+                    dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
 
                     // add current collection to pending list
                     m_pending_collections.push_back(pc);
@@ -308,7 +311,7 @@ void session_impl_base::share_files(rule* base_rule)
                     else
                     {
                         // transfer not exists
-                        dictionary_entry de = get_dictionary_entry(pc.m_path);
+                        dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
 
                         if (ecoll == pc.m_files)
                         {

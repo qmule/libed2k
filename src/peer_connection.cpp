@@ -895,7 +895,11 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
 void peer_connection::write_hashset_answer(
     const md4_hash& file_hash, const std::vector<md4_hash>& hash_set)
 {
-    DBG("hashset[" << hash_set.size() << "] ==> " << m_remote);
+    DBG("hashset {");
+    for (std::vector<md4_hash>::const_iterator hi = hash_set.begin(); hi != hash_set.end(); ++hi)
+        DBG(" " << *hi);
+    DBG("} ==> " << m_remote);
+
     client_hashset_answer ha;
     ha.m_hFile = file_hash;
     ha.m_vhParts.m_collection = hash_set;
@@ -1259,7 +1263,11 @@ void peer_connection::on_hashset_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
-        DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
+        const std::vector<md4_hash>& hash_set = ha.m_vhParts.m_collection;
+        DBG("hash set answer " << ha.m_hFile << " {");
+        for (std::vector<md4_hash>::const_iterator hi = hash_set.begin(); hi != hash_set.end(); ++hi)
+            DBG(" " << *hi);
+        DBG("} <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == ha.m_hFile)

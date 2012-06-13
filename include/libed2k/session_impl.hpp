@@ -108,8 +108,10 @@ namespace libed2k {
 
             /**
               * this method implements move semantic - when element found it will be erased
+              * @param change_time - change time from boost::filesystem last_write_time
+              * @param filename string in UTF-8 code page
              */
-            dictionary_entry get_dictionary_entry(const fs::path& file);
+            dictionary_entry get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename);
 
             void load_dictionary();
 
