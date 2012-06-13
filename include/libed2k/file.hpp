@@ -351,7 +351,7 @@ namespace libed2k
       * this entry used to generate pending entry for async hash + publishing
       * entry contains path in UTF-8 code page
      */
-    //typedef std::pair<fs::path, md4_hash> pending_file;
+
     struct pending_file
     {
         fs::path    m_path;
