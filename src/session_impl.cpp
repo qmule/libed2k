@@ -253,7 +253,8 @@ void session_impl_base::share_files(rule* base_rule)
                     else
                     {
                         // recursive rule - generate new rule for this directory and run on it
-                        rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, itr->filename());
+                        // rule get name in UTF-8
+                        rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, convert_from_native(itr->filename()));
                         DBG("new rule: " << prr->get_path().string());
                         share_files(prr);
                     }

@@ -771,7 +771,7 @@ namespace libed2k
             {
                 std::pair<fs::path, fs::path> collection_fp = m_order.popWait(); // this is UTF-8 code page
 
-                DBG("file_monitor::operator(): " << collection_fp.second.string());
+                DBG("file_monitor::operator(): " << convert_to_native(bom_filter(collection_fp.second.string())));
 
                 try
                 {
@@ -802,7 +802,6 @@ namespace libed2k
 
 
                     bio::mapped_file_source fsource;
-                    DBG("System alignment: " << bio::mapped_file::alignment());
 
                     uintmax_t nCurrentOffset = 0;
                     CryptoPP::Weak1::MD4 md4_hasher;
@@ -857,7 +856,7 @@ namespace libed2k
                                 bPartial = true;
                             }
 
-                            DBG("         local piece: " << nLength);
+                            DBG("local piece: " << nLength);
 
                             libed2k::md4_hash hash;
                             md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
@@ -909,7 +908,8 @@ namespace libed2k
         }
     }
 
-    rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), m_path(convert_to_native(bom_filter(strPath)))
+    rule::rule(rule_type rt, const std::string& strPath) : m_type(rt), m_parent(NULL), 
+        m_path(convert_to_native(bom_filter(strPath)))       
     {
         m_directory_prefix = strPath;
 
@@ -917,6 +917,7 @@ namespace libed2k
         m_directory_prefix.erase(std::remove(m_directory_prefix.begin(), m_directory_prefix.end(), '\\'), m_directory_prefix.end());
         m_directory_prefix.erase(std::remove(m_directory_prefix.begin(), m_directory_prefix.end(), '/'), m_directory_prefix.end());
         m_directory_prefix.erase(std::remove(m_directory_prefix.begin(), m_directory_prefix.end(), ':'), m_directory_prefix.end());
+        m_directory_prefix = convert_to_native(m_directory_prefix); // convert to native
     }
 
     rule::~rule()
