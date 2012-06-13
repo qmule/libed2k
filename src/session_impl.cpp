@@ -1138,6 +1138,8 @@ void session_impl::on_tick(error_code const& e)
 
     // only tick the following once per second
     if (now - m_last_second_tick < time::seconds(1)) return;
+
+    int tick_interval_ms = (now - m_last_second_tick).total_milliseconds();
     m_last_second_tick = now;
 
     // --------------------------------------------------------------
@@ -1151,8 +1153,10 @@ void session_impl::on_tick(error_code const& e)
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
-        t.second_tick();
+        t.second_tick(m_stat, tick_interval_ms);
     }
+
+    m_stat.second_tick(tick_interval_ms);
 
     connect_new_peers();
 

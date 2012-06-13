@@ -71,7 +71,7 @@ namespace libed2k
         const hash_set& remote_hashset() const { return m_remote_hashset; }
 
         // is called once every second by the main loop
-        void second_tick();
+        void second_tick(int tick_interval_ms);
 
         // DRAFT
         enum message_type
