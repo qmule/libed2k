@@ -351,7 +351,29 @@ namespace libed2k
       * this entry used to generate pending entry for async hash + publishing
       * entry contains path in UTF-8 code page
      */
-    typedef std::pair<fs::path, md4_hash> pending_file;
+    //typedef std::pair<fs::path, md4_hash> pending_file;
+    struct pending_file
+    {
+        fs::path    m_path;
+        size_t      m_size;
+        md4_hash    m_hash;
+        
+
+        pending_file(const fs::path& path) : m_path(path), m_size(0){}
+
+        pending_file(const fs::path& path, size_t size, const md4_hash& hash) : 
+        m_path(path), m_size(size), m_hash(hash){}
+
+        const md4_hash& get_hash() const
+        {
+            return (m_hash);
+        }
+
+        bool operator==(const pending_file& pf)
+        {
+            return (m_path == pf.m_path && m_hash == pf.m_hash && m_size == pf.m_size);
+        }
+    };
 
     /**
       * structure store files in utf-8
@@ -361,7 +383,7 @@ namespace libed2k
         fs::path                    m_path;
         std::deque<pending_file>    m_files;
 
-        pending_collection(const fs::path& p) : m_path(convert_from_native(p.string())) {}
+        pending_collection(const fs::path& p) : m_path(p.string()) {}
 
         /**
           * return collection status
@@ -370,7 +392,7 @@ namespace libed2k
         {
             for (std::deque<pending_file>::const_iterator itr = m_files.begin(); itr != m_files.end(); ++itr)
             {
-                if (!itr->second.defined())
+                if (!itr->m_hash.defined())
                 {
                     return (true);
                 }
@@ -382,13 +404,14 @@ namespace libed2k
         /**
           * update element in pending list and return if success
          */
-        bool update(const fs::path& p, const md4_hash& hash)
+        bool update(const fs::path& p, size_t size, const md4_hash& hash)
         {
-            std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), std::make_pair(p, md4_hash()));
+            std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), pending_file(p));
 
             if (itr != m_files.end())
             {
-                itr->second = hash;
+                itr->m_hash = hash;
+                itr->m_size = size;
                 return (true);
             }
 

@@ -769,24 +769,28 @@ namespace libed2k
         {
             while(1)
             {
-                std::pair<fs::path, fs::path> collection_fp = m_order.popWait(); // this is UTF-8 code page
+                // we have UTF-8 strings in path pair pair
+                std::pair<fs::path, fs::path> pp = m_order.popWait(); 
 
-                DBG("file_monitor::operator(): " << convert_to_native(bom_filter(collection_fp.second.string())));
+                DBG("file_monitor::operator(): " << convert_to_native(bom_filter(pp.second.string())));
 
                 try
                 {
                     add_transfer_params atp;
-                    atp.m_collection_path = collection_fp.first;
+                    // since transfers work in UTF-8 code page we save paths in this code page
+                    atp.m_collection_path = pp.first;  // store collection path as is - in UTF-8
+                    atp.file_path         = pp.second; // store file path as is in UTF-8 
 
-                    if (!fs::exists(collection_fp.second) || !fs::is_regular_file(collection_fp.second))
+                    // generate operations path in native code page
+                    fs::path p = convert_to_native(bom_filter(pp.second.string()));
+
+                    if (!fs::exists(p) || !fs::is_regular_file(p))
                     {
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    atp.file_path = collection_fp.second;
-
                     bool    bPartial = false; // check last part in file not full
-                    uintmax_t nFileSize = fs::file_size(collection_fp.second);
+                    uintmax_t nFileSize = fs::file_size(p);
                     atp.file_size = nFileSize;
 
                     if (nFileSize == 0)
@@ -797,7 +801,7 @@ namespace libed2k
 
                     bio::mapped_file_params mf_param;
                     mf_param.flags  = bio::mapped_file_base::readonly;
-                    mf_param.path   = convert_to_native(bom_filter(collection_fp.second.string())); // generate native name for working in filesystem
+                    mf_param.path   = p.string();
                     mf_param.length = 0;
 
 
@@ -896,9 +900,13 @@ namespace libed2k
 
                     m_add_transfer(atp);
                 }
+                catch(libed2k_exception& e)
+                {
+                    ERR("Error on hashing: " << e.what());
+                }
                 catch(...) // hide all possible exceptions
                 {
-                    ERR("Error on hashing file");
+                    ERR("Error on hashing file: ");
                 }
             }
         }
@@ -1168,13 +1176,13 @@ namespace libed2k
 
     emule_collection_entry pending2collectionentry(const pending_file& f)
     {
-        if (!f.second.defined())
+        if (!f.m_hash.defined())
         {
             // internal error
             throw libed2k_exception(errors::pending_file_entry_in_transform);
         }
 
-        return emule_collection_entry(f.first.filename(), fs::file_size(f.first), f.second);
+        return emule_collection_entry(f.m_path.filename(), f.m_size, f.m_hash);
     }
 
     //static
@@ -1318,7 +1326,7 @@ namespace libed2k
         std::deque<md4_hash> hashes;
         hashes.resize(files.size());
 
-        std::transform(files.begin(), files.end(), hashes.begin(), std::ptr_fun(&take_second<fs::path, md4_hash>));
+        std::transform(files.begin(), files.end(), hashes.begin(), std::mem_fun_ref(&pending_file::get_hash));
 
         for (std::deque<emule_collection_entry>::const_iterator itr = m_files.begin();
                 itr != m_files.end(); ++itr)

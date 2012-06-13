@@ -63,7 +63,8 @@ namespace libed2k
         transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)
         {
             boost::mutex::scoped_lock lock(m_mutex);
-            DBG("addtransfer: " << t.file_path.string() << " collection: " << t.m_collection_path.string());
+            DBG("addtransfer: " << libed2k::convert_to_native(libed2k::bom_filter(t.file_path.string())) 
+                << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(t.m_collection_path.string())));
             //return (transfer_handle(boost::weak_ptr<transfer>()));
 
             // after save we load all files from known.met
