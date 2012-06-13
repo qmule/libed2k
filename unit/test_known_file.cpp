@@ -63,7 +63,8 @@ namespace libed2k
         transfer_handle session_impl_test::add_transfer(add_transfer_params const& t, error_code& ec)
         {
             boost::mutex::scoped_lock lock(m_mutex);
-            DBG("addtransfer: " << t.file_path.string() << " collection: " << t.m_collection_path.string());
+            DBG("addtransfer: " << libed2k::convert_to_native(libed2k::bom_filter(t.file_path.string())) 
+                << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(t.m_collection_path.string())));
             //return (transfer_handle(boost::weak_ptr<transfer>()));
 
             // after save we load all files from known.met
@@ -400,8 +401,10 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     BOOST_REQUIRE(libed2k::fs::exists(collect_path));
 
     create_directory_tree();
+    // generate russian path in native codepage
+    std::string strDirectory = chRussianDirectory;
     libed2k::fs::path russian_path = libed2k::fs::initial_path();
-    russian_path /= libed2k::convert_to_native(libed2k::bom_filter(chRussianDirectory));
+    russian_path /= libed2k::convert_to_native(libed2k::bom_filter(strDirectory));
     BOOST_REQUIRE(libed2k::fs::exists(russian_path));
 
     /*
@@ -419,7 +422,7 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     DBG("Root is: " << root_path.string());
 
     // root
-    libed2k::rule root(libed2k::rule::rt_plus, libed2k::convert_to_native(libed2k::bom_filter(root_path.string())));
+    libed2k::rule root(libed2k::rule::rt_plus, root_path.string());
     root.add_sub_rule(libed2k::rule::rt_minus, "file.txt");
 
     // pub 1
@@ -433,8 +436,11 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     // pub 3
     root.add_sub_rule(libed2k::rule::rt_asterisk, "pub3");
 
-    // russian rule
-    libed2k::rule russian_root(libed2k::rule::rt_asterisk, libed2k::convert_to_native(libed2k::bom_filter(russian_path.string())));
+    // russian rule - in UTF-8 !
+    libed2k::rule russian_root(libed2k::rule::rt_asterisk, libed2k::convert_from_native(russian_path.string()));
+    DBG("russian root: " << libed2k::convert_from_native(russian_path.string()));
+    //DBG("russian root: " << libed2k::convert_to_native(libed2k::convert_from_native(russian_path.string())));
+    
 
     // prepare session
     libed2k::session_settings s;

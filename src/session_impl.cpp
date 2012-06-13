@@ -225,7 +225,7 @@ void session_impl_base::share_files(rule* base_rule)
                     if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
                     {
                         p->set_obsolete(false); // mark transfer as active
-                        if (bCollectionActive ) pc.m_files.push_back(pending_file(upath, p->hash()));
+                        if (bCollectionActive ) pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
                         continue;
                     }
 
@@ -241,7 +241,7 @@ void session_impl_base::share_files(rule* base_rule)
                     }
 
                     // add file to collection and run file monitor
-                    if (bCollectionActive) pc.m_files.push_back(pending_file(upath, de.m_hash));
+                    if (bCollectionActive) pc.m_files.push_back(pending_file(upath, de.file_size, de.m_hash));
                 }
                 else
                 {
@@ -256,7 +256,8 @@ void session_impl_base::share_files(rule* base_rule)
                     else
                     {
                         // recursive rule - generate new rule for this directory and run on it
-                        rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, itr->filename());
+                        // rule get name in UTF-8
+                        rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, convert_from_native(itr->filename()));
                         DBG("new rule: " << prr->get_path().string());
                         share_files(prr);
                     }
@@ -468,13 +469,16 @@ void session_impl_base::update_pendings(const add_transfer_params& atp)
         for (std::deque<pending_collection>::iterator itr = m_pending_collections.begin();
                 itr != m_pending_collections.end(); ++itr)
         {
+            DBG("scan: " << convert_to_native(bom_filter(itr->m_path.string())));
             if (itr->m_path == atp.m_collection_path)                // find collection
             {
-                if (itr->update(atp.file_path, atp.file_hash))    // update file in collection
+                DBG("update_pendings=found collection: " << convert_to_native(bom_filter(atp.m_collection_path.string())));
+                if (itr->update(atp.file_path, atp.file_size, atp.file_hash))    // update file in collection
                 {
-                    DBG("session_impl_base::update_pendings: " << atp.m_collection_path.string());
+                    DBG("session_impl_base::update_pendings completed");
                     if (!itr->is_pending())                             // if collection changes status we will save it
                     {
+                        DBG("save collection and hash it");
                         emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false);
                         m_fmon.m_order.push(std::make_pair(fs::path(), itr->m_path));
                         m_pending_collections.erase(itr);               // remove collection from pending list
@@ -488,6 +492,10 @@ void session_impl_base::update_pendings(const add_transfer_params& atp)
                 break;
             }
         }
+    }
+    else
+    {
+        DBG("collection name empty on: " << convert_to_native(bom_filter(atp.file_path.string())));
     }
 }
 
