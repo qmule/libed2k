@@ -228,6 +228,12 @@ namespace libed2k
         typedef typename collection_type::iterator Iterator;
         typedef typename collection_type::value_type elem;
 
+        void clear()
+        {
+            m_collection.clear();
+            m_size = 0;
+        }
+
         template<typename Archive>
         void save(Archive& ar)
         {
@@ -1531,6 +1537,7 @@ namespace libed2k
         client_meta_packet(const client_shared_directory_files& frequest);
         client_meta_packet(const shared_files_list& flist);
         client_meta_packet(const client_directory_content_request& ismoddr);
+        client_meta_packet(const client_directory_content_result& ismod_dir_cr);
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -1555,6 +1562,7 @@ namespace libed2k
         client_shared_directory_files       m_directory_files_request;
         shared_files_list                   m_files_list;
         client_directory_content_request    m_ismod_directory_request;
+        client_directory_content_result     m_ismod_directory_result;
         proto_type      m_proto;
     };
 

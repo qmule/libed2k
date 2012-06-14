@@ -218,6 +218,7 @@ namespace libed2k
         void on_cancel_transfer(const error_code& error);
         void on_end_download(const error_code& error);
         void on_shared_files_request(const error_code& error);
+        void on_ismod_files_request(const error_code& error);
         void on_shared_files_answer(const error_code& error);
         void on_shared_files_denied(const error_code& error);
         void on_shared_directories_answer(const error_code& error);

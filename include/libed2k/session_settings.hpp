@@ -25,7 +25,8 @@ namespace libed2k
             max_peerlist_size(4000),
             download_rate_limit(-1),
             upload_rate_limit(-1),
-            m_version(0x3c)
+            m_version(0x3c),
+            m_max_announces_per_call(100)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -81,6 +82,7 @@ namespace libed2k
         int download_rate_limit;
         int upload_rate_limit;
         unsigned short m_version;
+        unsigned short m_max_announces_per_call;
 
         //!< known.met file
         std::string     m_known_file;

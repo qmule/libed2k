@@ -25,7 +25,8 @@ namespace libed2k
         m_net_interface(net_interface.address(), 0),
         m_filehash(p.file_hash),
         m_hashset(p.piece_hash),
-        m_filepath(convert_from_native(p.file_path.string())),
+        m_filepath(p.file_path),
+        m_collectionpath(p.m_collection_path),
         m_filesize(p.file_size),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -684,13 +685,6 @@ namespace libed2k
             m_picker->restore_piece(index);
             restore_piece_state(index);
         }
-    }
-
-    void transfer::announce()
-    {
-        // announce always now
-        shared_file_entry entry = getAnnounce();
-        m_ses.announce(entry);
     }
 
     shared_file_entry transfer::getAnnounce() const

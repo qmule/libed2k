@@ -45,6 +45,7 @@ namespace libed2k {
         const hash_set& hashset() const { return m_hashset; }
         size_t filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
+        const fs::path& collectionpath() const { return m_collectionpath; }
 
         transfer_handle handle();
         void start();
@@ -97,6 +98,7 @@ namespace libed2k {
         bool is_aborted() const { return m_abort; }
         bool is_obsolete() const { return m_obsolete; }
         bool is_announced() const { return m_announced; }
+        void set_announced(bool announced) { m_announced = announced; }
         transfer_status::state_t state() const { return m_state; }
         transfer_status status() const;
 
@@ -209,11 +211,6 @@ namespace libed2k {
         // SERVER MANAGEMENT
 
         /**
-          * announce file by session call
-         */
-        void announce();
-
-        /**
           * convert transfer info into announce
          */
         shared_file_entry getAnnounce() const;
@@ -263,6 +260,7 @@ namespace libed2k {
         md4_hash m_filehash;
         hash_set m_hashset;
         fs::path m_filepath;
+        fs::path m_collectionpath;
         size_t m_filesize;
         boost::uint32_t m_file_type;
 

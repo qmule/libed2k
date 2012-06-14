@@ -1370,13 +1370,6 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
     m_server_connection->post_sources_request(hFile, nSize);
 }
 
-void session_impl::announce(shared_file_entry& entry)
-{
-    shared_files_list offer_list;
-    offer_list.add(entry);
-    m_server_connection->post_announce(offer_list);
-}
-
 shared_files_list session_impl::get_announces() const
 {
     shared_files_list offer_list;
@@ -1389,6 +1382,36 @@ shared_files_list session_impl::get_announces() const
     }
 
     return (offer_list);
+}
+
+void session_impl::announce()
+{
+    shared_files_list offer_list;
+
+    for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    {
+        // we send no more m_max_announces_per_call elements in one package
+        if (offer_list.m_collection.size() >= m_settings.m_max_announces_per_call)
+        {
+            m_server_connection->post_announce(offer_list);
+            offer_list.clear();
+        }
+
+        transfer& t = *i->second;
+
+        // add transfer to announce list when it has one piece at least and it is not announced yet
+        if (!t.is_announced() && t.num_pieces() > 0)
+        {
+            offer_list.m_collection.push_back(t.getAnnounce());
+            t.set_announced(false); // mark transfer as announced
+        }
+
+    }
+
+    if (offer_list.m_size > 0)
+    {
+        m_server_connection->post_announce(offer_list);
+    }
 }
 
 void session_impl::set_alert_mask(boost::uint32_t m)

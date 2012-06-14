@@ -120,6 +120,7 @@ void peer_connection::reset()
     add_handler(/*OP_ASKSHAREDFILESANSWER*/get_proto_pair<client_shared_files_answer>(), boost::bind(&peer_connection::on_shared_files_answer, this, _1));
     add_handler(get_proto_pair<client_shared_directories_answer>(), boost::bind(&peer_connection::on_shared_directories_answer, this, _1));
     add_handler(get_proto_pair<client_shared_directory_files_answer>(), boost::bind(&peer_connection::on_shared_directory_files_answer, this, _1));
+    add_handler(get_proto_pair<client_directory_content_request>(), boost::bind(&peer_connection::on_ismod_files_request, this, _1));
     add_handler(get_proto_pair<client_directory_content_result>(), boost::bind(&peer_connection::on_ismod_directory_files, this, _1));
     // clients talking
     add_handler(/*OP_MESSAGE*/get_proto_pair<client_message>(), boost::bind(&peer_connection::on_client_message, this, _1));
@@ -606,6 +607,10 @@ void peer_connection::fill_send_buffer()
             case OP_ASKDIRCONTENTS:
                 DBG("peer_connection::fill_send_buffer: ismod directory request");
                 do_write(m_messages_order.front().m_ismod_directory_request);
+                break;
+            case OP_ASKDIRCONTENTSANS:
+                DBG("peer_connection::fill_send_buffer: ismod directory result");
+                do_write(m_messages_order.front().m_ismod_directory_result);
                 break;
             default:
                 BOOST_ASSERT(false);
@@ -1409,6 +1414,36 @@ void peer_connection::on_shared_files_request(const error_code& error)
     {
         ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
     }
+}
+
+void peer_connection::on_ismod_files_request(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_directory_content_request, cdcr);
+        client_directory_content_result cres;
+
+        // search appropriate transfer
+        if (boost::shared_ptr<transfer> p = m_ses.find_transfer(cdcr.m_hash).lock())
+        {
+            for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)
+            {
+                transfer& t = *i->second;
+
+                if (t.collectionpath() == p->filepath())
+                {
+                    cres.m_files.m_collection.push_back(t.getAnnounce());
+                }
+            }
+        }
+
+        send_throw_meta_order(cres);
+    }
+    else
+    {
+        ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
+    }
+
 }
 
 void peer_connection::on_shared_files_answer(const error_code& error)

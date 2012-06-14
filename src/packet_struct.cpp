@@ -434,6 +434,12 @@ namespace libed2k
         m_proto = get_proto_type(m_ismod_directory_request);
     }
 
+    client_meta_packet::client_meta_packet(const client_directory_content_result& ismod_dir_cr)
+    {
+        m_ismod_directory_result = ismod_dir_cr;
+        m_proto = get_proto_type(m_ismod_directory_result);
+    }
+
     peer_connection_options::peer_connection_options() : m_nVersion(0),
                  m_nModVersion(0),
                  m_nPort(0),
