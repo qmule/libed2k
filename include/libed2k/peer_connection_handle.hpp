@@ -34,6 +34,7 @@ namespace libed2k
         void get_shared_files() const;
         void get_shared_directories() const;
         void get_shared_directory_files(const std::string& strDirectory) const;
+        void get_ismod_directory(const md4_hash& hash) const;
 
         md4_hash                get_hash() const;
         net_identifier          get_network_point() const;

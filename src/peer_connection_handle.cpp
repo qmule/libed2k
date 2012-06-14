@@ -90,6 +90,11 @@ namespace libed2k
         LIBED2K_PC_FORWARD(request_shared_directory_files(strDirectory))
     }
 
+    void peer_connection_handle::get_ismod_directory(const md4_hash& hash) const
+    {
+        LIBED2K_PC_FORWARD(request_ismod_directory_files(hash))
+    }
+
     md4_hash peer_connection_handle::get_hash() const
     {
         LIBED2K_PC_FORWARD_RETURN(get_connection_hash(), md4_hash())

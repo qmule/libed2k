@@ -1335,6 +1335,9 @@ namespace libed2k
     {
         md4_hash    m_hash;
 
+        client_directory_content_request() {}
+        client_directory_content_request(const md4_hash& hash) : m_hash(hash) { }
+
         template<typename Archive>
         void serialize(Archive& ar)
         {
@@ -1527,6 +1530,7 @@ namespace libed2k
         client_meta_packet(const client_shared_directories_request& drequest);
         client_meta_packet(const client_shared_directory_files& frequest);
         client_meta_packet(const shared_files_list& flist);
+        client_meta_packet(const client_directory_content_request& ismoddr);
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -1545,11 +1549,12 @@ namespace libed2k
 
         }
 
-        client_message  m_message;
-        client_shared_files_request m_files_request;
-        client_shared_directories_request m_directories_request;
-        client_shared_directory_files     m_directory_files_request;
-        shared_files_list           m_files_list;
+        client_message                      m_message;
+        client_shared_files_request         m_files_request;
+        client_shared_directories_request   m_directories_request;
+        client_shared_directory_files       m_directory_files_request;
+        shared_files_list                   m_files_list;
+        client_directory_content_request    m_ismod_directory_request;
         proto_type      m_proto;
     };
 

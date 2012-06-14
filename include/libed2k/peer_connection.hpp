@@ -134,6 +134,7 @@ namespace libed2k
         void request_shared_files();
         void request_shared_directories();
         void request_shared_directory_files(const std::string& strDirectory);
+        void request_ismod_directory_files(const md4_hash& hash);
 
         misc_options get_misc_options() const { return m_misc_options; }
         misc_options2 get_misc_options2() const { return m_misc_options2; }
@@ -221,6 +222,7 @@ namespace libed2k
         void on_shared_files_denied(const error_code& error);
         void on_shared_directories_answer(const error_code& error);
         void on_shared_directory_files_answer(const error_code& error);
+        void on_ismod_directory_files(const error_code& error);
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);

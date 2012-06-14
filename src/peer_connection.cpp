@@ -120,6 +120,7 @@ void peer_connection::reset()
     add_handler(/*OP_ASKSHAREDFILESANSWER*/get_proto_pair<client_shared_files_answer>(), boost::bind(&peer_connection::on_shared_files_answer, this, _1));
     add_handler(get_proto_pair<client_shared_directories_answer>(), boost::bind(&peer_connection::on_shared_directories_answer, this, _1));
     add_handler(get_proto_pair<client_shared_directory_files_answer>(), boost::bind(&peer_connection::on_shared_directory_files_answer, this, _1));
+    add_handler(get_proto_pair<client_directory_content_result>(), boost::bind(&peer_connection::on_ismod_directory_files, this, _1));
     // clients talking
     add_handler(/*OP_MESSAGE*/get_proto_pair<client_message>(), boost::bind(&peer_connection::on_client_message, this, _1));
     add_handler(/*OP_CHATCAPTCHAREQ*/get_proto_pair<client_captcha_request>(), boost::bind(&peer_connection::on_client_captcha_request, this, _1));
@@ -567,6 +568,11 @@ void peer_connection::request_shared_directory_files(const std::string& strDirec
     send_throw_meta_order(client_meta_packet(client_shared_directory_files(strDirectory)));
 }
 
+void peer_connection::request_ismod_directory_files(const md4_hash& hash)
+{
+    send_throw_meta_order(client_directory_content_request(hash));
+}
+
 void peer_connection::fill_send_buffer()
 {
     if (m_channel_state[upload_channel] != bw_idle) return;
@@ -596,6 +602,10 @@ void peer_connection::fill_send_buffer()
             case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
                 DBG("peer_connection::fill_send_buffer: offer files");
                 do_write(m_messages_order.front().m_files_list);
+                break;
+            case OP_ASKDIRCONTENTS:
+                DBG("peer_connection::fill_send_buffer: ismod directory request");
+                do_write(m_messages_order.front().m_ismod_directory_request);
                 break;
             default:
                 BOOST_ASSERT(false);
@@ -1450,6 +1460,22 @@ void peer_connection::on_shared_directory_files_answer(const error_code& error)
                 get_connection_hash(),
                 sdf.m_directory.m_collection,
                 sdf.m_list));
+    }
+    else
+    {
+        ERR("shared directories answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_ismod_directory_files(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_directory_content_result, cdcr);
+        m_ses.m_alerts.post_alert_should(shared_files_alert(get_network_point(),
+                get_connection_hash(),
+                cdcr.m_files,
+                false));
     }
     else
     {
