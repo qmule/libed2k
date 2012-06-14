@@ -70,6 +70,8 @@ namespace libed2k
         const tcp::endpoint& remote() const { return m_remote; }
         const hash_set& remote_hashset() const { return m_remote_hashset; }
 
+        void get_peer_info(peer_info& p) const;
+
         // is called once every second by the main loop
         void second_tick(int tick_interval_ms);
 
@@ -148,7 +150,7 @@ namespace libed2k
         bool operator==(const net_identifier& np) const;
         bool operator==(const md4_hash& hash) const;
 
-        boost::optional<piece_block_progress> downloading_piece_progress() {
+        boost::optional<piece_block_progress> downloading_piece_progress() const {
             return boost::optional<piece_block_progress>();
         }
     private:

@@ -15,6 +15,11 @@ namespace libed2k {
     const size_t WRITE_HANDLER_MAX_SIZE = 256;
     const int LIBED2K_SERVER_CONN_MAX_SIZE = 250000;    //!< max packet body size for server connection
 
+    enum protocol_type
+    {
+        STANDARD_EDONKEY = 16
+    };
+
 }
 
 #endif

@@ -226,6 +226,22 @@ namespace libed2k
         m_connections.erase(c);
     }
 
+    void transfer::get_peer_info(std::vector<peer_info>& infos)
+    {
+        infos.clear();
+        for (std::set<peer_connection*>::iterator i = m_connections.begin();
+             i != m_connections.end(); ++i)
+        {
+            peer_connection* peer = *i;
+
+            infos.push_back(peer_info());
+            peer_info& p = infos.back();
+
+            peer->get_peer_info(p);
+            // peer country
+        }
+    }
+
     void transfer::disconnect_all(const error_code& ec)
     {
         while (!m_connections.empty())

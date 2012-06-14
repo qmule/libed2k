@@ -102,6 +102,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(status(), transfer_status());
     }
 
+    void transfer_handle::get_peer_info(std::vector<peer_info>& infos) const
+    {
+        LIBED2K_FORWARD(get_peer_info(infos));
+    }
+
     void transfer_handle::set_sequential_download(bool sd) const
     {
         LIBED2K_FORWARD(set_sequential_download(sd));

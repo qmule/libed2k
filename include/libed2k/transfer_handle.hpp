@@ -39,6 +39,7 @@ namespace libed2k
         bool is_aborted() const;
         bool is_sequential_download() const;
         transfer_status status() const;
+        void get_peer_info(std::vector<peer_info>& infos) const;
 
         void set_sequential_download(bool sd) const;
         void set_upload_limit(int limit) const;

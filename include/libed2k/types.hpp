@@ -29,6 +29,7 @@ namespace libtorrent {
     struct torrent_status;
     struct piece_block_progress;
     class stat;
+    struct peer_info;
 
     namespace aux{
         class eh_initializer;
@@ -63,6 +64,7 @@ namespace libed2k
     typedef libtorrent::torrent_status transfer_status;
     typedef libtorrent::piece_block_progress piece_block_progress;
     typedef libtorrent::stat stat;
+    typedef libtorrent::peer_info peer_info;
 
     namespace detail = libtorrent::detail;
 
