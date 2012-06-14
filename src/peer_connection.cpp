@@ -137,12 +137,14 @@ void peer_connection::init()
 {
 }
 
-void peer_connection::second_tick()
+void peer_connection::second_tick(int tick_interval_ms)
 {
     if (!is_closed())
     {
         fill_send_buffer();
     }
+
+    m_statistics.second_tick(tick_interval_ms);
 }
 
 bool peer_connection::attach_to_transfer(const md4_hash& hash)
@@ -376,6 +378,9 @@ void peer_connection::disconnect(error_code const& ec, int error)
 
     if (t)
     {
+        // make sure we keep all the stats!
+        t->add_stats(m_statistics);
+
         if (t->has_picker())
         {
             piece_picker& picker = t->picker();
@@ -493,14 +498,14 @@ void peer_connection::close(const error_code& ec)
 
 bool peer_connection::can_write() const
 {
-	// TODO - should implement
-	return (true);
+    // TODO - should implement
+    return (true);
 }
 
 bool peer_connection::can_read(char* state) const
 {
     // TODO - should implement
-	return (true);
+    return (true);
 }
 
 bool peer_connection::is_seed() const
@@ -660,6 +665,8 @@ void peer_connection::on_disk_read_complete(
     base_connection::do_write();
 
     send_data(left);
+
+    m_statistics.sent_bytes(r.length, 0);
 }
 
 void peer_connection::receive_data(const peer_request& req)
@@ -694,6 +701,7 @@ void peer_connection::receive_data(const peer_request& req)
 void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
+    m_statistics.received_bytes(bytes_transferred, 0);
     if (is_disconnecting()) return;
 
     assert(int(bytes_transferred) == r.length);

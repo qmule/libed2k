@@ -102,6 +102,7 @@ namespace libed2k
 
     void base_connection::on_read_header(const error_code& error, size_t nSize)
     {
+        m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
         if (!error)
@@ -139,6 +140,7 @@ namespace libed2k
 
     void base_connection::on_read_packet(const error_code& error, size_t nSize)
     {
+        m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
         if (!error)

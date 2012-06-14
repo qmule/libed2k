@@ -19,6 +19,7 @@
 #include <libtorrent/assert.hpp>
 #include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
+#include <libtorrent/stat.hpp>
 
 #include "libed2k/types.hpp"
 #include "libed2k/log.hpp"
@@ -50,6 +51,8 @@ namespace libed2k{
         bool is_closed() const { return !m_socket->is_open(); }
         const tcp::endpoint& remote() const { return m_remote; }
         boost::shared_ptr<tcp::socket> socket() { return m_socket; }
+
+        const stat& statistics() const { return m_statistics; }
 
     protected:
 
@@ -112,11 +115,11 @@ namespace libed2k{
         bool decode_packet(T& t);
 
         template <typename Self>
-		boost::intrusive_ptr<Self> self_as()
-		{ return boost::intrusive_ptr<Self>((Self*)this); }
+        boost::intrusive_ptr<Self> self_as()
+        { return boost::intrusive_ptr<Self>((Self*)this); }
 
         template <typename Self>
-		boost::intrusive_ptr<const Self> self_as() const
+        boost::intrusive_ptr<const Self> self_as() const
         { return boost::intrusive_ptr<const Self>((const Self*)this); }
 
         /**
@@ -144,6 +147,11 @@ namespace libed2k{
         bool m_read_in_progress;  //!< read indicator
 
         handler_map m_handlers;
+
+        // statistics about upload and download speeds
+        // and total amount of uploads and downloads for
+        // this connection
+        stat m_statistics;
 
         //
         // Custom memory allocation for asynchronous operations
@@ -238,6 +246,8 @@ namespace libed2k{
 
         copy_send_buffer((char*)(&header), header_size);
         copy_send_buffer(body.c_str(), body.size());
+
+        m_statistics.sent_bytes(0, header_size + body.size());
 
         do_write();
     }

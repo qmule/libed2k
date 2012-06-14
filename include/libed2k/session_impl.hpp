@@ -111,7 +111,8 @@ namespace libed2k {
               * @param change_time - change time from boost::filesystem last_write_time
               * @param filename string in UTF-8 code page
              */
-            dictionary_entry get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename);
+            dictionary_entry get_dictionary_entry(
+                boost::uint32_t change_time, const std::string& strFilename);
 
             void load_dictionary();
 
@@ -131,6 +132,9 @@ namespace libed2k {
             session_settings m_settings;
             libtorrent::session_settings m_disk_thread_settings;
             transfer_map m_transfers;
+
+            // statistics gathered from all transfers.
+            stat m_stat;
 
             /**
               * file hasher closed in self thread
@@ -362,11 +366,11 @@ namespace libed2k {
             boost::uint32_t m_tcp_flags;
             boost::uint32_t m_aux_port;
 
-			// is true if the session is paused
-			bool m_paused;
+            // is true if the session is paused
+            bool m_paused;
 
-			// the max number of connections, as set by the user
-			int m_max_connections;
+            // the max number of connections, as set by the user
+            int m_max_connections;
 
             ptime m_last_second_tick;
 

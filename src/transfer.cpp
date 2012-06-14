@@ -35,7 +35,9 @@ namespace libed2k
         m_accepted(p.m_accepted),
         m_requested(p.m_requested),
         m_transferred(p.m_transferred),
-        m_priority(p.m_priority)
+        m_priority(p.m_priority),
+        m_total_uploaded(0),
+        m_total_downloaded(0)
     {
         if (m_hashset.pieces().size() == 0)
             m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
@@ -316,6 +318,13 @@ namespace libed2k
             boost::bind(&transfer::on_files_released, shared_from_this(), _1, _2));
     }
 
+    void transfer::add_stats(const stat& s)
+    {
+        // these stats are propagated to the session
+        // stats the next time second_tick is called
+        m_stat += s;
+    }
+
     void transfer::pause()
     {
         if (m_paused) return;
@@ -410,6 +419,22 @@ namespace libed2k
         st.paused = m_paused;
 
         bytes_done(st);
+
+        // payload transfer
+        st.total_payload_download = m_stat.total_payload_download();
+        st.total_payload_upload = m_stat.total_payload_upload();
+
+        // total transfer
+        st.total_download = m_stat.total_payload_download() +
+            m_stat.total_protocol_download();
+        st.total_upload = m_stat.total_payload_upload() +
+            m_stat.total_protocol_upload();
+
+        // transfer rate
+        st.download_rate = m_stat.download_rate();
+        st.upload_rate = m_stat.upload_rate();
+        st.download_payload_rate = m_stat.download_payload_rate();
+        st.upload_payload_rate = m_stat.upload_payload_rate();
 
         st.num_peers = (int)std::count_if(
             m_connections.begin(), m_connections.end(),
@@ -586,18 +611,28 @@ namespace libed2k
         if (!is_seed()) set_state(transfer_status::downloading);
     }
 
-    void transfer::second_tick()
+    void transfer::second_tick(stat& accumulator, int tick_interval_ms)
     {
         if (want_more_peers()) request_peers();
 
+        if (is_paused())
+        {
+            // let the stats fade out to 0
+            accumulator += m_stat;
+            m_stat.second_tick(tick_interval_ms);
+            return;
+        }
+
         for (std::set<peer_connection*>::iterator i = m_connections.begin();
-             i != m_connections.end(); ++i)
+             i != m_connections.end();)
         {
             peer_connection* p = *i;
+            ++i;
+            m_stat += p->statistics();
 
             try
             {
-                p->second_tick();
+                p->second_tick(tick_interval_ms);
             }
             catch (std::exception& e)
             {
@@ -605,6 +640,11 @@ namespace libed2k
                 p->disconnect(errors::no_error, 1);
             }
         }
+
+        accumulator += m_stat;
+        m_total_uploaded += m_stat.last_payload_uploaded();
+        m_total_downloaded += m_stat.last_payload_downloaded();
+        m_stat.second_tick(tick_interval_ms);
     }
 
     void transfer::async_verify_piece(

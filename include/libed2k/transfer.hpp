@@ -30,9 +30,9 @@ namespace libed2k {
     class server_request;
     class server_response;
 
-	// a transfer is a class that holds information
-	// for a specific download. It updates itself against
-	// the tracker
+    // a transfer is a class that holds information
+    // for a specific download. It updates itself against
+    // the tracker
     class transfer : public boost::enable_shared_from_this<transfer>
     {
     public:
@@ -116,18 +116,21 @@ namespace libed2k {
 
         int queue_position() const { return m_sequence_number; }
 
-        void second_tick();
+        void second_tick(stat& accumulator, int tick_interval_ms);
 
-		// this is called wheh the transfer has completed
-		// the download. It will post an event, disconnect
-		// all seeds and let the tracker know we're finished.
-		void completed();
+        // this is called wheh the transfer has completed
+        // the download. It will post an event, disconnect
+        // all seeds and let the tracker know we're finished.
+        void completed();
 
         // this is called when the transfer has finished. i.e.
         // all the pieces we have not filtered have been downloaded.
         // If no pieces are filtered, this is called first and then
         // completed() is called immediately after it.
         void finished();
+
+        stat statistics() const { return m_stat; }
+        void add_stats(const stat& s);
 
         // --------------------------------------------
         // PIECE MANAGEMENT
@@ -224,7 +227,7 @@ namespace libed2k {
     private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
-		void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
+        void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void on_transfer_aborted(int ret, disk_io_job const& j);
         void on_transfer_paused(int ret, disk_io_job const& j);
 
@@ -232,6 +235,10 @@ namespace libed2k {
         void init();
         void bytes_done(transfer_status& st) const;
         int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
+
+        // this is the upload and download statistics for the whole transfer.
+        // it's updated from all its peers once every second.
+        stat m_stat;
 
         // a back reference to the session
         // this transfer belongs to.
@@ -279,6 +286,11 @@ namespace libed2k {
         boost::uint32_t m_requested;
         boost::uint64_t m_transferred;
         boost::uint8_t  m_priority;
+
+        // all time totals of uploaded and downloaded payload
+        // stored in resume data
+        size_t m_total_uploaded;
+        size_t m_total_downloaded;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and
