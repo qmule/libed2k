@@ -139,6 +139,64 @@ void peer_connection::init()
 {
 }
 
+void peer_connection::get_peer_info(peer_info& p) const
+{
+    p.down_speed = m_statistics.download_rate();
+    p.up_speed = m_statistics.upload_rate();
+    p.payload_down_speed = m_statistics.download_payload_rate();
+    p.payload_up_speed = m_statistics.upload_payload_rate();
+    p.num_pieces = m_remote_hashset.pieces().count();
+
+    p.total_download = m_statistics.total_payload_download();
+    p.total_upload = m_statistics.total_payload_upload();
+    p.ip = m_remote;
+    p.connection_type = STANDARD_EDONKEY;
+    p.client = m_options.m_strName;
+
+    if (boost::optional<piece_block_progress> ret = downloading_piece_progress())
+    {
+        p.downloading_piece_index = ret->piece_index;
+        p.downloading_block_index = ret->block_index;
+        p.downloading_progress = ret->bytes_downloaded;
+        p.downloading_total = ret->full_block_bytes;
+    }
+    else
+    {
+        p.downloading_piece_index = -1;
+        p.downloading_block_index = -1;
+        p.downloading_progress = 0;
+        p.downloading_total = 0;
+    }
+
+    p.pieces = m_remote_hashset.pieces();
+
+    // this will set the flags so that we can update them later
+    p.flags = 0;
+    p.flags |= is_seed() ? peer_info::seed : 0;
+
+    p.source = 0;
+    p.failcount = 0;
+    p.num_hashfails = 0;
+    p.inet_as = 0xffff;
+
+    p.send_buffer_size = m_send_buffer.capacity();
+    p.used_send_buffer = m_send_buffer.size();
+    p.write_state = m_channel_state[upload_channel];
+    p.read_state = m_channel_state[download_channel];
+
+    // pieces may be empty if we don't have metadata yet
+    if (p.pieces.size() == 0)
+    {
+        p.progress = 0.f;
+        p.progress_ppm = 0;
+    }
+    else
+    {
+        p.progress = (float)p.pieces.count() / (float)p.pieces.size();
+        p.progress_ppm = boost::uint64_t(p.pieces.count()) * 1000000 / p.pieces.size();
+    }
+}
+
 void peer_connection::second_tick(int tick_interval_ms)
 {
     if (!is_closed())

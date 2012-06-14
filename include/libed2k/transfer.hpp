@@ -72,6 +72,7 @@ namespace libed2k {
         // the pieces it had have their reference counter
         // decreased in the piece_picker
         void remove_peer(peer_connection* p);
+        void get_peer_info(std::vector<peer_info>& infos);
 
         bool want_more_connections() const;
         void disconnect_all(const error_code& ec);
