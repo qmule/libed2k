@@ -28,7 +28,8 @@ namespace libed2k
             m_version(0x3c),
             m_max_announces_per_call(100),
             m_announce_timeout(-1),
-            m_show_shared_catalogs(true)
+            m_show_shared_catalogs(true),
+            m_show_shared_files(true)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -91,7 +92,8 @@ namespace libed2k
           * -1 - announces off
          */
         int m_announce_timeout;
-        bool m_show_shared_catalogs;
+        bool m_show_shared_catalogs;    //!< show shared catalogs to client
+        bool m_show_shared_files;       //!< show shared files to client
 
         //!< known.met file
         std::string     m_known_file;

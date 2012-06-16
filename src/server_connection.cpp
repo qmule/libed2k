@@ -389,10 +389,6 @@ namespace libed2k
 
                         DBG("Client id: " << m_nClientId << " tcp flags: " << idc.m_nTCPFlags << " aux port " << idc.m_nAuxPort);
                         m_state = SC_ONLINE;
-
-                        // immediately announce files
-                        shared_files_list sfl = m_ses.get_announces();
-                        post_announce(sfl);
                         break;
                     }
                     case OP_SERVERIDENT:

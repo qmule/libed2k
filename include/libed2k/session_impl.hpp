@@ -270,11 +270,6 @@ namespace libed2k {
             boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
             /**
-              * announce all transfers entries
-             */
-            shared_files_list get_announces() const;
-
-            /**
               * announce transfers
               * will perform only when server connection online
              */

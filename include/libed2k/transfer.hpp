@@ -215,7 +215,6 @@ namespace libed2k {
           * convert transfer info into announce
          */
         shared_file_entry getAnnounce() const;
-        const std::string toCatalog() const;
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }
 
@@ -315,6 +314,9 @@ namespace libed2k {
         libtorrent::piece_manager* m_storage;
 
     };
+
+    extern std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
+    extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
 }
 
 #endif

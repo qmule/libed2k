@@ -114,12 +114,20 @@ void peer_connection::reset()
     add_handler(/*OP_SENDINGPART_I64*/get_proto_pair<client_sending_part_64>(),
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
     add_handler(/*OP_END_OF_DOWNLOAD*/get_proto_pair<client_end_download>(), boost::bind(&peer_connection::on_end_download, this, _1));
+
+    // shared files request and answer
     add_handler(/*OP_ASKSHAREDFILES*/get_proto_pair<client_shared_files_request>(), boost::bind(&peer_connection::on_shared_files_request, this, _1));
     add_handler(/*OP_ASKSHAREDDENIEDANS*/get_proto_pair<client_shared_files_denied>(), boost::bind(&peer_connection::on_shared_files_denied, this, _1));
-
     add_handler(/*OP_ASKSHAREDFILESANSWER*/get_proto_pair<client_shared_files_answer>(), boost::bind(&peer_connection::on_shared_files_answer, this, _1));
+
+    // shared directories
+    add_handler(get_proto_pair<client_shared_directories_request>(), boost::bind(&peer_connection::on_shared_directories_request, this, _1));
     add_handler(get_proto_pair<client_shared_directories_answer>(), boost::bind(&peer_connection::on_shared_directories_answer, this, _1));
+
+    // shared files in directory
     add_handler(get_proto_pair<client_shared_directory_files_answer>(), boost::bind(&peer_connection::on_shared_directory_files_answer, this, _1));
+
+    //ismod collections
     add_handler(get_proto_pair<client_directory_content_request>(), boost::bind(&peer_connection::on_ismod_files_request, this, _1));
     add_handler(get_proto_pair<client_directory_content_result>(), boost::bind(&peer_connection::on_ismod_directory_files, this, _1));
     // clients talking
@@ -647,15 +655,23 @@ void peer_connection::fill_send_buffer()
                  do_write(m_messages_order.front().m_message);
                  break;
             case OP_ASKSHAREDFILES:                                             // ask shared files from user
-                DBG("peer_connection::fill_send_buffer: ask shared files");
+                DBG("peer_connection::fill_send_buffer: query shared files");
                 do_write(m_messages_order.front().m_files_request);
                 break;
-            case OP_ASKSHAREDDIRS:
+            case OP_ASKSHAREDDENIEDANS:
+                DBG("peer_connection::fill_send_buffer: ask files denied");
+                do_write(m_messages_order.front().m_files_denied);
+                break;
+            case OP_ASKSHAREDDIRSANS:
                 DBG("peer_connection::fill_send_buffer: ask shared directories");
+                do_write(m_messages_order.front().m_directories_answer);
+                break;
+            case OP_ASKSHAREDDIRS:
+                DBG("peer_connection::fill_send_buffer: query shared directories");
                 do_write(m_messages_order.front().m_directories_request);
                 break;
             case OP_ASKSHAREDFILESDIR:
-                DBG("peer_connection::fill_send_buffer: ask shared directory files");
+                DBG("peer_connection::fill_send_buffer: query shared directory files");
                 do_write(m_messages_order.front().m_directory_files_request);
                 break;
             case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
@@ -1466,7 +1482,20 @@ void peer_connection::on_shared_files_request(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_files_request, packet);
-        send_throw_meta_order(m_ses.get_announces());
+
+        if (m_ses.settings().m_show_shared_files)
+        {
+            shared_files_list slist;
+            // transform transfers to their announces
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(slist.m_collection), &transfer2sfe);
+            // erase empty announces
+            slist.m_collection.erase(std::remove_if(slist.m_collection.begin(), slist.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), slist.m_collection.end());
+            send_throw_meta_order(slist);
+        }
+        else
+        {
+            send_throw_meta_order(client_shared_files_denied());
+        }
     }
     else
     {
@@ -1528,6 +1557,38 @@ void peer_connection::on_shared_files_denied(const error_code& error)
     else
     {
         ERR("shared files denied answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_shared_directories_request(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_directories_request, sdr);
+
+        if (m_ses.settings().m_show_shared_catalogs)
+        {
+            client_shared_directories_answer sd;
+            std::deque<std::string> dirs;
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(dirs), &transfer2catalog);
+            std::deque<std::string>::iterator itr = std::unique(dirs.begin(), dirs.end());
+            dirs.resize(itr - dirs.begin());
+            dirs.erase(std::remove(dirs.begin(), dirs.end(), std::string("")), dirs.end());
+
+            sd.m_dirs.m_collection.resize(dirs.size());
+
+            for (size_t i = 0; i < dirs.size(); ++i)
+            {
+                sd.m_dirs.m_collection[i].m_collection = dirs[i];
+                sd.m_dirs.m_collection[i].m_size = dirs[i].size();
+            }
+
+            send_throw_meta_order(sd);
+        }
+    }
+    else
+    {
+        ERR("shared directories answer error " << error.message() << " <== " << m_remote);
     }
 }
 

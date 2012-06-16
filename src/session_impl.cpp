@@ -1352,20 +1352,6 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
     m_server_connection->post_sources_request(hFile, nSize);
 }
 
-shared_files_list session_impl::get_announces() const
-{
-    shared_files_list offer_list;
-
-    for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
-    {
-        transfer& t = *i->second;
-        if (t.is_finished())
-            offer_list.add(t.getAnnounce());
-    }
-
-    return (offer_list);
-}
-
 void session_impl::announce(int tick_interval_ms)
 {
     // check announces avaliable
@@ -1401,7 +1387,7 @@ void session_impl::announce(int tick_interval_ms)
         if (!t.is_announced() && t.num_pieces() > 0)
         {
             offer_list.m_collection.push_back(t.getAnnounce());
-            t.set_announced(false); // mark transfer as announced
+            t.set_announced(true); // mark transfer as announced
         }
 
     }

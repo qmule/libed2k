@@ -395,6 +395,8 @@ namespace libed2k
         shared_file_entry();
         shared_file_entry(const md4_hash& hFile, boost::uint32_t nFileId, boost::uint16_t nPort);
 
+        bool is_empty() const { return !m_hFile.defined(); }
+
         template<typename Archive>
         void serialize(Archive& ar)
         {
@@ -1533,7 +1535,9 @@ namespace libed2k
     {
         client_meta_packet(const client_message& cmessage);
         client_meta_packet(const client_shared_files_request& frequest);
+        client_meta_packet(const client_shared_files_denied& sfd);
         client_meta_packet(const client_shared_directories_request& drequest);
+        client_meta_packet(const client_shared_directories_answer& danswer);
         client_meta_packet(const client_shared_directory_files& frequest);
         client_meta_packet(const shared_files_list& flist);
         client_meta_packet(const client_directory_content_request& ismoddr);
@@ -1558,7 +1562,9 @@ namespace libed2k
 
         client_message                      m_message;
         client_shared_files_request         m_files_request;
+        client_shared_files_denied          m_files_denied;
         client_shared_directories_request   m_directories_request;
+        client_shared_directories_answer    m_directories_answer;
         client_shared_directory_files       m_directory_files_request;
         shared_files_list                   m_files_list;
         client_directory_content_request    m_ismod_directory_request;

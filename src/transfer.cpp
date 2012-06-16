@@ -706,6 +706,12 @@ namespace libed2k
     shared_file_entry transfer::getAnnounce() const
     {
         shared_file_entry entry;
+
+        if (m_announced || num_pieces() == 0)
+        {
+            return entry;
+        }
+
         // TODO - implement generate file entry from transfer here
         entry.m_hFile = m_filehash;
         entry.m_network_point.m_nIP     = m_ses.m_client_id;
@@ -752,14 +758,19 @@ namespace libed2k
         return entry;
     }
 
-    const std::string transfer::toCatalog() const
+    std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)
     {
-        if (m_collectionpath.empty())
+        if (tran.second->collectionpath().empty())
         {
             return std::string("");
         }
 
-        return m_filepath.directory_string();
+        return tran.second->filepath().directory_string();
+    }
+
+    shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)
+    {
+        return tran.second->getAnnounce();
     }
 
 }
