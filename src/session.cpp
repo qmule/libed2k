@@ -109,20 +109,17 @@ size_t session::set_alert_queue_size_limit(size_t queue_size_limit_)
 
 void session::post_search_request(search_request& ro)
 {
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_search_request(ro);
+    m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_search_request, m_impl, ro));
 }
 
 void session::post_search_more_result_request()
 {
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_search_more_result_request();
+    m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_search_more_result_request, m_impl));
 }
 
 void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->post_sources_request(hFile, nSize);
+    m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_sources_request, m_impl, hFile, nSize));
 }
 
 transfer_handle session::find_transfer(const md4_hash & hash) const
@@ -157,14 +154,12 @@ int session::upload_rate_limit() const
 
 void session::server_conn_start()
 {
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->server_conn_start();
+    m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_start, m_impl));
 }
 
 void session::server_conn_stop()
 {
-    boost::mutex::scoped_lock l(m_impl->m_mutex);
-    m_impl->server_conn_stop();
+    m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_stop, m_impl));
 }
 
 

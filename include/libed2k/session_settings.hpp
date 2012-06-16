@@ -26,7 +26,9 @@ namespace libed2k
             download_rate_limit(-1),
             upload_rate_limit(-1),
             m_version(0x3c),
-            m_max_announces_per_call(100)
+            m_max_announces_per_call(100),
+            m_announce_timeout(-1),
+            m_show_shared_catalogs(true)
         {
             // prepare empty client hash
             client_hash = md4_hash::m_emptyMD4Hash;
@@ -84,6 +86,13 @@ namespace libed2k
         unsigned short m_version;
         unsigned short m_max_announces_per_call;
 
+        /**
+          * announce timeout in seconds
+          * -1 - announces off
+         */
+        int m_announce_timeout;
+        bool m_show_shared_catalogs;
+
         //!< known.met file
         std::string     m_known_file;
 
@@ -92,6 +101,11 @@ namespace libed2k
         fd_list m_fd_list;
 
         md4_hash client_hash;    // ed2k client hash, todo: remove
+
+        /**
+          * root directory for auto-creating collections
+          * collection will create when we share some folder
+         */
         std::string m_collections_directory;
 
     };

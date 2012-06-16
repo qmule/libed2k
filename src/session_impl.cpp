@@ -515,7 +515,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_max_connections(200),
     m_last_second_tick(time_now()),
     m_timer(m_io_service),
-    m_reconnect_counter(-1)
+    m_last_connect_duration(0),
+    m_last_announce_duration(0)
 {
     DBG("*** create ed2k session ***");
 
@@ -1168,32 +1169,13 @@ void session_impl::on_tick(error_code const& e)
 
     connect_new_peers();
 
+    announce(tick_interval_ms);
+    reconnect(tick_interval_ms);
+
     // --------------------------------------------------------------
     // disconnect peers when we have too many
     // --------------------------------------------------------------
     // TODO: should it be implemented?
-
-
-    // --------------------------------------------------------------
-    // check server connection
-    // --------------------------------------------------------------
-
-    if (m_reconnect_counter == 0)
-    {
-        DBG("session_impl::on_tick: reconnect server connection");
-        // execute server connection restart
-        if (!m_server_connection->online() && !m_server_connection->connecting())
-        {
-            m_server_connection->start();
-        }
-    }
-
-    // decrement counter while it great than zero
-    if (m_reconnect_counter >= 0)
-    {
-        --m_reconnect_counter;
-    }
-
 }
 
 void session_impl::connect_new_peers()
@@ -1384,8 +1366,24 @@ shared_files_list session_impl::get_announces() const
     return (offer_list);
 }
 
-void session_impl::announce()
+void session_impl::announce(int tick_interval_ms)
 {
+    // check announces avaliable
+    if (m_settings.m_announce_timeout == -1)
+    {
+        return;
+    }
+
+    // calculate last
+    m_last_announce_duration += tick_interval_ms;
+
+    if (m_last_announce_duration < m_settings.m_announce_timeout*1000)
+    {
+        return;
+    }
+
+    m_last_announce_duration = 0;
+
     shared_files_list offer_list;
 
     for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
@@ -1414,6 +1412,33 @@ void session_impl::announce()
     }
 }
 
+void session_impl::reconnect(int tick_interval_ms)
+{
+
+    if (m_settings.server_reconnect_timeout == -1)
+    {
+        // do not execute reconnect - feature turned off
+        return;
+    }
+
+    if (!m_server_connection->offline())
+    {
+        m_last_connect_duration = 0;
+        return;
+    }
+
+    m_last_connect_duration += tick_interval_ms;
+
+    if (m_last_connect_duration < m_settings.server_reconnect_timeout*1000)
+    {
+        return;
+    }
+
+    // perform reconnect
+    m_last_connect_duration = 0;
+    m_server_connection->start();
+}
+
 void session_impl::set_alert_mask(boost::uint32_t m)
 {
     m_alerts.set_alert_mask(m);
@@ -1434,31 +1459,6 @@ void session_impl::server_ready(
     m_tcp_flags = tcp_flags;
     m_aux_port  = aux_port;
     m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, aux_port));
-
-     // test code - for offer tests
-    /*
-    shared_files_list olist;
-    shared_file_entry sf;
-    sf.m_hFile = md4_hash("49EC2B5DEF507DEA73E106FEDB9697EE");
-    boost::uint32_t nFileSize = libed2k::PIECE_SIZE+1;
-
-    sf.m_network_point.m_nIP     = client_id;
-    sf.m_network_point.m_nPort   = settings().listen_port;
-    sf.m_list.add_tag(libed2k::make_string_tag("file.txt", FT_FILENAME, true));
-    sf.m_list.add_tag(libed2k::make_typed_tag(nFileSize, FT_FILESIZE, true));
-    //sf.m_list.add_tag(libed2k::make_typed_tag(nFileSize, FT_FILESIZE_HI, false));
-
-    std::string strED2KFileType(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("file.txt")));
-
-    DBG("ed2k file type: " << strED2KFileType);
-
-    if (!strED2KFileType.empty())
-    {
-        sf.m_list.add_tag(make_string_tag(strED2KFileType, FT_FILETYPE, true));
-    }
-
-    olist.m_collection.push_back(sf);
-    */
 }
 
 void session_impl::on_server_stopped()
@@ -1467,13 +1467,6 @@ void session_impl::on_server_stopped()
     m_client_id   = 0;
     m_tcp_flags   = 0;
     m_aux_port    = 0;
-
-    // set reconnect counter
-    if (m_settings.server_reconnect_timeout > -1)
-    {
-        m_reconnect_counter = (m_settings.server_reconnect_timeout); // we check it every 1 s
-        DBG("session_impl::on_server_stopped(restart from " <<  m_reconnect_counter << ")");
-    }
 }
 
 void session_impl::server_conn_start()

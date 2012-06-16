@@ -1481,7 +1481,7 @@ void peer_connection::on_ismod_files_request(const error_code& error)
         DECODE_PACKET(client_directory_content_request, cdcr);
         client_directory_content_result cres;
 
-        // search appropriate transfer
+        // search appropriate transfers and public their filenames
         if (boost::shared_ptr<transfer> p = m_ses.find_transfer(cdcr.m_hash).lock())
         {
             for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)

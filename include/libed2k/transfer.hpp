@@ -215,6 +215,7 @@ namespace libed2k {
           * convert transfer info into announce
          */
         shared_file_entry getAnnounce() const;
+        const std::string toCatalog() const;
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }
 

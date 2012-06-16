@@ -752,4 +752,14 @@ namespace libed2k
         return entry;
     }
 
+    const std::string transfer::toCatalog() const
+    {
+        if (m_collectionpath.empty())
+        {
+            return std::string("");
+        }
+
+        return m_filepath.directory_string();
+    }
+
 }

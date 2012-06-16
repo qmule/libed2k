@@ -276,8 +276,15 @@ namespace libed2k {
 
             /**
               * announce transfers
+              * will perform only when server connection online
              */
-            void announce();
+            void announce(int tick_interval_ms);
+
+            /**
+              * perform reconnect to server
+              * will perform only when server connection offline
+             */
+            void reconnect(int tick_interval_ms);
 
             // called when server connection is initialized
             void server_ready(boost::uint32_t client_id,
@@ -377,8 +384,8 @@ namespace libed2k {
             // the timer used to fire the tick
             boost::asio::deadline_timer m_timer;
 
-            //!< server connection restart hops
-            int m_reconnect_counter;
+            int m_last_connect_duration;        //!< duration in milliseconds since last server connection was executed
+            int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed
 
             // the main working thread
             // !!! should be last in the member list
