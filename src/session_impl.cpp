@@ -44,7 +44,7 @@ session_impl_base::session_impl_base(const session_settings& settings) :
         m_abort(false),
         m_settings(settings),
         m_transfers(),
-        m_fmon(boost::bind(&session_impl_base::post_transfer, this, _1))
+        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1))
 {
 }
 
@@ -57,7 +57,7 @@ void session_impl_base::abort()
 {
     if (m_abort) return;
     m_abort = true;
-    m_fmon.stop();
+    m_file_hasher.stop();
 }
 
 void session_impl_base::post_transfer(add_transfer_params const& params)
@@ -156,7 +156,7 @@ void session_impl_base::share_files(rule* base_rule)
         else
         {
             // async add transfer by file monitor
-            m_fmon.m_order.push(std::make_pair(fs::path(), upath));
+            m_file_hasher.m_order.push(std::make_pair(fs::path(), upath));
         }
 
         return;
@@ -239,7 +239,7 @@ void session_impl_base::share_files(rule* base_rule)
                     }
                     else
                     {
-                        m_fmon.m_order.push(std::make_pair(collection_path, upath));
+                        m_file_hasher.m_order.push(std::make_pair(collection_path, upath));
                     }
 
                     // add file to collection and run file monitor
@@ -307,7 +307,7 @@ void session_impl_base::share_files(rule* base_rule)
                             // save collection to disk and run hasher
                             emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
                             // run hash
-                            m_fmon.m_order.push(std::make_pair(fs::path(), pc.m_path));
+                            m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                         }
                     }
                     else
@@ -323,14 +323,14 @@ void session_impl_base::share_files(rule* base_rule)
                             }
                             else
                             {
-                                m_fmon.m_order.push(std::make_pair(fs::path(), pc.m_path));
+                                m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                             }
                         }
                         else
                         {
                             // save collection and run hash
                             emule_collection::fromPending(pc).save(pc.m_path.string(), false);
-                            m_fmon.m_order.push(std::make_pair(fs::path(), pc.m_path));
+                            m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                         }
                     }
                 }
@@ -482,7 +482,7 @@ void session_impl_base::update_pendings(const add_transfer_params& atp)
                     {
                         DBG("save collection and hash it");
                         emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false);
-                        m_fmon.m_order.push(std::make_pair(fs::path(), itr->m_path));
+                        m_file_hasher.m_order.push(std::make_pair(fs::path(), itr->m_path));
                         m_pending_collections.erase(itr);               // remove collection from pending list
                     }
                 }
@@ -662,7 +662,7 @@ void session_impl::operator()()
         open_listen_port();
     }
 
-    m_fmon.start();
+    m_file_hasher.start();
     m_server_connection->start();
 
 

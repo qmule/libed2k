@@ -741,17 +741,17 @@ namespace libed2k
         }
     }
 
-    file_monitor::file_monitor(add_transfer_handler handler) : m_bCancel(false), m_add_transfer(handler)
+    file_hasher::file_hasher(add_transfer_handler handler) : m_bCancel(false), m_add_transfer(handler)
     {
 
     }
 
-    void file_monitor::start()
+    void file_hasher::start()
     {
         m_thread.reset(new boost::thread(boost::ref(*this)));
     }
 
-    void file_monitor::stop()
+    void file_hasher::stop()
     {
         m_order.cancel();
         m_bCancel   = true;
@@ -763,7 +763,7 @@ namespace libed2k
         }
     }
 
-    void file_monitor::operator()()
+    void file_hasher::operator()()
     {
         try
         {
@@ -772,7 +772,7 @@ namespace libed2k
                 // we have UTF-8 strings in path pair pair
                 std::pair<fs::path, fs::path> pp = m_order.popWait(); 
 
-                DBG("file_monitor::operator(): " << convert_to_native(bom_filter(pp.second.string())));
+                DBG("file_hasher::operator(): " << convert_to_native(bom_filter(pp.second.string())));
 
                 try
                 {

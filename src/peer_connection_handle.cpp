@@ -20,6 +20,15 @@ namespace libed2k
         session_impl::mutex_t::scoped_lock l(m_pses->m_mutex);\
         pc->call;
 
+#define LIBED2K_PC_FORWARD_NOLOCK(call) \
+        if (!m_pses)\
+        {\
+            return;\
+        }\
+        boost::intrusive_ptr<peer_connection> pc = m_pses->find_peer_connection(m_np);\
+        if (!pc) return;\
+        pc->call;
+
 #define LIBED2K_PC_FORWARD_RETURN(call, def) \
         if (!m_pses)\
         {\
@@ -35,6 +44,12 @@ namespace libed2k
         boost::intrusive_ptr<peer_connection> pc = m_pses->find_peer_connection(m_np);\
         if (!pc) throw_invalid_pc_handle();\
         session_impl::mutex_t::scoped_lock l(m_pses->m_mutex);\
+        pc->call;
+
+#define LIBED2K_PC_FORWARD_NOLOCK(call) \
+        if (!m_pses) {throw_null_session_pointer();}\
+        boost::intrusive_ptr<peer_connection> pc = m_pses->find_peer_connection(m_np);\
+        if (!pc) throw_invalid_pc_handle();\
         pc->call;
 
 
@@ -72,27 +87,27 @@ namespace libed2k
 
     void peer_connection_handle::send_message(const std::string& strMessage)
     {
-        LIBED2K_PC_FORWARD(send_message(strMessage))
+        LIBED2K_PC_FORWARD_NOLOCK(send_message(strMessage))
     }
 
     void peer_connection_handle::get_shared_files() const
     {
-        LIBED2K_PC_FORWARD(request_shared_files())
+        LIBED2K_PC_FORWARD_NOLOCK(request_shared_files())
     }
 
     void peer_connection_handle::get_shared_directories() const
     {
-        LIBED2K_PC_FORWARD(request_shared_directories())
+        LIBED2K_PC_FORWARD_NOLOCK(request_shared_directories())
     }
 
     void peer_connection_handle::get_shared_directory_files(const std::string& strDirectory) const
     {
-        LIBED2K_PC_FORWARD(request_shared_directory_files(strDirectory))
+        LIBED2K_PC_FORWARD_NOLOCK(request_shared_directory_files(strDirectory))
     }
 
     void peer_connection_handle::get_ismod_directory(const md4_hash& hash) const
     {
-        LIBED2K_PC_FORWARD(request_ismod_directory_files(hash))
+        LIBED2K_PC_FORWARD_NOLOCK(request_ismod_directory_files(hash))
     }
 
     md4_hash peer_connection_handle::get_hash() const

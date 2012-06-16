@@ -267,10 +267,10 @@ namespace libed2k
 
     namespace aux { class session_impl; }
 
-    class file_monitor
+    class file_hasher
     {
     public:
-        file_monitor(add_transfer_handler handler);
+        file_hasher(add_transfer_handler handler);
 
         /**
           * start monitor thread

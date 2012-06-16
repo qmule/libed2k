@@ -139,7 +139,7 @@ namespace libed2k {
             /**
               * file hasher closed in self thread
              */
-            file_monitor    m_fmon;
+            file_hasher    m_file_hasher;
 
             /**
               * special index for access to files by last write time + file name

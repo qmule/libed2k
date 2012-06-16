@@ -617,27 +617,32 @@ bool peer_connection::operator==(const md4_hash& hash) const
 
 void peer_connection::send_message(const std::string& strMessage)
 {
-    send_throw_meta_order(client_message(strMessage));
+    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+            self_as<peer_connection>(), client_message(strMessage)));
 }
 
 void peer_connection::request_shared_files()
 {
-    send_throw_meta_order(client_meta_packet(client_shared_files_request()));
+    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+            self_as<peer_connection>(), client_shared_files_request()));
 }
 
 void peer_connection::request_shared_directories()
 {
-    send_throw_meta_order(client_meta_packet(client_shared_directories_request()));
+    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+                self_as<peer_connection>(), client_shared_files_request()));
 }
 
 void peer_connection::request_shared_directory_files(const std::string& strDirectory)
 {
-    send_throw_meta_order(client_meta_packet(client_shared_directory_files(strDirectory)));
+    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+                    self_as<peer_connection>(), client_shared_directory_files(strDirectory)));
 }
 
 void peer_connection::request_ismod_directory_files(const md4_hash& hash)
 {
-    send_throw_meta_order(client_directory_content_request(hash));
+    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+            self_as<peer_connection>(), client_directory_content_request(hash)));
 }
 
 void peer_connection::fill_send_buffer()

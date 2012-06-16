@@ -30,12 +30,20 @@ namespace libed2k
 
         peer_connection_handle();
 
+        /**
+          * these methods send meta packets to send order
+          * we use io_service.post for these call for call order modification
+          * from session_impl thread
+         */
         void send_message(const std::string& strMessage);
         void get_shared_files() const;
         void get_shared_directories() const;
         void get_shared_directory_files(const std::string& strDirectory) const;
         void get_ismod_directory(const md4_hash& hash) const;
 
+        /**
+          * lock mutex calls - simple return internal object state
+         */
         md4_hash                get_hash() const;
         net_identifier          get_network_point() const;
         peer_connection_options get_options() const;

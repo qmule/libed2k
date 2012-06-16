@@ -231,10 +231,10 @@ namespace libed2k
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
 
-        template<typename Struct>
-        void send_throw_meta_order(const Struct& s)
+        void send_throw_meta_order(const client_meta_packet& s)
         {
-            m_messages_order.push_back(client_meta_packet(s));
+            m_messages_order.push_back(s);
+
             if (!is_closed())
             {
                 fill_send_buffer();

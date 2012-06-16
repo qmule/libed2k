@@ -51,7 +51,7 @@ namespace libed2k
                 m_timer(m_io_service,  boost::posix_time::seconds(5))
         {
             m_bAfterSave = false;
-            m_fmon.start();
+            m_file_hasher.start();
             m_vH.push_back(libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5"));
             m_vH.push_back(libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9"));
             m_vH.push_back(libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE"));
@@ -118,7 +118,7 @@ namespace libed2k
         {
 
             DBG("fmon stop");
-            m_fmon.stop();
+            m_file_hasher.stop();
             DBG("fmon stop complete");
         }
 
@@ -360,7 +360,7 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_file_monitor)
+BOOST_AUTO_TEST_CASE(test_file_hasher)
 {
     LOGGER_INIT()
     libed2k::session_settings s;
