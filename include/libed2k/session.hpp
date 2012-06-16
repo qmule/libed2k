@@ -22,6 +22,7 @@ namespace libed2k {
 
     class session_settings;
     struct transfer_handle;
+    class rule;
     namespace aux {
         class session_impl;
     }
@@ -70,7 +71,7 @@ namespace libed2k {
             resume_data(0),
             storage_mode(storage_mode_sparse),
             duplicate_is_error(false),
-            seed_mode(false),
+            seed_mode(true),
             m_accepted(0),
             m_requested(0),
             m_transferred(0),
@@ -167,6 +168,10 @@ namespace libed2k {
 
         void server_conn_start();
         void server_conn_stop();
+
+        void begin_share_transaction();
+        void end_share_transaction();
+        void share_files(rule* base_rule);
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);

@@ -14,6 +14,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/search.hpp"
 #include "libed2k/peer_connection_handle.hpp"
+#include "file.hpp"
 
 using namespace libed2k;
 
@@ -108,9 +109,16 @@ int main(int argc, char* argv[])
     settings.server_hostname = argv[1];
     settings.server_timeout = 125;
     settings.server_port = atoi(argv[2]);
+    settings.m_announce_timeout = 5;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
+#ifndef WIN32
+    libed2k::rule rule1(libed2k::rule::rt_plus, libed2k::convert_from_native("/home/apavlov/work/libed2k/test/conn/captcha_for_test.bmp"));
+    sleep(2);
+    ses.share_files(&rule1);
+#endif
+
 
     /*
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));

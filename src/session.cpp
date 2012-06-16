@@ -4,6 +4,7 @@
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/file.hpp"
 
 namespace libed2k {
 
@@ -162,6 +163,23 @@ void session::server_conn_stop()
     m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_stop, m_impl));
 }
 
+void session::begin_share_transaction()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->begin_share_transaction();
+}
+
+void session::end_share_transaction()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->end_share_transaction();
+}
+
+void session::share_files(rule* base_rule)
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->share_files(base_rule);
+}
 
 
 }

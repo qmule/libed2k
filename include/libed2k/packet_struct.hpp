@@ -266,6 +266,7 @@ namespace libed2k
         void add(const elem& e)
         {
             m_collection.push_back(e);
+            ++m_size;
         }
 
         void dump() const

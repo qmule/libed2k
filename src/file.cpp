@@ -778,8 +778,9 @@ namespace libed2k
                 {
                     add_transfer_params atp;
                     // since transfers work in UTF-8 code page we save paths in this code page
-                    atp.m_collection_path = pp.first;  // store collection path as is - in UTF-8
-                    atp.file_path         = pp.second; // store file path as is in UTF-8 
+                    atp.m_collection_path = pp.first;   // store collection path as is - in UTF-8
+                    atp.file_path         = pp.second;  // store file path as is in UTF-8
+                    atp.seed_mode         = true;       // it is seed!
 
                     // generate operations path in native code page
                     fs::path p = convert_to_native(bom_filter(pp.second.string()));

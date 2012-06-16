@@ -158,6 +158,8 @@ void session_impl_base::share_files(rule* base_rule)
             // async add transfer by file monitor
             m_fmon.m_order.push(std::make_pair(fs::path(), upath));
         }
+
+        return;
     }
 
     try
@@ -660,7 +662,9 @@ void session_impl::operator()()
         open_listen_port();
     }
 
+    m_fmon.start();
     m_server_connection->start();
+
 
     bool stop_loop = false;
     while (!stop_loop)
@@ -1386,7 +1390,7 @@ void session_impl::announce(int tick_interval_ms)
         // add transfer to announce list when it has one piece at least and it is not announced yet
         if (!t.is_announced() && t.num_pieces() > 0)
         {
-            offer_list.m_collection.push_back(t.getAnnounce());
+            offer_list.add(t.getAnnounce());
             t.set_announced(true); // mark transfer as announced
         }
 
@@ -1394,6 +1398,7 @@ void session_impl::announce(int tick_interval_ms)
 
     if (offer_list.m_size > 0)
     {
+        DBG("session_impl::announce: " << offer_list.m_size);
         m_server_connection->post_announce(offer_list);
     }
 }
