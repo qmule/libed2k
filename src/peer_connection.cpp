@@ -892,6 +892,7 @@ void peer_connection::write_hello()
 
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
+    mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
 
     misc_options2 mo2(0);
     mo2.set_captcha();

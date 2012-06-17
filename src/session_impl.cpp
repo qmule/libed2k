@@ -132,6 +132,13 @@ void session_impl_base::share_files(rule* base_rule)
 {
     BOOST_ASSERT(base_rule);
     DBG("share rule: " << base_rule->get_path().string());
+
+    if (!fs::exists(base_rule->get_path()))
+    {
+        DBG("file not exists");
+        return;
+    }
+
     error_code ec;
     // share single file
     if (fs::is_regular_file(base_rule->get_path()))
@@ -164,174 +171,171 @@ void session_impl_base::share_files(rule* base_rule)
 
     try
     {
-        if (fs::exists(base_rule->get_path()))
+        emule_collection ecoll;
+        fs::path collection_path;
+        std::deque<fs::path> fpaths;
+        bool bCollectionActive = false;
+
+        boost::uint32_t nCollectionChangeTime = 0;
+
+        std::copy(fs::directory_iterator(base_rule->get_path()), fs::directory_iterator(), std::back_inserter(fpaths));
+        fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&rule::match, base_rule, _1)), fpaths.end());
+        int nFilesCount = std::count_if(fpaths.begin(), fpaths.end(), std::ptr_fun(dref_is_regular_file));
+
+        std::pair<std::string, std::string> name_prefix = base_rule->generate_recursive_data();
+
+        DBG("name prefix: " << name_prefix.first.c_str() <<
+                "/" << name_prefix.second.c_str() <<
+                " files: " << nFilesCount <<
+                " count: " << fpaths.size());
+
+        // we have collection name - generate collection path
+        if (!name_prefix.first.empty())
         {
-            emule_collection ecoll;
-            fs::path collection_path;
-            std::deque<fs::path> fpaths;
-            bool bCollectionActive = false;
+            collection_path = convert_to_native(bom_filter(m_settings.m_collections_directory));
+            collection_path /= name_prefix.second;
 
-            boost::uint32_t nCollectionChangeTime = 0;
+            bCollectionActive = fs::exists(collection_path);
 
-            std::copy(fs::directory_iterator(base_rule->get_path()), fs::directory_iterator(), std::back_inserter(fpaths));
-            fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&rule::match, base_rule, _1)), fpaths.end());
-            int nFilesCount = std::count_if(fpaths.begin(), fpaths.end(), std::ptr_fun(dref_is_regular_file));
-
-            std::pair<std::string, std::string> name_prefix = base_rule->generate_recursive_data();
-
-            DBG("name prefix: " << name_prefix.first.c_str() <<
-                    "/" << name_prefix.second.c_str() <<
-                    " files: " << nFilesCount <<
-                    " count: " << fpaths.size());
-
-            // we have collection name - generate collection path
-            if (!name_prefix.first.empty())
+            if (!bCollectionActive)
             {
-                collection_path = convert_to_native(bom_filter(m_settings.m_collections_directory));
-                collection_path /= name_prefix.second;
-
-                bCollectionActive = fs::exists(collection_path);
-
-                if (!bCollectionActive)
-                {
-                    bCollectionActive = fs::create_directory(collection_path);
-                }
-
-                // generate correct collection name
-                std::stringstream sstr;
-                sstr << name_prefix.first << "_" << nFilesCount << ".emulecollection";
-                collection_path /= sstr.str();
-                if (fs::exists(collection_path) && fs::is_regular_file(collection_path))
-                {
-                    nCollectionChangeTime = fs::last_write_time(collection_path);
-                }
+                bCollectionActive = fs::create_directory(collection_path);
             }
 
-            // generate utf-8 collection path
-            collection_path = convert_from_native(collection_path.string());
-
-            // prepare pending collection
-            pending_collection pc(collection_path);
-
-            for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
+            // generate correct collection name
+            std::stringstream sstr;
+            sstr << name_prefix.first << "_" << nFilesCount << ".emulecollection";
+            collection_path /= sstr.str();
+            if (fs::exists(collection_path) && fs::is_regular_file(collection_path))
             {
-                boost::uint32_t nChangeTime = fs::last_write_time(*itr);
-                fs::path upath = convert_from_native(itr->string());
+                nCollectionChangeTime = fs::last_write_time(collection_path);
+            }
+        }
 
-                // process regular file
-                if (fs::is_regular_file(*itr))
+        // generate utf-8 collection path
+        collection_path = convert_from_native(collection_path.string());
+
+        // prepare pending collection
+        pending_collection pc(collection_path);
+
+        for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
+        {
+            boost::uint32_t nChangeTime = fs::last_write_time(*itr);
+            fs::path upath = convert_from_native(itr->string());
+
+            // process regular file
+            if (fs::is_regular_file(*itr))
+            {
+                DBG("is file: " << itr->string());
+
+                // first search file in transfers
+                if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
                 {
-                    DBG("is file: " << itr->string());
+                    p->set_obsolete(false); // mark transfer as active
+                    if (bCollectionActive ) pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
+                    continue;
+                }
 
-                    // first search file in transfers
-                    if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
-                    {
-                        p->set_obsolete(false); // mark transfer as active
-                        if (bCollectionActive ) pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
-                        continue;
-                    }
+                dictionary_entry de = get_dictionary_entry(nChangeTime, upath.filename());
 
-                    dictionary_entry de = get_dictionary_entry(nChangeTime, upath.filename());
-
-                    if (de.m_hash.defined())
-                    {
-                        add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, collection_path, upath), ec);
-                    }
-                    else
-                    {
-                        m_file_hasher.m_order.push(std::make_pair(collection_path, upath));
-                    }
-
-                    // add file to collection and run file monitor
-                    if (bCollectionActive) pc.m_files.push_back(pending_file(upath, de.file_size, de.m_hash));
+                if (de.m_hash.defined())
+                {
+                    add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, collection_path, upath), ec);
                 }
                 else
                 {
-                    DBG("is directory: " << itr->string());
+                    m_file_hasher.m_order.push(std::make_pair(collection_path, upath));
+                }
 
-                    if (rule* pr = base_rule->find_rule(*itr))
+                // add file to collection and run file monitor
+                if (bCollectionActive) pc.m_files.push_back(pending_file(upath, de.file_size, de.m_hash));
+            }
+            else
+            {
+                DBG("is directory: " << itr->string());
+
+                if (rule* pr = base_rule->find_rule(*itr))
+                {
+                    DBG("old rule: " << itr->string());
+                    // scan next level
+                    share_files(pr);
+                }
+                else
+                {
+                    // recursive rule - generate new rule for this directory and run on it
+                    // rule get name in UTF-8
+                    rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, convert_from_native(itr->filename()));
+                    DBG("new rule: " << prr->get_path().string());
+                    share_files(prr);
+                }
+            }
+        }
+
+        // collections works
+        if (!pc.m_files.empty())
+        {
+            DBG("collection not empty");
+            // when we collect pending collection - add it to pending list for public after hashes were completed
+            if (pc.is_pending())
+            {
+                DBG("pending collection");
+                // first - search file in transfers
+                if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
+                {
+                    // we found transfer on pending collection - stop it
+                    p->abort();
+                }
+
+                // simple remove item from dictionary if it exists
+                dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
+
+                // add current collection to pending list
+                m_pending_collections.push_back(pc);
+            }
+            else
+            {
+                DBG("collection not pending");
+                // load collection
+                emule_collection ecoll = emule_collection::fromFile(convert_to_native(bom_filter(pc.m_path.string())));
+
+                // we already have collection on disk
+                if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
+                {
+                    if (ecoll == pc.m_files)
                     {
-                        DBG("old rule: " << itr->string());
-                        // scan next level
-                        share_files(pr);
+                        p->set_obsolete(false);
                     }
                     else
                     {
-                        // recursive rule - generate new rule for this directory and run on it
-                        // rule get name in UTF-8
-                        rule* prr = base_rule->add_sub_rule(rule::rt_asterisk, convert_from_native(itr->filename()));
-                        DBG("new rule: " << prr->get_path().string());
-                        share_files(prr);
+                        // transfer exists but collection changed
+                        p->abort();
+                        // save collection to disk and run hasher
+                        emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
+                        // run hash
+                        m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                     }
                 }
-            }
-
-            // collections works
-            if (!pc.m_files.empty())
-            {
-                DBG("collection not empty");
-                // when we collect pending collection - add it to pending list for public after hashes were completed
-                if (pc.is_pending())
+                else
                 {
-                    DBG("pending collection");
-                    // first - search file in transfers
-                    if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
-                    {
-                        // we found transfer on pending collection - stop it
-                        p->abort();
-                    }
-
-                    // simple remove item from dictionary if it exists
+                    // transfer not exists
                     dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
 
-                    // add current collection to pending list
-                    m_pending_collections.push_back(pc);
-                }
-                else
-                {
-                    DBG("collection not pending");
-                    // load collection
-                    emule_collection ecoll = emule_collection::fromFile(convert_to_native(bom_filter(pc.m_path.string())));
-
-                    // we already have collection on disk
-                    if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
+                    if (ecoll == pc.m_files)
                     {
-                        if (ecoll == pc.m_files)
+                        if (de.m_hash.defined())
                         {
-                            p->set_obsolete(false);
+                            add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, fs::path(), pc.m_path), ec);
                         }
                         else
                         {
-                            // transfer exists but collection changed
-                            p->abort();
-                            // save collection to disk and run hasher
-                            emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
-                            // run hash
                             m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                         }
                     }
                     else
                     {
-                        // transfer not exists
-                        dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
-
-                        if (ecoll == pc.m_files)
-                        {
-                            if (de.m_hash.defined())
-                            {
-                                add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, fs::path(), pc.m_path), ec);
-                            }
-                            else
-                            {
-                                m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
-                            }
-                        }
-                        else
-                        {
-                            // save collection and run hash
-                            emule_collection::fromPending(pc).save(pc.m_path.string(), false);
-                            m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
-                        }
+                        // save collection and run hash
+                        emule_collection::fromPending(pc).save(pc.m_path.string(), false);
+                        m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                     }
                 }
             }
