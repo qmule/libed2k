@@ -164,6 +164,7 @@ namespace libed2k
         bool add_request(piece_block const& b, int flags = 0);
         void send_block_requests();
 
+        void send_meta();
         void fill_send_buffer();
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
@@ -358,6 +359,11 @@ namespace libed2k
         bool m_disconnecting;
 
         int m_disk_recv_buffer_size;
+
+        /**
+          * this flag will active after hello -> hello_answer order
+         */
+        bool m_handshake_complete;
 
         /**
           * special order for client messages
