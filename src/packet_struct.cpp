@@ -434,10 +434,10 @@ namespace libed2k
         m_proto = get_proto_type(m_directory_files_request);
     }
 
-    client_meta_packet::client_meta_packet(const shared_files_list& flist)
+    client_meta_packet::client_meta_packet(const client_shared_files_answer& flist)
     {
-        m_files_list = flist;
-        m_proto = get_proto_type(m_files_list);
+        m_shared_files_list = flist;
+        m_proto = get_proto_type(m_shared_files_list);
     }
 
     client_meta_packet::client_meta_packet(const client_directory_content_request& ismoddr)

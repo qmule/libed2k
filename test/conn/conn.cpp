@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     std::string strDore = "192.168.161.54";
     std::string strDiman = "88.206.52.81";
     ip::address a(ip::address::from_string(strDore.c_str()));
-    int nPort = 4665;
+    int nPort = 4667;
 
     DBG("addr: "<< int2ipstr(address2int(a)));
     std::string strUser;
