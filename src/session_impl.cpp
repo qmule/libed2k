@@ -1392,10 +1392,15 @@ void session_impl::announce(int tick_interval_ms)
         transfer& t = *i->second;
 
         // add transfer to announce list when it has one piece at least and it is not announced yet
-        if (!t.is_announced() && t.num_pieces() > 0)
+        if (!t.is_announced())
         {
-            offer_list.add(t.getAnnounce());
-            t.set_announced(true); // mark transfer as announced
+            shared_file_entry se = t.getAnnounce();
+
+            if (!se.is_empty())
+            {
+                offer_list.add(se);
+                t.set_announced(true); // mark transfer as announced
+            }
         }
 
     }

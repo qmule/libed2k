@@ -707,7 +707,7 @@ namespace libed2k
     {
         shared_file_entry entry;
 
-        if (m_announced || num_pieces() == 0)
+        if (num_pieces() == 0)
         {
             return entry;
         }

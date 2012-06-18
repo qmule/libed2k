@@ -679,7 +679,7 @@ void peer_connection::send_meta()
                 break;
             case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
                 DBG("peer_connection::send_meta: offer files");
-                do_write(m_messages_order.front().m_files_list);
+                do_write(m_messages_order.front().m_shared_files_list);
                 break;
             case OP_ASKDIRCONTENTS:
                 DBG("peer_connection::send_meta: ismod directory request");
@@ -1495,16 +1495,19 @@ void peer_connection::on_shared_files_request(const error_code& error)
 {
     if (!error)
     {
+        DBG("peer_connection::on_shared_files_request");
+
         DECODE_PACKET(client_shared_files_request, packet);
 
         if (m_ses.settings().m_show_shared_files)
         {
-            shared_files_list slist;
+            client_shared_files_answer sfa;
             // transform transfers to their announces
-            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(slist.m_collection), &transfer2sfe);
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(sfa.m_files.m_collection), &transfer2sfe);
             // erase empty announces
-            slist.m_collection.erase(std::remove_if(slist.m_collection.begin(), slist.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), slist.m_collection.end());
-            send_throw_meta_order(slist);
+            sfa.m_files.m_collection.erase(std::remove_if(sfa.m_files.m_collection.begin(), sfa.m_files.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), sfa.m_files.m_collection.end());
+            DBG("send count: " << sfa.m_files.m_collection.size());
+            send_throw_meta_order(sfa);
         }
         else
         {
@@ -1578,6 +1581,7 @@ void peer_connection::on_shared_directories_request(const error_code& error)
 {
     if (!error)
     {
+        DBG("peer_connection::on_shared_directories_request");
         DECODE_PACKET(client_shared_directories_request, sdr);
 
         if (m_ses.settings().m_show_shared_catalogs)
@@ -1595,6 +1599,7 @@ void peer_connection::on_shared_directories_request(const error_code& error)
             {
                 sd.m_dirs.m_collection[i].m_collection = dirs[i];
                 sd.m_dirs.m_collection[i].m_size = dirs[i].size();
+                DBG("send: " << dirs[i]);
             }
 
             send_throw_meta_order(sd);
