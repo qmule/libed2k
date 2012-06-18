@@ -46,7 +46,7 @@ peer* policy::add_peer(const tcp::endpoint& ep)
 
     if (pe == m_peers.end())
     {
-        peer* p = (peer*)m_transfer->session().m_peer_pool.malloc();
+        p = (peer*)m_transfer->session().m_peer_pool.malloc();
         new (p) peer(ep, true);
         m_peers.push_back(p);
     }
