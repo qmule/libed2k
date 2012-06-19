@@ -916,18 +916,18 @@ void peer_connection::write_ext_hello()
 {
     client_ext_hello ceh;
     ceh.m_nVersion = m_ses.settings().m_version;
+    DBG("ext hello {version: " << ceh.m_nVersion << "} ==> " << m_remote);
     do_write(ceh);
 }
 
 void peer_connection::write_hello_answer()
 {
-    DBG("hello answer ==> " << m_remote);
     //TODO - replace this code
     // prepare hello answer
     client_hello_answer cha;
     cha.m_hClient               = m_ses.settings().client_hash;
-    cha.m_network_point.m_nIP  = 0;
-    cha.m_network_point.m_nPort= m_ses.settings().listen_port;
+    cha.m_network_point.m_nIP   = 0;
+    cha.m_network_point.m_nPort = m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
     boost::uint32_t nUdpPort = 0;
@@ -939,6 +939,11 @@ void peer_connection::write_hello_answer()
     cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
     cha.m_server_network_point.m_nIP   = m_ses.settings().server_ip;
 
+    DBG("hello answer {client_hash: " << cha.m_hClient <<
+        ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<
+        ", client_port: " << cha.m_network_point.m_nPort <<
+        ", server_ip: " << int2ipstr(cha.m_server_network_point.m_nIP) <<
+        ", server_port: " << cha.m_server_network_point.m_nPort << "} ==> " << m_remote);
     do_write(cha);
     m_handshake_complete = true;
 }
@@ -947,6 +952,7 @@ void peer_connection::write_ext_hello_answer()
 {
     client_ext_hello_answer ceha;
     ceha.m_nVersion = m_ses.settings().m_version;  // write only version
+    DBG("ext hello answer {version: " << ceha.m_nVersion << "} ==> " << m_remote);
     do_write(ceha);
 }
 
@@ -1019,7 +1025,7 @@ void peer_connection::write_hashset_answer(
 
 void peer_connection::write_start_upload(const md4_hash& file_hash)
 {
-    DBG("start download " << file_hash << " ==> " << m_remote);
+    DBG("start upload " << file_hash << " ==> " << m_remote);
     client_start_upload su;
     su.m_hFile = file_hash;
     do_write(su);
@@ -1198,7 +1204,7 @@ void peer_connection::on_ext_hello(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_ext_hello, ext_hello);
-        DBG("peer_connection::on_ext_hello(" << ext_hello.m_nVersion << ")");
+        DBG("ext hello {version: " << ext_hello.m_nVersion << "} <== " << m_remote);
         ext_hello.m_list.dump();
         // store user info
         //m_hClient = hello.m_hClient;
