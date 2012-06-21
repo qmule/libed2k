@@ -313,6 +313,7 @@ namespace libed2k {
         // the object.
         libtorrent::piece_manager* m_storage;
 
+        duration_timer m_minute_timer;
     };
 
     extern std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);

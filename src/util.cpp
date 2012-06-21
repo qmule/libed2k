@@ -39,6 +39,19 @@ namespace libed2k
         return std::make_pair(begin, end);
     }
 
+    duration_timer::duration_timer(const time::time_duration& duration, const ptime& last_tick):
+        m_duration(duration), m_last_tick(last_tick), m_tick_interval()
+    {
+    }
+
+    bool duration_timer::expires()
+    {
+        ptime now = time_now();
+        m_tick_interval = now - m_last_tick;
+        if (m_tick_interval < m_duration) return false;
+        m_last_tick = now;
+        return true;
+    }
 
     int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst, int nMaxSize)
     {

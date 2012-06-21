@@ -38,7 +38,8 @@ namespace libed2k
         m_transferred(p.m_transferred),
         m_priority(p.m_priority),
         m_total_uploaded(0),
-        m_total_downloaded(0)
+        m_total_downloaded(0),
+        m_minute_timer(time::minutes(1), time::min_date_time)
     {
         if (m_hashset.pieces().size() == 0)
             m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
@@ -630,7 +631,7 @@ namespace libed2k
 
     void transfer::second_tick(stat& accumulator, int tick_interval_ms)
     {
-        if (want_more_peers()) request_peers();
+        if (m_minute_timer.expires() && want_more_peers()) request_peers();
 
         if (is_paused())
         {
