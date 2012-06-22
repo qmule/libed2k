@@ -12,7 +12,7 @@ namespace libed2k
     template <typename A, typename B>
     inline A div_ceil(A a, B b)
     {
-        return A((a + b - 1) / b);
+        return A(1 + ((a - 1) / b));
     }
 
     template <typename A>
