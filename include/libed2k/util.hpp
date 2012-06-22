@@ -89,6 +89,18 @@ namespace libed2k
         }
     };
 
+    class duration_timer
+    {
+    public:
+        duration_timer(const time::time_duration& duration, const ptime& last_tick = time_now());
+        bool expires();
+        const time::time_duration& tick_interval() const { return m_tick_interval; }
+    private:
+        time::time_duration m_duration;
+        ptime m_last_tick;
+        time::time_duration m_tick_interval;
+    };
+
     inline bool isLowId(boost::uint32_t nId)
     {
         return (nId < HIGHEST_LOWID_ED2K);

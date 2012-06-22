@@ -374,7 +374,7 @@ namespace libed2k {
             // the max number of connections, as set by the user
             int m_max_connections;
 
-            ptime m_last_second_tick;
+            duration_timer m_second_timer;
 
             // the timer used to fire the tick
             boost::asio::deadline_timer m_timer;
