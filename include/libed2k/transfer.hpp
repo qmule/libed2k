@@ -222,17 +222,22 @@ namespace libed2k {
 
         void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
+        void save_resume_data();
     private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
         void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void on_transfer_aborted(int ret, disk_io_job const& j);
         void on_transfer_paused(int ret, disk_io_job const& j);
+        void on_save_resume_data(int ret, disk_io_job const& j);
 
         // will initialize the storage and the piece-picker
         void init();
         void bytes_done(transfer_status& st) const;
         int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
+
+        void write_resume_data(entry& rd) const;
+        void read_resume_data(lazy_entry const& rd);
 
         // this is the upload and download statistics for the whole transfer.
         // it's updated from all its peers once every second.

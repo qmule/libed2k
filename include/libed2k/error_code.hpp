@@ -46,6 +46,7 @@ namespace libed2k
             invalid_transfer_handle,
             invalid_peer_connection_handle,
             session_pointer_is_null,
+            destructing_transfer,
             // service errors
             filesize_is_zero,
             file_unavaliable,
