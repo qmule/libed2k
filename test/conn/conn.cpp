@@ -14,7 +14,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/search.hpp"
 #include "libed2k/peer_connection_handle.hpp"
-#include "file.hpp"
+#include "libed2k/file.hpp"
 
 using namespace libed2k;
 
