@@ -89,18 +89,52 @@ using namespace libed2k;
 
  */
 
+const std::string strSEARCH = "search:"; // search:filename
+const std::string strLOAD   = "load:";   // load: index in search map
+
+enum CONN_CMD
+{
+    cc_search,
+    cc_download,
+    cc_empty
+};
+
+CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
+{
+    std::string::size_type nPos;
+    nPos = strCMD.find_first_of(strSEARCH, 0);
+
+    if (nPos == 0)
+    {
+        strArg = strCMD.substr(strSEARCH.size());
+        return cc_search;
+    }
+
+    nPos = strCMD.find_first_of(strLOAD, 0);
+
+    if (nPos == 0)
+    {
+        strArg = strCMD.substr(strLOAD.size());
+        return cc_download;
+    }
+
+    return cc_empty;
+}
 
 int main(int argc, char* argv[])
 {
     LOGGER_INIT()
 
-    if (argc < 3)
+    if (argc < 4)
     {
-        ERR("Set server host and port");
+        ERR("Set server host, port and incoming directory");
         return (1);
     }
 
     DBG("Server: " << argv[1] << " port: " << argv[2]);
+
+    // immediately convert to utf8
+    std::string strIncomingDirectory = libed2k::convert_from_native(argv[3]);
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
@@ -134,6 +168,7 @@ int main(int argc, char* argv[])
     //sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_AND));
     //sr.add_entry(libed2k::search_request_entry("dead"));
     //sr.add_entry(libed2k::search_request_entry("kkkkJKJ"));
+
     libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "db2");
 
     std::cout << "---- libed2k_client started\n"
@@ -152,6 +187,10 @@ int main(int argc, char* argv[])
     libed2k::peer_connection_handle pch;
 
     net_identifier ni(address2int(a), nPort);
+
+    std::string strArg;
+    libed2k::shared_files_list vSF;
+
     while ((std::cin >> strUser))
     {
         if (strUser == "quit")
@@ -159,13 +198,42 @@ int main(int argc, char* argv[])
             break;
         }
 
+        switch(extract_cmd(strUser, strArg))
+        {
+            case cc_search:
+            {
+                // execute search
+                DBG("Execute search request: " << strArg);
+                order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, strArg);
+                ses.post_search_request(order);
+                break;
+            }
+            case cc_download:
+            {
+                int nIndex = atoi(strArg.c_str());
+
+                DBG("execute load for " << nIndex);
+
+                if (vSF.m_collection.size() > nIndex)
+                {
+                    DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
+                    libed2k::add_transfer_params params;
+                    params.file_hash = vSF.m_collection[nIndex].m_hFile;
+                    params.file_path = strIncomingDirectory;
+                    params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
+                    params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
+                    ses.add_transfer(params);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+
         if (!strUser.empty() && strUser.size() == 1)
         {
             switch(strUser.at(0))
             {
-            case 'l':
-                ses.post_search_request(order);
-                break;
             case 'd':
                 ses.server_conn_stop();
                 break;
@@ -287,8 +355,21 @@ int main(int argc, char* argv[])
             }
             else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
+                if (vSF.m_collection.empty())
+                {
+
                 DBG("RESULT: " << p->m_files.m_collection.size());
-                p->m_files.dump();
+                //p->m_files.dump();
+                vSF = p->m_files;
+                for (size_t n = 0; n < vSF.m_size; ++n)
+                {
+                    DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                            << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
+                            << " size: " << vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt());
+                }
+                }
+
+#if 0
 
                 if (shared_directory_files_alert* p2 = dynamic_cast<shared_directory_files_alert*>(p))
                 {
@@ -348,6 +429,7 @@ int main(int argc, char* argv[])
                     */
 
                 //}
+#endif
             }
             else if(dynamic_cast<peer_message_alert*>(a.get()))
             {
