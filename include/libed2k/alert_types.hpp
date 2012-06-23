@@ -506,6 +506,72 @@ namespace libed2k
         transfer_status::state_t m_new_state;
         transfer_status::state_t m_old_state;
     };
+
+    struct transfer_alert: alert
+    {
+        transfer_alert(transfer_handle const& h)
+            : m_handle(h)
+        {}
+
+        virtual std::string message() const
+        { return m_handle.is_valid()?m_handle.hash().toString():" - "; }
+
+        transfer_handle m_handle;
+    };
+
+    struct save_resume_data_alert: transfer_alert
+    {
+        save_resume_data_alert(boost::shared_ptr<entry> const& rd
+            , transfer_handle const& h)
+            : transfer_alert(h)
+            , resume_data(rd)
+        {}
+
+        boost::shared_ptr<entry> resume_data;
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new save_resume_data_alert(*this)); }
+        virtual char const* what() const { return "save resume data complete"; }
+        const static int static_category = alert::storage_notification;
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const
+        {
+            return transfer_alert::message() + " resume data generated";
+        }
+    };
+
+    struct save_resume_data_failed_alert: transfer_alert
+    {
+        save_resume_data_failed_alert(transfer_handle const& h
+            , error_code const& e)
+            : transfer_alert(h)
+            , error(e)
+        {
+#ifndef TORRENT_NO_DEPRECATE
+            msg = error.message();
+#endif
+        }
+
+        error_code error;
+
+#ifndef TORRENT_NO_DEPRECATE
+        std::string msg;
+#endif
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new save_resume_data_failed_alert(*this)); }
+        virtual char const* what() const { return "save resume data failed"; }
+        const static int static_category = alert::storage_notification
+            | alert::error_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            return transfer_alert::message() + " resume data was not generated: "
+                + error.message();
+        }
+    };
+
 }
 
 

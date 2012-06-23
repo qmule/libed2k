@@ -1,4 +1,4 @@
-
+#include "libed2k/version.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/transfer.hpp"
@@ -38,7 +38,8 @@ namespace libed2k
         m_transferred(p.m_transferred),
         m_priority(p.m_priority),
         m_total_uploaded(0),
-        m_total_downloaded(0)
+        m_total_downloaded(0),
+        m_minute_timer(time::minutes(1), time::min_date_time)
     {
         if (m_hashset.pieces().size() == 0)
             m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
@@ -630,7 +631,7 @@ namespace libed2k
 
     void transfer::second_tick(stat& accumulator, int tick_interval_ms)
     {
-        if (want_more_peers()) request_peers();
+        if (m_minute_timer.expires() && want_more_peers()) request_peers();
 
         if (is_paused())
         {
@@ -707,7 +708,7 @@ namespace libed2k
     {
         shared_file_entry entry;
 
-        if (m_announced || num_pieces() == 0)
+        if (num_pieces() == 0)
         {
             return entry;
         }
@@ -756,6 +757,179 @@ namespace libed2k
         }
 
         return entry;
+    }
+
+    void transfer::save_resume_data()
+    {
+        if (!m_owning_storage.get())
+        {
+            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle()
+                , errors::destructing_transfer));
+            return;
+        }
+
+        BOOST_ASSERT(m_storage);
+
+        /*
+        // TODO - check states
+        // what about states?
+        if (m_state == torrent_status::queued_for_checking
+            || m_state == torrent_status::checking_files
+            || m_state == torrent_status::checking_resume_data)
+        {
+            boost::shared_ptr<entry> rd(new entry);
+            write_resume_data(*rd);
+            alerts().post_alert(save_resume_data_alert(rd
+                , get_handle()));
+            return;
+        }
+        */
+
+        m_storage->async_save_resume_data(
+            boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
+    }
+
+    void transfer::write_resume_data(entry& ret) const
+    {
+        ret["file-format"] = "libed2k resume file";
+        ret["file-version"] = 1;
+        ret["libed2k-version"] = LIBED2K_VERSION;
+
+        ret["total_uploaded"] = m_total_uploaded;
+        ret["total_downloaded"] = m_total_downloaded;
+
+        //ret["active_time"] = total_seconds(m_active_time);
+        //ret["finished_time"] = total_seconds(m_finished_time);
+        //ret["seeding_time"] = total_seconds(m_seeding_time);
+
+        int seeds = 0;
+        int downloaders = 0;
+        //if (m_complete >= 0) seeds = m_complete;
+        //else seeds = m_policy.num_seeds();
+        //if (m_incomplete >= 0) downloaders = m_incomplete;
+        //else downloaders = m_policy.num_peers() - m_policy.num_seeds();
+
+        ret["num_seeds"] = seeds;
+        ret["num_downloaders"] = downloaders;
+
+        ret["sequential_download"] = m_sequential_download;
+
+        ret["seed_mode"] = m_seed_mode;
+
+        ret["transfer-hash"] = hash().toString();
+
+        // blocks per piece
+        int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+        ret["blocks per piece"] = num_blocks_per_piece;
+
+        // if this torrent is a seed, we won't have a piece picker
+        // and there will be no half-finished pieces.
+        if (!is_seed())
+        {
+            const std::vector<piece_picker::downloading_piece>& q
+                = m_picker->get_download_queue();
+
+            // unfinished pieces
+            ret["unfinished"] = entry::list_type();
+            entry::list_type& up = ret["unfinished"].list();
+
+            // info for each unfinished piece
+            for (std::vector<piece_picker::downloading_piece>::const_iterator i
+                = q.begin(); i != q.end(); ++i)
+            {
+                if (i->finished == 0) continue;
+
+                entry piece_struct(entry::dictionary_t);
+
+                // the unfinished piece's index
+                piece_struct["piece"] = i->index;
+
+                std::string bitmask;
+                const int num_bitmask_bytes
+                    = (std::max)(num_blocks_per_piece / 8, 1);
+
+                for (int j = 0; j < num_bitmask_bytes; ++j)
+                {
+                    unsigned char v = 0;
+                    int bits = (std::min)(num_blocks_per_piece - j*8, 8);
+                    for (int k = 0; k < bits; ++k)
+                        v |= (i->info[j*8+k].state == piece_picker::block_info::state_finished)
+                        ? (1 << k) : 0;
+                    bitmask.insert(bitmask.end(), v);
+                    TORRENT_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
+                }
+                piece_struct["bitmask"] = bitmask;
+                // push the struct onto the unfinished-piece list
+                up.push_back(piece_struct);
+            }
+        }
+
+        // write have bitmask
+        // the pieces string has one byte per piece. Each
+        // byte is a bitmask representing different properties
+        // for the piece
+        // bit 0: set if we have the piece
+        // bit 1: set if we have verified the piece (in seed mode)
+        entry::string_type& pieces = ret["pieces"].string();
+        pieces.resize(m_info->num_pieces());
+
+        if (is_seed())
+        {
+            std::memset(&pieces[0], 1, pieces.size());
+        }
+        else
+        {
+            for (int i = 0, end(pieces.size()); i < end; ++i)
+                pieces[i] = m_picker->have_piece(i) ? 1 : 0;
+        }
+
+        if (m_seed_mode)
+        {
+            //TORRENT_ASSERT(m_verified.size() == pieces.size());
+            //for (int i = 0, end(pieces.size()); i < end; ++i)
+            //    pieces[i] |= m_verified[i] ? 2 : 0;
+        }
+
+        ret["upload_rate_limit"] = upload_limit();
+        ret["download_rate_limit"] = download_limit();
+        // TODO - add real values
+        ret["max_connections"] = 1000; //max_connections();
+        ret["max_uploads"] = 1000; //max_uploads();
+        ret["paused"] = m_paused;
+        ret["auto_managed"] = true;
+
+        // write piece priorities
+        entry::string_type& piece_priority = ret["piece_priority"].string();
+        piece_priority.resize(m_info->num_pieces());
+
+        if (is_seed())
+        {
+            std::memset(&piece_priority[0], 1, pieces.size());
+        }
+        else
+        {
+            for (int i = 0, end(piece_priority.size()); i < end; ++i)
+                piece_priority[i] = m_picker->piece_priority(i);
+        }
+    }
+
+    void transfer::read_resume_data(lazy_entry const& rd)
+    {
+    }
+
+    void transfer::on_save_resume_data(int ret, disk_io_job const& j)
+    {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (!j.resume_data)
+        {
+            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle(), j.error));
+        }
+        else
+        {
+            write_resume_data(*j.resume_data);
+            m_ses.m_alerts.post_alert_should(save_resume_data_alert(j.resume_data, handle()));
+        }
     }
 
     std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

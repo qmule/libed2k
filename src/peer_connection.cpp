@@ -54,7 +54,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_peer(peerinfo),
     m_connecting(true),
     m_active(true),
-    m_disk_recv_buffer_size(0)
+    m_disk_recv_buffer_size(0),
+    m_handshake_complete(false)
 {
     reset();
 }
@@ -71,7 +72,8 @@ peer_connection::peer_connection(aux::session_impl& ses,
     m_peer(peerinfo),
     m_connecting(false),
     m_active(false),
-    m_disk_recv_buffer_size(0)
+    m_disk_recv_buffer_size(0),
+    m_handshake_complete(false)
 {
     reset();
 
@@ -645,50 +647,46 @@ void peer_connection::request_ismod_directory_files(const md4_hash& hash)
             self_as<peer_connection>(), client_directory_content_request(hash)));
 }
 
-void peer_connection::fill_send_buffer()
+void peer_connection::send_meta()
 {
-    if (m_channel_state[upload_channel] != bw_idle) return;
-
-    int buffer_size_watermark = 512;
-
     if (!m_messages_order.empty())
     {
         switch(m_messages_order.front().m_proto)
         {
             case OP_MESSAGE:                                                    // message to user
-                 DBG("peer_connection::fill_send_buffer: " << m_messages_order.front().m_message.m_strMessage);
+                 DBG("peer_connection::send_meta: " << m_messages_order.front().m_message.m_strMessage);
                  do_write(m_messages_order.front().m_message);
                  break;
             case OP_ASKSHAREDFILES:                                             // ask shared files from user
-                DBG("peer_connection::fill_send_buffer: query shared files");
+                DBG("peer_connection::send_meta: query shared files");
                 do_write(m_messages_order.front().m_files_request);
                 break;
             case OP_ASKSHAREDDENIEDANS:
-                DBG("peer_connection::fill_send_buffer: ask files denied");
+                DBG("peer_connection::send_meta: ask files denied");
                 do_write(m_messages_order.front().m_files_denied);
                 break;
             case OP_ASKSHAREDDIRSANS:
-                DBG("peer_connection::fill_send_buffer: ask shared directories");
+                DBG("peer_connection::send_meta: ask shared directories");
                 do_write(m_messages_order.front().m_directories_answer);
                 break;
             case OP_ASKSHAREDDIRS:
-                DBG("peer_connection::fill_send_buffer: query shared directories");
+                DBG("peer_connection::send_meta: query shared directories");
                 do_write(m_messages_order.front().m_directories_request);
                 break;
             case OP_ASKSHAREDFILESDIR:
-                DBG("peer_connection::fill_send_buffer: query shared directory files");
+                DBG("peer_connection::send_meta: query shared directory files");
                 do_write(m_messages_order.front().m_directory_files_request);
                 break;
             case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
-                DBG("peer_connection::fill_send_buffer: offer files");
-                do_write(m_messages_order.front().m_files_list);
+                DBG("peer_connection::send_meta: offer files");
+                do_write(m_messages_order.front().m_shared_files_list);
                 break;
             case OP_ASKDIRCONTENTS:
-                DBG("peer_connection::fill_send_buffer: ismod directory request");
+                DBG("peer_connection::send_meta: ismod directory request");
                 do_write(m_messages_order.front().m_ismod_directory_request);
                 break;
             case OP_ASKDIRCONTENTSANS:
-                DBG("peer_connection::fill_send_buffer: ismod directory result");
+                DBG("peer_connection::send_meta: ismod directory result");
                 do_write(m_messages_order.front().m_ismod_directory_result);
                 break;
             default:
@@ -698,6 +696,15 @@ void peer_connection::fill_send_buffer()
 
         m_messages_order.pop_front();
     }
+}
+
+void peer_connection::fill_send_buffer()
+{
+    if (m_channel_state[upload_channel] != bw_idle) return;
+
+    int buffer_size_watermark = 512;
+
+    if (m_handshake_complete) { send_meta(); }
 
     if (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
     {
@@ -892,6 +899,7 @@ void peer_connection::write_hello()
 
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
+    mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
 
     misc_options2 mo2(0);
     mo2.set_captcha();
@@ -908,18 +916,18 @@ void peer_connection::write_ext_hello()
 {
     client_ext_hello ceh;
     ceh.m_nVersion = m_ses.settings().m_version;
+    DBG("ext hello {version: " << ceh.m_nVersion << "} ==> " << m_remote);
     do_write(ceh);
 }
 
 void peer_connection::write_hello_answer()
 {
-    DBG("hello answer ==> " << m_remote);
     //TODO - replace this code
     // prepare hello answer
     client_hello_answer cha;
     cha.m_hClient               = m_ses.settings().client_hash;
-    cha.m_network_point.m_nIP  = 0;
-    cha.m_network_point.m_nPort= m_ses.settings().listen_port;
+    cha.m_network_point.m_nIP   = 0;
+    cha.m_network_point.m_nPort = m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
     boost::uint32_t nUdpPort = 0;
@@ -931,13 +939,20 @@ void peer_connection::write_hello_answer()
     cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
     cha.m_server_network_point.m_nIP   = m_ses.settings().server_ip;
 
+    DBG("hello answer {client_hash: " << cha.m_hClient <<
+        ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<
+        ", client_port: " << cha.m_network_point.m_nPort <<
+        ", server_ip: " << int2ipstr(cha.m_server_network_point.m_nIP) <<
+        ", server_port: " << cha.m_server_network_point.m_nPort << "} ==> " << m_remote);
     do_write(cha);
+    m_handshake_complete = true;
 }
 
 void peer_connection::write_ext_hello_answer()
 {
     client_ext_hello_answer ceha;
     ceha.m_nVersion = m_ses.settings().m_version;  // write only version
+    DBG("ext hello answer {version: " << ceha.m_nVersion << "} ==> " << m_remote);
     do_write(ceha);
 }
 
@@ -1010,7 +1025,7 @@ void peer_connection::write_hashset_answer(
 
 void peer_connection::write_start_upload(const md4_hash& file_hash)
 {
-    DBG("start download " << file_hash << " ==> " << m_remote);
+    DBG("start upload " << file_hash << " ==> " << m_remote);
     client_start_upload su;
     su.m_hFile = file_hash;
     do_write(su);
@@ -1169,8 +1184,8 @@ void peer_connection::on_hello_answer(const error_code& error)
                                  get_connection_hash(),
                                  m_active));
 
-        write_ext_hello();
-
+        //write_ext_hello();
+        m_handshake_complete = true;
     }
     else
     {
@@ -1189,7 +1204,7 @@ void peer_connection::on_ext_hello(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_ext_hello, ext_hello);
-        DBG("peer_connection::on_ext_hello(" << ext_hello.m_nVersion << ")");
+        DBG("ext hello {version: " << ext_hello.m_nVersion << "} <== " << m_remote);
         ext_hello.m_list.dump();
         // store user info
         //m_hClient = hello.m_hClient;
@@ -1486,16 +1501,19 @@ void peer_connection::on_shared_files_request(const error_code& error)
 {
     if (!error)
     {
+        DBG("peer_connection::on_shared_files_request");
+
         DECODE_PACKET(client_shared_files_request, packet);
 
         if (m_ses.settings().m_show_shared_files)
         {
-            shared_files_list slist;
+            client_shared_files_answer sfa;
             // transform transfers to their announces
-            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(slist.m_collection), &transfer2sfe);
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(sfa.m_files.m_collection), &transfer2sfe);
             // erase empty announces
-            slist.m_collection.erase(std::remove_if(slist.m_collection.begin(), slist.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), slist.m_collection.end());
-            send_throw_meta_order(slist);
+            sfa.m_files.m_collection.erase(std::remove_if(sfa.m_files.m_collection.begin(), sfa.m_files.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), sfa.m_files.m_collection.end());
+            DBG("send count: " << sfa.m_files.m_collection.size());
+            send_throw_meta_order(sfa);
         }
         else
         {
@@ -1569,6 +1587,7 @@ void peer_connection::on_shared_directories_request(const error_code& error)
 {
     if (!error)
     {
+        DBG("peer_connection::on_shared_directories_request");
         DECODE_PACKET(client_shared_directories_request, sdr);
 
         if (m_ses.settings().m_show_shared_catalogs)
@@ -1586,6 +1605,7 @@ void peer_connection::on_shared_directories_request(const error_code& error)
             {
                 sd.m_dirs.m_collection[i].m_collection = dirs[i];
                 sd.m_dirs.m_collection[i].m_size = dirs[i].size();
+                DBG("send: " << dirs[i]);
             }
 
             send_throw_meta_order(sd);

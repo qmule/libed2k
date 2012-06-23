@@ -143,5 +143,12 @@ BOOST_AUTO_TEST_CASE(test_rule_matching)
     BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f3) != fpaths.end());    
 }
 
+BOOST_AUTO_TEST_CASE(div_ceil_test)
+{
+    BOOST_CHECK_EQUAL(libed2k::div_ceil(10,2), 5);
+    BOOST_CHECK_EQUAL(libed2k::div_ceil(10,3), 4);
+    BOOST_CHECK_EQUAL(libed2k::div_ceil(13,2), 7);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

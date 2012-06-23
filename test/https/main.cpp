@@ -15,6 +15,22 @@ void on_auth(const std::string& strRes, const boost::system::error_code& error)
     std::cout << "Auth res: " << strRes << std::endl;
 }
 
+class auth_handler
+{
+public:
+    void on_auth(const std::string& strRes, const boost::system::error_code& error)
+    {
+        DBG("auth_handler::on_auth");
+
+        if (error)
+        {
+            DBG("Error " << error.message());
+        }
+
+        DBG("Auth res: " << strRes);
+    }
+};
+
 int main(int argc, char* argv[])
 {
     LOGGER_INIT()
@@ -27,8 +43,10 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
+		auth_handler ah;
 		libed2k::auth_runner ar;
-		ar.start("el.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", on_auth);
+
+		ar.start("el.is74.ru", "auth.php", argv[1], argv[2], "0.5.6.7", boost::bind(&auth_handler::on_auth, &ah, _1, _2));
 #ifdef WIN32
         Sleep(20000);
 #else

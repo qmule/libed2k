@@ -40,6 +40,7 @@ namespace libed2k
             "invalid transfer handle",
             "invalid peer connection handle",
             "session pointer is null",
+            "destructing transfer",
             // service errors
             "file size is zero",
             "file not exists or is not regular file",

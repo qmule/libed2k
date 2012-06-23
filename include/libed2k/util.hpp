@@ -12,7 +12,7 @@ namespace libed2k
     template <typename A, typename B>
     inline A div_ceil(A a, B b)
     {
-        return A((a + b - 1) / b);
+        return A(1 + ((a - 1) / b));
     }
 
     template <typename A>
@@ -87,6 +87,18 @@ namespace libed2k
         void validate() {
             if (m_it == m_cont.end()) m_it = m_cont.begin();
         }
+    };
+
+    class duration_timer
+    {
+    public:
+        duration_timer(const time::time_duration& duration, const ptime& last_tick = time_now());
+        bool expires();
+        const time::time_duration& tick_interval() const { return m_tick_interval; }
+    private:
+        time::time_duration m_duration;
+        ptime m_last_tick;
+        time::time_duration m_tick_interval;
     };
 
     inline bool isLowId(boost::uint32_t nId)
