@@ -280,21 +280,34 @@ namespace libed2k
 
         if (!error)
         {
+            size_t nSize = m_in_header.m_size - 1;
+
             switch(m_in_header.m_protocol)
             {
                 case OP_EDONKEYPROT:
                 case OP_EMULEPROT:
                 {
-                    m_in_container.resize(m_in_header.m_size - 1);
-                    boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], m_in_header.m_size - 1),
+                    m_in_container.resize(nSize);
+
+                    if (nSize == 0)
+                    {
+                        handle_read_packet(boost::system::error_code(), 0); // all data was already read - execute callback
+                    }
+                    else
+                    {
+                        boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_container[0], nSize),
                             boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                    }
+
                     break;
                 }
                 case OP_PACKEDPROT:
                 {
                     DBG("Receive gzip container");
-                    m_in_gzip_container.resize(m_in_header.m_size - 1);
-                    boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_gzip_container[0], m_in_header.m_size - 1),
+                    // when we have zero-sized packed packet - it is error?
+                    BOOST_ASSERT(nSize != 0);
+                    m_in_gzip_container.resize(nSize);
+                    boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_gzip_container[0], nSize),
                             boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
                     break;
                 }

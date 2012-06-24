@@ -113,10 +113,19 @@ namespace libed2k
                 case OP_EDONKEYPROT:
                 case OP_EMULEPROT:
                 {
+                    DBG("container header size: " << m_in_header.m_size  << ":" << size << " packet " << packetToString(m_in_header.m_type));                    
                     m_in_container.resize(size);
-                    boost::asio::async_read(
-                        *m_socket, boost::asio::buffer(&m_in_container[0], size),
-                        boost::bind(&base_connection::on_read_packet, self(), _1, _2));
+
+                    if (size == 0)
+                    {
+                        on_read_packet(boost::system::error_code(), 0); // all data was read - execute callback
+                    }
+                    else
+                    {
+                        boost::asio::async_read(
+                            *m_socket, boost::asio::buffer(&m_in_container[0], size),
+                            boost::bind(&base_connection::on_read_packet, self(), _1, _2));
+                    }
                     break;
                 }
                 case OP_PACKEDPROT:
