@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
     settings.server_hostname = argv[1];
     settings.server_timeout = 125;
     settings.server_port = atoi(argv[2]);
-    settings.m_announce_timeout = 5;
+    settings.m_announce_timeout = -1;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
