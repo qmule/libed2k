@@ -228,6 +228,10 @@ namespace libed2k
         typedef typename collection_type::iterator Iterator;
         typedef typename collection_type::value_type elem;
 
+        container_holder() : m_size(0)
+        {
+        }
+
         void clear()
         {
             m_collection.clear();
