@@ -74,8 +74,7 @@ namespace libed2k
         m_name_lookup.cancel();
         m_keep_alive.cancel();
         m_udp_socket.close();
-        m_ses.on_server_stopped(); // inform session
-        m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
+        m_ses.on_server_closed(ec); // inform session and changes it state
     }
 
     const tcp::endpoint& server_connection::getServerEndpoint() const
@@ -402,6 +401,8 @@ namespace libed2k
 
                         DBG("Client id: " << m_nClientId << " tcp flags: " << idc.m_nTCPFlags << " aux port " << idc.m_nAuxPort);
                         m_state = SC_ONLINE;
+                        // change session status
+                        m_ses.on_server_opened(m_nClientId, m_nTCPFlags, m_nAuxPort);
                         break;
                     }
                     case OP_SERVERIDENT:
