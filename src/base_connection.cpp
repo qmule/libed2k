@@ -113,7 +113,6 @@ namespace libed2k
                 case OP_EDONKEYPROT:
                 case OP_EMULEPROT:
                 {
-                    DBG("container header size: " << m_in_header.m_size  << ":" << size << " packet " << packetToString(m_in_header.m_type));                    
                     m_in_container.resize(size);
 
                     if (size == 0)
