@@ -101,8 +101,14 @@ enum CONN_CMD
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
 {
+    strArg.clear();
+    if (strCMD.size() < strSEARCH.size() || strCMD.size() < strLOAD.size())
+    {
+        return cc_empty;
+    }
+
     std::string::size_type nPos;
-    nPos = strCMD.find_first_of(strSEARCH, 0);
+    nPos = strCMD.find_first_of(strSEARCH);
 
     if (nPos == 0)
     {
@@ -110,7 +116,7 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
         return cc_search;
     }
 
-    nPos = strCMD.find_first_of(strLOAD, 0);
+    nPos = strCMD.find_first_of(strLOAD);
 
     if (nPos == 0)
     {
@@ -194,6 +200,8 @@ int main(int argc, char* argv[])
 
     while ((std::cin >> strUser))
     {
+        DBG("process: " << strUser);
+
         if (strUser == "quit")
         {
             break;

@@ -81,6 +81,7 @@ namespace libed2k
 
         if (m_on_auth)
         {
+            DBG("is_https_auth::close: callback call");
             m_on_auth(m_strResult, ec);
         }
 

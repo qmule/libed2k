@@ -1447,24 +1447,25 @@ size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
     return m_alerts.set_alert_queue_size_limit(queue_size_limit_);
 }
 
-void session_impl::server_ready(
+void session_impl::on_server_opened(
     boost::uint32_t client_id,
     boost::uint32_t tcp_flags,
     boost::uint32_t aux_port)
 {
-    APP("server_ready: client_id=" << client_id);
+    APP("server_opened: client_id=" << client_id);
     m_client_id = client_id;
     m_tcp_flags = tcp_flags;
     m_aux_port  = aux_port;
     m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, aux_port));
 }
 
-void session_impl::on_server_stopped()
+void session_impl::on_server_closed(const error_code& ec)
 {
     DBG("session_impl::on_server_stopped");
     m_client_id   = 0;
     m_tcp_flags   = 0;
     m_aux_port    = 0;
+    m_alerts.post_alert_should(server_connection_closed(ec));
 }
 
 void session_impl::server_conn_start()

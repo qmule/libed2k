@@ -85,7 +85,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
-    m_desired_queue_size = 1;
+    m_desired_queue_size = 64;
 
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -343,7 +343,8 @@ void peer_connection::send_block_requests()
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
     if (m_disconnecting) return;
-    if (m_download_queue.size() >= m_desired_queue_size) return;
+    // send in 3 requests at a time
+    if (m_download_queue.size() + 2 >= m_desired_queue_size) return;
 
     client_request_parts_64 rp;
     rp.m_hFile = t->hash();
@@ -632,7 +633,7 @@ void peer_connection::request_shared_files()
 void peer_connection::request_shared_directories()
 {
     m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
-                self_as<peer_connection>(), client_shared_files_request()));
+                self_as<peer_connection>(), client_shared_directories_request()));
 }
 
 void peer_connection::request_shared_directory_files(const std::string& strDirectory)
