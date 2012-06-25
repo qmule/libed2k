@@ -1459,8 +1459,7 @@ void peer_connection::on_accept_upload(const error_code& error)
 void peer_connection::on_out_parts(const error_code& error)
 {
     if (!error)
-    {
-        DECODE_PACKET(client_out_parts, op);
+    {        
         DBG("out of parts <== " << m_remote);
     }
     else
@@ -1501,9 +1500,7 @@ void peer_connection::on_shared_files_request(const error_code& error)
 {
     if (!error)
     {
-        DBG("peer_connection::on_shared_files_request");
-
-        DECODE_PACKET(client_shared_files_request, packet);
+        DBG("peer_connection::on_shared_files_request");        
 
         if (m_ses.settings().m_show_shared_files)
         {
