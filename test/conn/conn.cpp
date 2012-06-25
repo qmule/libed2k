@@ -138,12 +138,13 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
-    settings.server_keep_alive_timeout = 300;
+    settings.listen_port = 4668;
+    settings.server_keep_alive_timeout = 30;
     settings.server_reconnect_timeout = 30;
     settings.server_hostname = argv[1];
     settings.server_timeout = 125;
     settings.server_port = atoi(argv[2]);
-    settings.m_announce_timeout = -1;
+    settings.m_announce_timeout = 8;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
