@@ -282,14 +282,16 @@ namespace libed2k {
             void reconnect(int tick_interval_ms);
 
             // called when server connection is initialized
-            void server_ready(boost::uint32_t client_id,
+            void on_server_opened(boost::uint32_t client_id,
                 boost::uint32_t tcp_flags,
                 boost::uint32_t aux_port);
 
+            // called when server connection closed
+            void on_server_closed(const error_code&);
+
             void server_conn_start();
             void server_conn_stop();
-            // called when server stopped
-            void on_server_stopped();
+
 
             boost::object_pool<peer> m_peer_pool;
 
