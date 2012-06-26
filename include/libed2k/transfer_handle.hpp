@@ -15,6 +15,7 @@ namespace libed2k
         class session_impl_base;
         class session_impl;
         class session_impl_test;
+        class session_fast_rd;
     }
 
     // We will usually have to store our transfer handles somewhere, 
@@ -25,6 +26,7 @@ namespace libed2k
         friend class aux::session_impl_base;
         friend class aux::session_impl;
         friend class aux::session_impl_test;
+        friend class aux::session_fast_rd;
         friend class transfer;
 
         transfer_handle() {}
