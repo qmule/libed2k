@@ -162,4 +162,9 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(filepath(), fs::path());
     }
 
+    void transfer_handle::save_resume_data() const
+    {
+        LIBED2K_FORWARD(save_resume_data());
+    }
+
 }

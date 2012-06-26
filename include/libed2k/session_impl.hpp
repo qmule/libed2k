@@ -83,6 +83,8 @@ namespace libed2k {
             virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path) = 0;
             virtual void remove_transfer(const transfer_handle& h, int options) = 0;
 
+            virtual std::vector<transfer_handle> get_transfers() = 0;
+
             /**
               * save transfers to disk
              */
@@ -118,6 +120,15 @@ namespace libed2k {
 
             void update_pendings(const add_transfer_params& atp);
 
+            /**
+              * alerts
+             */
+            std::auto_ptr<alert> pop_alert();
+            void set_alert_mask(boost::uint32_t m);
+            size_t set_alert_queue_size_limit(size_t queue_size_limit_);
+            void set_alert_dispatch(boost::function<void(alert const&)> const&);
+            alert const* wait_for_alert(time_duration max_wait);
+
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
             // them
@@ -152,6 +163,9 @@ namespace libed2k {
               * it will remove from deque
              */
             std::deque<pending_collection>  m_pending_collections;
+
+            // handles delayed alerts
+            alert_manager m_alerts;
         };
 
 
@@ -186,7 +200,7 @@ namespace libed2k {
             transfer_handle find_transfer_handle(const md4_hash& hash);
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
-            std::vector<transfer_handle> get_transfers();
+            virtual std::vector<transfer_handle> get_transfers();
 
             void close_connection(const peer_connection* p, const error_code& ec);
 
@@ -238,15 +252,6 @@ namespace libed2k {
             mutable mutex_t m_mutex;
 
             void setup_socket_buffers(tcp::socket& s);
-
-            /**
-              * alerts
-             */
-            std::auto_ptr<alert> pop_alert();
-            void set_alert_mask(boost::uint32_t m);
-            size_t set_alert_queue_size_limit(size_t queue_size_limit_);
-            void set_alert_dispatch(boost::function<void(alert const&)> const&);
-            alert const* wait_for_alert(time_duration max_wait);
 
             /**
               * search file on server
@@ -314,8 +319,6 @@ namespace libed2k {
             // when they are destructed.
             libtorrent::file_pool m_filepool;
 
-            // handles delayed alerts
-            alert_manager m_alerts;
 
             // handles disk io requests asynchronously
             // peers have pointers into the disk buffer

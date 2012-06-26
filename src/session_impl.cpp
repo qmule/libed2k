@@ -44,7 +44,8 @@ session_impl_base::session_impl_base(const session_settings& settings) :
         m_abort(false),
         m_settings(settings),
         m_transfers(),
-        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1))
+        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1)),
+        m_alerts(m_io_service)
 {
 }
 
@@ -505,12 +506,41 @@ void session_impl_base::update_pendings(const add_transfer_params& atp)
     }
 }
 
+alert const* session_impl_base::wait_for_alert(time_duration max_wait)
+{
+    return m_alerts.wait_for_alert(max_wait);
+}
+
+void session_impl_base::set_alert_mask(boost::uint32_t m)
+{
+    m_alerts.set_alert_mask(m);
+}
+
+size_t session_impl_base::set_alert_queue_size_limit(size_t queue_size_limit_)
+{
+    return m_alerts.set_alert_queue_size_limit(queue_size_limit_);
+}
+
+std::auto_ptr<alert> session_impl_base::pop_alert()
+{
+    if (m_alerts.pending())
+    {
+        return m_alerts.get();
+    }
+
+    return std::auto_ptr<alert>(0);
+}
+
+void session_impl_base::set_alert_dispatch(boost::function<void(alert const&)> const& fun)
+{
+    m_alerts.set_dispatch_function(fun);
+}
+
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings): session_impl_base(settings),
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
-    m_alerts(m_io_service),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
                   m_filepool, DISK_BLOCK_SIZE),   
     m_half_open(m_io_service),
@@ -1323,26 +1353,6 @@ session_impl::listen_socket_t session_impl::setup_listener(
     return s;
 }
 
-std::auto_ptr<alert> session_impl::pop_alert()
-{
-    if (m_alerts.pending())
-    {
-        return m_alerts.get();
-    }
-
-    return std::auto_ptr<alert>(0);
-}
-
-void session_impl::set_alert_dispatch(boost::function<void(alert const&)> const& fun)
-{
-    m_alerts.set_dispatch_function(fun);
-}
-
-alert const* session_impl::wait_for_alert(time_duration max_wait)
-{
-    return m_alerts.wait_for_alert(max_wait);
-}
-
 void session_impl::post_search_request(search_request& ro)
 {
     m_server_connection->post_search_request(ro);
@@ -1435,16 +1445,6 @@ void session_impl::reconnect(int tick_interval_ms)
     // perform reconnect
     m_last_connect_duration = 0;
     m_server_connection->start();
-}
-
-void session_impl::set_alert_mask(boost::uint32_t m)
-{
-    m_alerts.set_alert_mask(m);
-}
-
-size_t session_impl::set_alert_queue_size_limit(size_t queue_size_limit_)
-{
-    return m_alerts.set_alert_queue_size_limit(queue_size_limit_);
 }
 
 void session_impl::on_server_opened(
