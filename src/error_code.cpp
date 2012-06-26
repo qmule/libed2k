@@ -49,7 +49,11 @@ namespace libed2k
             "known file has invalid header on save/load"
             "input string too large",
             "search expression too complex",
-            "pending file entry in transform"
+            "pending file entry in transform",
+            "fast resume parse error",
+            "invalid file tag",
+            "missing info hash",
+            "mismatching info hash"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

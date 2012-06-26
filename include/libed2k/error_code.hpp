@@ -56,6 +56,10 @@ namespace libed2k
             input_string_too_large,
             search_expression_too_complex,
             pending_file_entry_in_transform,
+            fast_resume_parse_error,
+            invalid_file_tag,
+            missing_info_hash,
+            mismatching_info_hash,
             num_errors
         };
     }
@@ -92,6 +96,19 @@ namespace libed2k
         static libed2k_error_category libed2k_category;
         return libed2k_category;
     }
+
+    using boost::system::error_code;
+    inline boost::system::error_category const& get_system_category()
+    { return boost::system::get_system_category(); }
+
+    inline boost::system::error_category const& get_posix_category()
+
+#if BOOST_VERSION < 103600
+    { return boost::system::get_posix_category(); }
+#else
+    { return boost::system::get_generic_category(); }
+#endif // BOOST_VERSION < 103600
+
 
     namespace errors
     {

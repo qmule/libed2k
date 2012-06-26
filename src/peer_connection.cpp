@@ -632,7 +632,7 @@ void peer_connection::request_shared_files()
 void peer_connection::request_shared_directories()
 {
     m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
-                self_as<peer_connection>(), client_shared_files_request()));
+                self_as<peer_connection>(), client_shared_directories_request()));
 }
 
 void peer_connection::request_shared_directory_files(const std::string& strDirectory)
