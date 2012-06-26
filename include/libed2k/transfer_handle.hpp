@@ -33,6 +33,7 @@ namespace libed2k
 
         md4_hash hash() const;
         fs::path filepath() const;
+        size_t filesize() const;
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;
@@ -53,7 +54,6 @@ namespace libed2k
         size_t num_pieces() const;
         int num_peers() const;
         int num_seeds() const;
-        fs::path save_path() const;
 
         bool operator==(const transfer_handle& h) const
         { return m_transfer.lock() == h.m_transfer.lock(); }

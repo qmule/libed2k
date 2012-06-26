@@ -72,6 +72,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(filepath(), fs::path());
     }
 
+    size_t transfer_handle::filesize() const
+    {
+        LIBED2K_FORWARD_RETURN(filesize(), 0);
+    }
+
     bool transfer_handle::is_seed() const
     {
         LIBED2K_FORWARD_RETURN(is_seed(), false);
@@ -155,11 +160,6 @@ namespace libed2k
     int transfer_handle::num_seeds() const
     {
         LIBED2K_FORWARD_RETURN(num_seeds(), 0);
-    }
-
-    fs::path transfer_handle::save_path() const
-    {
-        LIBED2K_FORWARD_RETURN(filepath(), fs::path());
     }
 
 }
