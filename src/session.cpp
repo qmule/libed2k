@@ -118,6 +118,11 @@ void session::post_search_more_result_request()
     m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_search_more_result_request, m_impl));
 }
 
+void session::post_cancel_search()
+{
+    m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_cancel_search, m_impl));
+}
+
 void session::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_sources_request, m_impl, hFile, nSize));
