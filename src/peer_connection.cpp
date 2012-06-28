@@ -258,9 +258,7 @@ void peer_connection::request_block()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    if (t->is_seed()) return;
-    // don't request pieces before we have the metadata
-    //if (!t->has_metadata()) return;
+    if (m_disconnecting || t->is_seed()) return;
 
     int num_requests = m_desired_queue_size
         - (int)m_download_queue.size()
@@ -274,7 +272,7 @@ void peer_connection::request_block()
     std::vector<piece_block> interesting_pieces;
     interesting_pieces.reserve(100);
 
-    int prefer_whole_pieces = 1;
+    int prefer_whole_pieces = 0;
 
     // TODO: state = c.peer_speed()
     piece_picker::piece_state_t state = piece_picker::medium;
@@ -317,7 +315,6 @@ bool peer_connection::add_request(const piece_block& block, int flags)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    //if (t->upload_mode()) return false;
     if (m_disconnecting) return false;
 
     piece_picker::piece_state_t state = piece_picker::medium;
@@ -325,15 +322,7 @@ bool peer_connection::add_request(const piece_block& block, int flags)
     if (!t->picker().mark_as_downloading(block, get_peer(), state))
         return false;
 
-    //if (t->alerts().should_post<block_downloading_alert>())
-    //{
-    //    t->alerts().post_alert(
-    //        block_downloading_alert(t->get_handle(), remote(), pid(), speedmsg,
-    //                                block.block_index, block.piece_index));
-    //}
-
     pending_block pb(block);
-    //pb.busy = flags & req_busy;
     m_request_queue.push_back(pb);
     return true;
 }
@@ -804,7 +793,7 @@ void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
     m_statistics.received_bytes(bytes_transferred, 0);
-    if (is_disconnecting()) return;
+    if (m_disconnecting || is_closed()) return;
 
     assert(int(bytes_transferred) == r.length);
     assert(m_channel_state[download_channel] == bw_network);
@@ -1283,7 +1272,7 @@ void peer_connection::on_no_file(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_no_file, nf);
-        DBG("no file " << nf.m_hFile << m_remote);
+        DBG("no file " << nf.m_hFile << " <== " << m_remote);
 
         disconnect(errors::file_unavaliable, 2);
     }
