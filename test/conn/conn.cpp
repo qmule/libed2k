@@ -5,6 +5,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include <libtorrent/torrent_handle.hpp>
+#include <libtorrent/bencode.hpp>
 
 #include "libed2k/log.hpp"
 #include "libed2k/session.hpp"
@@ -89,39 +90,52 @@ using namespace libed2k;
 
  */
 
-const std::string strSEARCH = "search:"; // search:filename
-const std::string strLOAD   = "load:";   // load: index in search map
-
 enum CONN_CMD
 {
     cc_search,
     cc_download,
+    cc_save_fast_resume,
+    cc_restore,
     cc_empty
 };
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
 {
-    strArg.clear();
-    if (strCMD.size() < strSEARCH.size() || strCMD.size() < strLOAD.size())
+
+    if (strCMD.empty())
     {
         return cc_empty;
     }
 
-    std::string::size_type nPos;
-    nPos = strCMD.find_first_of(strSEARCH);
+    std::string::size_type nPos = strCMD.find_first_of(":");
+    std::string strCommand;
 
-    if (nPos == 0)
+    if (nPos == std::string::npos)
     {
-        strArg = strCMD.substr(strSEARCH.size());
-        return cc_search;
+       strCommand = strCMD;
+       strArg.clear();
+    }
+    else
+    {
+        strCommand = strCMD.substr(0, nPos);
+        strArg = strCMD.substr(nPos+1);
     }
 
-    nPos = strCMD.find_first_of(strLOAD);
-
-    if (nPos == 0)
+    if (strCommand == "search")
     {
-        strArg = strCMD.substr(strLOAD.size());
+        return cc_search;
+    }
+    else if (strCommand == "load")
+    {
         return cc_download;
+    }
+    else if (strCommand == "save")
+    {
+        return cc_save_fast_resume;
+    }
+    else if (strCommand == "restore")
+    {
+        return cc_restore;
     }
 
     return cc_empty;
@@ -145,8 +159,8 @@ int main(int argc, char* argv[])
     libed2k::fingerprint print;
     libed2k::session_settings settings;
     settings.listen_port = 4668;
-    settings.server_keep_alive_timeout = 30;
-    settings.server_reconnect_timeout = 30;
+    settings.server_keep_alive_timeout = -1;
+    settings.server_reconnect_timeout = -1;
     settings.server_hostname = argv[1];
     settings.server_timeout = 125;
     settings.server_port = atoi(argv[2]);
@@ -156,8 +170,8 @@ int main(int argc, char* argv[])
     ses.set_alert_mask(alert::all_categories);
 #ifndef WIN32
     libed2k::rule rule1(libed2k::rule::rt_plus, libed2k::convert_from_native("/home/apavlov/work/libed2k/test/conn/captcha_for_test.bmp"));
-    sleep(2);
-    ses.share_files(&rule1);
+    //sleep(2);
+    //ses.share_files(&rule1);
 #endif
 
 
@@ -197,6 +211,8 @@ int main(int argc, char* argv[])
 
     std::string strArg;
     libed2k::shared_files_list vSF;
+    std::vector<char> vFastResumeData;
+    libed2k::fs::path save_path;
 
     while ((std::cin >> strUser))
     {
@@ -231,6 +247,107 @@ int main(int argc, char* argv[])
                     params.file_path = strIncomingDirectory;
                     params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
+                    save_path = params.file_path;
+                    ses.add_transfer(params);
+                }
+                break;
+            }
+            case cc_save_fast_resume:
+            {
+                DBG("Save fast resume data");
+                std::vector<libed2k::transfer_handle> v = ses.get_transfers();
+                int num_resume_data = 0;
+                for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
+                {
+                    libed2k::transfer_handle h = *i;
+                    if (!h.is_valid()) continue;
+
+                    DBG("save for " << num_resume_data);
+
+                    try
+                    {
+
+                      if (h.status().state == libed2k::transfer_status::checking_files ||
+                          h.status().state == libed2k::transfer_status::queued_for_checking) continue;
+
+                      DBG("call save");
+                      h.save_resume_data();
+                      ++num_resume_data;
+                    }
+                    catch(libed2k::libed2k_exception&)
+                    {}
+                }
+
+                while (num_resume_data > 0)
+                {
+                    DBG("wait for alert");
+                    libed2k::alert const* a = ses.wait_for_alert(boost::posix_time::seconds(30));
+
+                    if (a == 0)
+                    {
+                        DBG(" aborting with " << num_resume_data << " outstanding torrents to save resume data for");
+                        break;
+                    }
+
+                    DBG("alert ready");
+
+                    // Saving fastresume data can fail
+                    libed2k::save_resume_data_failed_alert const* rda = dynamic_cast<libed2k::save_resume_data_failed_alert const*>(a);
+
+                    if (rda)
+                    {
+                        DBG("save failed");
+                        --num_resume_data;
+                        ses.pop_alert();
+                        try
+                        {
+                        // Remove torrent from session
+                        if (rda->m_handle.is_valid()) ses.remove_transfer(rda->m_handle, 0);
+                        }
+                        catch(libed2k::libed2k_exception&)
+                        {}
+                        continue;
+                    }
+
+                    libed2k::save_resume_data_alert const* rd = dynamic_cast<libed2k::save_resume_data_alert const*>(a);
+
+                    if (!rd)
+                    {
+                        ses.pop_alert();
+                        continue;
+                    }
+
+                    DBG("Saving fast resume data was succesfull");
+                    // write fast resume data
+                    libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
+                    DBG("save data size: " << vFastResumeData.size());
+                    // Saving fast resume data was successful
+                    --num_resume_data;
+
+                    if (!rd->m_handle.is_valid()) continue;
+
+                    try
+                    {
+                        DBG("remove transfer");
+                        // Remove torrent from session
+                        ses.remove_transfer(rd->m_handle, 0);
+                        ses.pop_alert();
+                    }
+                    catch(libed2k::libed2k_exception&)
+                    {}
+                }
+                break;
+            }
+            case cc_restore:
+            {
+                DBG("restore fast resume data");
+                if (vFastResumeData.size() > 0)
+                {
+                    DBG("fast resume data exists - prepare transfer");
+                    libed2k::add_transfer_params params;
+                    params.seed_mode = false;
+                    params.file_path = save_path;
+                    params.resume_data = &vFastResumeData;
                     ses.add_transfer(params);
                 }
                 break;
@@ -482,9 +599,17 @@ int main(int argc, char* argv[])
                     DBG("DIR: " << p->m_dirs[n]);
                 }
             }
+            else if (save_resume_data_alert* p = dynamic_cast<save_resume_data_alert*>(a.get()))
+            {
+                DBG("save_resume_data_alert");
+            }
+            else if (save_resume_data_failed_alert* p = dynamic_cast<save_resume_data_failed_alert*>(a.get()))
+            {
+                DBG("save_resume_data_failed_alert");
+            }
             else
             {
-                std::cout << "Unknown alert " << std::endl;
+                std::cout << "Unknown alert: " << a.get()->message() << std::endl;
             }
 
             a = ses.pop_alert();

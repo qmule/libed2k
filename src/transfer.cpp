@@ -44,6 +44,8 @@ namespace libed2k
         if (m_hashset.pieces().size() == 0)
             m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
 
+        if (p.resume_data) m_resume_data.swap(*p.resume_data);
+
         assert(m_hashset.pieces().size() == num_pieces());
     }
 
@@ -62,8 +64,20 @@ namespace libed2k
     {
         if (!m_seed_mode)
         {
+            DBG("transfer::start: prepare picker");
             m_picker.reset(new libtorrent::piece_picker());
-            // TODO: resume data, file progress
+            // TODO: file progress
+
+            if (!m_resume_data.empty())
+            {
+                if (libtorrent::lazy_bdecode(&m_resume_data[0], &m_resume_data[0]
+                    + m_resume_data.size(), m_resume_entry) != 0)
+                {
+                    DBG("fast resume parse error");
+                    std::vector<char>().swap(m_resume_data);
+                    m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
+                }
+            }
         }
 
         init();
@@ -603,11 +617,11 @@ namespace libed2k
 
     void transfer::init()
     {
+        DBG("transfer::init");
         file_storage& files = const_cast<file_storage&>(m_info->files());
         files.set_num_pieces(num_pieces());
         files.set_piece_length(PIECE_SIZE);
         files.add_file(m_filepath.filename(), m_filesize);
-        //files.set_name(name);
 
         // the shared_from_this() will create an intentional
         // cycle of ownership, see the hpp file for description.
@@ -624,9 +638,38 @@ namespace libed2k
             m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
         }
 
-        // TODO: checking resume data
+        set_state(transfer_status::checking_resume_data);
 
-        if (!is_seed()) set_state(transfer_status::downloading);
+        if (m_resume_entry.type() == lazy_entry::dict_t)
+        {
+            DBG("transfer::init() = read resume data");
+            int ev = 0;
+            if (m_resume_entry.dict_find_string_value("file-format") != "libed2k resume file")
+                ev = errors::invalid_file_tag;
+
+            std::string info_hash = m_resume_entry.dict_find_string_value("info-hash");
+
+            if (!ev && info_hash.empty())
+                ev = errors::missing_info_hash;
+
+            if (!ev && (md4_hash::fromString(info_hash) != hash()))
+                ev = errors::mismatching_info_hash;
+
+            if (ev)
+            {
+                std::vector<char>().swap(m_resume_data);
+                lazy_entry().swap(m_resume_entry);
+                m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), error_code(ev,  get_libed2k_category())));
+            }
+            else
+            {
+                read_resume_data(m_resume_entry);
+            }
+        }
+
+        m_storage->async_check_fastresume(&m_resume_entry
+                    , boost::bind(&transfer::on_resume_data_checked
+                    , shared_from_this(), _1, _2));
     }
 
     void transfer::second_tick(stat& accumulator, int tick_interval_ms)
@@ -791,6 +834,7 @@ namespace libed2k
 
     void transfer::write_resume_data(entry& ret) const
     {
+        DBG("transfer::write_resume_data");
         ret["file-format"] = "libed2k resume file";
         ret["file-version"] = 1;
         ret["libed2k-version"] = LIBED2K_VERSION;
@@ -798,16 +842,8 @@ namespace libed2k
         ret["total_uploaded"] = m_total_uploaded;
         ret["total_downloaded"] = m_total_downloaded;
 
-        //ret["active_time"] = total_seconds(m_active_time);
-        //ret["finished_time"] = total_seconds(m_finished_time);
-        //ret["seeding_time"] = total_seconds(m_seeding_time);
-
         int seeds = 0;
         int downloaders = 0;
-        //if (m_complete >= 0) seeds = m_complete;
-        //else seeds = m_policy.num_seeds();
-        //if (m_incomplete >= 0) downloaders = m_incomplete;
-        //else downloaders = m_policy.num_peers() - m_policy.num_seeds();
 
         ret["num_seeds"] = seeds;
         ret["num_downloaders"] = downloaders;
@@ -820,7 +856,6 @@ namespace libed2k
 
         // blocks per piece
         int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
-        ret["blocks per piece"] = num_blocks_per_piece;
 
         // if this torrent is a seed, we won't have a piece picker
         // and there will be no half-finished pieces.
@@ -890,6 +925,24 @@ namespace libed2k
             //    pieces[i] |= m_verified[i] ? 2 : 0;
         }
 
+        // store current hashset
+        ret["hashset-terminate"] = (m_hashset.has_terminal())?1:0;
+        ret["hashset-size"]      = m_hashset.hashes().size();
+        ret["hashset-keys"]    = entry::list_type();
+        ret["hashset-values"]  = entry::list_type();
+        entry::list_type& hk = ret["hashset-keys"].list();
+        entry::list_type& hv = ret["hashset-values"].list();
+
+        // scan hashset and store non-empty hashes
+        for (size_t n = 0; n < m_hashset.hashes().size(); ++n)
+        {
+            if (m_hashset.hashes().at(n).defined())
+            {
+                hk.push_back(n);
+                hv.push_back(m_hashset.hashes().at(n).toString());
+            }
+        }
+
         ret["upload_rate_limit"] = upload_limit();
         ret["download_rate_limit"] = download_limit();
         // TODO - add real values
@@ -915,10 +968,101 @@ namespace libed2k
 
     void transfer::read_resume_data(lazy_entry const& rd)
     {
+        m_total_uploaded = rd.dict_find_int_value("total_uploaded");
+        m_total_downloaded = rd.dict_find_int_value("total_downloaded");
+        set_upload_limit(rd.dict_find_int_value("upload_rate_limit", -1));
+        set_download_limit(rd.dict_find_int_value("download_rate_limit", -1));
+        m_seed_mode = rd.dict_find_int_value("seed_mode", 0);
+
+        int sequential_ = rd.dict_find_int_value("sequential_download", -1);
+        if (sequential_ != -1) set_sequential_download(sequential_);
+
+        int paused_ = rd.dict_find_int_value("paused", -1);
+        if (paused_ != -1) m_paused = paused_;
+
+
+        // restore hashset
+        int nSize           = rd.dict_find_int_value("hashset-size", 0);
+
+        if (nSize > 0)
+        {
+            m_hashset.reset(nSize);
+            // restore hashset
+            const libed2k::lazy_entry* hk = rd.dict_find_list("hashset-keys");
+            const libed2k::lazy_entry* hv = rd.dict_find_list("hashset-values");
+
+            if (hk && hv)
+            {
+                for (size_t n = 0; n < hk->list_size(); ++n)
+                {
+                    m_hashset.hash(hk->list_at(n)->int_value(), md4_hash::fromString(hv->list_at(n)->string_value()));
+                }
+            }
+
+            if (rd.dict_find_int_value("hashset-terminate", 0) == 1)
+            {
+                m_hashset.set_terminal();
+            }
+        }
     }
+
+    void transfer::handle_disk_error(disk_io_job const& j, peer_connection* c)
+    {
+        if (!j.error) return;
+
+        ERR("disk error: '" << j.error.message()
+            << " in file " << j.error_file);
+
+        TORRENT_ASSERT(j.piece >= 0);
+
+        piece_block block_finished(j.piece, div_ceil(j.offset, BLOCK_SIZE));
+
+        if (j.action == disk_io_job::write)
+        {
+            // we failed to write j.piece to disk tell the piece picker
+            if (has_picker() && j.piece >= 0) picker().write_failed(block_finished);
+        }
+
+        if (j.error ==
+#if BOOST_VERSION == 103500
+            error_code(boost::system::posix_error::not_enough_memory, get_posix_category())
+#elif BOOST_VERSION > 103500
+            error_code(boost::system::errc::not_enough_memory, get_posix_category())
+#else
+            asio::error::no_memory
+#endif
+            )
+        {
+            m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
+
+            if (c) c->disconnect(errors::no_memory);
+            return;
+        }
+
+        m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
+
+        if (j.action == disk_io_job::write)
+        {
+            // if we failed to write, stop downloading and just
+            // keep seeding.
+            // TODO: make this depend on the error and on the filesystem the
+            // files are being downloaded to. If the error is no_space_left_on_device
+            // and the filesystem doesn't support sparse files, only zero the priorities
+            // of the pieces that are at the tails of all files, leaving everything
+            // up to the highest written piece in each file
+            //set_upload_mode(true); //TODO ?
+            return;
+        }
+
+        // put the torrent in an error-state
+        m_error = j.error;
+        pause();
+    }
+
 
     void transfer::on_save_resume_data(int ret, disk_io_job const& j)
     {
+        DBG("transfer::on_save_resume_data");
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         if (!j.resume_data)
@@ -929,6 +1073,160 @@ namespace libed2k
         {
             write_resume_data(*j.resume_data);
             m_ses.m_alerts.post_alert_should(save_resume_data_alert(j.resume_data, handle()));
+        }
+    }
+
+    void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
+    {
+        DBG("transfer::on_resume_data_checked");
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (ret == piece_manager::fatal_disk_error)
+        {
+            handle_disk_error(j);
+            set_state(transfer_status::queued_for_checking);
+            std::vector<char>().swap(m_resume_data);
+            lazy_entry().swap(m_resume_entry);
+            return;
+        }
+
+        // only report this error if the user actually provided resume data
+        if ((j.error || ret != 0) && !m_resume_data.empty())
+        {
+            m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), j.error));
+            ERR("fastresume data for " << " rejected: " << j.error.message() << " ret:" << ret);
+        }
+
+        // if ret != 0, it means we need a full check. We don't necessarily need
+        // that when the resume data check fails. For instance, if the resume data
+        // is incorrect, but we don't have any files, we skip the check and initialize
+        // the storage to not have anything.
+        if (ret == 0)
+        {
+            // pieces count will calculate by length pieces string
+            int num_pieces = 0;
+
+            if (!j.error && m_resume_entry.type() == lazy_entry::dict_t)
+            {
+                // parse have bitmask
+                lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
+
+                // we don't compare pieces count
+                if (pieces && pieces->type() == lazy_entry::string_t)
+                {
+                    num_pieces = pieces->string_length();
+                    char const* pieces_str = pieces->string_ptr();
+                    for (int i = 0, end(pieces->string_length()); i < end; ++i)
+                    {
+                        if (pieces_str[i] & 1) m_picker->we_have(i);
+
+                        // TODO ?
+                        //if (m_seed_mode && (pieces_str[i] & 2)) m_verified.set_bit(i);
+                    }
+                }
+
+                // parse unfinished pieces
+                int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+
+                if (lazy_entry const* unfinished_ent = m_resume_entry.dict_find_list("unfinished"))
+                {
+                    for (int i = 0; i < unfinished_ent->list_size(); ++i)
+                    {
+                        lazy_entry const* e = unfinished_ent->list_at(i);
+                        if (e->type() != lazy_entry::dict_t) continue;
+                        int piece = e->dict_find_int_value("piece", -1);
+                        if (piece < 0 || piece > num_pieces) continue;
+
+                        if (m_picker->have_piece(piece))
+                            m_picker->we_dont_have(piece);
+
+                        std::string bitmask = e->dict_find_string_value("bitmask");
+                        if (bitmask.empty()) continue;
+
+                        const int num_bitmask_bytes = (std::max)(num_blocks_per_piece / 8, 1);
+                        if ((int)bitmask.size() != num_bitmask_bytes) continue;
+                        for (int j = 0; j < num_bitmask_bytes; ++j)
+                        {
+                            unsigned char bits = bitmask[j];
+                            int num_bits = (std::min)(num_blocks_per_piece - j*8, 8);
+                            for (int k = 0; k < num_bits; ++k)
+                            {
+                                const int bit = j * 8 + k;
+                                if (bits & (1 << k))
+                                {
+                                    m_picker->mark_as_finished(piece_block(piece, bit), 0);
+
+                                    // TODO - add hash calculating to disk io for have ability async checking
+                                    boost::optional<const md4_hash&> hs = m_hashset.hash(piece);
+
+                                    // check piece when we have hash for it
+                                    if (hs.is_initialized())
+                                    {
+                                        if (m_picker->is_piece_finished(piece))
+                                            async_verify_piece(piece, hs.get(), boost::bind(&transfer::piece_finished
+                                                    , shared_from_this(), piece, _1));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // either the fastresume data was rejected or there are
+            // some files
+            set_state(transfer_status::queued_for_checking);
+            //if (should_check_files())
+            //    queue_torrent_check();
+        }
+
+        std::vector<char>().swap(m_resume_data);
+        lazy_entry().swap(m_resume_entry);
+        if (!is_seed()) set_state(transfer_status::downloading);
+    }
+
+    void transfer::piece_finished(int index, int passed_hash_check)
+    {
+#if defined TORRENT_VERBOSE_LOGGING || defined TORRENT_LOGGING
+        (*m_ses.m_logger) << time_now_string() << " *** PIECE_FINISHED [ p: "
+            << index << " chk: " << ((passed_hash_check == 0)
+                ?"passed":passed_hash_check == -1
+                ?"disk failed":"failed") << " ]\n";
+#endif
+
+        BOOST_ASSERT(!m_picker->have_piece(index));
+
+        // even though the piece passed the hash-check
+        // it might still have failed being written to disk
+        // if so, piece_picker::write_failed() has been
+        // called, and the piece is no longer finished.
+        // in this case, we have to ignore the fact that
+        // it passed the check
+        if (!m_picker->is_piece_finished(index)) return;
+
+        if (passed_hash_check == 0)
+        {
+            // the following call may cause picker to become invalid
+            // in case we just became a seed
+            // TODO  -activate piece_passed
+            //piece_passed(index);
+
+            // if we're in seed mode, we just acquired this piece
+            // mark it as verified
+            //if (m_seed_mode) verified(index);
+        }
+        else if (passed_hash_check == -2)
+        {
+            // piece_failed() will restore the piece
+            piece_failed(index);
+        }
+        else
+        {
+            BOOST_ASSERT(passed_hash_check == -1);
+            m_picker->restore_piece(index);
+            restore_piece_state(index);
         }
     }
 

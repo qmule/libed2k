@@ -230,6 +230,7 @@ namespace libed2k {
         void on_transfer_aborted(int ret, disk_io_job const& j);
         void on_transfer_paused(int ret, disk_io_job const& j);
         void on_save_resume_data(int ret, disk_io_job const& j);
+        void on_resume_data_checked(int ret, disk_io_job const& j);
 
         // will initialize the storage and the piece-picker
         void init();
@@ -238,6 +239,8 @@ namespace libed2k {
 
         void write_resume_data(entry& rd) const;
         void read_resume_data(lazy_entry const& rd);
+        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+        void piece_finished(int index, int passed_hash_check);
 
         // this is the upload and download statistics for the whole transfer.
         // it's updated from all its peers once every second.
@@ -246,7 +249,6 @@ namespace libed2k {
         // a back reference to the session
         // this transfer belongs to.
         aux::session_impl& m_ses;
-
         boost::scoped_ptr<piece_picker> m_picker;
 
         bool m_obsolete;    //! transfer references to unshared file possible
@@ -319,6 +321,17 @@ namespace libed2k {
         libtorrent::piece_manager* m_storage;
 
         duration_timer m_minute_timer;
+
+        /**
+          * previously saved resume data
+         */
+        std::vector<char>  m_resume_data;
+        lazy_entry m_resume_entry;
+
+        /**
+          * current error on this transfer
+         */
+        error_code m_error;
     };
 
     extern std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);

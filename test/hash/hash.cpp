@@ -29,7 +29,7 @@ void generate_file(size_t nSize, const char* pchFilename)
 
 int main(int argc, char* argv[])
 {
-    init_logs();
+    LOGGER_INIT(LOG_ALL) 
 
     if (argc < 2)
     {

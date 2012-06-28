@@ -732,9 +732,6 @@ namespace libed2k
 
     void known_file_collection::dump() const
     {
-        DBG("known_file_collection::dump()");
-        DBG("size: " << m_known_file_list.m_size);
-
         for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
         {
             m_known_file_list.m_collection[n].dump();
@@ -772,7 +769,7 @@ namespace libed2k
                 // we have UTF-8 strings in path pair pair
                 std::pair<fs::path, fs::path> pp = m_order.popWait(); 
 
-                DBG("file_hasher::operator(): " << convert_to_native(bom_filter(pp.second.string())));
+                DBG("{file_hasher: " << convert_to_native(bom_filter(pp.second.string())) << "}");
 
                 try
                 {
@@ -840,10 +837,9 @@ namespace libed2k
 
                         uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
 
-                        DBG("Map position   : " << nMapPosition);
-                        DBG("Data correction: " << nDataCorrection);
-                        DBG("Map length     : " << nMapLength);
-                        DBG("Map piece count: " << nMapLength / PIECE_SIZE);
+                        DBG("{mpos: " << nMapPosition << "} {dt corr: "
+                                << nDataCorrection << "} {map len: "
+                                << nMapLength << "} {mpc: " << nMapLength / PIECE_SIZE << "}");
 
                         while(nLocalOffset < nMapLength)
                         {
@@ -860,8 +856,6 @@ namespace libed2k
                                 nLength = nMapLength-nLocalOffset;
                                 bPartial = true;
                             }
-
-                            DBG("local piece: " << nLength);
 
                             libed2k::md4_hash hash;
                             md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
@@ -903,11 +897,11 @@ namespace libed2k
                 }
                 catch(libed2k_exception& e)
                 {
-                    ERR("Error on hashing: " << e.what());
+                    ERR("libed2k error on hashing: " << e.what());
                 }
                 catch(...) // hide all possible exceptions
                 {
-                    ERR("Error on hashing file: ");
+                    ERR("unhandled exception on hashing file: " << convert_to_native(bom_filter(pp.second.string())));
                 }
             }
         }

@@ -27,7 +27,7 @@ const unsigned char chPasswd[] =
 
 int main(int argc, char* argv[])
 {
-    LOGGER_INIT()
+    LOGGER_INIT(LOG_ALL)
     setlocale(LC_CTYPE, "");
     std::string strCrypto = "./crypto.dat";
 

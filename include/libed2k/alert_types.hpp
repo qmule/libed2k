@@ -572,6 +572,71 @@ namespace libed2k
         }
     };
 
+    struct TORRENT_EXPORT fastresume_rejected_alert: transfer_alert
+    {
+        fastresume_rejected_alert(transfer_handle const& h
+            , error_code const& e)
+            : transfer_alert(h)
+            , error(e)
+        {
+#ifndef TORRENT_NO_DEPRECATE
+            msg = error.message();
+#endif
+        }
+
+        error_code error;
+
+#ifndef TORRENT_NO_DEPRECATE
+        std::string msg;
+#endif
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new fastresume_rejected_alert(*this)); }
+        virtual char const* what() const { return "resume data rejected"; }
+        const static int static_category = alert::status_notification | alert::error_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            return transfer_alert::message() + " fast resume rejected: " + error.message();
+        }
+    };
+
+    struct TORRENT_EXPORT file_error_alert: transfer_alert
+    {
+        file_error_alert(
+            std::string const& f
+            , transfer_handle const& h
+            , error_code const& e)
+            : transfer_alert(h)
+            , file(f)
+            , error(e)
+        {
+#ifndef TORRENT_NO_DEPRECATE
+            msg = error.message();
+#endif
+        }
+
+        std::string file;
+        error_code error;
+
+#ifndef TORRENT_NO_DEPRECATE
+        std::string msg;
+#endif
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new file_error_alert(*this)); }
+        virtual char const* what() const { return "file error"; }
+        const static int static_category = alert::status_notification
+            | alert::error_notification
+            | alert::storage_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            return transfer_alert::message() + " file (" + file + ") error: "
+                + error.message();
+        }
+    };
+
 }
 
 

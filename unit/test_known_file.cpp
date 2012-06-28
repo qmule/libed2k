@@ -36,6 +36,7 @@ namespace libed2k
             void on_timer();
             const std::deque<add_transfer_params>& get_transfers_map() const;
             const session_impl_base::files_dictionary& get_dictionary() const;
+            std::vector<transfer_handle> get_transfers();
 
             bool                m_ready;
             int                 m_hash_count;
@@ -211,6 +212,11 @@ namespace libed2k
             return m_dictionary;
         }
 
+        std::vector<transfer_handle> session_impl_test::get_transfers()
+        {
+            return (std::vector<transfer_handle>());
+        }
+
     }
 }
 
@@ -222,7 +228,7 @@ const char chRussianFilename[] = { '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81
 
 void generate_file(size_t nSize, const char* pchFilename)
 {
-    std::ofstream of(pchFilename, std::ios_base::binary);
+    std::ofstream of(pchFilename, std::ios_base::binary | std::ios_base::out);
 
     if (of)
     {
@@ -362,7 +368,7 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
 
 BOOST_AUTO_TEST_CASE(test_file_hasher)
 {
-    LOGGER_INIT()
+    LOGGER_INIT(LOG_FILE)
     libed2k::session_settings s;
     s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
     libed2k::aux::session_impl_test st(s);
