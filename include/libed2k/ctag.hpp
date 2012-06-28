@@ -205,7 +205,6 @@ enum tg_types
 };
 
 const char* tagTypetoString(tg_type ttp);
-const std::string& tagIdtoString(tg_nid_type tid);
 
 template<typename T> struct tag_type_number;
 

@@ -59,7 +59,7 @@ const char* tagTypetoString(tg_type ttp)
     return (chUnknown);
 }
 
-std::string taggIdtoString(tg_nid_type tid)
+std::string tagIdtoString(tg_nid_type tid)
 {
     const std::string strUnknown = "TID not found";
     const std::pair<tg_nid_type, std::string> stypes[] =
@@ -219,26 +219,22 @@ bool base_tag::is_equal(const base_tag* pt) const
 
 void base_tag::dump() const
 {
-    DBG("base_tag::dump");
-    DBG("type: " << tagTypetoString(getType()));
-    DBG("name: " << m_strName.c_str() << " tag id: " << taggIdtoString(m_nNameId));
-
     switch (getType())
     {
         case TAGTYPE_UINT64:
         case TAGTYPE_UINT32:
         case TAGTYPE_UINT16:
         case TAGTYPE_UINT8:
-            DBG("VALUE: " << asInt());
+            DBG("{tag: "  << tagTypetoString(getType()) << "} {name: " << m_strName.c_str() << "} {id: " << tagIdtoString(m_nNameId) << "} {val: " << asInt() << "}");
             break;
         case TAGTYPE_FLOAT32:
-            DBG("VALUE: " << asFloat());
+            DBG("{tag: "  << tagTypetoString(getType()) << "} {name: " << m_strName.c_str() << "} {id: " << tagIdtoString(m_nNameId) << "} {val: " << asFloat() << "}");
             break;
         case TAGTYPE_BOOL:
-            DBG("VALUE: " << (asBool() ? "true" : "false"));
+            DBG("{tag: "  << tagTypetoString(getType()) << "} {name: " << m_strName.c_str() << "} {id: " << tagIdtoString(m_nNameId) << "} {val: " << (asBool() ? "true" : "false") << "}");
             break;
         case TAGTYPE_HASH16:
-            DBG("VALUE: " << asHash().toString());
+            DBG("{tag: "  << tagTypetoString(getType()) << "} {name: " << m_strName.c_str() << "} {id: " << tagIdtoString(m_nNameId) << "} {val: " << asHash().toString() << "}");
             break;
         case TAGTYPE_BLOB:
             break;
@@ -259,10 +255,10 @@ void base_tag::dump() const
         case TAGTYPE_STR14:
         case TAGTYPE_STR15:
         case TAGTYPE_STR16:
-            DBG("VALUE: \"" << asString() << "\"");
+            DBG("{tag: "  << tagTypetoString(getType()) << "} {name: " << m_strName.c_str() << "} {id: " << tagIdtoString(m_nNameId) << "} {val: \"" << asString() << "\"}");
             break;
         default:
-            DBG("Unknown type");
+            DBG("{tag: "  << tagTypetoString(getType()) << "} {name: " << m_strName.c_str() << "} {id: " << tagIdtoString(m_nNameId) << "} {val: unknown type}");
             break;
     }
 }
