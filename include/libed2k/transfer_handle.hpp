@@ -5,7 +5,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-#include "libed2k//md4_hash.hpp"
+#include <libtorrent/peer_info.hpp>
+#include "libed2k/md4_hash.hpp"
 
 namespace libed2k
 {
@@ -35,6 +36,7 @@ namespace libed2k
 
         md4_hash hash() const;
         fs::path filepath() const;
+        size_t filesize() const;
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;

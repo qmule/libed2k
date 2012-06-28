@@ -4,9 +4,11 @@
 #define BOOST_TEST_MODULE main
 #include <string>
 #include <boost/test/unit_test.hpp>
+
 #include "libed2k/error_code.hpp"
 #include "libed2k/ctag.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/transfer_handle.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(simple_exception_test)
@@ -138,7 +140,7 @@ BOOST_AUTO_TEST_CASE(test_rule_matching)
     f3 /= "file3.txt";
     BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f1) != fpaths.end());
     BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f2) != fpaths.end());
-    BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f3) != fpaths.end());
+    BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f3) != fpaths.end());    
 }
 
 BOOST_AUTO_TEST_CASE(div_ceil_test)

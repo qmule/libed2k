@@ -264,6 +264,11 @@ namespace libed2k {
             void post_search_more_result_request();
 
             /**
+              * this method simple send information packet to server and break search order
+             */
+            void post_cancel_search();
+
+            /**
               * request sources for file
              */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);

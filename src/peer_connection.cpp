@@ -85,7 +85,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
-    m_desired_queue_size = 64;
+    m_desired_queue_size = 32;
 
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;

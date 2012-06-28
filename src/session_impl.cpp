@@ -1363,6 +1363,12 @@ void session_impl::post_search_more_result_request()
     m_server_connection->post_search_more_result_request();
 }
 
+void session_impl::post_cancel_search()
+{
+    shared_files_list sl;
+    m_server_connection->post_announce(sl);
+}
+
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_server_connection->post_sources_request(hFile, nSize);

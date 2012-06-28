@@ -64,6 +64,7 @@ namespace libed2k
     {
         if (!m_seed_mode)
         {
+            DBG("transfer::start: prepare picker");
             m_picker.reset(new libtorrent::piece_picker());
             // TODO: file progress
 
@@ -616,6 +617,7 @@ namespace libed2k
 
     void transfer::init()
     {
+        DBG("transfer::init");
         file_storage& files = const_cast<file_storage&>(m_info->files());
         files.set_num_pieces(num_pieces());
         files.set_piece_length(PIECE_SIZE);
@@ -641,6 +643,7 @@ namespace libed2k
 
         if (m_resume_entry.type() == lazy_entry::dict_t)
         {
+            DBG("transfer::init() = read resume data");
             int ev = 0;
             if (m_resume_entry.dict_find_string_value("file-format") != "libed2k resume file")
                 ev = errors::invalid_file_tag;
@@ -667,8 +670,6 @@ namespace libed2k
         m_storage->async_check_fastresume(&m_resume_entry
                     , boost::bind(&transfer::on_resume_data_checked
                     , shared_from_this(), _1, _2));
-
-        if (!is_seed()) set_state(transfer_status::downloading);
     }
 
     void transfer::second_tick(stat& accumulator, int tick_interval_ms)
@@ -833,6 +834,7 @@ namespace libed2k
 
     void transfer::write_resume_data(entry& ret) const
     {
+        DBG("transfer::write_resume_data");
         ret["file-format"] = "libed2k resume file";
         ret["file-version"] = 1;
         ret["libed2k-version"] = LIBED2K_VERSION;
@@ -1021,6 +1023,7 @@ namespace libed2k
 
     void transfer::on_save_resume_data(int ret, disk_io_job const& j)
     {
+        DBG("transfer::on_save_resume_data");
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         if (!j.resume_data)
@@ -1036,6 +1039,7 @@ namespace libed2k
 
     void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
     {
+        DBG("transfer::on_resume_data_checked");
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         if (ret == piece_manager::fatal_disk_error)
@@ -1135,6 +1139,7 @@ namespace libed2k
 
         std::vector<char>().swap(m_resume_data);
         lazy_entry().swap(m_resume_entry);
+        if (!is_seed()) set_state(transfer_status::downloading);
     }
 
     std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

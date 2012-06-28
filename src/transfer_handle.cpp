@@ -72,6 +72,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(filepath(), fs::path());
     }
 
+    size_t transfer_handle::filesize() const
+    {
+        LIBED2K_FORWARD_RETURN(filesize(), 0);
+    }
+
     bool transfer_handle::is_seed() const
     {
         LIBED2K_FORWARD_RETURN(is_seed(), false);
