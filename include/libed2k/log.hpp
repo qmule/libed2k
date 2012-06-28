@@ -16,6 +16,10 @@ BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 
 using namespace boost::logging;
 
+const unsigned char LOG_CONSOLE  = 1;
+const unsigned char LOG_FILE     = 2;
+const unsigned char LOG_ALL      = '\xFF';
+
 // Step 3 : Specify your logging class(es)
 //typedef boost::logging::logger_format_write< > logger_type;
 //typedef boost::logging::writer::threading::ts_write<> log_type;
@@ -34,16 +38,17 @@ BOOST_DECLARE_LOG(g_l, logger_type)
 #define DBG(x) LDBG_ << x
 #define APP(x) LAPP_ << x
 #define ERR(x) LERR_ << x
-#define LOGGER_INIT() init_logs();
 
-void init_logs();
+#define LOGGER_INIT(x) init_logs(x);
+
+void init_logs(unsigned char log_destination = LOG_ALL);
 
 #else
 
 #define DBG(x)
 #define APP(x)
 #define ERR(x)
-#define LOGGER_INIT()
+#define LOGGER_INIT(x)
 
 #endif
 

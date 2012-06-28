@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[])
 {
-    LOGGER_INIT()
+    LOGGER_INIT(LOG_ALL)
 
     if (argc < 2)
     {

@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
 
 BOOST_AUTO_TEST_CASE(test_file_hasher)
 {
-    LOGGER_INIT()
+    LOGGER_INIT(LOG_FILE)
     libed2k::session_settings s;
     s.m_fd_list.push_back(std::make_pair(std::string(chRussianDirectory), true));
     libed2k::aux::session_impl_test st(s);

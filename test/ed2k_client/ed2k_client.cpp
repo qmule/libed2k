@@ -49,8 +49,8 @@ int main(int argc, char* argv[])
     if (vm.count("port"))
         settings.listen_port = vm["port"].as<int>();
 
-    init_logs();
-    libed2k::session ses(print, "0.0.0.0", settings);
+    LOGGER_INIT(LOG_ALL)
+	libed2k::session ses(print, "0.0.0.0", settings);
 
     if (vm.count("dir"))
     {
