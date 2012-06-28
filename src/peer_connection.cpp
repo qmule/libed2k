@@ -812,7 +812,10 @@ void peer_connection::on_receive_data(
 
     if (b == m_download_queue.end())
     {
-        ERR("The block we just got was not in the request queue");
+        ERR("The block we just got from " << m_remote <<
+            " : {piece: "<< block_finished.piece_index <<
+            ", block: " << block_finished.block_index << ", length: " << r.length
+            << "} was not in the request queue");
         return;
     }
 
@@ -1195,7 +1198,7 @@ void peer_connection::on_ext_hello(const error_code& error)
     {
         DECODE_PACKET(client_ext_hello, ext_hello);
         DBG("ext hello {version: " << ext_hello.m_nVersion << "} <== " << m_remote);
-        ext_hello.m_list.dump();
+        //ext_hello.m_list.dump();
         // store user info
         //m_hClient = hello.m_hClient;
         //m_options.m_nPort = hello.m_network_point.m_nPort;
