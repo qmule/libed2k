@@ -150,5 +150,22 @@ BOOST_AUTO_TEST_CASE(div_ceil_test)
     BOOST_CHECK_EQUAL(libed2k::div_ceil(13,2), 7);
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_CASE(range_test)
+{
+    using namespace libed2k;
 
+    range<int> rng1(0,10);
+    BOOST_CHECK(!rng1.empty());
+    rng1 -= std::make_pair(5, 7);
+    BOOST_CHECK(!rng1.empty());
+    rng1 -= std::make_pair(0, 3);
+    BOOST_CHECK(!rng1.empty());
+    rng1 -= std::make_pair(3, 5);
+    BOOST_CHECK(!rng1.empty());
+    rng1 -= std::make_pair(8, 10);
+    BOOST_CHECK(!rng1.empty());
+    rng1 -= std::make_pair(7, 8);
+    BOOST_CHECK(rng1.empty());
+}
+
+BOOST_AUTO_TEST_SUITE_END()

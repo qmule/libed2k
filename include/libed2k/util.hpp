@@ -56,6 +56,12 @@ namespace libed2k
         return time::microsec_clock::universal_time();
     }
 
+    template<typename Coll1, typename Coll2>
+    void appendAll(Coll1& to, const Coll2& from)
+    {
+        std::copy(from.begin(), from.end(), std::inserter(to, to.end()));
+    }
+
     template <typename C>
     class cyclic_iterator {
         typedef typename C::iterator I;
@@ -99,6 +105,74 @@ namespace libed2k
         time::time_duration m_duration;
         ptime m_last_tick;
         time::time_duration m_tick_interval;
+    };
+
+    // set of semi open intervals: [a1, b1), [a2, b2), ...
+    template <typename T>
+    class range
+    {
+    public:
+        typedef typename std::pair<T,T> segment;
+        typedef typename std::vector<segment> segments;
+
+        range(T begin, T end)
+        {
+            m_segments.push_back(std::make_pair(begin, end));
+        }
+
+        range<T>& operator-=(const segment& seg)
+        {
+            check(seg);
+            segments res;
+            for (typename segments::iterator i = m_segments.begin(); i != m_segments.end(); ++i)
+                appendAll(res, sub(*i, seg));
+            m_segments = res;
+
+            return *this;
+        }
+
+        bool empty() const { return m_segments.empty(); }
+
+    private:
+        segments m_segments;
+
+        void check(const segment& seg) { assert(seg.first <= seg.second); }
+
+        segments sub(const segment& seg1, const segment& seg2)
+        {
+            check(seg1);
+            check(seg2);
+
+            segments res;
+
+            // [   seg1    )
+            //   [ seg2 )    -> [ )   [ )
+            if (seg1.first < seg2.first && seg1.second > seg2.second)
+            {
+                res.push_back(std::make_pair(seg1.first, seg2.first));
+                res.push_back(std::make_pair(seg2.second, seg1.second));
+            }
+            // [ seg1 )
+            //          [ seg2 ) -> [   )
+            else if (seg1.second <= seg2.first || seg2.second <= seg1.first)
+            {
+                res.push_back(seg1);
+            }
+            // [ seg1 )
+            //    [ seg2 ) -> [  )
+            else if (seg2.first > seg1.first && seg2.first < seg1.second)
+            {
+                res.push_back(std::make_pair(seg1.first, seg2.first));
+            }
+            //     [ seg1 )
+            // [ seg2 )     -> [  )
+            else if (seg2.second > seg1.first && seg2.second < seg1.second)
+            {
+                res.push_back(std::make_pair(seg2.second, seg1.second));
+            }
+
+            return res;
+        }
     };
 
     inline bool isLowId(boost::uint32_t nId)
