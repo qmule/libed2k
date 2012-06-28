@@ -241,11 +241,8 @@ namespace libed2k
 
             if(m_queue.empty())
             {
-                DBG("popWait: before signal");
                 m_signal.wait(lock);
             }
-
-            DBG("popWait: after signal");
 
             if (m_queue.empty())
             {
