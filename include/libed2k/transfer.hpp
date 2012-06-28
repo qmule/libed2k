@@ -240,6 +240,7 @@ namespace libed2k {
         void write_resume_data(entry& rd) const;
         void read_resume_data(lazy_entry const& rd);
         void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+        void piece_finished(int index, int passed_hash_check);
 
         // this is the upload and download statistics for the whole transfer.
         // it's updated from all its peers once every second.

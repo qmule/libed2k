@@ -11,6 +11,7 @@
 #include <boost/test/unit_test.hpp>
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/stat.hpp>
+#include <libtorrent/bencode.hpp>
 #include "libed2k/types.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/constants.hpp"
@@ -235,6 +236,65 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
         catch(libed2k::libed2k_exception&)
         {}
     }
+}
+
+BOOST_AUTO_TEST_CASE(test_entries_hash)
+{
+    libed2k::md4_hash h1 = libed2k::md4_hash::fromString("200102030405060708090A0B0C0D0F0D");
+    libed2k::md4_hash h2 = libed2k::md4_hash::fromString("300102030475060708090A0B0C0D0F0D");
+    libed2k::md4_hash h3 = libed2k::md4_hash::fromString("4A0112030405060708090A0B0C0D0F0D");
+    int n1 = 4;
+    int n2 = 6;
+    int n3 = 7;
+
+    libed2k::entry e(libed2k::entry::dictionary_t);
+    // store current hashset
+    e["hash-keys"]    = libed2k::entry::list_type();
+    e["hash-values"]  = libed2k::entry::list_type();
+    libed2k::entry::list_type& hk = e["hash-keys"].list();
+    libed2k::entry::list_type& hv = e["hash-values"].list();
+
+    hk.push_back(n1);
+    hv.push_back(h1.toString());
+
+    hk.push_back(n2);
+    hv.push_back(h2.toString());
+
+    hk.push_back(n3);
+    hv.push_back(h3.toString());
+
+    // ok, encode entry
+    std::vector<char> container;
+    libed2k::lazy_entry le;
+
+    libtorrent::bencode(std::back_inserter(container), e);
+    BOOST_REQUIRE(!container.empty());
+    BOOST_REQUIRE(libtorrent::lazy_bdecode(&container[0], &container[0] + container.size(), le) == 0);
+    BOOST_REQUIRE(le.type() == libed2k::lazy_entry::dict_t);
+
+    const libed2k::lazy_entry* lek = le.dict_find_list("hash-keys");
+    const libed2k::lazy_entry* lev = le.dict_find_list("hash-values");
+
+    BOOST_REQUIRE(lek && lev);
+    BOOST_REQUIRE_EQUAL(lek->list_size(), 3);
+    BOOST_REQUIRE_EQUAL(lev->list_size(), 3);
+
+    BOOST_CHECK(lek->list_at(0)->type() == libed2k::lazy_entry::int_t);
+    BOOST_CHECK(lek->list_at(1)->type() == libed2k::lazy_entry::int_t);
+    BOOST_CHECK(lek->list_at(2)->type() == libed2k::lazy_entry::int_t);
+
+    BOOST_CHECK(lek->list_at(0)->int_value() == n1);
+    BOOST_CHECK(lek->list_at(1)->int_value() == n2);
+    BOOST_CHECK(lek->list_at(2)->int_value() == n3);
+
+    BOOST_CHECK(lev->list_at(0)->type() == libed2k::lazy_entry::string_t);
+    BOOST_CHECK(lev->list_at(1)->type() == libed2k::lazy_entry::string_t);
+    BOOST_CHECK(lev->list_at(2)->type() == libed2k::lazy_entry::string_t);
+
+    BOOST_CHECK(lev->list_at(0)->string_value() == h1.toString());
+    BOOST_CHECK(lev->list_at(1)->string_value() == h2.toString());
+    BOOST_CHECK(lev->list_at(2)->string_value() == h3.toString());
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
