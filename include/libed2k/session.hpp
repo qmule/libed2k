@@ -83,7 +83,7 @@ namespace libed2k {
         hash_set piece_hash;
         fs::path file_path; // in UTF8 always!
         fs::path m_collection_path;
-        size_t file_size;
+        fsize_t  file_size;
         std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;

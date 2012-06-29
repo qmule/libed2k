@@ -41,6 +41,7 @@ namespace libed2k
         m_total_downloaded(0),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
+        DBG("transfer file size: " << m_filesize);
         if (m_hashset.pieces().size() == 0)
             m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
 
@@ -277,10 +278,10 @@ namespace libed2k
         return m_policy.connect_one_peer();
     }
 
-    void transfer::piece_passed(int index, const md4_hash& hash)
+    void transfer::piece_passed(int index)
     {
         bool was_finished = (num_have() == num_pieces());
-        we_have(index, hash);
+        we_have(index);
         if (!was_finished && is_finished())
         {
             // transfer finished
@@ -293,11 +294,10 @@ namespace libed2k
         }
     }
 
-    void transfer::we_have(int index, const md4_hash& hash)
+    void transfer::we_have(int index)
     {
         //TODO: update progress
         m_picker->we_have(index);
-        m_hashset.hash(index, hash);
     }
 
     size_t transfer::num_pieces() const
@@ -719,7 +719,7 @@ namespace libed2k
     //  0: success, piece passed check
     // -1: disk failure
     // -2: piece failed check
-    void transfer::piece_finished(int index, const md4_hash& hash, int passed_hash_check)
+    void transfer::piece_finished(int index, int passed_hash_check)
     {
         // even though the piece passed the hash-check
         // it might still have failed being written to disk
@@ -733,7 +733,7 @@ namespace libed2k
         {
             // the following call may cause picker to become invalid
             // in case we just became a seed
-            piece_passed(index, hash);
+            piece_passed(index);
         }
         else if (passed_hash_check == -2)
         {
@@ -927,20 +927,12 @@ namespace libed2k
 
         // store current hashset
         ret["hashset-terminate"] = (m_hashset.has_terminal())?1:0;
-        ret["hashset-size"]      = m_hashset.hashes().size();
-        ret["hashset-keys"]    = entry::list_type();
         ret["hashset-values"]  = entry::list_type();
-        entry::list_type& hk = ret["hashset-keys"].list();
         entry::list_type& hv = ret["hashset-values"].list();
 
-        // scan hashset and store non-empty hashes
         for (size_t n = 0; n < m_hashset.hashes().size(); ++n)
         {
-            if (m_hashset.hashes().at(n).defined())
-            {
-                hk.push_back(n);
-                hv.push_back(m_hashset.hashes().at(n).toString());
-            }
+            hv.push_back(m_hashset.hashes().at(n).toString());
         }
 
         ret["upload_rate_limit"] = upload_limit();
@@ -979,31 +971,6 @@ namespace libed2k
 
         int paused_ = rd.dict_find_int_value("paused", -1);
         if (paused_ != -1) m_paused = paused_;
-
-
-        // restore hashset
-        int nSize           = rd.dict_find_int_value("hashset-size", 0);
-
-        if (nSize > 0)
-        {
-            m_hashset.reset(nSize);
-            // restore hashset
-            const libed2k::lazy_entry* hk = rd.dict_find_list("hashset-keys");
-            const libed2k::lazy_entry* hv = rd.dict_find_list("hashset-values");
-
-            if (hk && hv)
-            {
-                for (int n = 0; n < hk->list_size(); ++n)
-                {
-                    m_hashset.hash(hk->list_at(n)->int_value(), md4_hash::fromString(hv->list_at(n)->string_value()));
-                }
-            }
-
-            if (rd.dict_find_int_value("hashset-terminate", 0) == 1)
-            {
-                m_hashset.set_terminal();
-            }
-        }
     }
 
     void transfer::handle_disk_error(disk_io_job const& j, peer_connection* c)
@@ -1108,6 +1075,21 @@ namespace libed2k
 
             if (!j.error && m_resume_entry.type() == lazy_entry::dict_t)
             {
+                // restore hashset
+                const libed2k::lazy_entry* hv = m_resume_entry.dict_find_list("hashset-values");
+
+                m_hashset.reset(hv->list_size());
+
+                for (int n = 0; n < hv->list_size(); ++n)
+                {
+                    m_hashset.hash(n, md4_hash::fromString(hv->list_at(n)->string_value()));
+                }
+
+                if (m_resume_entry.dict_find_int_value("hashset-terminate", 0) == 1)
+                {
+                    m_hashset.set_terminal();
+                }
+
                 // parse have bitmask
                 lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
 
@@ -1166,6 +1148,10 @@ namespace libed2k
                                             async_verify_piece(piece, hs.get(), boost::bind(&transfer::piece_finished
                                                     , shared_from_this(), piece, _1));
                                     }
+                                    else
+                                    {
+                                        // reject resume data
+                                    }
                                 }
                             }
                         }
@@ -1185,49 +1171,6 @@ namespace libed2k
         std::vector<char>().swap(m_resume_data);
         lazy_entry().swap(m_resume_entry);
         if (!is_seed()) set_state(transfer_status::downloading);
-    }
-
-    void transfer::piece_finished(int index, int passed_hash_check)
-    {
-#if defined TORRENT_VERBOSE_LOGGING || defined TORRENT_LOGGING
-        (*m_ses.m_logger) << time_now_string() << " *** PIECE_FINISHED [ p: "
-            << index << " chk: " << ((passed_hash_check == 0)
-                ?"passed":passed_hash_check == -1
-                ?"disk failed":"failed") << " ]\n";
-#endif
-
-        BOOST_ASSERT(!m_picker->have_piece(index));
-
-        // even though the piece passed the hash-check
-        // it might still have failed being written to disk
-        // if so, piece_picker::write_failed() has been
-        // called, and the piece is no longer finished.
-        // in this case, we have to ignore the fact that
-        // it passed the check
-        if (!m_picker->is_piece_finished(index)) return;
-
-        if (passed_hash_check == 0)
-        {
-            // the following call may cause picker to become invalid
-            // in case we just became a seed
-            // TODO  -activate piece_passed
-            //piece_passed(index);
-
-            // if we're in seed mode, we just acquired this piece
-            // mark it as verified
-            //if (m_seed_mode) verified(index);
-        }
-        else if (passed_hash_check == -2)
-        {
-            // piece_failed() will restore the piece
-            piece_failed(index);
-        }
-        else
-        {
-            BOOST_ASSERT(passed_hash_check == -1);
-            m_picker->restore_piece(index);
-            restore_piece_state(index);
-        }
     }
 
     std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

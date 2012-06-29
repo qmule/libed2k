@@ -213,6 +213,8 @@ int main(int argc, char* argv[])
     libed2k::shared_files_list vSF;
     std::vector<char> vFastResumeData;
     libed2k::fs::path save_path;
+    libed2k::fsize_t file_size;
+    libed2k::md4_hash file_hash;
 
     while ((std::cin >> strUser))
     {
@@ -247,7 +249,9 @@ int main(int argc, char* argv[])
                     params.file_path = strIncomingDirectory;
                     params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
+                    file_size = params.file_size;
                     save_path = params.file_path;
+                    file_hash = params.file_hash;
                     ses.add_transfer(params);
                 }
                 break;
@@ -347,7 +351,9 @@ int main(int argc, char* argv[])
                     libed2k::add_transfer_params params;
                     params.seed_mode = false;
                     params.file_path = save_path;
+                    params.file_size = file_size;
                     params.resume_data = &vFastResumeData;
+                    params.file_hash = file_hash;
                     ses.add_transfer(params);
                 }
                 break;

@@ -843,7 +843,7 @@ void peer_connection::on_receive_data(
                 hash = m_remote_hashset.hash(r.piece);
             assert(hash);
             t->async_verify_piece(
-                r.piece, *hash, boost::bind(&transfer::piece_finished, t, r.piece, *hash, _1));
+                r.piece, *hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
         }
 
         m_channel_state[download_channel] = bw_idle;

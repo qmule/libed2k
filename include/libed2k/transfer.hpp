@@ -143,13 +143,13 @@ namespace libed2k {
 
         // this is called from the peer_connection
         // each time a piece has failed the hash test
-        void piece_finished(int index, const md4_hash& hash, int passed_hash_check);
+        void piece_finished(int index, int passed_hash_check);
 
         // piece_passed is called when a piece passes the hash check
         // this will tell all peers that we just got his piece
         // and also let the piece picker know that we have this piece
         // so it wont pick it for download
-        void piece_passed(int index, const md4_hash& hash);
+        void piece_passed(int index);
 
         // piece_failed is called when a piece fails the hash check
         void piece_failed(int index);
@@ -174,7 +174,7 @@ namespace libed2k {
 
         // called when we learn that we have a piece
         // only once per piece
-        void we_have(int index, const md4_hash& hash);
+        void we_have(int index);
 
         size_t num_have() const
         {
@@ -239,7 +239,6 @@ namespace libed2k {
         void write_resume_data(entry& rd) const;
         void read_resume_data(lazy_entry const& rd);
         void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
-        void piece_finished(int index, int passed_hash_check);
 
         // this is the upload and download statistics for the whole transfer.
         // it's updated from all its peers once every second.
