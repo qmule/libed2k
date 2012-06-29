@@ -1426,6 +1426,14 @@ void session_impl::announce(int tick_interval_ms)
     }
 }
 
+void session_impl::server_keep_alive(int tick_interval_ms)
+{
+    if (m_settings.server_keep_alive_timeout == -1)
+    {
+        return;
+    }
+}
+
 void session_impl::reconnect(int tick_interval_ms)
 {
 
