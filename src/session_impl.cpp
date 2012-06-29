@@ -22,7 +22,7 @@
 using namespace libed2k;
 using namespace libed2k::aux;
 
-dictionary_entry::dictionary_entry(boost::uintmax_t nFilesize) : file_size(nFilesize),
+dictionary_entry::dictionary_entry(fsize_t nFilesize) : file_size(nFilesize),
         m_accepted(0),
         m_requested(0),
         m_transferred(0),

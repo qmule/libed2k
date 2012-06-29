@@ -97,7 +97,7 @@ namespace libed2k
     const boost::uint8_t  MET_HEADER                  = 0x0E;
     const boost::uint8_t  MET_HEADER_WITH_LARGEFILES  = 0x0F;
 
-
+    // obsolete class
     class known_file
     {
     public:
@@ -352,13 +352,13 @@ namespace libed2k
     struct pending_file
     {
         fs::path    m_path;
-        size_t      m_size;
+        fsize_t     m_size;
         md4_hash    m_hash;
         
 
         pending_file(const fs::path& path) : m_path(path), m_size(0){}
 
-        pending_file(const fs::path& path, size_t size, const md4_hash& hash) : 
+        pending_file(const fs::path& path, fsize_t size, const md4_hash& hash) :
         m_path(path), m_size(size), m_hash(hash){}
 
         const md4_hash& get_hash() const
@@ -401,7 +401,7 @@ namespace libed2k
         /**
           * update element in pending list and return if success
          */
-        bool update(const fs::path& p, size_t size, const md4_hash& hash)
+        bool update(const fs::path& p, fsize_t size, const md4_hash& hash)
         {
             std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), pending_file(p));
 
@@ -442,7 +442,7 @@ namespace libed2k
      */
     struct emule_collection_entry
     {
-        emule_collection_entry(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hash) :
+        emule_collection_entry(const std::string& strFilename, fsize_t nFilesize, const md4_hash& hash) :
             m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
 
         bool operator==(const emule_collection_entry& ce) const
@@ -453,7 +453,7 @@ namespace libed2k
         }
 
         std::string     m_filename;
-        boost::uint64_t m_filesize;
+        fsize_t         m_filesize;
         md4_hash        m_filehash;
     };
 
@@ -470,7 +470,7 @@ namespace libed2k
         /**
           * generate ed2k link from collection item
          */
-        static std::string toLink(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hFile);
+        static std::string toLink(const std::string& strFilename, fsize_t nFilesize, const md4_hash& hFile);
 
         /**
           * generate emule collection from pending collection
@@ -483,7 +483,7 @@ namespace libed2k
         /**
           * add known file
          */
-        bool add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash);
+        bool add_file(const std::string& strFilename, fsize_t nFilesize, const std::string& strFilehash);
         bool add_link(const std::string& strLink);
 
         const std::string get_ed2k_link(size_t nIndex);

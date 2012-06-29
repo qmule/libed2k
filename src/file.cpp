@@ -794,7 +794,6 @@ namespace libed2k
                     if (nFileSize == 0)
                     {
                         throw libed2k_exception(errors::filesize_is_zero);
-                        return;
                     }
 
                     bio::mapped_file_params mf_param;

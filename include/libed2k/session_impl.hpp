@@ -39,9 +39,9 @@ namespace libed2k {
     {
         struct dictionary_entry
         {
-            dictionary_entry(boost::uintmax_t nFilesize);   // create and link
+            dictionary_entry(fsize_t nFilesize);   // create and link
             dictionary_entry();
-            boost::uintmax_t file_size;
+            fsize_t         file_size;
             boost::uint32_t m_accepted;
             boost::uint32_t m_requested;
             boost::uint64_t m_transferred;
