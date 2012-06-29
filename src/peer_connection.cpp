@@ -13,7 +13,7 @@
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-peer_request mk_peer_request(size_t begin, size_t end)
+peer_request mk_peer_request(fsize_t begin, fsize_t end)
 {
     peer_request r;
     r.piece = begin / PIECE_SIZE;
@@ -22,10 +22,10 @@ peer_request mk_peer_request(size_t begin, size_t end)
     return r;
 }
 
-std::pair<size_t, size_t> mk_range(const peer_request& r)
+std::pair<fsize_t, fsize_t> mk_range(const peer_request& r)
 {
-    size_t begin = r.piece * PIECE_SIZE + r.start;
-    size_t end = begin + r.length;
+    fsize_t begin = r.piece * PIECE_SIZE + r.start;
+    fsize_t end = begin + r.length;
     assert(begin < end);
     return std::make_pair(begin, end);
 }
@@ -322,7 +322,7 @@ bool peer_connection::add_request(const piece_block& block, int flags)
     if (!t->picker().mark_as_downloading(block, get_peer(), state))
         return false;
 
-    pending_block pb(block);
+    pending_block pb(block, t->filesize());
     m_request_queue.push_back(pb);
     return true;
 }
@@ -1060,7 +1060,7 @@ void peer_connection::write_part(const peer_request& r)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
     client_sending_part_64 sp;
-    std::pair<size_t, size_t> range = mk_range(r);
+    std::pair<fsize_t, fsize_t> range = mk_range(r);
     sp.m_hFile = t->hash();
     sp.m_begin_offset = range.first;
     sp.m_end_offset = range.second;

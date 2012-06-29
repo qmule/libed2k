@@ -37,6 +37,6 @@ sources = globrec('src', '*.cpp')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
 env.Program(join('bin', 'ed2k_client'), [join('test', 'ed2k_client', 'ed2k_client.cpp'), lib])
 
-uenv = Environment(**unionArgs(args, {'LIBS': ['boost_unit_test_framework']}))
+uenv = Environment(**unionArgs(args, {'CXXFLAGS': ['-Wno-sign-compare'], 'LIBS': ['boost_unit_test_framework']}))
 utests = globrec('unit', '*.cpp')
 uenv.Program(join('unit', 'run_tests'), utests + [lib])

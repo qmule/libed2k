@@ -154,7 +154,7 @@ BOOST_AUTO_TEST_CASE(range_test)
 {
     using namespace libed2k;
 
-    range<int> rng1(0,10);
+    range<int> rng1(std::make_pair(0,10));
     BOOST_CHECK(!rng1.empty());
     rng1 -= std::make_pair(5, 7);
     BOOST_CHECK(!rng1.empty());

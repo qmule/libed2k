@@ -49,7 +49,7 @@ namespace libed2k
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
     }
 
-    extern std::pair<size_t, size_t> block_range(int piece, int block, size_t size);
+    extern std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size);
 
     inline ptime time_now()
     {
@@ -115,9 +115,9 @@ namespace libed2k
         typedef typename std::pair<T,T> segment;
         typedef typename std::vector<segment> segments;
 
-        range(T begin, T end)
+        range(const segment& seg)
         {
-            m_segments.push_back(std::make_pair(begin, end));
+            m_segments.push_back(seg);
         }
 
         range<T>& operator-=(const segment& seg)

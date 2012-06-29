@@ -43,7 +43,7 @@ namespace libed2k {
 
         const md4_hash& hash() const { return m_filehash; }
         const hash_set& hashset() const { return m_hashset; }
-        size_t filesize() const { return m_filesize; }
+        fsize_t filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
@@ -206,7 +206,6 @@ namespace libed2k {
         boost::uint32_t getResuested() const { return m_requested; }
         boost::uint64_t getTransferred() const { return m_transferred; }
         boost::uint8_t  getPriority() const { return m_priority; }
-        size_t          getFilesize() const { return m_filesize; }
 
         // --------------------------------------------
         // SERVER MANAGEMENT
@@ -269,7 +268,7 @@ namespace libed2k {
         hash_set m_hashset;
         fs::path m_filepath;
         fs::path m_collectionpath;
-        size_t m_filesize;
+        fsize_t m_filesize;
         boost::uint32_t m_file_type;
 
         // determines the storage state for this transfer.
@@ -295,8 +294,8 @@ namespace libed2k {
 
         // all time totals of uploaded and downloaded payload
         // stored in resume data
-        size_t m_total_uploaded;
-        size_t m_total_downloaded;
+        fsize_t m_total_uploaded;
+        fsize_t m_total_downloaded;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and

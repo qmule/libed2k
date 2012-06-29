@@ -993,7 +993,7 @@ namespace libed2k
 
             if (hk && hv)
             {
-                for (size_t n = 0; n < hk->list_size(); ++n)
+                for (int n = 0; n < hk->list_size(); ++n)
                 {
                     m_hashset.hash(hk->list_at(n)->int_value(), md4_hash::fromString(hv->list_at(n)->string_value()));
                 }

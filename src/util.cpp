@@ -31,10 +31,10 @@ namespace libed2k
         return str.str();
     }
 
-    std::pair<size_t, size_t> block_range(int piece, int block, size_t size)
+    std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size)
     {
-        size_t begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
-        size_t end = std::min(begin + BLOCK_SIZE, std::min((piece + 1) * PIECE_SIZE, size));
+        fsize_t begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
+        fsize_t end = std::min(begin + BLOCK_SIZE, std::min((piece + 1) * PIECE_SIZE, size));
         assert(begin < end);
         return std::make_pair(begin, end);
     }

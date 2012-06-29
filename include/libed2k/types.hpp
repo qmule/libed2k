@@ -15,7 +15,6 @@ namespace libtorrent {
     class piece_manager;
     class piece_picker;
     struct piece_block;
-    struct pending_block;
     struct peer_request;
     struct disk_io_job;
     struct disk_buffer_holder;
@@ -24,7 +23,6 @@ namespace libtorrent {
     struct ptime;
     class listen_failed_alert;
     struct bitfield;
-    struct has_block;
     class file_storage;
     struct torrent_status;
     struct piece_block_progress;
@@ -52,7 +50,6 @@ namespace libed2k
     typedef libtorrent::piece_manager piece_manager;
     typedef libtorrent::piece_picker piece_picker;
     typedef libtorrent::piece_block piece_block;
-    typedef libtorrent::pending_block pending_block;
     typedef libtorrent::disk_io_job disk_io_job;
     typedef libtorrent::disk_buffer_holder disk_buffer_holder;
     typedef libtorrent::buffer buffer;
@@ -61,7 +58,6 @@ namespace libed2k
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
-    typedef libtorrent::has_block has_block;
     typedef libtorrent::file_storage file_storage;
     typedef libtorrent::torrent_status transfer_status;
     typedef libtorrent::piece_block_progress piece_block_progress;
@@ -77,6 +73,7 @@ namespace libed2k
     namespace bio = boost::iostreams;
     namespace time = boost::posix_time;
     typedef time::ptime ptime;
+    typedef boost::uint64_t fsize_t;
 
     // we work in UTF-16 on windows and UTF-8 on linux
 #ifdef _WIN32

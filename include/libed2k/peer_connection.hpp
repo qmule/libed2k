@@ -41,6 +41,51 @@ namespace libed2k
         class session_impl;
     }
 
+    struct pending_block
+    {
+        pending_block(const piece_block& b, fsize_t fsize):
+            skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
+            covering(block_range(b.piece_index, b.block_index, fsize)) {}
+
+        // the number of times the request
+        // has been skipped by out of order blocks
+        boost::uint16_t skipped;
+
+        // if any of these are set to true, this block
+        // is not allocated
+        // in the piece picker anymore, and open for
+        // other peers to pick. This may be caused by
+        // it either timing out or being received
+        // unexpectedly from the peer
+        bool not_wanted:1;
+        bool timed_out:1;
+
+        // the busy flag is set if the block was
+        // requested from another peer when this
+        // request was queued. We only allow a single
+        // busy request at a time in each peer's queue
+        bool busy:1;
+
+        piece_block block;
+
+        // block covering
+        range<fsize_t> covering;
+
+        bool operator==(const pending_block& b)
+        {
+            return b.skipped == skipped && b.block == block
+                && b.not_wanted == not_wanted && b.timed_out == timed_out;
+        }
+    };
+
+    struct has_block
+    {
+        has_block(const piece_block& b): block(b) {}
+        const piece_block& block;
+        bool operator()(const pending_block& pb) const
+        { return pb.block == block; }
+    };
+
     class peer_connection : public base_connection
     {
     public:
