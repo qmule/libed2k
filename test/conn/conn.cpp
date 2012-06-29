@@ -143,7 +143,7 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
 
 int main(int argc, char* argv[])
 {
-    LOGGER_INIT()
+    LOGGER_INIT(LOG_ALL)
 
     if (argc < 4)
     {

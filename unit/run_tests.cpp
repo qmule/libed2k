@@ -171,4 +171,11 @@ BOOST_AUTO_TEST_CASE(range_test)
     BOOST_CHECK(rng1.empty());
 }
 
+BOOST_AUTO_TEST_CASE(check_error_codes_msg_ranges)
+{
+    // check error msgs contain appropriate messages count
+    libed2k::error_code e = libed2k::error_code(libed2k::errors::num_errors - 1,  libed2k::get_libed2k_category());
+    BOOST_CHECK(!e.message().empty());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

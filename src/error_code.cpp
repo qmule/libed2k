@@ -46,7 +46,7 @@ namespace libed2k
             "file not exists or is not regular file",
             "unclosed quotation mark",
             "operator incorrect place",
-            "known file has invalid header on save/load"
+            "known file has invalid header on save/load",
             "input string too large",
             "search expression too complex",
             "pending file entry in transform",

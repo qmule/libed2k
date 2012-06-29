@@ -617,7 +617,7 @@ namespace libed2k
 
     void transfer::init()
     {
-        DBG("transfer::init");
+        DBG("transfer::init: " << m_filepath.filename());
         file_storage& files = const_cast<file_storage&>(m_info->files());
         files.set_num_pieces(num_pieces());
         files.set_piece_length(PIECE_SIZE);
@@ -1079,6 +1079,7 @@ namespace libed2k
                 // check we have same count hashes as pieces
                 if (pieces->string_length() != hv->list_size())
                 {
+                    ERR("pieces: " << pieces->string_length() << " hashes: " << hv->list_size());
                     m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(),
                             error_code(errors::hashes_dont_match_pieces,  get_libed2k_category())));
                     set_state(transfer_status::queued_for_checking);
