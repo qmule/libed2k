@@ -647,13 +647,13 @@ namespace libed2k
             if (m_resume_entry.dict_find_string_value("file-format") != "libed2k resume file")
                 ev = errors::invalid_file_tag;
 
-            std::string info_hash = m_resume_entry.dict_find_string_value("info-hash");
+            std::string info_hash = m_resume_entry.dict_find_string_value("transfer-hash");
 
             if (!ev && info_hash.empty())
-                ev = errors::missing_info_hash;
+                ev = errors::missing_transfer_hash;
 
             if (!ev && (md4_hash::fromString(info_hash) != hash()))
-                ev = errors::mismatching_info_hash;
+                ev = errors::mismatching_transfer_hash;
 
             if (ev)
             {
@@ -1065,9 +1065,7 @@ namespace libed2k
         }
 
         // if ret != 0, it means we need a full check. We don't necessarily need
-        // that when the resume data check fails. For instance, if the resume data
-        // is incorrect, but we don't have any files, we skip the check and initialize
-        // the storage to not have anything.
+        // that when the resume data check fails.
         if (ret == 0)
         {
             // pieces count will calculate by length pieces string
@@ -1075,8 +1073,19 @@ namespace libed2k
 
             if (!j.error && m_resume_entry.type() == lazy_entry::dict_t)
             {
-                // restore hashset
-                const libed2k::lazy_entry* hv = m_resume_entry.dict_find_list("hashset-values");
+                lazy_entry const* hv = m_resume_entry.dict_find_list("hashset-values");
+                lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
+
+                // check we have same count hashes as pieces
+                if (pieces->string_length() != hv->list_size())
+                {
+                    m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(),
+                            error_code(errors::hashes_dont_match_pieces,  get_libed2k_category())));
+                    set_state(transfer_status::queued_for_checking);
+                    std::vector<char>().swap(m_resume_data);
+                    lazy_entry().swap(m_resume_entry);
+                    return;
+                }
 
                 m_hashset.reset(hv->list_size());
 
@@ -1089,9 +1098,6 @@ namespace libed2k
                 {
                     m_hashset.set_terminal();
                 }
-
-                // parse have bitmask
-                lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
 
                 // we don't compare pieces count
                 if (pieces && pieces->type() == lazy_entry::string_t)
@@ -1137,39 +1143,29 @@ namespace libed2k
                                 if (bits & (1 << k))
                                 {
                                     m_picker->mark_as_finished(piece_block(piece, bit), 0);
-
-                                    // TODO - add hash calculating to disk io for have ability async checking
                                     boost::optional<const md4_hash&> hs = m_hashset.hash(piece);
 
                                     // check piece when we have hash for it
-                                    if (hs.is_initialized())
-                                    {
-                                        if (m_picker->is_piece_finished(piece))
-                                            async_verify_piece(piece, hs.get(), boost::bind(&transfer::piece_finished
-                                                    , shared_from_this(), piece, _1));
-                                    }
-                                    else
-                                    {
-                                        // reject resume data
-                                    }
+                                    if (m_picker->is_piece_finished(piece))
+                                        async_verify_piece(piece, hs.get(), boost::bind(&transfer::piece_finished
+                                                , shared_from_this(), piece, _1));
                                 }
                             }
                         }
                     }
                 }
             }
+
         }
         else
         {
-            // either the fastresume data was rejected or there are
-            // some files
             set_state(transfer_status::queued_for_checking);
-            //if (should_check_files())
-            //    queue_torrent_check();
         }
 
         std::vector<char>().swap(m_resume_data);
         lazy_entry().swap(m_resume_entry);
+
+        // TODO - add correct code
         if (!is_seed()) set_state(transfer_status::downloading);
     }
 

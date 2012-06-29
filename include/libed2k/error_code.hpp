@@ -58,8 +58,9 @@ namespace libed2k
             pending_file_entry_in_transform,
             fast_resume_parse_error,
             invalid_file_tag,
-            missing_info_hash,
-            mismatching_info_hash,
+            missing_transfer_hash,
+            mismatching_transfer_hash,
+            hashes_dont_match_pieces,
             num_errors
         };
     }

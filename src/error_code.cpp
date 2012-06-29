@@ -52,8 +52,9 @@ namespace libed2k
             "pending file entry in transform",
             "fast resume parse error",
             "invalid file tag",
-            "missing info hash",
-            "mismatching info hash"
+            "missing transfer hash",
+            "mismatching transfer hash",
+            "hashes dont match pieces"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))
