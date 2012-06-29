@@ -30,6 +30,11 @@ std::pair<fsize_t, fsize_t> mk_range(const peer_request& r)
     return std::make_pair(begin, end);
 }
 
+piece_block mk_block(const peer_request& r)
+{
+    return piece_block(r.piece, r.start / BLOCK_SIZE);
+}
+
 std::pair<peer_request, peer_request> split_request(const peer_request& req)
 {
     peer_request r = req;
@@ -805,7 +810,7 @@ void peer_connection::on_receive_data(
 
     piece_picker& picker = t->picker();
     piece_manager& fs = t->filesystem();
-    piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
+    piece_block block_finished(mk_block(r));
 
     std::vector<pending_block>::iterator b
         = std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(block_finished));
