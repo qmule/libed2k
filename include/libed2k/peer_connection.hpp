@@ -122,6 +122,9 @@ namespace libed2k
 
         void get_peer_info(peer_info& p) const;
 
+        enum peer_speed_t { slow = 1, medium, fast };
+        peer_speed_t peer_speed();
+
         // is called once every second by the main loop
         void second_tick(int tick_interval_ms);
 
@@ -211,6 +214,9 @@ namespace libed2k
         bool attach_to_transfer(const md4_hash& hash);
 
         void request_block();
+        // adds a block to the request queue
+        // returns true if successful, false otherwise
+        enum flags_t { req_time_critical = 1, req_busy = 2 };
         bool add_request(piece_block const& b, int flags = 0);
         void send_block_requests();
 
@@ -382,6 +388,11 @@ namespace libed2k
         // be 0, in case the connection is incoming
         // and hasn't been added to a transfer yet.
         peer* m_peer;
+
+        // this is a measurement of how fast the peer
+        // it allows some variance without changing
+        // back and forth between states
+        peer_speed_t m_speed;
 
         // the ticket id from the connection queue.
         // This is used to identify the connection

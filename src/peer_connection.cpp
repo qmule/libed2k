@@ -101,6 +101,7 @@ void peer_connection::reset()
 {
     m_disconnecting = false;
     m_connection_ticket = -1;
+    m_speed = slow;
     m_desired_queue_size = 32;
 
     m_channel_state[upload_channel] = bw_idle;
@@ -222,6 +223,26 @@ void peer_connection::get_peer_info(peer_info& p) const
     }
 }
 
+peer_connection::peer_speed_t peer_connection::peer_speed()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    assert(t);
+
+    int download_rate = int(statistics().download_payload_rate());
+    int transfer_download_rate = int(t->statistics().download_payload_rate());
+
+    if (download_rate > 512 && download_rate > transfer_download_rate / 16)
+        m_speed = fast;
+    else if (download_rate > 4096 && download_rate > transfer_download_rate / 64)
+        m_speed = medium;
+    else if (download_rate < transfer_download_rate / 15 && m_speed == fast)
+        m_speed = medium;
+    else
+        m_speed = slow;
+
+    return m_speed;
+}
+
 void peer_connection::second_tick(int tick_interval_ms)
 {
     if (!is_closed())
@@ -290,12 +311,28 @@ void peer_connection::request_block()
 
     int prefer_whole_pieces = 0;
 
-    // TODO: state = c.peer_speed()
-    piece_picker::piece_state_t state = piece_picker::medium;
+    piece_picker::piece_state_t state;
+    peer_speed_t speed = peer_speed();
+    if (speed == fast) state = piece_picker::fast;
+    else if (speed == medium) state = piece_picker::medium;
+    else state = piece_picker::slow;
 
     p.pick_pieces(m_remote_hashset.pieces(), interesting_pieces,
                   num_requests, prefer_whole_pieces, m_peer,
                   state, picker_options(), std::vector<int>());
+
+    // if the number of pieces we have + the number of pieces
+    // we're requesting from is less than the number of pieces
+    // in the transfer, there are still some unrequested pieces
+    // also, if we already have at least one outstanding
+    // request, we shouldn't pick any busy pieces either
+    bool dont_pick_busy_blocks = 
+        (p.num_have() + p.get_download_queue().size() < t->num_pieces()) ||
+        m_download_queue.size() + m_request_queue.size() > 0;
+
+    // this is filled with an interesting piece
+    // that some other peer is currently downloading
+    piece_block busy_block = piece_block::invalid;
 
     for (std::vector<piece_block>::iterator i = interesting_pieces.begin();
          i != interesting_pieces.end(); ++i)
@@ -303,6 +340,16 @@ void peer_connection::request_block()
         int num_block_requests = p.num_peers(*i);
         if (num_block_requests > 0)
         {
+            // have we picked enough pieces?
+            if (num_requests <= 0) break;
+
+            // this block is busy. This means all the following blocks
+            // in the interesting_pieces list are busy as well, we might
+            // as well just exit the loop
+            if (dont_pick_busy_blocks) break;
+
+            assert(p.num_peers(*i) > 0);
+            busy_block = *i;
             continue;
         }
 
@@ -325,6 +372,22 @@ void peer_connection::request_block()
         if (!add_request(*i, 0)) continue;
         num_requests--;
     }
+
+    // if we don't have any potential busy blocks to request
+    // or if we already have outstanding requests, don't
+    // pick a busy piece
+    if (busy_block == piece_block::invalid ||
+        m_download_queue.size() + m_request_queue.size() > 0)
+    {
+        return;
+    }
+
+    assert(p.is_requested(busy_block));
+    assert(!p.is_downloaded(busy_block));
+    assert(!p.is_finished(busy_block));
+    assert(p.num_peers(busy_block) > 0);
+
+    add_request(busy_block, peer_connection::req_busy);
 }
 
 bool peer_connection::add_request(const piece_block& block, int flags)
@@ -333,7 +396,29 @@ bool peer_connection::add_request(const piece_block& block, int flags)
 
     if (m_disconnecting) return false;
 
-    piece_picker::piece_state_t state = piece_picker::medium;
+    piece_picker::piece_state_t state;
+    peer_speed_t speed = peer_speed();
+    if (speed == fast) state = piece_picker::fast;
+    else if (speed == medium) state = piece_picker::medium;
+    else state = piece_picker::slow;
+
+    if (flags & req_busy)
+    {
+        // this block is busy (i.e. it has been requested
+        // from another peer already). Only allow one busy
+        // request in the pipeline at the time
+        for (std::vector<pending_block>::const_iterator i = m_download_queue.begin(),
+                 end(m_download_queue.end()); i != end; ++i)
+        {
+            if (i->busy) return false;
+        }
+
+        for (std::vector<pending_block>::const_iterator i = m_request_queue.begin(),
+                 end(m_request_queue.end()); i != end; ++i)
+        {
+            if (i->busy) return false;
+        }
+    }
 
     if (!t->picker().mark_as_downloading(block, get_peer(), state))
         return false;
@@ -836,6 +921,22 @@ void peer_connection::on_receive_data(
             " : {piece: "<< block_finished.piece_index <<
             ", block: " << block_finished.block_index << ", length: " << r.length
             << "} was not in the request queue");
+        return;
+    }
+
+    // if the block we got is already finished, then ignore it
+    if (picker.is_downloaded(block_finished))
+    {
+        DBG("The block we just got from " << m_remote <<
+            " : {piece: "<< block_finished.piece_index <<
+            ", block: " << block_finished.block_index << ", length: " << r.length
+            << "} is already downloaded");
+
+        //t->add_redundant_bytes(p.length);
+        m_download_queue.erase(b);
+
+        request_block();
+        send_block_requests();
         return;
     }
 
