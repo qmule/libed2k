@@ -45,7 +45,7 @@ namespace libed2k
     {
         pending_block(const piece_block& b, fsize_t fsize):
             skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
-            covering(block_range(b.piece_index, b.block_index, fsize)) {}
+            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL) {}
 
         // the number of times the request
         // has been skipped by out of order blocks
@@ -67,15 +67,20 @@ namespace libed2k
         bool busy:1;
 
         piece_block block;
-
         // block covering
-        range<fsize_t> covering;
+        range<fsize_t> data_left;
+        // disk receive buffer
+        char* buffer;
 
         bool operator==(const pending_block& b)
         {
             return b.skipped == skipped && b.block == block
                 && b.not_wanted == not_wanted && b.timed_out == timed_out;
         }
+
+        void complete(const std::pair<fsize_t,fsize_t>& range) { data_left -= range; }
+
+        bool completed() const { return data_left.empty(); }
     };
 
     struct has_block

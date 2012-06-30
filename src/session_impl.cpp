@@ -925,8 +925,6 @@ std::vector<transfer_handle> session_impl::get_transfers()
 
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
 {
-    DBG("session_impl::close_connection(CLOSING CONNECTION "
-        << p->remote() << " : " << ec.message() << ")");
     connection_map::iterator i =
         std::find_if(m_connections.begin(), m_connections.end(),
                      boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p);

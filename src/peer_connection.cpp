@@ -30,9 +30,14 @@ std::pair<fsize_t, fsize_t> mk_range(const peer_request& r)
     return std::make_pair(begin, end);
 }
 
-piece_block mk_block(const peer_request& r)
+inline piece_block mk_block(const peer_request& r)
 {
     return piece_block(r.piece, r.start / BLOCK_SIZE);
+}
+
+inline size_t offset_in_block(const peer_request& r)
+{
+    return r.start % BLOCK_SIZE;
 }
 
 std::pair<peer_request, peer_request> split_request(const peer_request& req)
@@ -44,6 +49,12 @@ std::pair<peer_request, peer_request> split_request(const peer_request& req)
     left.length = req.length - r.length;
 
     return std::make_pair(r, left);
+}
+
+size_t block_size(const piece_block& b, fsize_t s)
+{
+    std::pair<fsize_t, fsize_t> r = block_range(b.piece_index, b.block_index, s);
+    return size_t(r.second - r.first);
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
@@ -147,7 +158,6 @@ void peer_connection::reset()
 peer_connection::~peer_connection()
 {
     m_disk_recv_buffer_size = 0;
-    DBG("*** PEER CONNECTION CLOSED");
 }
 
 void peer_connection::init()
@@ -263,7 +273,8 @@ void peer_connection::request_block()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    if (m_disconnecting || t->is_seed()) return;
+    if (m_disconnecting) return;
+    if (!t || t->is_seed()) return;
 
     int num_requests = m_desired_queue_size
         - (int)m_download_queue.size()
@@ -336,7 +347,7 @@ void peer_connection::send_block_requests()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    if (m_disconnecting) return;
+    if (!t || m_disconnecting) return;
     // send in 3 requests at a time
     if (m_download_queue.size() + 2 >= m_desired_queue_size) return;
 
@@ -401,27 +412,11 @@ char* peer_connection::release_disk_receive_buffer()
 void peer_connection::on_timeout()
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
-
-    error_code ec;
-    DBG("CONNECTION TIMED OUT: " << m_remote);
-
     disconnect(errors::timed_out, 1);
 }
 
 void peer_connection::disconnect(error_code const& ec, int error)
 {
-    switch (error)
-    {
-    case 0:
-        DBG("peer_connection::disconnect(*** CONNECTION CLOSED) " << ec.message());
-        break;
-    case 1:
-        DBG("peer_connection::disconnect*** CONNECTION FAILED) " << ec.message());
-        break;
-    case 2:
-        DBG("peer_connection::disconnect*** PEER ERROR) " << ec.message());
-        break;
-    }
     // TODO: implement
 
     //if (error > 0) m_failed = true;
@@ -476,11 +471,11 @@ void peer_connection::disconnect(error_code const& ec, int error)
         m_transfer.reset();
     }
 
-    DBG("peer_connection::disconnect: close");
     m_disconnecting = true;
     base_connection::close(ec); // close transport
     m_ses.close_connection(this, ec);
-    m_ses.m_alerts.post_alert_should(peer_disconnected_alert(get_network_point(), get_connection_hash(), ec));
+    m_ses.m_alerts.post_alert_should(
+        peer_disconnected_alert(get_network_point(), get_connection_hash(), ec));
 }
 
 void peer_connection::connect(int ticket)
@@ -771,17 +766,37 @@ void peer_connection::receive_data(const peer_request& req)
     std::pair<peer_request, peer_request> reqs = split_request(req);
     peer_request r = reqs.first;
     peer_request left = reqs.second;
+    piece_block block(mk_block(r));
+    boost::shared_ptr<transfer> t = m_transfer.lock();
 
     if (r.length > 0)
     {
-        if (!allocate_disk_receive_buffer(r.length))
+        std::vector<pending_block>::iterator b =
+            std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(block));
+
+        if (b == m_download_queue.end())
         {
-            ERR("cannot allocate disk receive buffer " << r.length);
+            ERR("The block we just got from " << m_remote <<
+                " : {piece: "<< block.piece_index <<
+                ", block: " << block.block_index << ", length: " << r.length
+                << "} was not in the request queue");
             return;
         }
 
+        if (!b->buffer)
+        {
+            if (!allocate_disk_receive_buffer(
+                    std::min<size_t>(block_size(block, t->filesize()), DISK_BLOCK_SIZE)))
+            {
+                ERR("cannot allocate disk receive buffer " << r.length);
+                return;
+            }
+
+            b->buffer = m_disk_recv_buffer.get();
+        }
+
         boost::asio::async_read(
-            *m_socket, boost::asio::buffer(m_disk_recv_buffer.get(), r.length),
+            *m_socket, boost::asio::buffer(b->buffer + offset_in_block(r), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r, left)));
         m_channel_state[download_channel] = bw_network;
@@ -824,13 +839,18 @@ void peer_connection::on_receive_data(
         return;
     }
 
-    disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-    fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
-                                          self_as<peer_connection>(), _1, _2, r, left, t));
+    b->complete(mk_range(r));
+
+    if (b->completed())
+    {
+        disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
+        fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
+                                              self_as<peer_connection>(), _1, _2, r, left, t));
+    }
 
     if (left.length > 0)
         receive_data(left);
-    else
+    else if (b->completed())
     {
         bool was_finished = picker.is_piece_finished(r.piece);
         picker.mark_as_writing(block_finished, get_peer());
@@ -874,7 +894,7 @@ void peer_connection::on_disk_write_complete(
 
         if (t->is_seed()) return;
 
-        piece_block block_finished(r.piece, r.start / BLOCK_SIZE);
+        piece_block block_finished(mk_block(r));
         piece_picker& picker = t->picker();
         picker.mark_as_finished(block_finished, get_peer());
     }

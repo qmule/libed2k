@@ -22,7 +22,6 @@ namespace libed2k
 
     base_connection::~base_connection()
     {
-        DBG("~base_connection");
         boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
@@ -35,7 +34,7 @@ namespace libed2k
 
     void base_connection::close(const error_code& ec)
     {
-        DBG("base_connection::close(" << ec.message() << ")");
+        DBG("close connection {remote: " << m_remote << ", msg: "<< ec.message() << "}");
         m_socket->close();
         m_deadline.cancel();
     }

@@ -206,9 +206,6 @@ namespace libed2k
 
     void transfer::remove_peer(peer_connection* c)
     {
-        // TODO: implement
-        DBG("transfer::remove_peer(" << c << ")");
-
         std::set<peer_connection*>::iterator i = m_connections.find(c);
         if (i == m_connections.end())
         {
