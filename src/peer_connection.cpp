@@ -505,11 +505,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     // TODO: implement
 
     //if (error > 0) m_failed = true;
-    if (m_disconnecting)
-    {
-        DBG("peer_connection::disconnect: return because disconnecting");
-        return;
-    }
+    if (m_disconnecting) return;
 
     boost::intrusive_ptr<peer_connection> me(this);
 
@@ -637,7 +633,6 @@ void peer_connection::on_error(const error_code& error)
 
 void peer_connection::close(const error_code& ec)
 {
-    DBG("peer_connection::close(" << ec << ")");
     disconnect(ec);
 }
 
@@ -1500,10 +1495,7 @@ void peer_connection::on_hashset_answer(const error_code& error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
         const std::vector<md4_hash>& hash_set = ha.m_vhParts.m_collection;
-        DBG("hash set answer " << ha.m_hFile << " {");
-        for (std::vector<md4_hash>::const_iterator hi = hash_set.begin(); hi != hash_set.end(); ++hi)
-            DBG(" " << *hi);
-        DBG("} <== " << m_remote);
+        DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (t->hash() == ha.m_hFile)
