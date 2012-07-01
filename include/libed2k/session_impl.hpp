@@ -286,11 +286,6 @@ namespace libed2k {
             void announce(int tick_interval_ms);
 
             /**
-              * send server keep alive packet
-             */
-            void server_keep_alive(int tick_interval_ms);
-
-            /**
               * perform reconnect to server
               * will perform only when server connection offline
              */

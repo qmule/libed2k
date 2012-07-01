@@ -1205,6 +1205,7 @@ void session_impl::on_tick(error_code const& e)
 
     announce(tick_interval_ms);
     reconnect(tick_interval_ms);
+    m_server_connection->check_keep_alive(tick_interval_ms);
 
     // --------------------------------------------------------------
     // disconnect peers when we have too many
@@ -1421,14 +1422,6 @@ void session_impl::announce(int tick_interval_ms)
     {
         DBG("session_impl::announce: " << offer_list.m_size);
         m_server_connection->post_announce(offer_list);
-    }
-}
-
-void session_impl::server_keep_alive(int tick_interval_ms)
-{
-    if (m_settings.server_keep_alive_timeout == -1)
-    {
-        return;
     }
 }
 

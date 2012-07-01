@@ -20,10 +20,10 @@ namespace libed2k
     typedef boost::iostreams::basic_array_source<char> Device;
 
     server_connection::server_connection(aux::session_impl& ses):
+        m_last_keep_alive_packet(0),
         m_state(SC_OFFLINE),
         m_nClientId(0),
         m_name_lookup(ses.m_io_service),
-        m_keep_alive(ses.m_io_service),
         m_ses(ses),
         m_nTCPFlags(0),
         m_nAuxPort(0),
@@ -73,7 +73,6 @@ namespace libed2k
         m_socket.close();
         m_deadline.cancel();
         m_name_lookup.cancel();
-        m_keep_alive.cancel();
         m_udp_socket.close();
         m_ses.on_server_closed(ec); // inform session and changes it state
     }
@@ -113,6 +112,27 @@ namespace libed2k
         DBG("server_connection::post_announce: " << offer_list.m_collection.size());
         STATE_CMP(SC_TO_SERVER)
         do_write(offer_list);
+    }
+
+    void server_connection::check_keep_alive(int tick_interval_ms)
+    {
+        // keep alive only on online server and settings set keep alive packets
+        if (SC_ONLINE != m_state || m_ses.settings().server_keep_alive_timeout == -1)
+        {
+            return;
+        }
+
+        m_last_keep_alive_packet += tick_interval_ms;
+
+        if (m_last_keep_alive_packet < m_ses.settings().server_keep_alive_timeout*1000)
+        {
+            return;
+        }
+
+        DBG("write server keep alive on: " << m_last_keep_alive_packet);
+
+        server_get_list sgl;
+        do_write(sgl);
     }
 
     void server_connection::on_name_lookup(
@@ -200,10 +220,6 @@ namespace libed2k
         login.m_list.add_tag(make_typed_tag(nClientVersion, CT_EMULE_VERSION, true));
         login.m_list.dump();
 
-        // prepare server ping
-        m_keep_alive.expires_from_now(boost::posix_time::seconds(settings.server_keep_alive_timeout));
-        m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
-
         do_read();
         do_write(login);      // write login message
     }
@@ -224,17 +240,6 @@ namespace libed2k
             APP("found peer: " << peer);
             t->add_peer(peer);
         }
-    }
-
-    void server_connection::write_server_keep_alive()
-    {
-        DBG("server_connection::write_server_keep_alive()");
-        STATE_CMP(SC_TO_SERVER)
-        DBG("server_connection::write_server_keep_alive(ping)");
-        server_get_list sgl;
-        do_write(sgl);
-        m_keep_alive.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_keep_alive_timeout));
-        m_keep_alive.async_wait(boost::bind(&server_connection::write_server_keep_alive, self()));
     }
 
     void server_connection::handle_write(const error_code& error, size_t nSize)

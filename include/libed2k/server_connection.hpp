@@ -53,6 +53,7 @@ namespace libed2k
         void post_search_more_result_request();
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
         void post_announce(shared_files_list& offer_list);
+        void check_keep_alive(int tick_interval_ms);
     private:
 
         /**
@@ -68,8 +69,6 @@ namespace libed2k
         void on_connection_complete(error_code const& e);
         // file owners were found
         void on_found_peers(const found_file_sources& sources);
-
-        void write_server_keep_alive();
 
         void do_read();
         void do_read_udp();
@@ -116,10 +115,10 @@ namespace libed2k
         void check_deadline();
         bool compatible_state(char c) const;
 
+        int                             m_last_keep_alive_packet;
         char                            m_state;
         boost::uint32_t                 m_nClientId;
         tcp::resolver                   m_name_lookup;
-        dtimer                          m_keep_alive;       //!< timer for ping server
         aux::session_impl&              m_ses;
         boost::uint32_t                 m_nTCPFlags;
         boost::uint32_t                 m_nAuxPort;
@@ -164,6 +163,7 @@ namespace libed2k
 
         if (!bWriteInProgress)
         {
+            m_last_keep_alive_packet = 0;   // reset keep alive timeout
             std::vector<boost::asio::const_buffer> buffers;
             buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
             buffers.push_back(boost::asio::buffer(m_write_order.front().second));
