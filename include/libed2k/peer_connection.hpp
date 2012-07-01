@@ -182,6 +182,7 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
+        bool can_request() const;
 
         bool is_seed() const;
 
@@ -351,6 +352,7 @@ namespace libed2k
         // timeouts
         ptime m_last_receive;
         ptime m_last_sent;
+        time_duration m_timeout;
 
         // if this peer is receiving a piece, this
         // points to a disk buffer that the data is

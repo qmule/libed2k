@@ -34,6 +34,7 @@ namespace libed2k
             "transfer removed",
             "stopping transfer",
             "timed out",
+            "timed out inactivity",
             "connection to itself",
             "duplicate peer id",
             "too many connections",
