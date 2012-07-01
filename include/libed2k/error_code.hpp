@@ -40,6 +40,7 @@ namespace libed2k
             transfer_removed,
             stopping_transfer,
             timed_out,
+            timed_out_inactivity,
             self_connection,
             duplicate_peer_id,
             too_many_connections,

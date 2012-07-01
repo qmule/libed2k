@@ -45,7 +45,7 @@ namespace libed2k
     {
         pending_block(const piece_block& b, fsize_t fsize):
             skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
-            covering(block_range(b.piece_index, b.block_index, fsize)) {}
+            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL) {}
 
         // the number of times the request
         // has been skipped by out of order blocks
@@ -67,15 +67,20 @@ namespace libed2k
         bool busy:1;
 
         piece_block block;
-
         // block covering
-        range<fsize_t> covering;
+        range<fsize_t> data_left;
+        // disk receive buffer
+        char* buffer;
 
         bool operator==(const pending_block& b)
         {
             return b.skipped == skipped && b.block == block
                 && b.not_wanted == not_wanted && b.timed_out == timed_out;
         }
+
+        void complete(const std::pair<fsize_t,fsize_t>& range) { data_left -= range; }
+
+        bool completed() const { return data_left.empty(); }
     };
 
     struct has_block
@@ -116,6 +121,9 @@ namespace libed2k
         const hash_set& remote_hashset() const { return m_remote_hashset; }
 
         void get_peer_info(peer_info& p) const;
+
+        enum peer_speed_t { slow = 1, medium, fast };
+        peer_speed_t peer_speed();
 
         // is called once every second by the main loop
         void second_tick(int tick_interval_ms);
@@ -174,6 +182,7 @@ namespace libed2k
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
         bool can_read(char* state = 0) const;
+        bool can_request() const;
 
         bool is_seed() const;
 
@@ -206,6 +215,9 @@ namespace libed2k
         bool attach_to_transfer(const md4_hash& hash);
 
         void request_block();
+        // adds a block to the request queue
+        // returns true if successful, false otherwise
+        enum flags_t { req_time_critical = 1, req_busy = 2 };
         bool add_request(piece_block const& b, int flags = 0);
         void send_block_requests();
 
@@ -340,6 +352,7 @@ namespace libed2k
         // timeouts
         ptime m_last_receive;
         ptime m_last_sent;
+        time_duration m_timeout;
 
         // if this peer is receiving a piece, this
         // points to a disk buffer that the data is
@@ -377,6 +390,11 @@ namespace libed2k
         // be 0, in case the connection is incoming
         // and hasn't been added to a transfer yet.
         peer* m_peer;
+
+        // this is a measurement of how fast the peer
+        // it allows some variance without changing
+        // back and forth between states
+        peer_speed_t m_speed;
 
         // the ticket id from the connection queue.
         // This is used to identify the connection

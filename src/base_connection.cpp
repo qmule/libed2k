@@ -22,7 +22,6 @@ namespace libed2k
 
     base_connection::~base_connection()
     {
-        DBG("~base_connection");
         boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
@@ -35,7 +34,7 @@ namespace libed2k
 
     void base_connection::close(const error_code& ec)
     {
-        DBG("base_connection::close(" << ec.message() << ")");
+        DBG("close connection {remote: " << m_remote << ", msg: "<< ec.message() << "}");
         m_socket->close();
         m_deadline.cancel();
     }
@@ -102,6 +101,10 @@ namespace libed2k
 
     void base_connection::on_read_header(const error_code& error, size_t nSize)
     {
+        // keep ourselves alive in until this function exits in
+        // case we disconnect
+        boost::intrusive_ptr<base_connection> me(self());
+
         m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
@@ -148,6 +151,10 @@ namespace libed2k
 
     void base_connection::on_read_packet(const error_code& error, size_t nSize)
     {
+        // keep ourselves alive in until this function exits in
+        // case we disconnect
+        boost::intrusive_ptr<base_connection> me(self());
+
         m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
@@ -195,6 +202,10 @@ namespace libed2k
 
     void base_connection::on_write(const error_code& error, size_t nSize)
     {
+        // keep ourselves alive in until this function exits in
+        // case we disconnect
+        boost::intrusive_ptr<base_connection> me(self());
+
         if (is_closed()) return;
 
         if (!error) {
