@@ -101,6 +101,10 @@ namespace libed2k
 
     void base_connection::on_read_header(const error_code& error, size_t nSize)
     {
+        // keep ourselves alive in until this function exits in
+        // case we disconnect
+        boost::intrusive_ptr<base_connection> me(self());
+
         m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
@@ -147,6 +151,10 @@ namespace libed2k
 
     void base_connection::on_read_packet(const error_code& error, size_t nSize)
     {
+        // keep ourselves alive in until this function exits in
+        // case we disconnect
+        boost::intrusive_ptr<base_connection> me(self());
+
         m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
@@ -194,6 +202,10 @@ namespace libed2k
 
     void base_connection::on_write(const error_code& error, size_t nSize)
     {
+        // keep ourselves alive in until this function exits in
+        // case we disconnect
+        boost::intrusive_ptr<base_connection> me(self());
+
         if (is_closed()) return;
 
         if (!error) {

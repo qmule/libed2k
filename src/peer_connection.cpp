@@ -892,7 +892,12 @@ void peer_connection::receive_data(const peer_request& req)
 void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
+    // keep ourselves alive in until this function exits in
+    // case we disconnect
+    boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
+
     m_statistics.received_bytes(bytes_transferred, 0);
+    if (error) disconnect(error);
     if (m_disconnecting || is_closed()) return;
 
     assert(int(bytes_transferred) == r.length);
@@ -1494,7 +1499,6 @@ void peer_connection::on_hashset_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
-        const std::vector<md4_hash>& hash_set = ha.m_vhParts.m_collection;
         DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
