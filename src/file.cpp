@@ -1168,6 +1168,52 @@ namespace libed2k
         return (retvalue.str());
     }
 
+    emule_collection_entry emule_collection::fromLink(const std::string& strLink)
+    {
+        emule_collection_entry ecl;
+        // 12345678901234       56       7 + 32 + 89 = 19+32=51
+        // ed2k://|file|fileName|fileSize|fileHash|/
+        if (strLink.size() < 51 || strLink.substr(0,13) != "ed2k://|file|" ||
+            strLink.substr(strLink.size()-2) != "|/")
+        {
+            return ecl;
+        }
+
+        size_t iName = strLink.find("|",13);
+
+        if (iName == std::string::npos)
+        {
+            return ecl;
+        }
+        std::string fileName = strLink.substr(13,iName-13);
+
+        size_t iSize = strLink.find("|",iName+1);
+
+        if (iSize == std::string::npos)
+        {
+            return ecl;
+        }
+
+        std::stringstream sFileSize;
+        sFileSize << strLink.substr(iName+1,iSize-iName-1);
+        boost::uint64_t fileSize;
+
+        if ((sFileSize >> std::dec >> fileSize).fail())
+        {
+            return ecl;
+        }
+
+        size_t iHash = strLink.find("|",iSize+1);
+        if (iHash == std::string::npos)
+        {
+            return ecl;
+        }
+
+        std::string fileHash = strLink.substr(iSize+1,32);
+
+        return emule_collection_entry(fileName, fileSize, md4_hash::fromString(fileHash));
+    }
+
     emule_collection_entry pending2collectionentry(const pending_file& f)
     {
         if (!f.m_hash.defined())
@@ -1237,46 +1283,15 @@ namespace libed2k
 
     bool emule_collection::add_link(const std::string& strLink)
     {
-        // 12345678901234       56       7 + 32 + 89 = 19+32=51
-        // ed2k://|file|fileName|fileSize|fileHash|/
-        if (strLink.size() < 51 || strLink.substr(0,13) != "ed2k://|file|" ||
-            strLink.substr(strLink.size()-2) != "|/")
+        emule_collection_entry ecl = fromLink(strLink);
+
+        if (ecl.defined())
         {
-            return false;
+            m_files.push_back(ecl);
+            return (true);
         }
 
-        size_t iName = strLink.find("|",13);
-
-        if (iName == std::string::npos)
-        {
-            return false;
-        }
-        std::string fileName = strLink.substr(13,iName-13);
-
-        size_t iSize = strLink.find("|",iName+1);
-
-        if (iSize == std::string::npos)
-        {
-            return false;
-        }
-
-        std::stringstream sFileSize;
-        sFileSize << strLink.substr(iName+1,iSize-iName-1);
-        boost::uint64_t fileSize;
-
-        if ((sFileSize >> std::dec >> fileSize).fail())
-        {
-            return false;
-        }
-
-        size_t iHash = strLink.find("|",iSize+1);
-        if (iHash == std::string::npos)
-        {
-            return false;
-        }
-
-        std::string fileHash = strLink.substr(iSize+1,32);
-        return add_file(fileName, fileSize, fileHash);
+        return (false);
     }
 
     bool emule_collection::add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash)

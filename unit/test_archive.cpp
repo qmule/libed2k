@@ -735,5 +735,14 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     BOOST_CHECK(ec_trans == pc2.m_files);
 }
 
+BOOST_AUTO_TEST_CASE(test_links_parsing)
+{
+    std::string strLink1 = libed2k::emule_collection::toLink("somw_file", 100, libed2k::md4_hash::m_emptyMD4Hash);
+    BOOST_CHECK(libed2k::emule_collection::fromLink(strLink1).defined());
+    BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more3|fd|ggfgfg|/").defined());
+    BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|more2|10|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
+    BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more1|0|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

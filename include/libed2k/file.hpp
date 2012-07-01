@@ -442,6 +442,10 @@ namespace libed2k
      */
     struct emule_collection_entry
     {
+        emule_collection_entry() : m_filename(""), m_filesize(0)
+        {
+        }
+
         emule_collection_entry(const std::string& strFilename, fsize_t nFilesize, const md4_hash& hash) :
             m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
 
@@ -450,6 +454,11 @@ namespace libed2k
             return (m_filename == ce.m_filename &&
                     m_filesize == ce.m_filesize &&
                     m_filehash == ce.m_filehash);
+        }
+
+        bool defined() const
+        {
+            return (!m_filename.empty() && m_filesize != 0 && m_filehash.defined());
         }
 
         std::string     m_filename;
@@ -471,6 +480,7 @@ namespace libed2k
           * generate ed2k link from collection item
          */
         static std::string toLink(const std::string& strFilename, fsize_t nFilesize, const md4_hash& hFile);
+        static emule_collection_entry fromLink(const std::string& strLink);
 
         /**
           * generate emule collection from pending collection
