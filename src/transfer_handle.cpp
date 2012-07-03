@@ -63,7 +63,7 @@ namespace libed2k
 
     md4_hash transfer_handle::hash() const
     {
-        static const md4_hash empty_hash(md4_hash::m_emptyMD4Hash);
+        static const md4_hash empty_hash(md4_hash::terminal);
         LIBED2K_FORWARD_RETURN(hash(), empty_hash);
     }
 

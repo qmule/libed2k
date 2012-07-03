@@ -1073,8 +1073,8 @@ namespace libed2k
                 lazy_entry const* hv = m_resume_entry.dict_find_list("hashset-values");
                 lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
 
-                // check we have same count hashes as pieces
-                if (pieces->string_length() != hv->list_size())
+                // check we have same count hashes as pieces (additional check for terminal hash)
+                if (pieces->string_length() != hv->list_size() && pieces->string_length() != (hv->list_size() + 1))
                 {
                     ERR("pieces: " << pieces->string_length() << " hashes: " << hv->list_size());
                     m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(),

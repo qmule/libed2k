@@ -32,7 +32,7 @@ namespace libed2k
             m_show_shared_files(true)
         {
             // prepare empty client hash
-            client_hash = md4_hash::m_emptyMD4Hash;
+            client_hash = md4_hash::terminal;
             client_hash[5] = 14;
             client_hash[14] = 111;
         }
