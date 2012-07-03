@@ -65,7 +65,7 @@ namespace libed2k
         {
             boost::mutex::scoped_lock lock(m_mutex);
             DBG("addtransfer: " << libed2k::convert_to_native(libed2k::bom_filter(t.file_path.string())) 
-                << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(t.m_collection_path.string())));
+                << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(t.collection_path.string())));
             //return (transfer_handle(boost::weak_ptr<transfer>()));
 
             // after save we load all files from known.met
@@ -147,13 +147,13 @@ namespace libed2k
             {
                 itr->dump();
                 kfc.m_known_file_list.add(known_file_entry(itr->file_hash,
-                        itr->piece_hash.all_hashes(),
+                        itr->hashset,
                         itr->file_path,
                         itr->file_size,
-                        itr->m_accepted,
-                        itr->m_requested,
-                        itr->m_transferred,
-                        itr->m_priority));
+                        itr->accepted,
+                        itr->requested,
+                        itr->transferred,
+                        itr->priority));
 
                 ++itr;
             }

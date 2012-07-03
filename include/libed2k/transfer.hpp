@@ -42,10 +42,14 @@ namespace libed2k {
         ~transfer();
 
         const md4_hash& hash() const { return m_filehash; }
-        const hash_set& hashset() const { return m_hashset; }
         fsize_t filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
+
+        const bitfield& pieces() const { return m_pieces; }
+        const std::vector<md4_hash>& hashset() const { return m_hashset; }
+        void hashset(const std::vector<md4_hash>& hs) { m_hashset = hs; }
+        const md4_hash& hash(size_t piece) const { return m_hashset.at(piece); }
 
         transfer_handle handle();
         void start();
@@ -264,11 +268,13 @@ namespace libed2k {
         tcp::endpoint m_net_interface;
 
         md4_hash m_filehash;
-        hash_set m_hashset;
         fs::path m_filepath;
         fs::path m_collectionpath;
         fsize_t m_filesize;
         boost::uint32_t m_file_type;
+
+        bitfield m_pieces;
+        std::vector<md4_hash> m_hashset;
 
         // determines the storage state for this transfer.
         storage_mode_t m_storage_mode;

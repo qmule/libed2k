@@ -775,9 +775,9 @@ namespace libed2k
                 {
                     add_transfer_params atp;
                     // since transfers work in UTF-8 code page we save paths in this code page
-                    atp.m_collection_path = pp.first;   // store collection path as is - in UTF-8
-                    atp.file_path         = pp.second;  // store file path as is in UTF-8
-                    atp.seed_mode         = true;       // it is seed!
+                    atp.collection_path = pp.first;   // store collection path as is - in UTF-8
+                    atp.file_path       = pp.second;  // store file path as is in UTF-8
+                    atp.seed_mode       = true;       // it is seed!
 
                     // generate operations path in native code page
                     fs::path p = convert_to_native(bom_filter(pp.second.string()));
@@ -790,6 +790,8 @@ namespace libed2k
                     bool    bPartial = false; // check last part in file not full
                     uintmax_t nFileSize = fs::file_size(p);
                     atp.file_size = nFileSize;
+                    // we have all pieces
+                    atp.pieces = bitfield(piece_count(nFileSize), 1);
 
                     if (nFileSize == 0)
                     {
@@ -857,8 +859,10 @@ namespace libed2k
                             }
 
                             libed2k::md4_hash hash;
-                            md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                            atp.piece_hash.append(hash);
+                            md4_hasher.CalculateDigest(
+                                hash.getContainer(),
+                                reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
+                            atp.hashset.push_back(hash);
                             // generate hash
                             nLocalOffset    += nLength;
                             nCurrentOffset  += nLength;
@@ -876,20 +880,19 @@ namespace libed2k
                     // when we don't have last partial piece - add special hash
                     if (!bPartial)
                     {
-                        atp.piece_hash.set_terminal();
+                        atp.hashset.push_back(md4_hash::terminal);
                     }
 
-                    std::vector<md4_hash> hashes = atp.piece_hash.all_hashes();
-                    if (hashes.size() > 1)
+                    if (atp.hashset.size() > 1)
                     {
                         md4_hasher.CalculateDigest(
                             atp.file_hash.getContainer(),
-                            reinterpret_cast<const unsigned char*>(&hashes[0]),
-                            hashes.size()*libed2k::MD4_HASH_SIZE);
+                            reinterpret_cast<const unsigned char*>(&atp.hashset[0]),
+                            atp.hashset.size()*libed2k::MD4_HASH_SIZE);
                     }
                     else
                     {
-                        atp.file_hash = atp.piece_hash.hashes()[0];
+                        atp.file_hash = atp.hashset[0];
                     }
 
                     m_add_transfer(atp);

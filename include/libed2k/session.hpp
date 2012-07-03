@@ -37,79 +37,63 @@ namespace libed2k {
     class add_transfer_params
     {
     public:
-        add_transfer_params():
-            file_size(0),
-            resume_data(0),
-            storage_mode(storage_mode_sparse),
-            duplicate_is_error(false),
-            seed_mode(false),
-            m_accepted(0),
-            m_requested(0),
-            m_transferred(0),
-            m_priority(0)
-        {}
+        add_transfer_params() { reset(); }
 
-        add_transfer_params(const fs::path& cpath):
-                    m_collection_path(cpath),
-                    file_size(0),
-                    resume_data(0),
-                    storage_mode(storage_mode_sparse),
-                    duplicate_is_error(false),
-                    seed_mode(false),
-                    m_accepted(0),
-                    m_requested(0),
-                    m_transferred(0),
-                    m_priority(0)
-                {}
-
-        add_transfer_params(const md4_hash& hash, const hash_set& hset, size_t nSize, const fs::path& cpath, const fs::path& fpath) :
-            file_hash(hash),
-            piece_hash(hset),
-            file_path(fpath),
-            m_collection_path(cpath),
-            file_size(nSize),
-            resume_data(0),
-            storage_mode(storage_mode_sparse),
-            duplicate_is_error(false),
-            seed_mode(true),
-            m_accepted(0),
-            m_requested(0),
-            m_transferred(0),
-            m_priority(0)
+        add_transfer_params(const fs::path& cpath)
         {
+            reset();
+            collection_path = cpath;
+        }
+
+        add_transfer_params(const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
+                            const bitfield& ps, const std::vector<md4_hash>& hset)
+        {
+            reset();
+            file_hash = hash;
+            file_path = fpath;
+            collection_path = cpath;
+            file_size = nSize;
+            pieces = ps;
+            hashset = hset;
+            seed_mode = true;
         }
 
         md4_hash file_hash;
-        hash_set piece_hash;
         fs::path file_path; // in UTF8 always!
-        fs::path m_collection_path;
+        fs::path collection_path;
         fsize_t  file_size;
+        bitfield pieces;
+        std::vector<md4_hash> hashset;
         std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
         bool seed_mode;
 
-        boost::uint32_t m_accepted;
-        boost::uint32_t m_requested;
-        boost::uint64_t m_transferred;
-        boost::uint8_t  m_priority;
+        boost::uint32_t accepted;
+        boost::uint32_t requested;
+        boost::uint64_t transferred;
+        boost::uint8_t  priority;
 
         bool operator==(const add_transfer_params& t) const
         {
             return (file_hash == t.file_hash &&
-                    piece_hash.all_hashes() == t.piece_hash.all_hashes() &&
                     file_path == t.file_path &&
                     file_size == t.file_size &&
-                    m_accepted == t.m_accepted &&
-                    m_requested == t.m_requested &&
-                    m_transferred == t.m_transferred &&
-                    m_priority  == t.m_priority &&
-                    m_collection_path == t.m_collection_path
+                    //pieces == t.pieces &&
+                    hashset == t.hashset &&
+                    accepted == t.accepted &&
+                    requested == t.requested &&
+                    transferred == t.transferred &&
+                    priority  == t.priority &&
+                    collection_path == t.collection_path
                     );
         }
 
         void dump() const;
+
+    private:
+        void reset();
     };
 
     typedef boost::function<void (const add_transfer_params&)> add_transfer_handler;

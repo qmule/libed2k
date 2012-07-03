@@ -171,7 +171,7 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.up_speed = m_statistics.upload_rate();
     p.payload_down_speed = m_statistics.download_payload_rate();
     p.payload_up_speed = m_statistics.upload_payload_rate();
-    p.num_pieces = m_remote_hashset.pieces().count();
+    p.num_pieces = m_remote_pieces.count();
 
     p.total_download = m_statistics.total_payload_download();
     p.total_upload = m_statistics.total_payload_upload();
@@ -194,7 +194,7 @@ void peer_connection::get_peer_info(peer_info& p) const
         p.downloading_total = 0;
     }
 
-    p.pieces = m_remote_hashset.pieces();
+    p.pieces = m_remote_pieces;
 
     // this will set the flags so that we can update them later
     p.flags = 0;
@@ -335,7 +335,7 @@ void peer_connection::request_block()
     else if (speed == medium) state = piece_picker::medium;
     else state = piece_picker::slow;
 
-    p.pick_pieces(m_remote_hashset.pieces(), interesting_pieces,
+    p.pick_pieces(m_remote_pieces, interesting_pieces,
                   num_requests, prefer_whole_pieces, m_peer,
                   state, picker_options(), std::vector<int>());
 
@@ -672,12 +672,12 @@ bool peer_connection::can_read(char* state) const
 bool peer_connection::can_request() const
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
-    return t && t->num_pieces() == m_remote_hashset.pieces().size();
+    return t && t->num_pieces() == m_remote_pieces.size();
 }
 
 bool peer_connection::is_seed() const
 {
-    const bitfield& pieces = m_remote_hashset.pieces();
+    const bitfield& pieces = m_remote_pieces;
     int pieces_count  = pieces.count();
     return pieces_count == (int)pieces.size() && pieces_count > 0;
 }
@@ -993,14 +993,11 @@ void peer_connection::on_receive_data(
         // to disk or are in the disk write cache
         if (picker.is_piece_finished(r.piece) && !was_finished)
         {
-            boost::optional<const md4_hash&> hash;
-            if (t->filesize() < PIECE_SIZE)
-                hash = t->hash();
-            else
-                hash = m_remote_hashset.hash(r.piece);
-            assert(hash);
+            const md4_hash& hash =
+                t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+
             t->async_verify_piece(
-                r.piece, *hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
+                r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
         }
 
         m_channel_state[download_channel] = bw_idle;
@@ -1162,10 +1159,7 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
 void peer_connection::write_hashset_answer(
     const md4_hash& file_hash, const std::vector<md4_hash>& hash_set)
 {
-    DBG("hashset {");
-    for (std::vector<md4_hash>::const_iterator hi = hash_set.begin(); hi != hash_set.end(); ++hi)
-        DBG(" " << *hi);
-    DBG("} ==> " << m_remote);
+    DBG("hashset {file: " << file_hash << "} ==> " << m_remote);
 
     client_hashset_answer ha;
     ha.m_hFile = file_hash;
@@ -1385,7 +1379,7 @@ void peer_connection::on_file_request(const error_code& error)
         if (attach_to_transfer(fr.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_status(fr.m_hFile, t->hashset().pieces());
+            write_file_status(fr.m_hFile, t->pieces());
         }
         else
         {
@@ -1456,7 +1450,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 
         if (t->hash() == fr.m_hFile)
         {
-            write_file_status(t->hash(), t->hashset().pieces());
+            write_file_status(t->hash(), t->pieces());
         }
         else
         {
@@ -1487,7 +1481,7 @@ void peer_connection::on_file_status(const error_code& error)
 
         if (t->hash() == fs.m_hFile && t->has_picker())
         {
-            m_remote_hashset.pieces(fs.m_status);
+            m_remote_pieces = fs.m_status;
             t->picker().inc_refcount(fs.m_status);
             if (t->filesize() < PIECE_SIZE)
                 write_start_upload(fs.m_hFile);
@@ -1518,7 +1512,7 @@ void peer_connection::on_hashset_request(const error_code& error)
 
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset().all_hashes());
+            write_hashset_answer(t->hash(), t->hashset());
         }
         else
         {
@@ -1544,7 +1538,7 @@ void peer_connection::on_hashset_answer(const error_code& error)
 
         if (t->hash() == ha.m_hFile)
         {
-            m_remote_hashset.hashes(ha.m_vhParts.m_collection);
+            t->hashset(ha.m_vhParts.m_collection);
             write_start_upload(t->hash());
         }
         else
