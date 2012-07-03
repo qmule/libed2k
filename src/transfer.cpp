@@ -987,15 +987,7 @@ namespace libed2k
             if (has_picker() && j.piece >= 0) picker().write_failed(block_finished);
         }
 
-        if (j.error ==
-#if BOOST_VERSION == 103500
-            error_code(boost::system::posix_error::not_enough_memory, get_posix_category())
-#elif BOOST_VERSION > 103500
-            error_code(boost::system::errc::not_enough_memory, get_posix_category())
-#else
-            asio::error::no_memory
-#endif
-            )
+        if (j.error == error_code(boost::system::errc::not_enough_memory, get_posix_category()))
         {
             m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
 
