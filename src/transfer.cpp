@@ -1084,6 +1084,10 @@ namespace libed2k
                     lazy_entry().swap(m_resume_entry);
                     return;
                 }
+                else
+                {
+                    DBG("fast resume data contains equal hashes and pieces count");
+                }
 
                 m_hashset.reset(hv->list_size());
 
