@@ -49,6 +49,11 @@ namespace libed2k
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
     }
 
+    inline size_t piece_count(fsize_t fsize)
+    {
+        return div_ceil(fsize, PIECE_SIZE);
+    }
+
     extern std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size);
 
     inline ptime time_now()

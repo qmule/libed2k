@@ -24,30 +24,31 @@ namespace libed2k
         m_sequence_number(seq),
         m_net_interface(net_interface.address(), 0),
         m_filehash(p.file_hash),
-        m_hashset(p.piece_hash),
         m_filepath(p.file_path),
-        m_collectionpath(p.m_collection_path),
+        m_collectionpath(p.collection_path),
         m_filesize(p.file_size),
+        m_pieces(p.pieces),
+        m_hashset(p.hashset),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
         m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash())),
-        m_accepted(p.m_accepted),
-        m_requested(p.m_requested),
-        m_transferred(p.m_transferred),
-        m_priority(p.m_priority),
+        m_accepted(p.accepted),
+        m_requested(p.requested),
+        m_transferred(p.transferred),
+        m_priority(p.priority),
         m_total_uploaded(0),
         m_total_downloaded(0),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
         DBG("transfer file size: " << m_filesize);
-        if (m_hashset.pieces().size() == 0)
-            m_hashset.reset(div_ceil(m_filesize, PIECE_SIZE));
+        if (m_pieces.size() == 0)
+            m_pieces.resize(piece_count(m_filesize), 0);
 
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
 
-        assert(m_hashset.pieces().size() == num_pieces());
+        assert(m_pieces.size() == num_pieces());
     }
 
     transfer::~transfer()
@@ -228,7 +229,7 @@ namespace libed2k
             {
                 if (m_picker.get())
                 {
-                    const bitfield& pieces = c->remote_hashset().pieces();
+                    const bitfield& pieces = c->remote_pieces();
                     if (pieces.size() > 0)
                         m_picker->dec_refcount(pieces);
                 }
@@ -334,7 +335,7 @@ namespace libed2k
              i != m_connections.end(); ++i)
         {
             peer_connection* p = *i;
-            if (p->remote_hashset().pieces().count() == int(num_have()))
+            if (p->remote_pieces().count() == int(num_have()))
                 seeds.push_back(p);
         }
         std::for_each(seeds.begin(), seeds.end(),
@@ -923,13 +924,12 @@ namespace libed2k
         }
 
         // store current hashset
-        ret["hashset-terminate"] = (m_hashset.has_terminal())?1:0;
         ret["hashset-values"]  = entry::list_type();
         entry::list_type& hv = ret["hashset-values"].list();
 
-        for (size_t n = 0; n < m_hashset.hashes().size(); ++n)
+        for (size_t n = 0; n < m_hashset.size(); ++n)
         {
-            hv.push_back(m_hashset.hashes().at(n).toString());
+            hv.push_back(m_hashset.at(n).toString());
         }
 
         ret["upload_rate_limit"] = upload_limit();
@@ -1089,16 +1089,11 @@ namespace libed2k
                     DBG("fast resume data contains equal hashes and pieces count");
                 }
 
-                m_hashset.reset(hv->list_size());
+                m_hashset.resize(hv->list_size());
 
                 for (int n = 0; n < hv->list_size(); ++n)
                 {
-                    m_hashset.hash(n, md4_hash::fromString(hv->list_at(n)->string_value()));
-                }
-
-                if (m_resume_entry.dict_find_int_value("hashset-terminate", 0) == 1)
-                {
-                    m_hashset.set_terminal();
+                    m_hashset[n] = md4_hash::fromString(hv->list_at(n)->string_value());
                 }
 
                 // we don't compare pieces count
@@ -1145,11 +1140,11 @@ namespace libed2k
                                 if (bits & (1 << k))
                                 {
                                     m_picker->mark_as_finished(piece_block(piece, bit), 0);
-                                    boost::optional<const md4_hash&> hs = m_hashset.hash(piece);
+                                    const md4_hash& hs = m_hashset.at(piece);
 
                                     // check piece when we have hash for it
                                     if (m_picker->is_piece_finished(piece))
-                                        async_verify_piece(piece, hs.get(), boost::bind(&transfer::piece_finished
+                                        async_verify_piece(piece, hs, boost::bind(&transfer::piece_finished
                                                 , shared_from_this(), piece, _1));
                                 }
                             }

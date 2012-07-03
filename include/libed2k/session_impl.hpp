@@ -42,12 +42,13 @@ namespace libed2k {
             dictionary_entry(fsize_t nFilesize);   // create and link
             dictionary_entry();
             fsize_t         file_size;
-            boost::uint32_t m_accepted;
-            boost::uint32_t m_requested;
-            boost::uint64_t m_transferred;
-            boost::uint8_t  m_priority;
+            boost::uint32_t accepted;
+            boost::uint32_t requested;
+            boost::uint64_t transferred;
+            boost::uint8_t  priority;
             md4_hash        m_hash;
-            hash_set        piece_hash;
+            bitfield        pieces;
+            std::vector<md4_hash> hashset;
         };
 
         /**

@@ -57,7 +57,7 @@ namespace libed2k
         {
             boost::mutex::scoped_lock lock(m_mutex);
             DBG("addtransfer: " << libed2k::convert_to_native(libed2k::bom_filter(params.file_path.string()))
-                << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(params.m_collection_path.string())));
+                << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(params.collection_path.string())));
             m_bWaitTransfer = false;
 
             boost::shared_ptr<transfer> transfer_ptr(new transfer(*((session_impl*)this), m_listen_interface, 0, params));

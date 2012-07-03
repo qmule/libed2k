@@ -11,15 +11,27 @@ namespace libed2k {
 void add_transfer_params::dump() const
 {
     DBG("add_transfer_params::dump");
-    DBG("file hash: " << file_hash << " all hashes size: " << piece_hash.all_hashes().size());
+    DBG("file hash: " << file_hash << " all hashes size: " << hashset.size());
     DBG("file path: " << convert_to_native(file_path.string()));
     DBG("file size: " << file_size);
-    DBG("accepted: " << m_accepted <<
-        " requested: " << m_requested <<
-        " transf: " << m_transferred <<
-        " priority: " << m_priority);
+    DBG("accepted: " << accepted <<
+        " requested: " << requested <<
+        " transf: " << transferred <<
+        " priority: " << priority);
 }
 
+void add_transfer_params::reset()
+{
+    file_size = 0;
+    seed_mode = false;
+    resume_data = 0;
+    storage_mode = storage_mode_sparse;
+    duplicate_is_error = false;
+    accepted = 0;
+    requested = 0;
+    transferred = 0;
+    priority = 0;
+}
 
 void session::init(const fingerprint& id, const char* listen_interface,
                    const session_settings& settings)

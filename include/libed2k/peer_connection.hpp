@@ -118,7 +118,7 @@ namespace libed2k
         void set_peer(peer* pi) { m_peer = pi; }
 
         const tcp::endpoint& remote() const { return m_remote; }
-        const hash_set& remote_hashset() const { return m_remote_hashset; }
+        const bitfield& remote_pieces() const { return m_remote_pieces; }
 
         void get_peer_info(peer_info& p) const;
 
@@ -368,7 +368,7 @@ namespace libed2k
         boost::weak_ptr<transfer> m_transfer;
 
         // the pieces the other end have
-        hash_set m_remote_hashset;
+        bitfield m_remote_pieces;
 
         // the queue of requests we have got
         // from this peer

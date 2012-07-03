@@ -23,19 +23,19 @@ using namespace libed2k;
 using namespace libed2k::aux;
 
 dictionary_entry::dictionary_entry(fsize_t nFilesize) : file_size(nFilesize),
-        m_accepted(0),
-        m_requested(0),
-        m_transferred(0),
-        m_priority(0)
+        accepted(0),
+        requested(0),
+        transferred(0),
+        priority(0)
 {
 }
 
 dictionary_entry::dictionary_entry() :
         file_size(0),
-        m_accepted(0),
-        m_requested(0),
-        m_transferred(0),
-        m_priority(0)
+        accepted(0),
+        requested(0),
+        transferred(0),
+        priority(0)
 {
 }
 
@@ -91,7 +91,7 @@ void session_impl_base::save_state() const
         try
         {
             kfc.m_known_file_list.add(known_file_entry(i->second->hash(),
-                i->second->hashset().all_hashes(),
+                i->second->hashset(),
                 i->second->filepath(),
                 i->second->filesize(),
                 i->second->getAcepted(),
@@ -159,7 +159,8 @@ void session_impl_base::share_files(rule* base_rule)
 
         if (de.m_hash.defined())
         {
-            add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, fs::path(), upath), ec);
+            add_transfer(add_transfer_params(
+                             de.m_hash, de.file_size, fs::path(), upath, de.pieces, de.hashset), ec);
         }
         else
         {
@@ -241,7 +242,9 @@ void session_impl_base::share_files(rule* base_rule)
 
                 if (de.m_hash.defined())
                 {
-                    add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, collection_path, upath), ec);
+                    add_transfer(add_transfer_params(
+                                     de.m_hash, de.file_size, collection_path, upath,
+                                     de.pieces, de.hashset), ec);
                 }
                 else
                 {
@@ -325,7 +328,9 @@ void session_impl_base::share_files(rule* base_rule)
                     {
                         if (de.m_hash.defined())
                         {
-                            add_transfer(add_transfer_params(de.m_hash, de.piece_hash, de.file_size, fs::path(), pc.m_path), ec);
+                            add_transfer(add_transfer_params(
+                                             de.m_hash, de.file_size, fs::path(), pc.m_path,
+                                             de.pieces, de.hashset), ec);
                         }
                         else
                         {
@@ -401,12 +406,11 @@ void session_impl_base::load_dictionary()
                     if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
                     {
                         // when file contain only one hash - we save main hash directly into container
-                        entry.piece_hash.append(kfc.m_known_file_list.m_collection[n].m_hFile);
+                        entry.hashset.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
                     }
                     else
                     {
-                        entry.piece_hash.all_hashes(
-                                kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection);
+                        entry.hashset = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
                     }
 
                     for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
@@ -420,7 +424,8 @@ void session_impl_base::load_dictionary()
                                 // take only first file name tag
                                 if (key.second.empty())
                                 {
-                                    key.second = bom_filter(p->asString());  // dictionary contains names in UTF-8 codepage
+                                    // dictionary contains names in UTF-8 codepage
+                                    key.second = bom_filter(p->asString());
                                 }
 
                                 break;
@@ -429,19 +434,19 @@ void session_impl_base::load_dictionary()
                                 entry.file_size = p->asInt();
                                 break;
                             case FT_ATTRANSFERRED:
-                                entry.m_transferred += p->asInt();
+                                entry.transferred += p->asInt();
                                 break;
                             case FT_ATTRANSFERREDHI:
-                                entry.m_transferred += (p->asInt() << 32);
+                                entry.transferred += (p->asInt() << 32);
                                 break;
                             case FT_ATREQUESTED:
-                                entry.m_requested = p->asInt();
+                                entry.requested = p->asInt();
                                 break;
                             case FT_ATACCEPTED:
-                                entry.m_accepted = p->asInt();
+                                entry.accepted = p->asInt();
                                 break;
                             case FT_ULPRIORITY:
-                                entry.m_priority = p->asInt();
+                                entry.priority = p->asInt();
                                 break;
                             default:
                                 // ignore unused tags like
@@ -451,6 +456,8 @@ void session_impl_base::load_dictionary()
                                 break;
                         }
                     }
+
+                    entry.pieces = bitfield(piece_count(entry.file_size), 1);
 
                     if (key.first != 0 && !key.second.empty())
                     {
@@ -471,15 +478,15 @@ void session_impl_base::load_dictionary()
 void session_impl_base::update_pendings(const add_transfer_params& atp)
 {
     // check pending collections only when transfer has collection link
-    if (!atp.m_collection_path.empty())
+    if (!atp.collection_path.empty())
     {
         for (std::deque<pending_collection>::iterator itr = m_pending_collections.begin();
                 itr != m_pending_collections.end(); ++itr)
         {
             DBG("scan: " << convert_to_native(bom_filter(itr->m_path.string())));
-            if (itr->m_path == atp.m_collection_path)                // find collection
+            if (itr->m_path == atp.collection_path)                // find collection
             {
-                DBG("update_pendings=found collection: " << convert_to_native(bom_filter(atp.m_collection_path.string())));
+                DBG("update_pendings=found collection: " << convert_to_native(bom_filter(atp.collection_path.string())));
                 if (itr->update(atp.file_path, atp.file_size, atp.file_hash))    // update file in collection
                 {
                     DBG("session_impl_base::update_pendings completed");
@@ -1051,10 +1058,11 @@ std::vector<transfer_handle> session_impl::add_transfer_dir(
             kfile.init();
             add_transfer_params params;
             params.file_hash = kfile.getFileHash();
-            params.piece_hash.all_hashes(kfile.getPieceHashes());
             params.file_path = i->path();
             params.file_size = fs::file_size(i->path());
             params.seed_mode = true;
+            params.pieces = bitfield(piece_count(params.file_size), 1);
+            params.hashset = kfile.getPieceHashes();
             transfer_handle handle = add_transfer(params, ec);
             if (ec) break;
             handles.push_back(handle);
