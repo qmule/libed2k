@@ -119,7 +119,11 @@ namespace libed2k {
 
             void load_dictionary();
 
-            void update_pendings(const add_transfer_params& atp);
+            /**
+              * update collection entry in collection
+              * @param bRemove - do not update entry - remove it
+             */
+            void update_pendings(const add_transfer_params& atp, bool remove);
 
             /**
               * alerts

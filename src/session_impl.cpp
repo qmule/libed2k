@@ -475,7 +475,7 @@ void session_impl_base::load_dictionary()
     }
 }
 
-void session_impl_base::update_pendings(const add_transfer_params& atp)
+void session_impl_base::update_pendings(const add_transfer_params& atp, bool remove)
 {
     // check pending collections only when transfer has collection link
     if (!atp.collection_path.empty())
@@ -487,7 +487,7 @@ void session_impl_base::update_pendings(const add_transfer_params& atp)
             if (itr->m_path == atp.collection_path)                // find collection
             {
                 DBG("update_pendings=found collection: " << convert_to_native(bom_filter(atp.collection_path.string())));
-                if (itr->update(atp.file_path, atp.file_size, atp.file_hash))    // update file in collection
+                if (itr->update(atp.file_path, atp.file_size, atp.file_hash, remove))    // update file in collection
                 {
                     DBG("session_impl_base::update_pendings completed");
                     if (!itr->is_pending())                             // if collection changes status we will save it
@@ -954,12 +954,15 @@ transfer_handle session_impl::add_transfer(
     boost::shared_ptr<transfer> transfer_ptr = find_transfer(params.file_hash).lock();
     if (transfer_ptr)
     {
-        if (!params.duplicate_is_error) {
-            DBG("return existing transfer with same hash");
+        if (!params.duplicate_is_error)
+        {
+            DBG("update pendings for change state for pending collections return existing transfer with same hash");
+            update_pendings(params, true);
             return transfer_handle(transfer_ptr);
         }
 
         DBG("return invalid transfer");
+        update_pendings(params, true);
         ec = errors::duplicate_transfer;
         return transfer_handle();
     }
@@ -973,7 +976,7 @@ transfer_handle session_impl::add_transfer(
     }
 
     // check pending collections only when transfer has collection link
-    update_pendings(params);
+    update_pendings(params, false);
 
     transfer_ptr.reset(new transfer(*this, m_listen_interface, queue_pos, params));
     transfer_ptr->start();

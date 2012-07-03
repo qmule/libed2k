@@ -96,6 +96,7 @@ enum CONN_CMD
     cc_download,
     cc_save_fast_resume,
     cc_restore,
+    cc_share,
     cc_empty
 };
 
@@ -137,6 +138,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     {
         return cc_restore;
     }
+    else if (strCommand == "share")
+    {
+        return cc_share;
+    }
 
     return cc_empty;
 }
@@ -159,7 +164,7 @@ int main(int argc, char* argv[])
     libed2k::fingerprint print;
     libed2k::session_settings settings;
     settings.listen_port = 4668;
-    settings.server_keep_alive_timeout = 10;
+    settings.server_keep_alive_timeout = -1;
     settings.server_reconnect_timeout = -1;
     settings.server_hostname = argv[1];
     settings.server_timeout = 125;
@@ -168,7 +173,11 @@ int main(int argc, char* argv[])
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
+
 #ifndef WIN32
+    libed2k::fs::path root_path = libed2k::fs::initial_path();
+    settings.m_collections_directory = root_path.string();
+    DBG("collections directory " << settings.m_collections_directory);
     libed2k::rule rule1(libed2k::rule::rt_plus, libed2k::convert_from_native("/home/apavlov/work/libed2k/test/conn/captcha_for_test.bmp"));
     //sleep(2);
     //ses.share_files(&rule1);
@@ -356,6 +365,14 @@ int main(int argc, char* argv[])
                     params.file_hash = file_hash;
                     ses.add_transfer(params);
                 }
+                break;
+            }
+            case cc_share:
+            {
+                DBG("share " << strArg);
+                // I get memory leak there, but it is not problem
+                libed2k::rule* p = new libed2k::rule(libed2k::rule::rt_plus, strArg);
+                ses.share_files(p);
                 break;
             }
             default:

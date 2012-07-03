@@ -391,6 +391,7 @@ namespace libed2k
             {
                 if (!itr->m_hash.defined())
                 {
+                    DBG("hash doesnt defines for " << convert_to_native(itr->m_path.string()));
                     return (true);
                 }
             }
@@ -400,15 +401,25 @@ namespace libed2k
 
         /**
           * update element in pending list and return if success
+          * @param remove - do not update entry - remove it
+          * warning - after update we don't change collection path and don't update collections files count!
          */
-        bool update(const fs::path& p, fsize_t size, const md4_hash& hash)
+        bool update(const fs::path& p, fsize_t size, const md4_hash& hash, bool remove)
         {
             std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), pending_file(p));
 
             if (itr != m_files.end())
             {
-                itr->m_hash = hash;
-                itr->m_size = size;
+                if (remove)
+                {
+                    m_files.erase(itr);
+                }
+                else
+                {
+                    itr->m_hash = hash;
+                    itr->m_size = size;
+                }
+
                 return (true);
             }
 

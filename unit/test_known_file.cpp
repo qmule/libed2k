@@ -81,7 +81,7 @@ namespace libed2k
             {
                 // now all files were loaded by file monitor
                 ++m_hash_count;
-                update_pendings(t);
+                update_pendings(t, false);
                 m_vParams.push_back(t);
 
                 DBG("add hash for: " << convert_to_native(t.file_path.string()));
