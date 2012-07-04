@@ -46,7 +46,7 @@ namespace libed2k {
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
-        const bitfield& pieces() const { return m_pieces; }
+        const bitfield& verified_pieces() const { return m_verified; }
         const std::vector<md4_hash>& hashset() const { return m_hashset; }
         void hashset(const std::vector<md4_hash>& hs) { m_hashset = hs; }
         const md4_hash& hash(size_t piece) const { return m_hashset.at(piece); }
@@ -106,10 +106,6 @@ namespace libed2k {
         void set_announced(bool announced) { m_announced = announced; }
         transfer_status::state_t state() const { return m_state; }
         transfer_status status() const;
-
-        /**
-          * TODO - need implement it
-         */
         void pause();
         void resume();
         void set_upload_limit(int limit);
@@ -226,6 +222,25 @@ namespace libed2k {
         void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
         void save_resume_data();
+
+        bool verified_piece(int piece) const
+        {
+            BOOST_ASSERT(piece < int(m_verified.size()));
+            BOOST_ASSERT(piece >= 0);
+            return m_verified.get_bit(piece);
+        }
+
+        void verified(int piece)
+        {
+            BOOST_ASSERT(piece < int(m_verified.size()));
+            BOOST_ASSERT(piece >= 0);
+            BOOST_ASSERT(m_verified.get_bit(piece) == false);
+            m_verified.set_bit(piece);
+        }
+
+
+        void start_checking();
+        void queue_transfer_check();
     private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
@@ -273,7 +288,7 @@ namespace libed2k {
         fsize_t m_filesize;
         boost::uint32_t m_file_type;
 
-        bitfield m_pieces;
+        bitfield m_verified;
         std::vector<md4_hash> m_hashset;
 
         // determines the storage state for this transfer.
@@ -301,6 +316,7 @@ namespace libed2k {
         // stored in resume data
         fsize_t m_total_uploaded;
         fsize_t m_total_downloaded;
+        bool m_queued_for_checking:1;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and

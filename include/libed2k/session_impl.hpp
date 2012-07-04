@@ -149,6 +149,12 @@ namespace libed2k {
             libtorrent::session_settings m_disk_thread_settings;
             transfer_map m_transfers;
 
+            typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
+
+            // this has all torrents that wants to be checked in it
+            check_queue_t m_queued_for_checking;
+
+
             // statistics gathered from all transfers.
             stat m_stat;
 
@@ -206,6 +212,8 @@ namespace libed2k {
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
             virtual std::vector<transfer_handle> get_transfers();
+            void queue_check_torrent(boost::shared_ptr<transfer> const& t);
+            void dequeue_check_torrent(boost::shared_ptr<transfer> const& t);
 
             void close_connection(const peer_connection* p, const error_code& ec);
 

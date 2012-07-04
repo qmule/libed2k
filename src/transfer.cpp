@@ -27,7 +27,7 @@ namespace libed2k
         m_filepath(p.file_path),
         m_collectionpath(p.collection_path),
         m_filesize(p.file_size),
-        m_pieces(p.pieces),
+        m_verified(p.pieces),
         m_hashset(p.hashset),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -40,15 +40,16 @@ namespace libed2k
         m_priority(p.priority),
         m_total_uploaded(0),
         m_total_downloaded(0),
+        m_queued_for_checking(false),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
         DBG("transfer file size: " << m_filesize);
-        if (m_pieces.size() == 0)
-            m_pieces.resize(piece_count(m_filesize), 0);
+        if (m_verified.size() == 0)
+            m_verified.resize(piece_count(m_filesize), 0);
 
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
 
-        assert(m_pieces.size() == num_pieces());
+        assert(m_verified.size() == num_pieces());
     }
 
     transfer::~transfer()
@@ -280,6 +281,8 @@ namespace libed2k
     {
         bool was_finished = (num_have() == num_pieces());
         we_have(index);
+        verified(index);
+
         if (!was_finished && is_finished())
         {
             // transfer finished
@@ -811,23 +814,37 @@ namespace libed2k
 
         BOOST_ASSERT(m_storage);
 
-        /*
-        // TODO - check states
-        // what about states?
-        if (m_state == torrent_status::queued_for_checking
-            || m_state == torrent_status::checking_files
-            || m_state == torrent_status::checking_resume_data)
+        if (m_state == transfer_status::queued_for_checking
+            || m_state == transfer_status::checking_files
+            || m_state == transfer_status::checking_resume_data)
         {
             boost::shared_ptr<entry> rd(new entry);
             write_resume_data(*rd);
-            alerts().post_alert(save_resume_data_alert(rd
-                , get_handle()));
+            m_ses.m_alerts.post_alert_should(save_resume_data_alert(rd, handle()));
             return;
         }
-        */
 
         m_storage->async_save_resume_data(
             boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
+    }
+
+    void transfer::start_checking()
+    {
+        //TORRENT_ASSERT(should_check_files());
+        set_state(transfer_status::checking_files);
+
+        // immediately set download status - need files check was implemented
+        set_state(transfer_status::downloading);
+        //m_storage->async_check_files(boost::bind(
+        //    &transfer::on_piece_checked
+        //    , shared_from_this(), _1, _2));
+    }
+
+    void transfer::queue_transfer_check()
+    {
+        if (m_queued_for_checking) return;
+        m_queued_for_checking = true;
+        m_ses.queue_check_torrent(shared_from_this());
     }
 
     void transfer::write_resume_data(entry& ret) const
@@ -918,9 +935,9 @@ namespace libed2k
 
         if (m_seed_mode)
         {
-            //TORRENT_ASSERT(m_verified.size() == pieces.size());
-            //for (int i = 0, end(pieces.size()); i < end; ++i)
-            //    pieces[i] |= m_verified[i] ? 2 : 0;
+            BOOST_ASSERT(m_verified.size() == pieces.size());
+            for (int i = 0, end(pieces.size()); i < end; ++i)
+                pieces[i] |= m_verified[i] ? 2 : 0;
         }
 
         // store current hashset
@@ -1065,22 +1082,6 @@ namespace libed2k
                 lazy_entry const* hv = m_resume_entry.dict_find_list("hashset-values");
                 lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
 
-                // check we have same count hashes as pieces (additional check for terminal hash)
-                if (pieces->string_length() != hv->list_size() && pieces->string_length() != (hv->list_size() + 1))
-                {
-                    ERR("pieces: " << pieces->string_length() << " hashes: " << hv->list_size());
-                    m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(),
-                            error_code(errors::hashes_dont_match_pieces,  get_libed2k_category())));
-                    set_state(transfer_status::queued_for_checking);
-                    std::vector<char>().swap(m_resume_data);
-                    lazy_entry().swap(m_resume_entry);
-                    return;
-                }
-                else
-                {
-                    DBG("fast resume data contains equal hashes and pieces count");
-                }
-
                 m_hashset.resize(hv->list_size());
 
                 for (int n = 0; n < hv->list_size(); ++n)
@@ -1096,9 +1097,7 @@ namespace libed2k
                     for (int i = 0, end(pieces->string_length()); i < end; ++i)
                     {
                         if (pieces_str[i] & 1) m_picker->we_have(i);
-
-                        // TODO ?
-                        //if (m_seed_mode && (pieces_str[i] & 2)) m_verified.set_bit(i);
+                        if (m_seed_mode && (pieces_str[i] & 2)) m_verified.set_bit(i);
                     }
                 }
 
@@ -1132,12 +1131,16 @@ namespace libed2k
                                 if (bits & (1 << k))
                                 {
                                     m_picker->mark_as_finished(piece_block(piece, bit), 0);
-                                    const md4_hash& hs = m_hashset.at(piece);
 
-                                    // check piece when we have hash for it
-                                    if (m_picker->is_piece_finished(piece))
-                                        async_verify_piece(piece, hs, boost::bind(&transfer::piece_finished
+                                    if (piece < m_hashset.size())
+                                    {
+                                        const md4_hash& hs = m_hashset.at(piece);
+
+                                        // check piece when we have hash for it
+                                        if (m_picker->is_piece_finished(piece))
+                                            async_verify_piece(piece, hs, boost::bind(&transfer::piece_finished
                                                 , shared_from_this(), piece, _1));
+                                    }
                                 }
                             }
                         }
@@ -1145,17 +1148,18 @@ namespace libed2k
                 }
             }
 
+            // start downloading when resume data was loaded successfully
+            if (!is_seed()) set_state(transfer_status::downloading);
+
         }
         else
         {
             set_state(transfer_status::queued_for_checking);
+            queue_transfer_check();
         }
 
         std::vector<char>().swap(m_resume_data);
         lazy_entry().swap(m_resume_entry);
-
-        // TODO - add correct code
-        if (!is_seed()) set_state(transfer_status::downloading);
     }
 
     std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

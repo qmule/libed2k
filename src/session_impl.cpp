@@ -930,6 +930,23 @@ std::vector<transfer_handle> session_impl::get_transfers()
     return ret;
 }
 
+void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
+{
+    if (m_abort) return;
+    //TORRENT_ASSERT(t->should_check_files());
+    TORRENT_ASSERT(t->state() != transfer_status::checking_files);
+    if (m_queued_for_checking.empty()) t->start_checking();
+    else t->set_state(transfer_status::queued_for_checking);
+    BOOST_ASSERT(std::find(m_queued_for_checking.begin()
+        , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
+    m_queued_for_checking.push_back(t);
+}
+
+void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
+{
+    // TODO - implement it
+}
+
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
 {
     connection_map::iterator i =
@@ -1201,13 +1218,38 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+
     // --------------------------------------------------------------
     // second_tick every transfer
     // --------------------------------------------------------------
+
+    int num_checking = 0;
+    int num_queued = 0;
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
+        BOOST_ASSERT(!t.is_aborted());
+        if (t.state() == transfer_status::checking_files) ++num_checking;
+        else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms);
+    }
+
+    // some people claim that there sometimes can be cases where
+    // there is no torrent being checked, but there are torrents
+    // waiting to be checked. I have never seen this, and I can't
+    // see a way for it to happen. But, if it does, start one of
+    // the queued torrents
+    if (num_checking == 0 && num_queued > 0)
+    {
+        BOOST_ASSERT(false);
+        check_queue_t::iterator i = std::min_element(m_queued_for_checking.begin()
+            , m_queued_for_checking.end(), boost::bind(&transfer::queue_position, _1)
+            < boost::bind(&transfer::queue_position, _2));
+
+        if (i != m_queued_for_checking.end())
+        {
+            (*i)->start_checking();
+        }
     }
 
     m_stat.second_tick(tick_interval_ms);

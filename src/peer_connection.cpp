@@ -1379,7 +1379,7 @@ void peer_connection::on_file_request(const error_code& error)
         if (attach_to_transfer(fr.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_status(fr.m_hFile, t->pieces());
+            write_file_status(fr.m_hFile, t->verified_pieces());
         }
         else
         {
@@ -1450,7 +1450,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 
         if (t->hash() == fr.m_hFile)
         {
-            write_file_status(t->hash(), t->pieces());
+            write_file_status(t->hash(), t->verified_pieces());
         }
         else
         {
