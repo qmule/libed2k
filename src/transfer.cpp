@@ -828,23 +828,56 @@ namespace libed2k
             boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
     }
 
+    bool transfer::should_check_files() const
+    {
+        return (m_state == transfer_status::checking_files
+            || m_state == transfer_status::queued_for_checking)
+            && (!m_paused /*|| m_auto_managed*/)
+            && !has_error()
+            && !m_abort;
+    }
+
     void transfer::start_checking()
     {
+        DBG("transfer::start_checking");
         //TORRENT_ASSERT(should_check_files());
         set_state(transfer_status::checking_files);
 
+        //m_storage->async_check_files(boost::bind(
+        //            &transfer::on_piece_checked
+        //            , shared_from_this(), _1, _2));
+
         // immediately set download status - need files check was implemented
         set_state(transfer_status::downloading);
-        //m_storage->async_check_files(boost::bind(
-        //    &transfer::on_piece_checked
-        //    , shared_from_this(), _1, _2));
     }
 
     void transfer::queue_transfer_check()
     {
         if (m_queued_for_checking) return;
         m_queued_for_checking = true;
+        DBG("transfer::queue_transfer_check");
         m_ses.queue_check_torrent(shared_from_this());
+    }
+
+    void transfer::dequeue_torrent_check()
+    {
+        if (!m_queued_for_checking) return;
+        m_queued_for_checking = false;
+        m_ses.dequeue_check_torrent(shared_from_this());
+    }
+
+    void transfer::set_error(error_code const& ec)
+    {
+        bool checking_files = should_check_files();
+        m_error = ec;
+
+        if (checking_files && !should_check_files())
+        {
+            // stop checking
+            m_storage->abort_disk_io();
+            dequeue_torrent_check();
+            set_state(transfer_status::queued_for_checking);
+        }
     }
 
     void transfer::write_resume_data(entry& ret) const
@@ -1028,7 +1061,7 @@ namespace libed2k
         }
 
         // put the torrent in an error-state
-        m_error = j.error;
+        set_error(j.error);
         pause();
     }
 

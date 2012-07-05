@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -225,6 +226,9 @@ int main(int argc, char* argv[])
     libed2k::fsize_t file_size;
     libed2k::md4_hash file_hash;
 
+    // this is test storage name
+    std::string strStorage;
+
     while ((std::cin >> strUser))
     {
         DBG("process: " << strUser);
@@ -334,10 +338,24 @@ int main(int argc, char* argv[])
                     // write fast resume data
                     libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
                     DBG("save data size: " << vFastResumeData.size());
+
                     // Saving fast resume data was successful
                     --num_resume_data;
 
                     if (!rd->m_handle.is_valid()) continue;
+
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.filepath(), rd->m_handle.filesize(), vFastResumeData);
+
+                    // prepare storage filename
+                    strStorage = std::string("./") + rd->m_handle.hash().toString();
+
+                    std::ofstream fs(strStorage.c_str(), std::ios_base::out | std::ios_base::binary);
+
+                    if (fs)
+                    {
+                        libed2k::archive::ed2k_oarchive oa(fs);
+                        oa << trd;
+                    }
 
                     try
                     {
@@ -354,16 +372,27 @@ int main(int argc, char* argv[])
             case cc_restore:
             {
                 DBG("restore fast resume data");
-                if (vFastResumeData.size() > 0)
+                if (!strStorage.empty())
                 {
-                    DBG("fast resume data exists - prepare transfer");
-                    libed2k::add_transfer_params params;
-                    params.seed_mode = false;
-                    params.file_path = save_path;
-                    params.file_size = file_size;
-                    params.resume_data = &vFastResumeData;
-                    params.file_hash = file_hash;
-                    ses.add_transfer(params);
+                    std::ifstream ifs(strStorage.c_str(), std::ios_base::in | std::ios_base::binary);
+
+                    if (ifs)
+                    {
+                        libed2k::transfer_resume_data trd;
+                        libed2k::archive::ed2k_iarchive ia(ifs);
+                        ia >> trd;
+
+                        libed2k::add_transfer_params params;
+                        params.seed_mode = false;
+                        params.file_path = trd.m_filepath.m_collection;
+                        params.file_size = trd.m_filesize;
+                        if (trd.m_fast_resume_data.count() > 0)
+                        {
+                            params.resume_data = const_cast<std::vector<char>* >(&trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
+                        }
+                        params.file_hash = trd.m_hash;
+                        ses.add_transfer(params);
+                    }
                 }
                 break;
             }

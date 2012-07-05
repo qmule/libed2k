@@ -200,6 +200,28 @@ namespace libed2k
     };
 
     /**
+      * structure for save transfer resume data and additional info like hash, filepath, filesize
+     */
+    struct transfer_resume_data
+    {
+        md4_hash    m_hash;     //!< transfer hash
+        container_holder<boost::uint16_t, std::string> m_filepath; //!< utf-8 file path
+        fsize_t     m_filesize; //!< boost::uint64_t file size
+        tag_list<boost::uint8_t>    m_fast_resume_data;
+        transfer_resume_data();
+        transfer_resume_data(const md4_hash& hash, const fs::path& path, fsize_t size, const std::vector<char>& fr_data);
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_hash;
+            ar & m_filepath;
+            ar & m_filesize;
+            ar & m_fast_resume_data;
+        }
+    };
+
+    /**
       * simple monitor object
      */
     template <typename Data>

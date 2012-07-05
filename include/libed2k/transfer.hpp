@@ -82,6 +82,7 @@ namespace libed2k {
         void disconnect_all(const error_code& ec);
         bool try_connect_peer();
         void give_connect_points(int points);
+        bool has_error() const { return m_error; }
 
         // the number of peers that belong to this torrent
         int num_peers() const { return (int)m_connections.size(); }
@@ -238,9 +239,21 @@ namespace libed2k {
             m_verified.set_bit(piece);
         }
 
+        bool should_check_files() const;
 
         void start_checking();
+
+        void set_error(error_code const& ec);
+
+        /**
+          * add transfer to check queue in session_impl
+         */
         void queue_transfer_check();
+
+        /**
+          * remove transfer from check queue insession_impl
+         */
+        void dequeue_torrent_check();
     private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);

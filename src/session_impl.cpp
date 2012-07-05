@@ -944,7 +944,29 @@ void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
 
 void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
 {
-    // TODO - implement it
+    BOOST_ASSERT(t->state() == transfer_status::checking_files
+        || t->state() == transfer_status::queued_for_checking);
+
+    if (m_queued_for_checking.empty()) return;
+
+    boost::shared_ptr<transfer> next_check = *m_queued_for_checking.begin();
+    check_queue_t::iterator done = m_queued_for_checking.end();
+    for (check_queue_t::iterator i = m_queued_for_checking.begin()
+        , end(m_queued_for_checking.end()); i != end; ++i)
+    {
+        TORRENT_ASSERT(*i == t || (*i)->should_check_files());
+        if (*i == t) done = i;
+        if (next_check == t || next_check->queue_position() > (*i)->queue_position())
+            next_check = *i;
+    }
+    // only start a new one if we removed the one that is checking
+    TORRENT_ASSERT(done != m_queued_for_checking.end());
+    if (done == m_queued_for_checking.end()) return;
+
+    if (next_check != t && t->state() == transfer_status::checking_files)
+        next_check->start_checking();
+
+    m_queued_for_checking.erase(done);
 }
 
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)

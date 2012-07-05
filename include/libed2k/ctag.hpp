@@ -22,7 +22,6 @@ if (!x)\
 
 typedef boost::uint8_t tg_nid_type;
 typedef boost::uint8_t tg_type;
-typedef std::vector<boost::uint8_t> blob_type;
 
 const tg_nid_type FT_FILENAME           = '\x01';    // <string>
 const tg_nid_type FT_FILESIZE           = '\x02';    // <uint32>
@@ -51,6 +50,7 @@ const tg_nid_type FT_KADLASTPUBLISHNOTES= '\x26';    // <uint32>
 const tg_nid_type FT_AICH_HASH          = '\x27';
 const tg_nid_type FT_FILEHASH           = '\x28';
 const tg_nid_type FT_COMPLETE_SOURCES   = '\x30';    // nr. of sources which share a
+const tg_nid_type FT_FAST_RESUME_DATA   = '\x31';   // fast resume data array
 
 
 // complete version of the
@@ -298,7 +298,7 @@ public:
     virtual const std::string&  asString() const;
     virtual bool                asBool() const;
     virtual float               asFloat() const;
-    virtual const blob_type&    asBlob() const;
+    virtual const std::vector<char>&    asBlob() const;
     virtual const md4_hash&     asHash() const;
 
     bool operator==(const std::string& strName) const
@@ -565,11 +565,11 @@ public:
     /**
       * for tags with value we have to set special protocol level
      */
-    array_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K) : base_tag(nNameId, bNewED2K), m_value(vValue)
+    array_tag(const std::vector<char>& vValue, tg_nid_type nNameId, bool bNewED2K) : base_tag(nNameId, bNewED2K), m_value(vValue)
     {
     }
 
-    array_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K) : base_tag(strName, bNewED2K), m_value(vValue)
+    array_tag(const std::vector<char>& vValue, const std::string& strName, bool bNewED2K) : base_tag(strName, bNewED2K), m_value(vValue)
     {
     }
 
@@ -593,12 +593,13 @@ public:
         return (false);
     }
 
-    operator blob_type() const
+    operator std::vector<char>() const
     {
         return (m_value);
     }
 
-    virtual const blob_type& asBlob() const;
+    virtual const std::vector<char>& asBlob() const;
+    std::vector<char>* asBlob();
 
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
@@ -609,7 +610,7 @@ protected:
     array_tag(const std::string& strName, tg_nid_type nNameId);
 
 private:
-    blob_type m_value;
+    std::vector<char> m_value;
     tg_type m_type;
 };
 
@@ -627,8 +628,8 @@ boost::shared_ptr<base_tag> make_typed_tag(T t, const std::string& strName, bool
 
 boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, tg_nid_type nNameId, bool bNewED2K);
 boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, const std::string& strName, bool bNewED2K);
-boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K);
-boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K);
+boost::shared_ptr<base_tag> make_blob_tag(const std::vector<char>& vValue, tg_nid_type nNameId, bool bNewED2K);
+boost::shared_ptr<base_tag> make_blob_tag(const std::vector<char>& vValue, const std::string& strName, bool bNewED2K);
 
 bool is_string_tag(const boost::shared_ptr<base_tag> p);
 bool is_int_tag(const boost::shared_ptr<base_tag> p);

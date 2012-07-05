@@ -232,6 +232,10 @@ namespace libed2k
         {
         }
 
+        container_holder(const collection_type& coll) : m_size(coll.size()), m_collection(coll)
+        {
+        }
+
         void clear()
         {
             m_collection.clear();
