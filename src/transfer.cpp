@@ -847,7 +847,9 @@ namespace libed2k
         //            &transfer::on_piece_checked
         //            , shared_from_this(), _1, _2));
 
+        // TEMP code
         // immediately set download status - need files check was implemented
+        dequeue_transfer_check();
         set_state(transfer_status::downloading);
     }
 
@@ -859,7 +861,7 @@ namespace libed2k
         m_ses.queue_check_torrent(shared_from_this());
     }
 
-    void transfer::dequeue_torrent_check()
+    void transfer::dequeue_transfer_check()
     {
         if (!m_queued_for_checking) return;
         m_queued_for_checking = false;
@@ -875,7 +877,7 @@ namespace libed2k
         {
             // stop checking
             m_storage->abort_disk_io();
-            dequeue_torrent_check();
+            dequeue_transfer_check();
             set_state(transfer_status::queued_for_checking);
         }
     }

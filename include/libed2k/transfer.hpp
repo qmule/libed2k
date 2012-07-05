@@ -253,7 +253,7 @@ namespace libed2k {
         /**
           * remove transfer from check queue insession_impl
          */
-        void dequeue_torrent_check();
+        void dequeue_transfer_check();
     private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
