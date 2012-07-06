@@ -258,6 +258,12 @@ int main(int argc, char* argv[])
                     params.file_path = strIncomingDirectory;
                     params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
+
+                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
+                    {
+                        params.file_size += vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
+                    }
+
                     file_size = params.file_size;
                     save_path = params.file_path;
                     file_hash = params.file_hash;
@@ -507,15 +513,31 @@ int main(int argc, char* argv[])
                 if (vSF.m_collection.empty())
                 {
 
-                DBG("RESULT: " << p->m_files.m_collection.size());
-                //p->m_files.dump();
-                vSF = p->m_files;
-                for (size_t n = 0; n < vSF.m_size; ++n)
-                {
-                    DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                            << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                            << " size: " << vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt());
-                }
+                    DBG("RESULT: " << p->m_files.m_collection.size());
+                    p->m_files.dump();
+                    vSF = p->m_files;
+
+                    boost::uint64_t nSize = 0;
+
+                    for (size_t n = 0; n < vSF.m_size; ++n)
+                    {
+                        boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
+                        boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
+
+                        if (low.get())
+                        {
+                            nSize = low->asInt();
+                        }
+
+                        if (hi.get())
+                        {
+                            nSize += hi->asInt() << 32;
+                        }
+
+                        DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                                << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
+                                << " size: " << nSize);
+                    }
                 }
 
 #if 0
