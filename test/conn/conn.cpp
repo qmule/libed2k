@@ -342,6 +342,7 @@ int main(int argc, char* argv[])
 
                     DBG("Saving fast resume data was succesfull");
                     // write fast resume data
+                    vFastResumeData.clear();
                     libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
                     DBG("save data size: " << vFastResumeData.size());
 
