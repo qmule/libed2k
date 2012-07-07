@@ -98,6 +98,7 @@ enum CONN_CMD
     cc_save_fast_resume,
     cc_restore,
     cc_share,
+    cc_remove,
     cc_empty
 };
 
@@ -142,6 +143,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "share")
     {
         return cc_share;
+    }
+    else if (strCommand == "remove")
+    {
+        return cc_remove;
     }
 
     return cc_empty;
@@ -275,6 +280,20 @@ int main(int argc, char* argv[])
                 }
                 break;
             }
+            case cc_remove:
+            {
+                std::vector<libed2k::transfer_handle> v = ses.get_transfers();
+                for (size_t n = 0; n < v.size(); ++n)
+                {
+                    try
+                    {
+                        ses.remove_transfer(v[n], 0);
+                    }
+                    catch(libed2k::libed2k_exception&)
+                    {}
+                }
+                break;
+            }
             case cc_save_fast_resume:
             {
                 DBG("Save fast resume data");
@@ -364,15 +383,8 @@ int main(int argc, char* argv[])
                         oa << trd;
                     }
 
-                    try
-                    {
-                        DBG("remove transfer");
-                        // Remove torrent from session
-                        ses.remove_transfer(rd->m_handle, 0);
-                        ses.pop_alert();
-                    }
-                    catch(libed2k::libed2k_exception&)
-                    {}
+
+                    ses.pop_alert();
                 }
                 break;
             }
