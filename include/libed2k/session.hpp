@@ -154,8 +154,19 @@ namespace libed2k {
         void server_conn_start();
         void server_conn_stop();
 
+        /**
+          * set all transfers status obsolete
+         */
         void begin_share_transaction();
+
+        /**
+          * remove all obsolete transfers
+         */
         void end_share_transaction();
+
+        /**
+          * share files by rule
+         */
         void share_files(rule* base_rule);
 
         /**
