@@ -198,5 +198,17 @@ void session::share_files(rule* base_rule)
     m_impl->share_files(base_rule);
 }
 
+void session::save_state()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->save_state();
+}
+
+void session::load_state()
+{
+    boost::mutex::scoped_lock l(m_impl->m_mutex);
+    m_impl->load_dictionary();
+}
+
 
 }

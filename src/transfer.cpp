@@ -107,7 +107,7 @@ namespace libed2k
                 boost::bind(&transfer::on_transfer_aborted, shared_from_this(), _1, _2));
         }
 
-        //dequeue_transfer_check();
+        dequeue_transfer_check();
 
         if (m_state == transfer_status::checking_files)
             set_state(transfer_status::queued_for_checking);
@@ -865,7 +865,11 @@ namespace libed2k
     {
         shared_file_entry entry;
 
-        if (num_pieces() == 0)
+        // do not announce transfer without pieces or in checking state
+        if (m_state == transfer_status::queued_for_checking
+                || m_state == transfer_status::checking_files
+                || m_state == transfer_status::checking_resume_data ||
+                num_pieces() == 0)
         {
             return entry;
         }

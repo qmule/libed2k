@@ -169,6 +169,7 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
+    settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
     settings.server_keep_alive_timeout = -1;
     settings.server_reconnect_timeout = -1;
@@ -179,6 +180,7 @@ int main(int argc, char* argv[])
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
+    ses.load_state();
 
 #ifndef WIN32
     libed2k::fs::path root_path = libed2k::fs::initial_path();
@@ -702,6 +704,8 @@ int main(int argc, char* argv[])
             a = ses.pop_alert();
         }
     }
+
+    ses.save_state();
 
     return 0;
 }

@@ -77,6 +77,13 @@ bool dref_is_regular_file(fs::path p)
 void session_impl_base::save_state() const
 {
     DBG("session_impl::save_state()");
+
+    // known.met isn't set - pass save state stage
+    if (m_settings.m_known_file.empty())
+    {
+        return;
+    }
+
     known_file_collection kfc;
 
     for (transfer_map::const_iterator i = m_transfers.begin(),
@@ -106,9 +113,10 @@ void session_impl_base::save_state() const
         }
     }
 
-    if (!m_settings.m_known_file.empty())
+    fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
+
+    if (fstream)
     {
-        fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
         libed2k::archive::ed2k_oarchive ofa(fstream);
         ofa << kfc;
     }

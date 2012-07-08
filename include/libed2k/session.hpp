@@ -157,6 +157,12 @@ namespace libed2k {
         void begin_share_transaction();
         void end_share_transaction();
         void share_files(rule* base_rule);
+
+        /**
+          * save transfers were finished
+         */
+        void save_state();
+        void load_state();
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);
