@@ -39,12 +39,6 @@ namespace libed2k {
     public:
         add_transfer_params() { reset(); }
 
-        add_transfer_params(const fs::path& cpath)
-        {
-            reset();
-            collection_path = cpath;
-        }
-
         add_transfer_params(const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
                             const bitfield& ps, const std::vector<md4_hash>& hset)
         {

@@ -13,6 +13,18 @@
 namespace libed2k
 {
 
+    /**
+      * fake constructor
+     */
+    transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,const md4_hash& hash, const fs::path p, fsize_t size):
+            m_ses(ses),
+            m_filehash(hash),
+            m_filepath(p),
+            m_filesize(size),
+            m_policy(this, pl),
+            m_minute_timer(time::minutes(1), time::min_date_time)
+    {}
+
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
                    int seq, add_transfer_params const& p):
         m_ses(ses),

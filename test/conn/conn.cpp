@@ -16,7 +16,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/search.hpp"
 #include "libed2k/peer_connection_handle.hpp"
-#include "libed2k/file.hpp"
+#include "libed2k/transfer_handle.hpp"
 
 using namespace libed2k;
 
@@ -99,6 +99,7 @@ enum CONN_CMD
     cc_restore,
     cc_share,
     cc_remove,
+    cc_dump,
     cc_empty
 };
 
@@ -147,6 +148,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "remove")
     {
         return cc_remove;
+    }
+    else if (strCommand == "dump")
+    {
+        return cc_dump;
     }
 
     return cc_empty;
@@ -228,13 +233,7 @@ int main(int argc, char* argv[])
 
     std::string strArg;
     libed2k::shared_files_list vSF;
-    std::vector<char> vFastResumeData;
-    libed2k::fs::path save_path;
-    libed2k::fsize_t file_size;
-    libed2k::md4_hash file_hash;
-
-    // this is test storage name
-    std::string strStorage;
+    std::deque<std::string> vpaths;
 
     while ((std::cin >> strUser))
     {
@@ -275,9 +274,6 @@ int main(int argc, char* argv[])
                         params.file_size += vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
                     }
 
-                    file_size = params.file_size;
-                    save_path = params.file_path;
-                    file_hash = params.file_hash;
                     ses.add_transfer(params);
                 }
                 break;
@@ -299,6 +295,7 @@ int main(int argc, char* argv[])
             case cc_save_fast_resume:
             {
                 DBG("Save fast resume data");
+                vpaths.clear();
                 std::vector<libed2k::transfer_handle> v = ses.get_transfers();
                 int num_resume_data = 0;
                 for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
@@ -363,7 +360,7 @@ int main(int argc, char* argv[])
 
                     DBG("Saving fast resume data was succesfull");
                     // write fast resume data
-                    vFastResumeData.clear();
+                    std::vector<char> vFastResumeData;
                     libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
                     DBG("save data size: " << vFastResumeData.size());
 
@@ -375,7 +372,8 @@ int main(int argc, char* argv[])
                     libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.filepath(), rd->m_handle.filesize(), vFastResumeData);
 
                     // prepare storage filename
-                    strStorage = std::string("./") + rd->m_handle.hash().toString();
+                    std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
+                    vpaths.push_back(strStorage);
 
                     std::ofstream fs(strStorage.c_str(), std::ios_base::out | std::ios_base::binary);
 
@@ -392,10 +390,11 @@ int main(int argc, char* argv[])
             }
             case cc_restore:
             {
-                DBG("restore fast resume data");
-                if (!strStorage.empty())
+                for (size_t n = 0; n < vpaths.size(); ++n)
                 {
-                    std::ifstream ifs(strStorage.c_str(), std::ios_base::in | std::ios_base::binary);
+                    DBG("restore " << vpaths[n]);
+
+                    std::ifstream ifs(vpaths[n].c_str(), std::ios_base::in | std::ios_base::binary);
 
                     if (ifs)
                     {
@@ -407,10 +406,12 @@ int main(int argc, char* argv[])
                         params.seed_mode = false;
                         params.file_path = trd.m_filepath.m_collection;
                         params.file_size = trd.m_filesize;
+
                         if (trd.m_fast_resume_data.count() > 0)
                         {
                             params.resume_data = const_cast<std::vector<char>* >(&trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
                         }
+
                         params.file_hash = trd.m_hash;
                         ses.add_transfer(params);
                     }
@@ -423,6 +424,18 @@ int main(int argc, char* argv[])
                 // I get memory leak there, but it is not problem
                 libed2k::rule* p = new libed2k::rule(libed2k::rule::rt_plus, strArg);
                 ses.share_files(p);
+                break;
+            }
+            case cc_dump:
+            {
+                std::vector<libed2k::transfer_handle> v = ses.get_transfers();
+                for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
+                {
+                    DBG("transfer: {" << i->hash().toString() << "}{"
+                            << libed2k::convert_to_native(i->filepath().string()) << "}{"
+                            << i->filesize() << "}{"
+                            << libed2k::transfer_status2string(i->status()));
+                }
                 break;
             }
             default:

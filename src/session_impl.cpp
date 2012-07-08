@@ -122,21 +122,6 @@ void session_impl_base::save_state() const
     }
 }
 
-dictionary_entry session_impl_base::get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename)
-{
-
-    dictionary_entry de;
-    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(change_time, strFilename));
-
-    if (itr != m_dictionary.end())
-    {
-        de = itr->second;
-        m_dictionary.erase(itr);
-    }
-
-    return (de);
-}
-
 void session_impl_base::share_files(rule* base_rule)
 {
     BOOST_ASSERT(base_rule);
@@ -152,27 +137,16 @@ void session_impl_base::share_files(rule* base_rule)
     // share single file
     if (fs::is_regular_file(base_rule->get_path()))
     {
-        boost::uint32_t nChangeTime = fs::last_write_time(base_rule->get_path());
-
         fs::path upath = convert_from_native(base_rule->get_path().string());
+
         // first - search file in transfers
         if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
         {
             p->set_obsolete(false);
-            return;
-        }
-
-        // we can't operate
-        dictionary_entry de = get_dictionary_entry(nChangeTime, upath.filename());
-
-        if (de.m_hash.defined())
-        {
-            add_transfer(add_transfer_params(
-                             de.m_hash, de.file_size, fs::path(), upath, de.pieces, de.hashset), ec);
         }
         else
         {
-            // async add transfer by file monitor
+            // hash file with empty collection
             m_file_hasher.m_order.push(std::make_pair(fs::path(), upath));
         }
 
@@ -230,7 +204,6 @@ void session_impl_base::share_files(rule* base_rule)
 
         for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
         {
-            boost::uint32_t nChangeTime = fs::last_write_time(*itr);
             fs::path upath = convert_from_native(itr->string());
 
             // process regular file
@@ -246,21 +219,8 @@ void session_impl_base::share_files(rule* base_rule)
                     continue;
                 }
 
-                dictionary_entry de = get_dictionary_entry(nChangeTime, upath.filename());
-
-                if (de.m_hash.defined())
-                {
-                    add_transfer(add_transfer_params(
-                                     de.m_hash, de.file_size, collection_path, upath,
-                                     de.pieces, de.hashset), ec);
-                }
-                else
-                {
-                    m_file_hasher.m_order.push(std::make_pair(collection_path, upath));
-                }
-
-                // add file to collection and run file monitor
-                if (bCollectionActive) pc.m_files.push_back(pending_file(upath, de.file_size, de.m_hash));
+                if (bCollectionActive) pc.m_files.push_back(pending_file(upath));       //!< add pending file to collection
+                m_file_hasher.m_order.push(std::make_pair(collection_path, upath));     //!< hash file
             }
             else
             {
@@ -298,9 +258,6 @@ void session_impl_base::share_files(rule* base_rule)
                     p->abort();
                 }
 
-                // simple remove item from dictionary if it exists
-                dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
-
                 // add current collection to pending list
                 m_pending_collections.push_back(pc);
             }
@@ -329,28 +286,13 @@ void session_impl_base::share_files(rule* base_rule)
                 }
                 else
                 {
-                    // transfer not exists
-                    dictionary_entry de = get_dictionary_entry(nCollectionChangeTime, pc.m_path.filename());
-
-                    if (ecoll == pc.m_files)
+                    if (ecoll != pc.m_files)
                     {
-                        if (de.m_hash.defined())
-                        {
-                            add_transfer(add_transfer_params(
-                                             de.m_hash, de.file_size, fs::path(), pc.m_path,
-                                             de.pieces, de.hashset), ec);
-                        }
-                        else
-                        {
-                            m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
-                        }
-                    }
-                    else
-                    {
-                        // save collection and run hash
+                        // replace collection on disc with our collection
                         emule_collection::fromPending(pc).save(pc.m_path.string(), false);
-                        m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                     }
+
+                    m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
                 }
             }
         }
@@ -384,6 +326,22 @@ void session_impl_base::end_share_transaction()
     }
 }
 
+// obsolete code - for compatibility with old emule
+dictionary_entry session_impl_base::get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename)
+{
+    dictionary_entry de;
+    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(change_time, strFilename));
+
+    if (itr != m_dictionary.end())
+    {
+        de = itr->second;
+        m_dictionary.erase(itr);
+    }
+
+    return (de);
+}
+
+// obsolete code - for compatibility with old emule version
 void session_impl_base::load_dictionary()
 {
     m_dictionary.clear();

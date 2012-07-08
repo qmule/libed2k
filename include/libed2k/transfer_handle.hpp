@@ -77,6 +77,7 @@ namespace libed2k
         boost::weak_ptr<transfer> m_transfer;
     };
 
+    extern std::string transfer_status2string(const transfer_status& s);
 }
 
 #endif

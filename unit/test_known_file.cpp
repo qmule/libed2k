@@ -16,6 +16,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/log.hpp"
+#include "libed2k/transfer.hpp"
 
 namespace libed2k
 {
@@ -44,6 +45,8 @@ namespace libed2k
             boost::condition    m_signal;
             std::vector<md4_hash> m_vH;
             std::deque<add_transfer_params> m_vParams;
+            std::deque<boost::shared_ptr<transfer> > m_transfers;
+            std::vector<peer_entry> m_peers;
             bool                m_bAfterSave;
             boost::asio::deadline_timer m_timer;
         };
@@ -66,47 +69,50 @@ namespace libed2k
             boost::mutex::scoped_lock lock(m_mutex);
             DBG("addtransfer: " << libed2k::convert_to_native(libed2k::bom_filter(t.file_path.string())) 
                 << " collection: " << libed2k::convert_to_native(libed2k::bom_filter(t.collection_path.string())));
-            //return (transfer_handle(boost::weak_ptr<transfer>()));
+            // before save collect all transfers
+            ++m_hash_count;
+            update_pendings(t, false);
+            m_vParams.push_back(t);
 
-            // after save we load all files from known.met
-            if (m_bAfterSave)
-            {
-                DBG("add transfer after save: " << m_vParams.size());
-                ++m_hash_count;
-                t.dump();
-                BOOST_CHECK(std::find(m_vParams.begin(), m_vParams.end(), t) != m_vParams.end());
-                m_vParams.erase(std::remove(m_vParams.begin(), m_vParams.end(), t), m_vParams.end());
-            }
-            else
-            {
-                // now all files were loaded by file monitor
-                ++m_hash_count;
-                update_pendings(t, false);
-                m_vParams.push_back(t);
-
-                DBG("add hash for: " << convert_to_native(t.file_path.string()));
-
-                //BOOST_CHECK(std::find(m_vH.begin(), m_vH.end(), t.file_hash) != m_vH.end());
-                //m_vH.erase(std::remove(m_vH.begin(), m_vH.end(), t.file_hash), m_vH.end()); // erase checked item
-                //BOOST_CHECK(m_vH.size() == (5 - m_hash_count));
-
-                //m_timer.expires_at(m_timer.expires_at() + boost::posix_time::seconds(5));
-                //m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
-                m_timer.expires_from_now(boost::posix_time::seconds(5));
-
-                /*
-                if (m_hash_count == 11)
-                {
-                    m_signal.notify_all();
-                }
-                */
-            }
+            DBG("add hash for: " << convert_to_native(t.file_path.string()));
+            m_timer.expires_from_now(boost::posix_time::seconds(5));
 
             return (transfer_handle(boost::weak_ptr<transfer>()));
         }
 
         boost::weak_ptr<transfer> session_impl_test::find_transfer(const fs::path& path)
         {
+            DBG("find transfer for " << convert_to_native(path.string()));
+
+            for (std::deque<add_transfer_params>::iterator itr = m_vParams.begin(); itr != m_vParams.end(); ++itr)
+            {
+                DBG("scan for transfer: " << convert_to_native(itr->file_path.string()));
+
+                // works only after save
+                if (itr->file_path == path)
+                {
+                    // incorrect base pointer - using only for call constructor
+                    m_transfers.push_back(boost::shared_ptr<transfer>(new transfer(*((aux::session_impl*)this), m_peers,
+                            itr->file_hash,
+                            itr->file_path,
+                            itr->file_size)));
+
+                    if (m_bAfterSave)
+                    {
+                        ++m_hash_count;
+                        m_vParams.erase(itr);
+                    }
+                    return m_transfers.back();
+                }
+            }
+
+            // after save we must have transfers
+            if (m_bAfterSave)
+            {
+                BOOST_CHECK(false);
+            }
+
+            DBG("return nothing");
             return boost::weak_ptr<transfer>();
         }
 

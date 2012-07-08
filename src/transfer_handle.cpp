@@ -172,4 +172,26 @@ namespace libed2k
         LIBED2K_FORWARD(save_resume_data());
     }
 
+    std::string transfer_status2string(const transfer_status& s)
+    {
+        static std::string vstr[] =
+        {
+            std::string("queued_for_checking"),
+            std::string("checking_files"),
+            std::string("downloading_metadata"),
+            std::string("downloading"),
+            std::string("finished"),
+            std::string("seeding"),
+            std::string("allocating"),
+            std::string("checking_resume_data")
+        };
+
+        if (s.state < sizeof(vstr)/sizeof(vstr[0]))
+        {
+            return vstr[s.state];
+        }
+
+        return std::string("unknown state");
+    }
+
 }

@@ -1364,6 +1364,12 @@ namespace libed2k
         return (true);
     }
 
+    bool emule_collection::operator!=(const std::deque<pending_file>& files) const
+    {
+        //return (!(*this == files));
+        return true;
+    }
+
     bool emule_collection::operator==(const emule_collection& ecoll) const
     {
         if (m_files.size() != ecoll.m_files.size())

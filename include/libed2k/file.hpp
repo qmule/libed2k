@@ -377,20 +377,19 @@ namespace libed2k
         fsize_t     m_size;
         md4_hash    m_hash;
         
-
         pending_file(const fs::path& path) : m_path(path), m_size(0){}
-
         pending_file(const fs::path& path, fsize_t size, const md4_hash& hash) :
         m_path(path), m_size(size), m_hash(hash){}
 
+        // for algorithms
         const md4_hash& get_hash() const
         {
             return (m_hash);
         }
 
-        bool operator==(const pending_file& pf)
+        bool operator==(const pending_file& pf) const
         {
-            return (m_path == pf.m_path && m_hash == pf.m_hash && m_size == pf.m_size);
+            return (m_path == pf.m_path && m_size == pf.m_size && m_hash == pf.m_hash);
         }
     };
 
@@ -532,6 +531,7 @@ namespace libed2k
         const std::string get_ed2k_link(size_t nIndex);
 
         bool operator==(const std::deque<pending_file>& files) const;
+        bool operator!=(const std::deque<pending_file>& files) const;
         bool operator==(const emule_collection& ecoll) const;
         std::string                         m_name;
         std::deque<emule_collection_entry>  m_files;

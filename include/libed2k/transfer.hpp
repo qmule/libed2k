@@ -36,6 +36,11 @@ namespace libed2k {
     class transfer : public boost::enable_shared_from_this<transfer>
     {
     public:
+        /**
+          * it is fake transfer constructor for using in unit tests
+          * you shouldn't it anywhere except unit tests
+         */
+        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl, const md4_hash& hash, const fs::path p, fsize_t size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
