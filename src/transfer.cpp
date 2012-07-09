@@ -303,7 +303,7 @@ namespace libed2k
 
     size_t transfer::num_pieces() const
     {
-        return div_ceil(m_filesize, PIECE_SIZE);
+        return static_cast<size_t>(div_ceil(m_filesize, PIECE_SIZE));
     }
 
     // called when torrent is complete (all pieces downloaded)
