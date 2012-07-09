@@ -454,6 +454,9 @@ namespace libed2k
 
         bytes_done(st);
 
+        st.all_time_upload = m_total_uploaded;
+        st.all_time_download = m_total_downloaded;
+
         // payload transfer
         st.total_payload_download = m_stat.total_payload_download();
         st.total_payload_upload = m_stat.total_payload_upload();
