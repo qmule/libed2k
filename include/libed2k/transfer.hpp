@@ -65,6 +65,7 @@ namespace libed2k {
           * we can mark obsolete only finished transfers
          */
         void set_obsolete(bool obsolete);
+        void update_collection(const fs::path pc);
 
         aux::session_impl& session() { return m_ses; }
 

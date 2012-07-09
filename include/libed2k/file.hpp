@@ -411,8 +411,7 @@ namespace libed2k
             for (std::deque<pending_file>::const_iterator itr = m_files.begin(); itr != m_files.end(); ++itr)
             {
                 if (!itr->m_hash.defined())
-                {
-                    DBG("hash doesnt defines for " << convert_to_native(itr->m_path.string()));
+                {                    
                     return (true);
                 }
             }

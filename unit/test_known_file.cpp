@@ -504,4 +504,27 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     libed2k::fs::remove(knownp);
 }
 
+BOOST_AUTO_TEST_CASE(test_base_collection_extractor)
+{
+    std::pair<std::string, std::string> sp =
+            libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov"), libed2k::fs::path("/home/apavlov/data"));
+    BOOST_CHECK_EQUAL(sp.first, "homeapavlov");
+    BOOST_CHECK_EQUAL(sp.second, "data");
+
+    std::pair<std::string, std::string> sp2 =
+                libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov"), libed2k::fs::path("/home/apavlov/data"));
+    BOOST_CHECK_EQUAL(sp2.first, "homeapavlov");
+    BOOST_CHECK_EQUAL(sp2.second, "data");
+
+    std::pair<std::string, std::string> sp3 =
+                libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov"), libed2k::fs::path("/home/apavlov/data/game/thrones"));
+    BOOST_CHECK_EQUAL(sp3.first, "homeapavlov");
+    BOOST_CHECK_EQUAL(sp3.second, "data-game-thrones");
+
+    std::pair<std::string, std::string> sp4 =
+                libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov/data/warlord"), libed2k::fs::path("/home/apavlov/data"));
+    BOOST_CHECK(sp4.first.empty());
+    BOOST_CHECK(sp4.second.empty());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

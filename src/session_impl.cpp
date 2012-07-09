@@ -19,6 +19,46 @@
 #include "libed2k/file.hpp"
 #include "libed2k/util.hpp"
 
+namespace libed2k
+{
+    std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path)
+    {
+        std::string strBase;
+        std::string strCollection;
+
+        fs::path::const_iterator path_itr = path.begin();
+        for (fs::path::const_iterator root_itr = root.begin(); root_itr != root.end(); ++root_itr)
+        {
+            // error - root great than path or root != path in begin
+            if (path_itr == path.end() || *path_itr != *root_itr)
+            {
+                return (std::pair<std::string, std::string>());
+            }
+
+            // pass all delimeters
+            if (*root_itr != "/")
+            {
+                strBase += *root_itr;
+            }
+
+            ++path_itr;
+        }
+
+        while(path_itr != path.end())
+        {
+            if (*path_itr != "/")
+            {
+                strCollection += (strCollection.empty())?"":"-";
+                strCollection += *path_itr;
+            }
+
+            ++path_itr;
+        }
+
+        return std::make_pair(strBase, strCollection);
+    }
+}
+
 using namespace libed2k;
 using namespace libed2k::aux;
 
@@ -38,6 +78,7 @@ dictionary_entry::dictionary_entry() :
         priority(0)
 {
 }
+
 
 session_impl_base::session_impl_base(const session_settings& settings) :
         m_io_service(),
@@ -120,6 +161,174 @@ void session_impl_base::save_state() const
         libed2k::archive::ed2k_oarchive ofa(fstream);
         ofa << kfc;
     }
+}
+
+void session_impl_base::share_file(const std::string& strFilename)
+{
+    fs::path p(convert_to_native(bom_filter(strFilename)));
+
+    // verify parameter
+    if (!fs::exists(p) || !fs::is_regular_file(p))
+    {
+        DBG("file not exists or it is not file: " << p.string());
+        return;
+    }
+
+    if (boost::shared_ptr<transfer> p = find_transfer(fs::path(strFilename)).lock())
+    {
+        p->set_obsolete(false);
+    }
+    else
+    {
+        // hash file with empty collection
+        m_file_hasher.m_order.push(std::make_pair(fs::path(), fs::path(strFilename)));
+    }
+}
+
+fs::path string2path(const std::string& strRoot, const std::string strName)
+{
+    fs::path p(convert_to_native(bom_filter(strRoot)));
+    p /= convert_to_native(bom_filter(strName));
+    return p;
+}
+
+bool filter_paths(std::deque<fs::path>& vp, const fs::path& p)
+{
+    // pass all directories
+    if (!fs::is_regular_file(p))
+    {
+        return false;
+    }
+
+    for(std::deque<fs::path>::iterator itr = vp.begin(); itr != vp.end(); ++itr)
+    {
+        if (*itr == p)
+        {
+            vp.erase(itr);
+            return (true);
+        }
+    }
+
+    return false;
+}
+
+void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
+{
+    fs::path p(convert_to_native(bom_filter(strPath)));
+
+    // verify parameter
+    if (!fs::exists(p) || !fs::is_directory(p))
+    {
+        DBG("directory not exists or it is not directory: " << p.string());
+        return;
+    }
+
+    std::pair<std::string, std::string> bc = extract_base_collection(fs::path(strRoot), fs::path(strPath));
+
+    if (bc.first.empty())
+    {
+        return;
+    }
+
+    std::deque<fs::path> ex_paths;
+    std::deque<fs::path> fpaths;
+    std::transform(excludes.begin(), excludes.end(), std::back_inserter(ex_paths), boost::bind(&string2path, strPath, _1));
+    std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(fpaths));
+    fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), boost::bind(&filter_paths, ex_paths, _1)), fpaths.end());
+    int files_count = std::count_if(fpaths.begin(), fpaths.end(), std::ptr_fun(dref_is_regular_file));
+
+    // generate collection name
+    fs::path collection_path;
+
+    if (!bc.second.empty() && !m_settings.m_collections_directory.empty())
+    {
+        collection_path /= m_settings.m_collections_directory;
+        std::stringstream sstr;
+        sstr << bc.second << "_" << files_count << ".emulecollection";
+        collection_path /= sstr.str();
+    }
+
+    pending_collection pc(collection_path);
+
+    for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
+    {
+        fs::path upath = convert_from_native(itr->string());
+
+        if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
+        {
+            p->set_obsolete(false);                 // mark transfer as active
+
+            if (!collection_path.empty())
+            {
+                p->update_collection(collection_path);  // update collection path
+                pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
+            }
+            else
+            {
+                p->update_collection(fs::path());   // collection is not avaliable - erase it from transfer
+            }
+
+            continue;
+        }
+
+        if (!collection_path.empty()) pc.m_files.push_back(pending_file(upath));    //!< add pending file to collection
+        m_file_hasher.m_order.push(std::make_pair(collection_path, upath));     //!< hash file
+    }
+
+    // collections works
+    if (!pc.m_files.empty())
+    {
+        DBG("collection not empty");
+        // when we collect pending collection - add it to pending list for public after hashes were completed
+        if (pc.is_pending())
+        {
+            DBG("pending collection");
+            // first - search file in transfers
+            if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
+            {
+                // we found transfer on pending collection - stop it
+                p->abort();
+            }
+
+            // add current collection to pending list
+            m_pending_collections.push_back(pc);
+        }
+        else
+        {
+            DBG("collection not pending");
+            // load collection
+            emule_collection ecoll = emule_collection::fromFile(convert_to_native(bom_filter(pc.m_path.string())));
+
+            // we already have collection on disk
+            if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
+            {
+                if (ecoll == pc.m_files)
+                {
+                    p->set_obsolete(false);
+                }
+                else
+                {
+                    // transfer exists but collection changed
+                    p->abort();
+                    // save collection to disk and run hasher
+                    emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
+                    // run hash
+                    m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
+                }
+            }
+            else
+            {
+                if (ecoll != pc.m_files)
+                {
+                    // replace collection on disc with our collection
+                    emule_collection::fromPending(pc).save(pc.m_path.string(), false);
+                }
+
+                m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
+            }
+        }
+    }
+
 }
 
 void session_impl_base::share_files(rule* base_rule)

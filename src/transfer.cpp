@@ -142,6 +142,11 @@ namespace libed2k
         }
     }
 
+    void transfer::update_collection(const fs::path pc)
+    {
+        m_collectionpath = pc;
+    }
+
     bool transfer::want_more_peers() const
     {
         return !is_finished() && m_policy.num_peers() == 0;
@@ -316,7 +321,7 @@ namespace libed2k
 
     size_t transfer::num_pieces() const
     {
-        return div_ceil(m_filesize, PIECE_SIZE);
+        return static_cast<size_t>(div_ceil(m_filesize, PIECE_SIZE));
     }
 
     // called when torrent is complete (all pieces downloaded)
@@ -465,6 +470,9 @@ namespace libed2k
         st.paused = m_paused;
 
         bytes_done(st);
+
+        st.all_time_upload = m_total_uploaded;
+        st.all_time_download = m_total_downloaded;
 
         // payload transfer
         st.total_payload_download = m_stat.total_payload_download();

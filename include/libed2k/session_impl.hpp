@@ -35,6 +35,8 @@ namespace libed2k {
     class add_transfer_params;
     struct transfer_handle;
 
+    extern std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path);
+
     namespace aux
     {
         struct dictionary_entry
@@ -97,6 +99,20 @@ namespace libed2k {
             void load_state();
 
             void share_files(rule* base_rule);
+
+            /**
+              * share single file - do not prepare collection
+              * @param strFilename - in UTF-8 code page
+             */
+            void share_file(const std::string& strFilename);
+
+            /**
+              * share directory and generate collection
+              * all parameters in UTF-8
+              * @param strRoot - must equal strPath from 0 to strRoot.size()
+              * @param excludes must contains only filenames
+             */
+            void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
 
             /**
               * start share transaction - all transfers marks as obsolete
