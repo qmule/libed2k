@@ -335,8 +335,6 @@ void create_directory_tree()
     p /= libed2k::convert_to_native(libed2k::bom_filter(strDirectory));
     libed2k::fs::create_directories(p);
 
-    //p /= libed2k::convert_to_native(libed2k::bom_filter(strFilename));
-
     libed2k::fs::path p1 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "01.txt"));
     libed2k::fs::path p2 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "02.txt"));
     libed2k::fs::path p3 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "03.txt"));
@@ -502,6 +500,8 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     drop_directory_tree();
     libed2k::fs::path knownp = "known.met";
     libed2k::fs::remove(knownp);
+
+    libed2k::fs::remove_all(collect_path);
 }
 
 BOOST_AUTO_TEST_CASE(test_base_collection_extractor)
@@ -525,6 +525,34 @@ BOOST_AUTO_TEST_CASE(test_base_collection_extractor)
                 libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov/data/warlord"), libed2k::fs::path("/home/apavlov/data"));
     BOOST_CHECK(sp4.first.empty());
     BOOST_CHECK(sp4.second.empty());
+}
+
+BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
+{
+    return;
+    create_directory_tree();
+    // create collections directory
+    libed2k::fs::path collect_path = libed2k::fs::initial_path();
+    collect_path /= "collections";
+
+    libed2k::fs::create_directory(collect_path);
+    BOOST_REQUIRE(libed2k::fs::exists(collect_path));
+
+    libed2k::fs::path path = libed2k::fs::initial_path();
+    path /= libed2k::convert_to_native(chRussianDirectory);
+    path /= libed2k::convert_to_native(chRussianDirectory);
+    libed2k::fs::create_directory(path);
+    BOOST_REQUIRE(libed2k::fs::exists(path));
+
+    std::string strRoot = libed2k::convert_from_native(libed2k::fs::initial_path().string());
+    std::string strPath = libed2k::convert_from_native(path.string());
+
+    libed2k::session_settings s;
+    s.m_known_file = "known.met";
+    s.m_collections_directory = collect_path.string();
+    libed2k::aux::session_impl_test st(s);
+
+    drop_directory_tree();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
