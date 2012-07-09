@@ -163,6 +163,9 @@ namespace libed2k {
          */
         void share_files(rule* base_rule);
 
+        void share_file(const std::string& strFilename);
+        void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
+
         /**
           * save transfers were finished
          */

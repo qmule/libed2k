@@ -199,6 +199,18 @@ namespace libed2k
         m_impl->share_files(base_rule);
     }
 
+    void session::share_file(const std::string& strFilename)
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->share_file(strFilename);
+    }
+
+    void session::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->share_dir(strRoot, strPath, excludes);
+    }
+
     void session::save_state()
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
