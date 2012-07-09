@@ -212,7 +212,15 @@ namespace libed2k {
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
             virtual std::vector<transfer_handle> get_transfers();
+
+            /**
+              * add transfer to check queue
+             */
             void queue_check_torrent(boost::shared_ptr<transfer> const& t);
+
+            /**
+              * remove transfer from check queue
+             */
             void dequeue_check_torrent(boost::shared_ptr<transfer> const& t);
 
             void close_connection(const peer_connection* p, const error_code& ec);

@@ -637,6 +637,23 @@ namespace libed2k
         }
     };
 
+    struct transfer_checked_alert: transfer_alert
+    {
+        transfer_checked_alert(transfer_handle const& h)
+            : transfer_alert(h)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new transfer_checked_alert(*this)); }
+        virtual char const* what() const { return "transfer checked"; }
+        const static int static_category = alert::status_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            return transfer_alert::message() + " checked";
+        }
+  };
+
 }
 
 

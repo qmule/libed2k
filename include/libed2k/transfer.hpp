@@ -82,6 +82,7 @@ namespace libed2k {
         void disconnect_all(const error_code& ec);
         bool try_connect_peer();
         void give_connect_points(int points);
+        bool has_error() const { return m_error; }
 
         // the number of peers that belong to this torrent
         int num_peers() const { return (int)m_connections.size(); }
@@ -207,20 +208,12 @@ namespace libed2k {
         boost::uint64_t getTransferred() const { return m_transferred; }
         boost::uint8_t  getPriority() const { return m_priority; }
 
-        // --------------------------------------------
-        // SERVER MANAGEMENT
-
-        /**
-          * convert transfer info into announce
-         */
-        shared_file_entry getAnnounce() const;
-
-        tcp::endpoint const& get_interface() const { return m_net_interface; }
-
-        std::set<peer_connection*> m_connections;
 
         void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
+        /**
+          * async generate fast resume data and emit alert
+         */
         void save_resume_data();
 
         bool verified_piece(int piece) const
@@ -238,9 +231,41 @@ namespace libed2k {
             m_verified.set_bit(piece);
         }
 
+        bool should_check_file() const;
+
+        /**
+          * call after transfer checking completed
+         */
+        void file_checked();
+
 
         void start_checking();
+        void on_piece_checked(int ret, disk_io_job const& j);
+
+        void set_error(error_code const& ec);
+
+        /**
+          * add transfer to check queue in session_impl
+         */
         void queue_transfer_check();
+
+        /**
+          * remove transfer from check queue insession_impl
+         */
+        void dequeue_transfer_check();
+
+        // --------------------------------------------
+        // SERVER MANAGEMENT
+
+        /**
+          * convert transfer info into announce
+         */
+        shared_file_entry getAnnounce() const;
+
+        tcp::endpoint const& get_interface() const { return m_net_interface; }
+
+        std::set<peer_connection*> m_connections;
+
     private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
@@ -317,6 +342,7 @@ namespace libed2k {
         fsize_t m_total_uploaded;
         fsize_t m_total_downloaded;
         bool m_queued_for_checking:1;
+        int m_progress_ppm;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and

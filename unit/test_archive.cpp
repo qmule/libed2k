@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
     const char* pData = (const char*)&fTemplate;
     libed2k::md4_hash md4 = libed2k::md4_hash::fromString("000102030405060708090A0B0C0D0E0F");
 
-    std::vector<boost::uint8_t> vBlob;
+    std::vector<char> vBlob;
     vBlob.push_back('\x0D');
     vBlob.push_back('\x0A');
     vBlob.push_back('\x0B');
@@ -401,7 +401,7 @@ BOOST_AUTO_TEST_CASE(test_tags_mixed)
 {
     boost::uint16_t n1 = 1000;
     boost::uint64_t n2 = 32323267673UL;
-    std::vector<boost::uint8_t> vData(1000);
+    std::vector<char> vData(1000);
     libed2k::tag_list<boost::uint16_t> src_list;
     src_list.add_tag(libed2k::make_string_tag(std::string("IVAN"), libed2k::FT_FILENAME, true));
     src_list.add_tag(libed2k::make_string_tag(std::string("IVANANDPLAN"), libed2k::FT_FILENAME, false));
@@ -432,7 +432,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     boost::uint32_t n32 = 233332;
     boost::uint8_t  n8 = '\x10';
     bool bTag = true;
-    libed2k::blob_type vBlob;
+    std::vector<char> vBlob;
     float fTag = 1129.4;
     libed2k::tag_list<boost::uint16_t> src_list;
 
@@ -742,6 +742,24 @@ BOOST_AUTO_TEST_CASE(test_links_parsing)
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more3|fd|ggfgfg|/").defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|more2|10|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more1|0|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
+}
+
+BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)
+{
+    std::vector<char> v(100, 122);
+
+    libed2k::fs::path p("./xxx.data");
+    libed2k::transfer_resume_data trd(libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), p, 1009, v);
+    libed2k::transfer_resume_data trd_dst;
+    std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
+    libed2k::archive::ed2k_oarchive out_string_archive(sstream_out);
+
+    out_string_archive << trd;
+
+    // go to begin
+    sstream_out.seekg(0, std::ios::beg);
+    libed2k::archive::ed2k_iarchive in_string_archive(sstream_out);
+    in_string_archive >> trd_dst;
 }
 
 

@@ -41,6 +41,7 @@ namespace libed2k
         m_total_uploaded(0),
         m_total_downloaded(0),
         m_queued_for_checking(false),
+        m_progress_ppm(0),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
         DBG("transfer file size: " << m_filesize);
@@ -106,7 +107,7 @@ namespace libed2k
                 boost::bind(&transfer::on_transfer_aborted, shared_from_this(), _1, _2));
         }
 
-        //dequeue_transfer_check();
+        dequeue_transfer_check();
 
         if (m_state == transfer_status::checking_files)
             set_state(transfer_status::queued_for_checking);
@@ -673,6 +674,118 @@ namespace libed2k
                     , shared_from_this(), _1, _2));
     }
 
+    void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
+    {
+        DBG("transfer::on_resume_data_checked");
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (ret == piece_manager::fatal_disk_error)
+        {
+            handle_disk_error(j);
+            set_state(transfer_status::queued_for_checking);
+            std::vector<char>().swap(m_resume_data);
+            lazy_entry().swap(m_resume_entry);
+            return;
+        }
+
+        // only report this error if the user actually provided resume data
+        if ((j.error || ret != 0) && !m_resume_data.empty())
+        {
+            m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), j.error));
+            ERR("fastresume data rejected: " << j.error.message() << " ret: " << ret);
+        }
+
+        // if ret != 0, it means we need a full check. We don't necessarily need
+        // that when the resume data check fails.
+        if (ret == 0)
+        {
+            // pieces count will calculate by length pieces string
+            int num_pieces = 0;
+
+            if (!j.error && m_resume_entry.type() == lazy_entry::dict_t)
+            {
+                lazy_entry const* hv = m_resume_entry.dict_find_list("hashset-values");
+                lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
+
+                m_hashset.resize(hv->list_size());
+
+                for (int n = 0; n < hv->list_size(); ++n)
+                {
+                    m_hashset[n] = md4_hash::fromString(hv->list_at(n)->string_value());
+                }
+
+                // we don't compare pieces count
+                if (pieces && pieces->type() == lazy_entry::string_t)
+                {
+                    num_pieces = pieces->string_length();
+                    char const* pieces_str = pieces->string_ptr();
+                    for (int i = 0, end(pieces->string_length()); i < end; ++i)
+                    {
+                        if (pieces_str[i] & 1) m_picker->we_have(i);
+                        if (m_seed_mode && (pieces_str[i] & 2)) m_verified.set_bit(i);
+                    }
+                }
+
+                // parse unfinished pieces
+                int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+
+                if (lazy_entry const* unfinished_ent = m_resume_entry.dict_find_list("unfinished"))
+                {
+                    for (int i = 0; i < unfinished_ent->list_size(); ++i)
+                    {
+                        lazy_entry const* e = unfinished_ent->list_at(i);
+                        if (e->type() != lazy_entry::dict_t) continue;
+                        int piece = e->dict_find_int_value("piece", -1);
+                        if (piece < 0 || piece > num_pieces) continue;
+
+                        if (m_picker->have_piece(piece))
+                            m_picker->we_dont_have(piece);
+
+                        std::string bitmask = e->dict_find_string_value("bitmask");
+                        if (bitmask.empty()) continue;
+
+                        const int num_bitmask_bytes = (std::max)(num_blocks_per_piece / 8, 1);
+                        if ((int)bitmask.size() != num_bitmask_bytes) continue;
+                        for (int j = 0; j < num_bitmask_bytes; ++j)
+                        {
+                            unsigned char bits = bitmask[j];
+                            int num_bits = (std::min)(num_blocks_per_piece - j*8, 8);
+                            for (int k = 0; k < num_bits; ++k)
+                            {
+                                const int bit = j * 8 + k;
+                                if (bits & (1 << k))
+                                {
+                                    m_picker->mark_as_finished(piece_block(piece, bit), 0);
+
+                                    if (piece < m_hashset.size())
+                                    {
+                                        const md4_hash& hs = m_hashset.at(piece);
+
+                                        // check piece when we have hash for it
+                                        if (m_picker->is_piece_finished(piece))
+                                            async_verify_piece(piece, hs, boost::bind(&transfer::piece_finished
+                                                , shared_from_this(), piece, _1));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            file_checked();
+        }
+        else
+        {
+            set_state(transfer_status::queued_for_checking);
+            if (should_check_file())
+            queue_transfer_check();
+        }
+
+        std::vector<char>().swap(m_resume_data);
+        lazy_entry().swap(m_resume_entry);
+    }
+
     void transfer::second_tick(stat& accumulator, int tick_interval_ms)
     {
         if (m_minute_timer.expires() && want_more_peers()) request_peers();
@@ -752,7 +865,11 @@ namespace libed2k
     {
         shared_file_entry entry;
 
-        if (num_pieces() == 0)
+        // do not announce transfer without pieces or in checking state
+        if (m_state == transfer_status::queued_for_checking
+                || m_state == transfer_status::checking_files
+                || m_state == transfer_status::checking_resume_data ||
+                num_pieces() == 0)
         {
             return entry;
         }
@@ -828,23 +945,166 @@ namespace libed2k
             boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
     }
 
+    void transfer::on_save_resume_data(int ret, disk_io_job const& j)
+    {
+        DBG("transfer::on_save_resume_data");
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (!j.resume_data)
+        {
+            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle(), j.error));
+        }
+        else
+        {
+            write_resume_data(*j.resume_data);
+            m_ses.m_alerts.post_alert_should(save_resume_data_alert(j.resume_data, handle()));
+        }
+    }
+
+
+    bool transfer::should_check_file() const
+    {
+        return (m_state == transfer_status::checking_files
+            || m_state == transfer_status::queued_for_checking)
+            //&& (!m_paused /*|| m_auto_managed*/)
+            && !has_error()
+            && !m_abort;
+    }
+
+    void transfer::file_checked()
+    {
+        //BOOST_ASSERT(m_torrent_file->is_valid());
+
+        if (m_abort) return;
+
+        // we might be finished already, in which case we should
+        // not switch to downloading mode. If all files are
+        // filtered, we're finished when we start.
+        if (m_state != transfer_status::finished)
+            set_state(transfer_status::downloading);
+
+        m_ses.m_alerts.post_alert_should(transfer_checked_alert(handle()));
+
+        if (!is_seed())
+        {
+            // if we just finished checking and we're not a seed, we are
+            // likely to be unpaused
+            // TODO - add automanage mode
+            //if (m_ses.m_auto_manage_time_scaler > 1)
+            //    m_ses.m_auto_manage_time_scaler = 1;
+
+            if (is_finished() && m_state != transfer_status::finished)
+                finished();
+        }
+        else
+        {
+            if (m_state != transfer_status::finished)
+                finished();
+        }
+
+        // TODO
+        // call on file checked callback
+        // initialize connections
+
+        //m_files_checked = true;
+        //start_announcing();
+    }
+
     void transfer::start_checking()
     {
-        //TORRENT_ASSERT(should_check_files());
+        DBG("transfer::start_checking");
+        BOOST_ASSERT(should_check_file());
         set_state(transfer_status::checking_files);
 
-        // immediately set download status - need files check was implemented
-        set_state(transfer_status::downloading);
+        dequeue_transfer_check();
+        file_checked();
+        // TODO - activate real checking!
         //m_storage->async_check_files(boost::bind(
-        //    &transfer::on_piece_checked
-        //    , shared_from_this(), _1, _2));
+        //            &transfer::on_piece_checked
+        //            , shared_from_this(), _1, _2));
     }
+
+    void transfer::on_piece_checked(int ret, disk_io_job const& j)
+    {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (ret == piece_manager::disk_check_aborted)
+        {
+            dequeue_transfer_check();
+            pause();
+            return;
+        }
+        if (ret == piece_manager::fatal_disk_error)
+        {
+            if (m_ses.m_alerts.should_post<file_error_alert>())
+            {
+                m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
+            }
+
+#if defined TORRENT_VERBOSE_LOGGING || defined TORRENT_LOGGING || defined TORRENT_ERROR_LOGGING
+            (*m_ses.m_logger) << time_now_string() << ": fatal disk error ["
+                " error: " << j.error.message() <<
+                " torrent: " << torrent_file().name() <<
+                " ]\n";
+#endif
+            pause();
+            set_error(j.error);
+            return;
+        }
+
+        // TODO - should i use size_type?
+        m_progress_ppm = fsize_t(j.piece) * PIECE_SIZE / num_pieces();
+
+        TORRENT_ASSERT(m_picker);
+        if (j.offset >= 0 && !m_picker->have_piece(j.offset))
+            we_have(j.offset);
+
+        // what is it?
+        //remove_time_critical_piece(j.offset);
+
+        // we're not done checking yet
+        // this handler will be called repeatedly until
+        // we're done, or encounter a failure
+        if (ret == piece_manager::need_full_check) return;
+
+        dequeue_transfer_check();
+        file_checked();
+    }
+
 
     void transfer::queue_transfer_check()
     {
+        DBG("transfer::queue_transfer_check");
         if (m_queued_for_checking) return;
+        DBG("transfer::queue_transfer_check: start");
         m_queued_for_checking = true;
         m_ses.queue_check_torrent(shared_from_this());
+    }
+
+    void transfer::dequeue_transfer_check()
+    {
+        DBG("transfer::dequeue_transfer_check");
+        if (!m_queued_for_checking) return;
+        DBG("transfer::dequeue_transfer_check: start");
+        m_queued_for_checking = false;
+        m_ses.dequeue_check_torrent(shared_from_this());
+    }
+
+    void transfer::set_error(error_code const& ec)
+    {
+        bool checking_file = should_check_file();
+        m_error = ec;
+
+        // set error and check checking status again
+        if (checking_file && !should_check_file())
+        {
+            // stop checking and remove transfer from checking queue
+            m_storage->abort_disk_io();
+            dequeue_transfer_check();
+            // transfer was set queue for checking because after set_error call
+            // we always set pause, on_tick in session_impl doesn't check transfers on pause
+            set_state(transfer_status::queued_for_checking);
+        }
     }
 
     void transfer::write_resume_data(entry& ret) const
@@ -1028,138 +1288,8 @@ namespace libed2k
         }
 
         // put the torrent in an error-state
-        m_error = j.error;
+        set_error(j.error);
         pause();
-    }
-
-
-    void transfer::on_save_resume_data(int ret, disk_io_job const& j)
-    {
-        DBG("transfer::on_save_resume_data");
-        boost::mutex::scoped_lock l(m_ses.m_mutex);
-
-        if (!j.resume_data)
-        {
-            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle(), j.error));
-        }
-        else
-        {
-            write_resume_data(*j.resume_data);
-            m_ses.m_alerts.post_alert_should(save_resume_data_alert(j.resume_data, handle()));
-        }
-    }
-
-    void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
-    {
-        DBG("transfer::on_resume_data_checked");
-        boost::mutex::scoped_lock l(m_ses.m_mutex);
-
-        if (ret == piece_manager::fatal_disk_error)
-        {
-            handle_disk_error(j);
-            set_state(transfer_status::queued_for_checking);
-            std::vector<char>().swap(m_resume_data);
-            lazy_entry().swap(m_resume_entry);
-            return;
-        }
-
-        // only report this error if the user actually provided resume data
-        if ((j.error || ret != 0) && !m_resume_data.empty())
-        {
-            m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), j.error));
-            ERR("fastresume data for " << " rejected: " << j.error.message() << " ret:" << ret);
-        }
-
-        // if ret != 0, it means we need a full check. We don't necessarily need
-        // that when the resume data check fails.
-        if (ret == 0)
-        {
-            // pieces count will calculate by length pieces string
-            int num_pieces = 0;
-
-            if (!j.error && m_resume_entry.type() == lazy_entry::dict_t)
-            {
-                lazy_entry const* hv = m_resume_entry.dict_find_list("hashset-values");
-                lazy_entry const* pieces = m_resume_entry.dict_find("pieces");
-
-                m_hashset.resize(hv->list_size());
-
-                for (int n = 0; n < hv->list_size(); ++n)
-                {
-                    m_hashset[n] = md4_hash::fromString(hv->list_at(n)->string_value());
-                }
-
-                // we don't compare pieces count
-                if (pieces && pieces->type() == lazy_entry::string_t)
-                {
-                    num_pieces = pieces->string_length();
-                    char const* pieces_str = pieces->string_ptr();
-                    for (int i = 0, end(pieces->string_length()); i < end; ++i)
-                    {
-                        if (pieces_str[i] & 1) m_picker->we_have(i);
-                        if (m_seed_mode && (pieces_str[i] & 2)) m_verified.set_bit(i);
-                    }
-                }
-
-                // parse unfinished pieces
-                int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
-
-                if (lazy_entry const* unfinished_ent = m_resume_entry.dict_find_list("unfinished"))
-                {
-                    for (int i = 0; i < unfinished_ent->list_size(); ++i)
-                    {
-                        lazy_entry const* e = unfinished_ent->list_at(i);
-                        if (e->type() != lazy_entry::dict_t) continue;
-                        int piece = e->dict_find_int_value("piece", -1);
-                        if (piece < 0 || piece > num_pieces) continue;
-
-                        if (m_picker->have_piece(piece))
-                            m_picker->we_dont_have(piece);
-
-                        std::string bitmask = e->dict_find_string_value("bitmask");
-                        if (bitmask.empty()) continue;
-
-                        const int num_bitmask_bytes = (std::max)(num_blocks_per_piece / 8, 1);
-                        if ((int)bitmask.size() != num_bitmask_bytes) continue;
-                        for (int j = 0; j < num_bitmask_bytes; ++j)
-                        {
-                            unsigned char bits = bitmask[j];
-                            int num_bits = (std::min)(num_blocks_per_piece - j*8, 8);
-                            for (int k = 0; k < num_bits; ++k)
-                            {
-                                const int bit = j * 8 + k;
-                                if (bits & (1 << k))
-                                {
-                                    m_picker->mark_as_finished(piece_block(piece, bit), 0);
-
-                                    if (piece < m_hashset.size())
-                                    {
-                                        const md4_hash& hs = m_hashset.at(piece);
-
-                                        // check piece when we have hash for it
-                                        if (m_picker->is_piece_finished(piece))
-                                            async_verify_piece(piece, hs, boost::bind(&transfer::piece_finished
-                                                , shared_from_this(), piece, _1));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // start downloading when resume data was loaded successfully
-            if (!is_seed()) set_state(transfer_status::downloading);
-
-        }
-        else
-        {
-            set_state(transfer_status::queued_for_checking);
-            queue_transfer_check();
-        }
-
-        std::vector<char>().swap(m_resume_data);
-        lazy_entry().swap(m_resume_entry);
     }
 
     std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

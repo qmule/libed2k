@@ -283,7 +283,7 @@ float base_tag::asFloat() const
     throw libed2k_exception(errors::incompatible_tag_getter);
 }
 
-const blob_type& base_tag::asBlob() const
+const std::vector<char>& base_tag::asBlob() const
 {
     throw libed2k_exception(errors::incompatible_tag_getter);
 }
@@ -373,9 +373,14 @@ array_tag::array_tag(const std::string& strName, tg_nid_type nNameId) : base_tag
 {
 }
 
-const blob_type& array_tag::asBlob() const
+const std::vector<char>& array_tag::asBlob() const
 {
     return (m_value);
+}
+
+std::vector<char>* array_tag::asBlob()
+{
+    return (&m_value);
 }
 
 void array_tag::save(archive::ed2k_oarchive& ar)
@@ -436,12 +441,12 @@ boost::shared_ptr<base_tag> make_string_tag(const std::string& strValue, const s
 	return (boost::shared_ptr<base_tag>(new string_tag(strValue, strName, bNewED2K)));
 }
 
-boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, tg_nid_type nNameId, bool bNewED2K)
+boost::shared_ptr<base_tag> make_blob_tag(const std::vector<char>& vValue, tg_nid_type nNameId, bool bNewED2K)
 {
 	return (boost::shared_ptr<base_tag>(new array_tag(vValue, nNameId, bNewED2K)));
 }
 
-boost::shared_ptr<base_tag> make_blob_tag(const blob_type& vValue, const std::string& strName, bool bNewED2K)
+boost::shared_ptr<base_tag> make_blob_tag(const std::vector<char>& vValue, const std::string& strName, bool bNewED2K)
 {
 	return (boost::shared_ptr<base_tag>(new array_tag(vValue, strName, bNewED2K)));
 }

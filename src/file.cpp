@@ -738,6 +738,18 @@ namespace libed2k
         }
     }
 
+    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const fs::path& path, fsize_t size, const std::vector<char>& fr_data):
+            m_hash(hash), m_filepath(path.string()), m_filesize(size)
+    {
+        if (!fr_data.empty())
+        {
+            m_fast_resume_data.add_tag(make_blob_tag(fr_data, FT_FAST_RESUME_DATA, true));
+        }
+    }
+
+    transfer_resume_data::transfer_resume_data()
+    {}
+
     file_hasher::file_hasher(add_transfer_handler handler) : m_bCancel(false), m_add_transfer(handler)
     {
 

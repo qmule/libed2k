@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -97,6 +98,7 @@ enum CONN_CMD
     cc_save_fast_resume,
     cc_restore,
     cc_share,
+    cc_remove,
     cc_empty
 };
 
@@ -142,6 +144,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     {
         return cc_share;
     }
+    else if (strCommand == "remove")
+    {
+        return cc_remove;
+    }
 
     return cc_empty;
 }
@@ -163,6 +169,7 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
+    settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
     settings.server_keep_alive_timeout = -1;
     settings.server_reconnect_timeout = -1;
@@ -173,6 +180,7 @@ int main(int argc, char* argv[])
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
+    ses.load_state();
 
 #ifndef WIN32
     libed2k::fs::path root_path = libed2k::fs::initial_path();
@@ -225,6 +233,9 @@ int main(int argc, char* argv[])
     libed2k::fsize_t file_size;
     libed2k::md4_hash file_hash;
 
+    // this is test storage name
+    std::string strStorage;
+
     while ((std::cin >> strUser))
     {
         DBG("process: " << strUser);
@@ -258,10 +269,30 @@ int main(int argc, char* argv[])
                     params.file_path = strIncomingDirectory;
                     params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
+
+                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
+                    {
+                        params.file_size += vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
+                    }
+
                     file_size = params.file_size;
                     save_path = params.file_path;
                     file_hash = params.file_hash;
                     ses.add_transfer(params);
+                }
+                break;
+            }
+            case cc_remove:
+            {
+                std::vector<libed2k::transfer_handle> v = ses.get_transfers();
+                for (size_t n = 0; n < v.size(); ++n)
+                {
+                    try
+                    {
+                        ses.remove_transfer(v[n], 0);
+                    }
+                    catch(libed2k::libed2k_exception&)
+                    {}
                 }
                 break;
             }
@@ -332,38 +363,57 @@ int main(int argc, char* argv[])
 
                     DBG("Saving fast resume data was succesfull");
                     // write fast resume data
+                    vFastResumeData.clear();
                     libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
                     DBG("save data size: " << vFastResumeData.size());
+
                     // Saving fast resume data was successful
                     --num_resume_data;
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    try
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.filepath(), rd->m_handle.filesize(), vFastResumeData);
+
+                    // prepare storage filename
+                    strStorage = std::string("./") + rd->m_handle.hash().toString();
+
+                    std::ofstream fs(strStorage.c_str(), std::ios_base::out | std::ios_base::binary);
+
+                    if (fs)
                     {
-                        DBG("remove transfer");
-                        // Remove torrent from session
-                        ses.remove_transfer(rd->m_handle, 0);
-                        ses.pop_alert();
+                        libed2k::archive::ed2k_oarchive oa(fs);
+                        oa << trd;
                     }
-                    catch(libed2k::libed2k_exception&)
-                    {}
+
+
+                    ses.pop_alert();
                 }
                 break;
             }
             case cc_restore:
             {
                 DBG("restore fast resume data");
-                if (vFastResumeData.size() > 0)
+                if (!strStorage.empty())
                 {
-                    DBG("fast resume data exists - prepare transfer");
-                    libed2k::add_transfer_params params;
-                    params.seed_mode = false;
-                    params.file_path = save_path;
-                    params.file_size = file_size;
-                    params.resume_data = &vFastResumeData;
-                    params.file_hash = file_hash;
-                    ses.add_transfer(params);
+                    std::ifstream ifs(strStorage.c_str(), std::ios_base::in | std::ios_base::binary);
+
+                    if (ifs)
+                    {
+                        libed2k::transfer_resume_data trd;
+                        libed2k::archive::ed2k_iarchive ia(ifs);
+                        ia >> trd;
+
+                        libed2k::add_transfer_params params;
+                        params.seed_mode = false;
+                        params.file_path = trd.m_filepath.m_collection;
+                        params.file_size = trd.m_filesize;
+                        if (trd.m_fast_resume_data.count() > 0)
+                        {
+                            params.resume_data = const_cast<std::vector<char>* >(&trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
+                        }
+                        params.file_hash = trd.m_hash;
+                        ses.add_transfer(params);
+                    }
                 }
                 break;
             }
@@ -507,15 +557,31 @@ int main(int argc, char* argv[])
                 if (vSF.m_collection.empty())
                 {
 
-                DBG("RESULT: " << p->m_files.m_collection.size());
-                //p->m_files.dump();
-                vSF = p->m_files;
-                for (size_t n = 0; n < vSF.m_size; ++n)
-                {
-                    DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                            << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                            << " size: " << vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt());
-                }
+                    DBG("RESULT: " << p->m_files.m_collection.size());
+                    p->m_files.dump();
+                    vSF = p->m_files;
+
+                    boost::uint64_t nSize = 0;
+
+                    for (size_t n = 0; n < vSF.m_size; ++n)
+                    {
+                        boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
+                        boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
+
+                        if (low.get())
+                        {
+                            nSize = low->asInt();
+                        }
+
+                        if (hi.get())
+                        {
+                            nSize += hi->asInt() << 32;
+                        }
+
+                        DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                                << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
+                                << " size: " << nSize);
+                    }
                 }
 
 #if 0
@@ -638,6 +704,8 @@ int main(int argc, char* argv[])
             a = ses.pop_alert();
         }
     }
+
+    ses.save_state();
 
     return 0;
 }

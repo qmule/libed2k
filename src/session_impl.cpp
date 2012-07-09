@@ -77,6 +77,13 @@ bool dref_is_regular_file(fs::path p)
 void session_impl_base::save_state() const
 {
     DBG("session_impl::save_state()");
+
+    // known.met isn't set - pass save state stage
+    if (m_settings.m_known_file.empty())
+    {
+        return;
+    }
+
     known_file_collection kfc;
 
     for (transfer_map::const_iterator i = m_transfers.begin(),
@@ -106,9 +113,10 @@ void session_impl_base::save_state() const
         }
     }
 
-    if (!m_settings.m_known_file.empty())
+    fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
+
+    if (fstream)
     {
-        fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
         libed2k::archive::ed2k_oarchive ofa(fstream);
         ofa << kfc;
     }
@@ -933,18 +941,52 @@ std::vector<transfer_handle> session_impl::get_transfers()
 void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
-    //TORRENT_ASSERT(t->should_check_files());
-    TORRENT_ASSERT(t->state() != transfer_status::checking_files);
-    if (m_queued_for_checking.empty()) t->start_checking();
-    else t->set_state(transfer_status::queued_for_checking);
+    DBG("session_impl::queue_check_torrent: size " << m_queued_for_checking.size());
+    BOOST_ASSERT(t->should_check_file());
+    BOOST_ASSERT(t->state() != transfer_status::checking_files);
+    if (m_queued_for_checking.empty())
+    {
+        m_queued_for_checking.push_back(t);
+        t->start_checking();
+    }
+    else
+    {
+        t->set_state(transfer_status::queued_for_checking);
+        m_queued_for_checking.push_back(t);
+    }
+
     BOOST_ASSERT(std::find(m_queued_for_checking.begin()
         , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
-    m_queued_for_checking.push_back(t);
+    DBG("session_impl::queue_check_torrent: add transfer " << m_queued_for_checking.size());
 }
 
 void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
 {
-    // TODO - implement it
+    BOOST_ASSERT(t->state() == transfer_status::checking_files
+        || t->state() == transfer_status::queued_for_checking);
+
+    DBG("session_impl::dequeue_check_torrent size: " << m_queued_for_checking.size());
+    if (m_queued_for_checking.empty()) return;
+
+    boost::shared_ptr<transfer> next_check = *m_queued_for_checking.begin();
+    check_queue_t::iterator done = m_queued_for_checking.end();
+    for (check_queue_t::iterator i = m_queued_for_checking.begin()
+        , end(m_queued_for_checking.end()); i != end; ++i)
+    {
+        BOOST_ASSERT(*i == t || (*i)->should_check_file());
+        if (*i == t) done = i;
+        if (next_check == t || next_check->queue_position() > (*i)->queue_position())
+            next_check = *i;
+    }
+    // only start a new one if we removed the one that is checking
+    BOOST_ASSERT(done != m_queued_for_checking.end());
+    if (done == m_queued_for_checking.end()) return;
+
+    if (next_check != t && t->state() == transfer_status::checking_files)
+        next_check->start_checking();
+
+    DBG("session_impl::dequeue_check_torrent::remove transfer");
+    m_queued_for_checking.erase(done);
 }
 
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
