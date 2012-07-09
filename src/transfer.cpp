@@ -760,7 +760,7 @@ namespace libed2k
                                 {
                                     m_picker->mark_as_finished(piece_block(piece, bit), 0);
 
-                                    if (piece < m_hashset.size())
+                                    if (piece < int(m_hashset.size()))
                                     {
                                         const md4_hash& hs = m_hashset.at(piece);
 
