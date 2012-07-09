@@ -137,6 +137,30 @@ dictionary_entry session_impl_base::get_dictionary_entry(boost::uint32_t change_
     return (de);
 }
 
+void session_impl_base::share_file(const std::string& strFilename)
+{
+    fs::path p(convert_to_native(bom_filter(strFilename)));
+
+    // check filename exists
+    if (!fs::exists(p))
+    {
+        DBG("file not exists: " << p.string());
+        return;
+    }
+}
+
+void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
+{
+    fs::path p(convert_to_native(bom_filter(strPath)));
+
+    // check filename exists
+    if (!fs::exists(p) || !fs::is_directory(p))
+    {
+        DBG("directory not exists or it is not directory: " << p.string());
+        return;
+    }
+}
+
 void session_impl_base::share_files(rule* base_rule)
 {
     BOOST_ASSERT(base_rule);
