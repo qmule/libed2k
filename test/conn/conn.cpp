@@ -565,6 +565,9 @@ int main(int argc, char* argv[])
             }
             else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
             {
+
+                DBG("RESULT: " << p->m_files.m_collection.size());
+                p->m_files.dump();
                 if (vSF.m_collection.empty())
                 {
 

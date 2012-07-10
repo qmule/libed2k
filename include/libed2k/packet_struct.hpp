@@ -683,8 +683,6 @@ namespace libed2k
             {
                 ar & m_more_results_avaliable;
             }
-
-            DBG("search_result::serialize: bytes left: " << ar.bytes_left());
         }
 
         template<typename Archive>
