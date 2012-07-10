@@ -380,7 +380,9 @@ namespace libed2k
     {
         if (m_paused) return;
         m_paused = true;
-        if (m_ses.is_paused()) return;
+
+        // TODO - why so nothing when session paused?
+        //if (m_ses.is_paused()) return;
 
         DBG("pause transfer {hash: " << hash() << "}");
 

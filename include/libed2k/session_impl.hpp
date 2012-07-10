@@ -249,6 +249,9 @@ namespace libed2k {
             bool is_aborted() const { return m_abort; }
             bool is_paused() const { return m_paused; }
 
+            void pause();
+            void resume();
+
             /**
               * add transfer from current thread directly
              */

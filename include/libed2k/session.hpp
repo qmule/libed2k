@@ -148,6 +148,9 @@ namespace libed2k {
         void server_conn_start();
         void server_conn_stop();
 
+        void pause();
+        void resume();
+
         /**
           * set all transfers status obsolete
          */

@@ -181,6 +181,18 @@ namespace libed2k
         m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_stop, m_impl));
     }
 
+    void session::pause()
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->pause();
+    }
+
+    void session::resume()
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->resume();
+    }
+
     void session::begin_share_transaction()
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);

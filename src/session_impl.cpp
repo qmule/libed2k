@@ -1404,6 +1404,30 @@ void session_impl::abort()
     DBG("connection queue: " << m_half_open.size());
 }
 
+void session_impl::pause()
+{
+    if (m_paused) return;
+    m_paused = true;
+    for (transfer_map::iterator i = m_transfers.begin()
+        , end(m_transfers.end()); i != end; ++i)
+    {
+        transfer& t = *i->second;
+        if (!t.is_paused()) t.pause();
+    }
+}
+
+void session_impl::resume()
+{
+    if (!m_paused) return;
+    m_paused = false;
+    for (transfer_map::iterator i = m_transfers.begin()
+        , end(m_transfers.end()); i != end; ++i)
+    {
+        transfer& t = *i->second;
+        t.resume();
+    }
+}
+
 void session_impl::on_disk_queue()
 {
 }
