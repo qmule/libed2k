@@ -185,7 +185,6 @@ int main(int argc, char* argv[])
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
-    ses.load_state();
 
 #ifndef WIN32
     libed2k::fs::path root_path = libed2k::fs::initial_path();
@@ -421,9 +420,8 @@ int main(int argc, char* argv[])
             case cc_share:
             {
                 DBG("share " << strArg);
-                // I get memory leak there, but it is not problem
-                libed2k::rule* p = new libed2k::rule(libed2k::rule::rt_plus, strArg);
-                ses.share_files(p);
+                std::deque<std::string> v;
+                ses.share_dir(strArg, strArg, v);
                 break;
             }
             case cc_dump:
@@ -717,8 +715,6 @@ int main(int argc, char* argv[])
             a = ses.pop_alert();
         }
     }
-
-    ses.save_state();
 
     return 0;
 }

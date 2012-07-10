@@ -159,18 +159,14 @@ namespace libed2k {
         void end_share_transaction();
 
         /**
-          * share files by rule
+          * share single file, collection is empty
          */
-        void share_files(rule* base_rule);
-
         void share_file(const std::string& strFilename);
-        void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
 
         /**
-          * save transfers were finished
+          * share directory, when root < path - collection name will generate
          */
-        void save_state();
-        void load_state();
+        void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);
