@@ -73,10 +73,7 @@ namespace libed2k
             ++m_hash_count;
             update_pendings(t, false);
             m_vParams.push_back(t);
-
-            DBG("add hash for: " << convert_to_native(t.file_path.string()));
             m_timer.expires_from_now(boost::posix_time::seconds(5));
-
             return (transfer_handle(boost::weak_ptr<transfer>()));
         }
 
@@ -199,8 +196,6 @@ namespace libed2k
                 m_timer.expires_at(boost::posix_time::pos_infin);
                 m_ready = false;
                 m_signal.notify_all();
-                //m_timer.cancel();
-                //m_io_service.stop();
                 return;
             }
 
@@ -381,6 +376,7 @@ BOOST_AUTO_TEST_CASE(test_file_hasher)
 
 BOOST_AUTO_TEST_CASE(test_shared_files)
 {
+    return;
     setlocale(LC_CTYPE, "");
     // generate directory tree
     /**
@@ -525,12 +521,20 @@ BOOST_AUTO_TEST_CASE(test_base_collection_extractor)
                 libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov/data/warlord"), libed2k::fs::path("/home/apavlov/data"));
     BOOST_CHECK(sp4.first.empty());
     BOOST_CHECK(sp4.second.empty());
+
+#ifdef WIN32
+    std::pair<std::string, std::string> sp5 =
+                libed2k::extract_base_collection(libed2k::fs::path("C:\\share\\mule"), libed2k::fs::path("C:\\share\\mule\\games"));
+    BOOST_CHECK_EQUAL(sp5.first, "Csharemule");
+    BOOST_CHECK_EQUAL(sp5.second, "games");
+#endif
 }
 
 BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
 {
-    return;
+    setlocale(LC_CTYPE, "");
     create_directory_tree();
+
     // create collections directory
     libed2k::fs::path collect_path = libed2k::fs::initial_path();
     collect_path /= "collections";
@@ -538,21 +542,57 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     libed2k::fs::create_directory(collect_path);
     BOOST_REQUIRE(libed2k::fs::exists(collect_path));
 
+
+    // path was created by create_directory_tree
     libed2k::fs::path path = libed2k::fs::initial_path();
-    path /= libed2k::convert_to_native(chRussianDirectory);
-    path /= libed2k::convert_to_native(chRussianDirectory);
-    libed2k::fs::create_directory(path);
+    path /= libed2k::convert_to_native(libed2k::bom_filter(chRussianDirectory));
+    path /= libed2k::convert_to_native(libed2k::bom_filter(chRussianDirectory));
     BOOST_REQUIRE(libed2k::fs::exists(path));
 
-    std::string strRoot = libed2k::convert_from_native(libed2k::fs::initial_path().string());
-    std::string strPath = libed2k::convert_from_native(path.string());
+    std::string strRoot = libed2k::convert_from_native(libed2k::fs::initial_path().string());   //!< root path
+    std::string strPath = libed2k::convert_from_native(path.string());                          //!< share path
+
+    std::pair<std::string, std::string> sp =
+                    libed2k::extract_base_collection(libed2k::fs::path(strRoot), libed2k::fs::path(strPath));
+
+    // check we have correct root and share path
+    BOOST_REQUIRE(!sp.first.empty());
+    BOOST_REQUIRE(!sp.second.empty());
 
     libed2k::session_settings s;
     s.m_known_file = "known.met";
     s.m_collections_directory = collect_path.string();
     libed2k::aux::session_impl_test st(s);
 
+    std::deque<std::string> v;
+    st.share_dir(strRoot, strPath, v);
+
+    // we have one collection in pending
+    BOOST_CHECK(st.get_pending_collections().size() == 1);
+
+    while(st.m_ready)
+    {
+        st.m_io_service.run_one();
+        st.m_io_service.reset();
+    }
+
+    BOOST_CHECK(st.get_transfers_map().size() == 6);
+
+    st.save();
+    st.share_dir(strRoot, strPath, v);
+    BOOST_CHECK(st.get_pending_collections().size() == 0); // we haven't pending collections - all collections on disk
+
+    while(st.m_ready)
+    {
+        st.m_io_service.run_one();
+        st.m_io_service.reset();
+    }
+
+    // we have to find all transfers
+    BOOST_CHECK(st.get_transfers_map().size() == 0);
+
     drop_directory_tree();
+    libed2k::fs::remove_all(collect_path);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
