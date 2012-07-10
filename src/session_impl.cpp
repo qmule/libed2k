@@ -19,8 +19,8 @@
 #include "libed2k/file.hpp"
 #include "libed2k/util.hpp"
 
-namespace libed2k
-{
+namespace libed2k{
+
     std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path)
     {
         std::string strBase;
@@ -55,14 +55,12 @@ namespace libed2k
             ++path_itr;
         }
 
-		// remove disk :
+        // remove disk :
         strBase.erase(std::remove(strBase.begin(), strBase.end(), ':'), strBase.end());
         return std::make_pair(strBase, strCollection);
     }
-}
 
-using namespace libed2k;
-using namespace libed2k::aux;
+namespace aux{
 
 dictionary_entry::dictionary_entry(fsize_t nFilesize) : file_size(nFilesize),
         accepted(0),
@@ -245,19 +243,19 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
     if (!bc.second.empty() && !m_settings.m_collections_directory.empty())
     {
         collection_path /= m_settings.m_collections_directory;
-	    collection_path /= bc.first;
+        collection_path /= bc.first;
 
-	    // if directory is not exists - attempt create it and generate full collection name
-	    if (fs::exists(collection_path) || fs::create_directory(collection_path))
-	    {
-		    std::stringstream sstr;
-		    sstr << bc.second << "_" << files_count << ".emulecollection";
-		    collection_path /= sstr.str();
-	    }
-	    else
-	    {
-		    collection_path.clear();
-	    }
+        // if directory is not exists - attempt create it and generate full collection name
+        if (fs::exists(collection_path) || fs::create_directory(collection_path))
+        {
+            std::stringstream sstr;
+            sstr << bc.second << "_" << files_count << ".emulecollection";
+            collection_path /= sstr.str();
+        }
+        else
+        {
+            collection_path.clear();
+        }
     }
 
     pending_collection pc(collection_path);
@@ -736,7 +734,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_send_buffers(send_buffer_size),
     m_filepool(40),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool, DISK_BLOCK_SIZE),   
+                  m_filepool, DISK_BLOCK_SIZE),
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
@@ -1755,4 +1753,6 @@ void session_impl::server_conn_start()
 void session_impl::server_conn_stop()
 {
     m_server_connection->stop();
+}
+}
 }
