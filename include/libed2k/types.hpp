@@ -32,7 +32,7 @@ namespace libtorrent {
     struct lazy_entry;
 
     namespace aux{
-        class eh_initializer;
+        struct eh_initializer;
     }
 
     namespace detail{}

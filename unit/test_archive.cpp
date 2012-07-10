@@ -682,13 +682,22 @@ BOOST_AUTO_TEST_CASE(test_packets)
 
 BOOST_AUTO_TEST_CASE(test_emule_collection)
 {
+#ifdef WIN32
+    libed2k::emule_collection ec = libed2k::emule_collection::fromFile("../../unit/test_collection.emulecollection");
+#else
     libed2k::emule_collection ec = libed2k::emule_collection::fromFile("test_collection.emulecollection");
+#endif
+
     BOOST_REQUIRE_EQUAL(ec.m_files.size(), 3);
     BOOST_CHECK_EQUAL(ec.m_files.at(0).m_filename, "file3.txt");
     BOOST_CHECK_EQUAL(ec.m_files.at(1).m_filename, "file2.txt");
     BOOST_CHECK_EQUAL(ec.m_files.at(2).m_filename, "file1.txt");
-
+#ifdef WIN32
+    libed2k::emule_collection ec_text = libed2k::emule_collection::fromFile("../../unit/test_text_collection.emulecollection");
+#else
     libed2k::emule_collection ec_text = libed2k::emule_collection::fromFile("test_text_collection.emulecollection");
+#endif
+
     BOOST_REQUIRE_EQUAL(ec_text.m_files.size(), 3);
     BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filename, "1.txt");
     BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filename, "2.txt");

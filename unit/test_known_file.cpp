@@ -592,7 +592,7 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     BOOST_CHECK(st.get_transfers_map().size() == 0);
 
     drop_directory_tree();
-    libed2k::fs::remove_all(collect_path);
+    //libed2k::fs::remove_all(collect_path);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

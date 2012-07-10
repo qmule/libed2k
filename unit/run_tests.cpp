@@ -117,6 +117,7 @@ BOOST_AUTO_TEST_CASE(test_rule_recursion)
     BOOST_CHECK_EQUAL(pres.second, std::string("tmp"));             // base path
 }
 
+#ifndef WIN32
 BOOST_AUTO_TEST_CASE(test_rule_matching)
 {
     libed2k::fs::path root_path = libed2k::fs::initial_path();
@@ -142,7 +143,7 @@ BOOST_AUTO_TEST_CASE(test_rule_matching)
     BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f2) != fpaths.end());
     BOOST_CHECK(std::find(fpaths.begin(), fpaths.end(), f3) != fpaths.end());    
 }
-
+#endif
 BOOST_AUTO_TEST_CASE(div_ceil_test)
 {
     BOOST_CHECK_EQUAL(libed2k::div_ceil(10,2), 5);

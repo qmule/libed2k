@@ -55,6 +55,8 @@ namespace libed2k
             ++path_itr;
         }
 
+		// remove disk :
+        strBase.erase(std::remove(strBase.begin(), strBase.end(), ':'), strBase.end());
         return std::make_pair(strBase, strCollection);
     }
 }
@@ -243,9 +245,19 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
     if (!bc.second.empty() && !m_settings.m_collections_directory.empty())
     {
         collection_path /= m_settings.m_collections_directory;
-        std::stringstream sstr;
-        sstr << bc.second << "_" << files_count << ".emulecollection";
-        collection_path /= sstr.str();
+	    collection_path /= bc.first;
+
+	    // if directory is not exists - attempt create it and generate full collection name
+	    if (fs::exists(collection_path) || fs::create_directory(collection_path))
+	    {
+		    std::stringstream sstr;
+		    sstr << bc.second << "_" << files_count << ".emulecollection";
+		    collection_path /= sstr.str();
+	    }
+	    else
+	    {
+		    collection_path.clear();
+	    }
     }
 
     pending_collection pc(collection_path);
