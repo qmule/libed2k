@@ -36,7 +36,7 @@ namespace libed2k{
             }
 
             // pass all delimeters
-            if (*root_itr != "/")
+            if (*root_itr != "/" && *root_itr != ".")
             {
                 strBase += *root_itr;
             }
@@ -46,7 +46,7 @@ namespace libed2k{
 
         while(path_itr != path.end())
         {
-            if (*path_itr != "/")
+            if (*path_itr != "/" && *path_itr != ".")
             {
                 strCollection += (strCollection.empty())?"":"-";
                 strCollection += *path_itr;

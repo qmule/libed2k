@@ -528,6 +528,26 @@ BOOST_AUTO_TEST_CASE(test_base_collection_extractor)
     BOOST_CHECK_EQUAL(sp5.first, "Csharemule");
     BOOST_CHECK_EQUAL(sp5.second, "games");
 #endif
+
+    // remove / and .
+    std::pair<std::string, std::string> sp6 =
+                libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov"), libed2k::fs::path("/home/apavlov/data/"));
+    BOOST_CHECK_EQUAL(sp6.first, "homeapavlov");
+    BOOST_CHECK_EQUAL(sp6.second, "data");
+
+    // empty collection test
+    std::pair<std::string, std::string> sp7 =
+                libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov/data"), libed2k::fs::path("/home/apavlov/data"));
+    BOOST_CHECK_EQUAL(sp7.first, "homeapavlovdata");
+    BOOST_CHECK(sp7.second.empty());
+
+#ifdef WIN32
+    std::pair<std::string, std::string> sp8 =
+                libed2k::extract_base_collection(libed2k::fs::path("C:"), libed2k::fs::path("C:\\share\\mule\\games\\"));
+    BOOST_CHECK_EQUAL(sp8.first, "C");
+    BOOST_CHECK_EQUAL(sp8.second, "share-mule-games");
+#endif
+
 }
 
 BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
