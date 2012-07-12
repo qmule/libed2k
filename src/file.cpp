@@ -1366,8 +1366,7 @@ namespace libed2k
 
     bool emule_collection::operator!=(const std::deque<pending_file>& files) const
     {
-        //return (!(*this == files));
-        return true;
+        return (!(*this == files));
     }
 
     bool emule_collection::operator==(const emule_collection& ecoll) const

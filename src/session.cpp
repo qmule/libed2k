@@ -193,25 +193,23 @@ namespace libed2k
         m_impl->resume();
     }
 
-    void session::begin_share_transaction()
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->begin_share_transaction();
-    }
-
-    void session::end_share_transaction()
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->end_share_transaction();
-    }
-
     void session::share_file(const std::string& strFilename)
     {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_file, m_impl, strFilename));
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_file, m_impl, strFilename, false));
+    }
+
+    void session::unshare_file(const std::string& strFilename)
+    {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_file, m_impl, strFilename, true));
     }
 
     void session::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
     {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes));
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, false));
+    }
+
+    void session::unshare_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
+    {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, true));
     }
 }

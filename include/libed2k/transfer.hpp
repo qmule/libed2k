@@ -60,11 +60,6 @@ namespace libed2k {
         void start();
         void abort();
         void set_state(transfer_status::state_t s);
-        /**
-          * mark transfer as obsolete
-          * we can mark obsolete only finished transfers
-         */
-        void set_obsolete(bool obsolete);
         void update_collection(const fs::path pc);
 
         aux::session_impl& session() { return m_ses; }
@@ -108,7 +103,6 @@ namespace libed2k {
         }
 
         bool is_aborted() const { return m_abort; }
-        bool is_obsolete() const { return m_obsolete; }
         bool is_announced() const { return m_announced; }
         void set_announced(bool announced) { m_announced = announced; }
         transfer_status::state_t state() const { return m_state; }
@@ -299,7 +293,6 @@ namespace libed2k {
         aux::session_impl& m_ses;
         boost::scoped_ptr<piece_picker> m_picker;
 
-        bool m_obsolete;    //! transfer references to unshared file possible
         bool m_announced;   //! transfer announced on server
         // is set to true when the transfer has been aborted.
         bool m_abort;

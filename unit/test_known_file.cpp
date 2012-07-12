@@ -36,7 +36,6 @@ namespace libed2k
             const std::deque<pending_collection>& get_pending_collections() const;
             void on_timer();
             const std::deque<add_transfer_params>& get_transfers_map() const;
-            const session_impl_base::files_dictionary& get_dictionary() const;
             std::vector<transfer_handle> get_transfers();
 
             bool                m_ready;
@@ -56,11 +55,6 @@ namespace libed2k
         {
             m_bAfterSave = false;
             m_file_hasher.start();
-            m_vH.push_back(libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5"));
-            m_vH.push_back(libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9"));
-            m_vH.push_back(libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE"));
-            m_vH.push_back(libed2k::md4_hash::fromString("9385DCEF4CB89FD5A4334F5034C28893"));
-            m_vH.push_back(libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"));
             m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
         }
 
@@ -73,6 +67,11 @@ namespace libed2k
             ++m_hash_count;
             update_pendings(t, false);
             m_vParams.push_back(t);
+            // incorrect base pointer - using only for call constructor
+            m_transfers.push_back(boost::shared_ptr<transfer>(new transfer(*((aux::session_impl*)this), m_peers,
+                    t.file_hash,
+                    t.file_path,
+                    t.file_size)));
             m_timer.expires_from_now(boost::posix_time::seconds(5));
             return (transfer_handle(boost::weak_ptr<transfer>()));
         }
@@ -88,18 +87,20 @@ namespace libed2k
                 // works only after save
                 if (itr->file_path == path)
                 {
-                    // incorrect base pointer - using only for call constructor
-                    m_transfers.push_back(boost::shared_ptr<transfer>(new transfer(*((aux::session_impl*)this), m_peers,
-                            itr->file_hash,
-                            itr->file_path,
-                            itr->file_size)));
-
                     if (m_bAfterSave)
                     {
                         ++m_hash_count;
                         m_vParams.erase(itr);
+                        break;
                     }
-                    return m_transfers.back();
+                }
+            }
+
+            for (std::deque<boost::shared_ptr<transfer> >::iterator itr = m_transfers.begin(); itr != m_transfers.end(); ++itr)
+            {
+                if ((*itr)->filepath() == path)
+                {
+                    return *itr;
                 }
             }
 
@@ -109,13 +110,23 @@ namespace libed2k
                 BOOST_CHECK(false);
             }
 
-            DBG("return nothing");
             return boost::weak_ptr<transfer>();
         }
 
         void session_impl_test::remove_transfer(const transfer_handle& h, int options)
         {
+            boost::shared_ptr<transfer> tptr = h.m_transfer.lock();
+            if (!tptr) return;
 
+            for (std::deque<boost::shared_ptr<transfer> >::iterator itr = m_transfers.begin(); itr != m_transfers.end(); ++itr)
+            {
+
+                if ((*itr)->hash() == tptr->hash())
+                {
+                    m_transfers.erase(itr);
+                    break;
+                }
+            }
         }
 
         void session_impl_test::stop()
@@ -208,14 +219,11 @@ namespace libed2k
             return m_vParams;
         }
 
-        const session_impl_base::files_dictionary& session_impl_test::get_dictionary() const
-        {
-            return m_dictionary;
-        }
-
         std::vector<transfer_handle> session_impl_test::get_transfers()
         {
-            return (std::vector<transfer_handle>());
+            std::vector<transfer_handle> vh;
+            std::transform(m_transfers.begin(), m_transfers.end(), std::back_inserter(vh), boost::bind(&transfer::handle, _1));
+            return (vh);
         }
 
     }
@@ -467,11 +475,11 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     }
 
     BOOST_CHECK(st.get_pending_collections().size() == 0);
-    BOOST_CHECK(st.get_transfers_map().size() == 22);
+    BOOST_CHECK(st.get_transfers().size() == 22);
 
     st.save();
     st.load_dictionary();
-    BOOST_CHECK_EQUAL(st.get_dictionary().size(), 22);
+    //BOOST_CHECK_EQUAL(st.get_dictionary().size(), 22);
 
     // ok, share next
     st.share_files(&root);
@@ -484,13 +492,13 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
         st.m_io_service.reset();
     }
 
-    DBG("count " << st.get_transfers_map().size());
-    BOOST_CHECK(st.get_transfers_map().size() == 0);    // all added files were matched
+    //DBG("count " << st.get_transfers_map().size());
+    //BOOST_CHECK(st.get_transfers_map().size() == 0);    // all added files were matched
 
-    for (size_t i = 0; i < st.get_transfers_map().size(); i++)
-    {
-        DBG("content: " << st.get_transfers_map().at(i).file_path.string());
-    }
+    //for (size_t i = 0; i < st.get_transfers_map().size(); i++)
+    //{
+    //    DBG("content: " << st.get_transfers_map().at(i).file_path.string());
+    //}
 
 
     drop_directory_tree();
@@ -562,15 +570,50 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     libed2k::fs::create_directory(collect_path);
     BOOST_REQUIRE(libed2k::fs::exists(collect_path));
 
-
     // path was created by create_directory_tree
     libed2k::fs::path path = libed2k::fs::initial_path();
     path /= libed2k::convert_to_native(libed2k::bom_filter(chRussianDirectory));
     path /= libed2k::convert_to_native(libed2k::bom_filter(chRussianDirectory));
     BOOST_REQUIRE(libed2k::fs::exists(path));
 
+    // add additional directories
+    libed2k::fs::path p1 = path / "1";
+    libed2k::fs::create_directory(p1);
+    libed2k::fs::path p2 = p1 / "2";
+    libed2k::fs::create_directory(p2);
+
+    // test directory filter
+    std::deque<libed2k::fs::path> ex_paths;
+    std::deque<libed2k::fs::path> fpaths;
+    //std::transform(excludes.begin(), excludes.end(), std::back_inserter(ex_paths), boost::bind(&string2path, strPath, _1));
+    std::copy(libed2k::fs::directory_iterator(path), libed2k::fs::directory_iterator(), std::back_inserter(fpaths));
+    fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&libed2k::aux::paths_filter, ex_paths, _1)), fpaths.end());
+    BOOST_REQUIRE_EQUAL(fpaths.size(), 5);
+
+    {
+        std::ofstream of1((p1 / "file1.txt").string().c_str());
+
+        if (of1)
+        {
+            of1 << "some text data";
+        }
+
+        BOOST_REQUIRE(libed2k::fs::exists((p1 / "file1.txt")));
+
+        std::ofstream of2((p2 / "file1.txt").string().c_str());
+
+        if (of2)
+        {
+            of2 << "some text data in directory 2";
+        }
+
+        BOOST_REQUIRE(libed2k::fs::exists((p2 / "file1.txt")));
+    }
+
     std::string strRoot = libed2k::convert_from_native(libed2k::fs::initial_path().string());   //!< root path
     std::string strPath = libed2k::convert_from_native(path.string());                          //!< share path
+    std::string strPath1 = libed2k::convert_from_native(p1.string());                          //!< share path p1
+    std::string strPath2 = libed2k::convert_from_native(p2.string());                          //!< share path p2
 
     std::pair<std::string, std::string> sp =
                     libed2k::extract_base_collection(libed2k::fs::path(strRoot), libed2k::fs::path(strPath));
@@ -585,10 +628,9 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     libed2k::aux::session_impl_test st(s);
 
     std::deque<std::string> v;
-    st.share_dir(strRoot, strPath, v);
-
-    // we have one collection in pending
-    BOOST_CHECK(st.get_pending_collections().size() == 1);
+    st.share_dir(strRoot, strPath, v, false);
+    st.share_dir(strRoot, strPath1, v, false);
+    st.share_dir(strRoot, strPath2, v, false);
 
     while(st.m_ready)
     {
@@ -596,11 +638,13 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
         st.m_io_service.reset();
     }
 
-    BOOST_CHECK(st.get_transfers_map().size() == 6);
+    BOOST_CHECK(st.get_pending_collections().size() == 0);
+    BOOST_CHECK(st.get_transfers().size() == (6 + 2 + 2));
 
     st.save();
-    st.share_dir(strRoot, strPath, v);
-    BOOST_CHECK(st.get_pending_collections().size() == 0); // we haven't pending collections - all collections on disk
+    st.share_dir(strRoot, strPath, v, false);
+    st.share_dir(strRoot, strPath1, v, false);
+    st.share_dir(strRoot, strPath2, v, false);
 
     while(st.m_ready)
     {
@@ -609,10 +653,48 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     }
 
     // we have to find all transfers
-    BOOST_CHECK(st.get_transfers_map().size() == 0);
+    BOOST_CHECK(st.get_transfers().size() == (6 + 2 + 2));
+    BOOST_CHECK(st.get_transfers_map().size() == 0);    // we found all transfers
+
+    st.save();
+    st.share_dir(strRoot, strPath1, v, true);
+    st.share_dir(strRoot, strPath2, v, true);
+
+    while(st.m_ready)
+    {
+        st.m_io_service.run_one();
+        st.m_io_service.reset();
+    }
+
+    // we have to find all transfers
+    BOOST_CHECK(st.get_transfers().size() == (6));
+
+    std::vector<libed2k::transfer_handle> vth = st.get_transfers();
+
+    // hashes files were stayed in transfers
+    std::vector<libed2k::md4_hash> vH;
+    vH.push_back(libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5"));
+    vH.push_back(libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9"));
+    vH.push_back(libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE"));
+    vH.push_back(libed2k::md4_hash::fromString("9385DCEF4CB89FD5A4334F5034C28893"));
+    vH.push_back(libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"));
+
+    for (size_t i = 0; i < vth.size(); ++i)
+    {
+        for (std::vector<libed2k::md4_hash>::iterator itr = vH.begin(); itr != vH.end(); ++itr)
+        {
+            if (*itr == vth[i].hash())
+            {
+                vH.erase(itr);
+                break;
+            }
+        }
+    }
+
+    BOOST_CHECK(vH.empty());
 
     drop_directory_tree();
-    //libed2k::fs::remove_all(collect_path);
+    libed2k::fs::remove_all(collect_path);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

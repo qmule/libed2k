@@ -39,6 +39,8 @@ namespace libed2k {
 
     namespace aux
     {
+        bool paths_filter(std::deque<fs::path>& vp, const fs::path& p);
+
         struct dictionary_entry
         {
             dictionary_entry(fsize_t nFilesize);   // create and link
@@ -103,27 +105,18 @@ namespace libed2k {
             /**
               * share single file - do not prepare collection
               * @param strFilename - in UTF-8 code page
+              * @param bUnshare - remove transfer if it exists on this file
              */
-            void share_file(const std::string& strFilename);
+            void share_file(const std::string& strFilename, bool bUnshare);
 
             /**
               * share directory and generate collection
               * all parameters in UTF-8
               * @param strRoot - must equal strPath from 0 to strRoot.size()
               * @param excludes must contains only filenames
+              * @param bUnshare - if we need un-share directory set parameter to true
              */
-            void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
-
-            /**
-              * start share transaction - all transfers marks as obsolete
-             */
-            void begin_share_transaction();
-
-            /**
-              * finish share transaction - all obsolete transfers will be aborted
-             */
-            void end_share_transaction();
-
+            void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare);
 
             /**
               * this method implements move semantic - when element found it will be erased

@@ -163,7 +163,7 @@ void session_impl_base::save_state() const
     }
 }
 
-void session_impl_base::share_file(const std::string& strFilename)
+void session_impl_base::share_file(const std::string& strFilename, bool bUnshare)
 {
     fs::path p(convert_to_native(bom_filter(strFilename)));
 
@@ -176,9 +176,9 @@ void session_impl_base::share_file(const std::string& strFilename)
 
     if (boost::shared_ptr<transfer> p = find_transfer(fs::path(strFilename)).lock())
     {
-        p->set_obsolete(false);
+        if (bUnshare) remove_transfer(p->handle(), 0);
     }
-    else
+    else if (!bUnshare)
     {
         // hash file with empty collection
         m_file_hasher.m_order.push(std::make_pair(fs::path(), fs::path(strFilename)));
@@ -192,7 +192,7 @@ fs::path string2path(const std::string& strRoot, const std::string strName)
     return p;
 }
 
-bool filter_paths(std::deque<fs::path>& vp, const fs::path& p)
+bool paths_filter(std::deque<fs::path>& vp, const fs::path& p)
 {
     // pass all directories
     if (!fs::is_regular_file(p))
@@ -205,14 +205,14 @@ bool filter_paths(std::deque<fs::path>& vp, const fs::path& p)
         if (*itr == p)
         {
             vp.erase(itr);
-            return (true);
+            return (false);
         }
     }
 
-    return false;
+    return true;
 }
 
-void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
+void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare)
 {
     fs::path p(convert_to_native(bom_filter(strPath)));
 
@@ -234,11 +234,10 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
     std::deque<fs::path> fpaths;
     std::transform(excludes.begin(), excludes.end(), std::back_inserter(ex_paths), boost::bind(&string2path, strPath, _1));
     std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(fpaths));
-    fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), boost::bind(&filter_paths, ex_paths, _1)), fpaths.end());
-    int files_count = std::count_if(fpaths.begin(), fpaths.end(), std::ptr_fun(dref_is_regular_file));
+    fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&paths_filter, ex_paths, _1)), fpaths.end());
 
     // generate collection name
-    fs::path collection_path;
+    fs::path collection_path; // utf-8
 
     if (!bc.second.empty() && !m_settings.m_collections_directory.empty())
     {
@@ -249,7 +248,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         if (fs::exists(collection_path) || fs::create_directory(collection_path))
         {
             std::stringstream sstr;
-            sstr << bc.second << "_" << files_count << ".emulecollection";
+            sstr << bc.second << "_" << fpaths.size() << ".emulecollection";
             collection_path /= sstr.str();
         }
         else
@@ -266,26 +265,50 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
 
         if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
         {
-            p->set_obsolete(false);                 // mark transfer as active
-
-            if (!collection_path.empty())
+            if (bUnshare)
             {
-                p->update_collection(collection_path);  // update collection path
-                pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
+                DBG("unshare transfer " << convert_to_native(p->filepath().string()));
+                remove_transfer(p->handle(), 0);
             }
             else
             {
-                p->update_collection(fs::path());   // collection is not avaliable - erase it from transfer
+                if (!collection_path.empty())
+                {
+                    p->update_collection(collection_path);  // update collection path
+                    pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
+                }
+                else
+                {
+                    p->update_collection(fs::path());   // collection is not avaliable - erase it from transfer
+                }
             }
 
             continue;
         }
 
-        if (!collection_path.empty()) pc.m_files.push_back(pending_file(upath));    //!< add pending file to collection
-        m_file_hasher.m_order.push(std::make_pair(collection_path, upath));     //!< hash file
+        // add file to hasher only on share operation
+        if (!bUnshare)
+        {
+            if (!collection_path.empty()) pc.m_files.push_back(pending_file(upath));    //!< add pending file to collection
+            m_file_hasher.m_order.push(std::make_pair(collection_path, upath));         //!< hash file
+        }
     }
 
     // collections works
+    // on unshare operation we check collections transfer and simple remove it if
+    if (bUnshare && !collection_path.empty())
+    {
+        boost::shared_ptr<transfer> p = find_transfer(collection_path).lock();
+
+        // remove transfer and delete collection file
+        if (p)
+        {
+            remove_transfer(p->handle(), session::delete_files);
+        }
+
+        return;
+    }
+
     if (!pc.m_files.empty())
     {
         DBG("collection not empty");
@@ -312,11 +335,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
             // we already have collection on disk
             if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
             {
-                if (ecoll == pc.m_files)
-                {
-                    p->set_obsolete(false);
-                }
-                else
+                if (ecoll != pc.m_files)
                 {
                     // transfer exists but collection changed
                     p->abort();
@@ -361,7 +380,6 @@ void session_impl_base::share_files(rule* base_rule)
         // first - search file in transfers
         if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
         {
-            p->set_obsolete(false);
         }
         else
         {
@@ -433,7 +451,6 @@ void session_impl_base::share_files(rule* base_rule)
                 // first search file in transfers
                 if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
                 {
-                    p->set_obsolete(false); // mark transfer as active
                     if (bCollectionActive ) pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
                     continue;
                 }
@@ -491,7 +508,6 @@ void session_impl_base::share_files(rule* base_rule)
                 {
                     if (ecoll == pc.m_files)
                     {
-                        p->set_obsolete(false);
                     }
                     else
                     {
@@ -521,28 +537,6 @@ void session_impl_base::share_files(rule* base_rule)
         ERR("file system error: " << e.what());
     }
 
-}
-
-void session_impl_base::begin_share_transaction()
-{
-    for (transfer_map::const_iterator i = m_transfers.begin(),
-                end(m_transfers.end()); i != end; ++i)
-        {
-            i->second->set_obsolete(true);
-        }
-}
-
-void session_impl_base::end_share_transaction()
-{
-    // abort all obsolete transfers
-    for (transfer_map::iterator i = m_transfers.begin(),
-             end(m_transfers.end()); i != end; ++i)
-    {
-        if (i->second->is_obsolete())
-        {
-            i->second->abort();
-        }
-    }
 }
 
 // obsolete code - for compatibility with old emule
