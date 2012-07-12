@@ -98,6 +98,9 @@ enum CONN_CMD
     cc_save_fast_resume,
     cc_restore,
     cc_share,
+    cc_unshare,
+    cc_sharef,
+    cc_unsharef,
     cc_remove,
     cc_dump,
     cc_empty
@@ -152,6 +155,18 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "dump")
     {
         return cc_dump;
+    }
+    else if (strCommand == "unshare")
+    {
+        return cc_unshare;
+    }
+    else if (strCommand == "sharef")
+    {
+        return cc_sharef;
+    }
+    else if (strCommand == "unsharef")
+    {
+        return cc_unsharef;
     }
 
     return cc_empty;
@@ -422,6 +437,25 @@ int main(int argc, char* argv[])
                 DBG("share " << strArg);
                 std::deque<std::string> v;
                 ses.share_dir(strArg, strArg, v);
+                break;
+            }
+            case cc_unshare:
+            {
+                DBG("unshare " << strArg);
+                std::deque<std::string> v;
+                ses.unshare_dir(strArg, strArg, v);
+                break;
+            }
+            case cc_sharef:
+            {
+                DBG("share file " << strArg);
+                ses.share_file(strArg);
+                break;
+            }
+            case cc_unsharef:
+            {
+                DBG("unshare file " << strArg);
+                ses.unshare_file(strArg);
                 break;
             }
             case cc_dump:
