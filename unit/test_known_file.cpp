@@ -37,6 +37,7 @@ namespace libed2k
             void on_timer();
             const std::deque<add_transfer_params>& get_transfers_map() const;
             std::vector<transfer_handle> get_transfers();
+            std::vector<md4_hash> get_hashes() const;
 
             bool                m_ready;
             int                 m_hash_count;
@@ -223,7 +224,24 @@ namespace libed2k
         {
             std::vector<transfer_handle> vh;
             std::transform(m_transfers.begin(), m_transfers.end(), std::back_inserter(vh), boost::bind(&transfer::handle, _1));
+            for (size_t n = 0; n < m_transfers.size(); ++n)
+            {
+                m_vH.push_back(m_transfers[n]->hash());
+            }
+
             return (vh);
+        }
+
+        std::vector<md4_hash> session_impl_test::get_hashes() const
+        {
+            std::vector<md4_hash> vH;
+
+            for (size_t n = 0; n < m_transfers.size(); ++n)
+            {
+                vH.push_back(m_transfers[n]->hash());
+            }
+
+            return vH;
         }
 
     }
@@ -669,7 +687,7 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     // we have to find all transfers
     BOOST_CHECK(st.get_transfers().size() == (6));
 
-    std::vector<libed2k::transfer_handle> vth = st.get_transfers();
+    std::vector<libed2k::md4_hash> vth = st.get_hashes();
 
     // hashes files were stayed in transfers
     std::vector<libed2k::md4_hash> vH;
@@ -680,10 +698,11 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     vH.push_back(libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"));
 
     for (size_t i = 0; i < vth.size(); ++i)
-    {
+    {        
+
         for (std::vector<libed2k::md4_hash>::iterator itr = vH.begin(); itr != vH.end(); ++itr)
         {
-            if (*itr == vth[i].hash())
+            if (*itr == vth[i])
             {
                 vH.erase(itr);
                 break;
