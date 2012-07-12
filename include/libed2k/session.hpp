@@ -22,7 +22,6 @@ namespace libed2k {
 
     class session_settings;
     struct transfer_handle;
-    class rule;
     namespace aux {
         class session_impl;
     }

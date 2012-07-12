@@ -139,11 +139,10 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     libed2k::fs::path fast_file = libed2k::fs::initial_path();
     fast_file /= "fastfile.dmp";
     test_file tf(fast_file.string().c_str(), libed2k::PIECE_SIZE + 1092);
-    libed2k::rule root(libed2k::rule::rt_plus, fast_file.string());
 
     libed2k::session_settings s;
     libed2k::aux::session_fast_rd session(s);
-    session.share_files(&root);
+    session.share_file(libed2k::convert_from_native(fast_file.string()), false);
 
     while(session.m_bWaitTransfer)
     {
@@ -216,19 +215,6 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
 
         try
         {
-          // Remove old fastresume file if it exists
-            /*
-          vector<char> out;
-          bencode(back_inserter(out), *rd->resume_data);
-          const QString filepath = torrentBackup.absoluteFilePath(h.hash()+".fastresume");
-          QFile resume_file(filepath);
-          if (resume_file.exists())
-            QFile::remove(filepath);
-          if (!out.empty() && resume_file.open(QIODevice::WriteOnly)) {
-            resume_file.write(&out[0], out.size());
-            resume_file.close();
-          }
-          */
           // Remove torrent from session
             session.remove_transfer(rd->m_handle, 0);
             session.pop_alert();

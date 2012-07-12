@@ -100,8 +100,6 @@ namespace libed2k {
              */
             void load_state();
 
-            void share_files(rule* base_rule);
-
             /**
               * share single file - do not prepare collection
               * @param strFilename - in UTF-8 code page

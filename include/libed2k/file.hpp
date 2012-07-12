@@ -316,57 +316,6 @@ namespace libed2k
     };
 
     /**
-      * rule policy
-      * this class works in native codepage!
-      * all incoming strings converts from utf-8 to native
-     */
-    class rule
-    {
-    public:
-        enum rule_type
-        {
-            rt_plus,
-            rt_minus,
-            rt_asterisk
-        };
-
-        rule(rule_type rt, const std::string& strPath);
-        ~rule();
-        const rule* get_parent() const;
-
-        const std::string get_filename() const;
-        const std::string& get_directory_prefix() const;
-
-        /**
-          * return recursive name and directory prefix
-         */
-        std::pair<std::string, std::string> generate_recursive_data() const;
-        const fs::path& get_path() const;
-        rule_type get_type() const;
-        rule* add_sub_rule(rule_type rt, const std::string& strPath);
-
-        /**
-          * when appropriate rule was found - return true
-          * otherwise return false
-          * compare only with files and directories
-         */
-        bool match(const fs::path& path);
-
-        /**
-          * find appropriate rule - used for directories
-         */
-        rule* find_rule(const fs::path& path);
-    private:
-        rule* append_rule(rule_type rt, const fs::path& path);
-        rule(rule_type rt, const fs::path& path, rule* parent);
-        rule_type           m_type;
-        rule*               m_parent;
-        fs::path            m_path;
-        std::string         m_directory_prefix;
-        std::deque<rule*>   m_sub_rules;
-    };
-
-    /**
       * this entry used to generate pending entry for async hash + publishing
       * entry contains path in UTF-8 code page
      */

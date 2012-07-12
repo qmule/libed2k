@@ -201,15 +201,6 @@ int main(int argc, char* argv[])
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-#ifndef WIN32
-    libed2k::fs::path root_path = libed2k::fs::initial_path();
-    settings.m_collections_directory = root_path.string();
-    DBG("collections directory " << settings.m_collections_directory);
-    libed2k::rule rule1(libed2k::rule::rt_plus, libed2k::convert_from_native("/home/apavlov/work/libed2k/test/conn/captcha_for_test.bmp"));
-    //sleep(2);
-    //ses.share_files(&rule1);
-#endif
-
 
     /*
     sr.add_entry(libed2k::search_request_entry(search_request_entry::SRE_NOT));
