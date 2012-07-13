@@ -799,7 +799,7 @@ void peer_connection::fill_send_buffer()
 {
     if (m_channel_state[upload_channel] != bw_idle) return;
 
-    int buffer_size_watermark = 512;
+    int buffer_size_watermark = 10 * BLOCK_SIZE;
 
     if (m_handshake_complete) { send_meta(); }
 
@@ -830,6 +830,7 @@ void peer_connection::send_data(const peer_request& req)
     else
     {
         m_channel_state[upload_channel] = bw_idle;
+        fill_send_buffer();
     }
 }
 
