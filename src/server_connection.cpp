@@ -74,7 +74,11 @@ namespace libed2k
         m_deadline.cancel();
         m_name_lookup.cancel();
         m_udp_socket.close();
-        m_ses.on_server_closed(ec); // inform session and changes it state
+
+        m_nClientId = 0;
+        m_nTCPFlags = 0;
+        m_nAuxPort  = 0;
+        m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
     const tcp::endpoint& server_connection::getServerEndpoint() const
@@ -374,10 +378,7 @@ namespace libed2k
                     {
                         server_message smsg;
                         ia >> smsg;
-                        if (m_ses.m_alerts.should_post<server_message_alert>())
-                            m_ses.m_alerts.post_alert(
-                                server_message_alert(smsg.m_strMessage));
-                        APP("server message: " << smsg.m_strMessage);
+                        m_ses.m_alerts.post_alert_should(server_message_alert(smsg.m_strMessage));
                         break;
                     }
                     case OP_SERVERLIST:
@@ -404,11 +405,9 @@ namespace libed2k
                         m_nClientId = idc.m_nClientId;
                         m_nTCPFlags = idc.m_nTCPFlags;
                         m_nAuxPort  = idc.m_nAuxPort;
-
-                        DBG("Client id: " << m_nClientId << " tcp flags: " << idc.m_nTCPFlags << " aux port " << idc.m_nAuxPort);
+                        DBG("server connection opened {cid:" << m_nClientId << "}{tcp:" << idc.m_nTCPFlags << "}{port: " << idc.m_nAuxPort<< "}");
                         m_state = SC_ONLINE;
-                        // change session status
-                        m_ses.on_server_opened(m_nClientId, m_nTCPFlags, m_nAuxPort);
+                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(m_nClientId, m_nTCPFlags, m_nAuxPort));
                         break;
                     }
                     case OP_SERVERIDENT:
@@ -443,7 +442,7 @@ namespace libed2k
                     case OP_CALLBACKREQUESTED:
                         break;
                     default:
-                        DBG("ignore unhandled packet");
+                        ERR("ignore unhandled packet: " << m_in_header.m_type);
                         break;
                 }
 

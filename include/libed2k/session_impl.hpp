@@ -321,15 +321,6 @@ namespace libed2k {
               * will perform only when server connection offline
              */
             void reconnect(int tick_interval_ms);
-
-            // called when server connection is initialized
-            void on_server_opened(boost::uint32_t client_id,
-                boost::uint32_t tcp_flags,
-                boost::uint32_t aux_port);
-
-            // called when server connection closed
-            void on_server_closed(const error_code&);
-
             void server_conn_start();
             void server_conn_stop();
 
@@ -404,11 +395,6 @@ namespace libed2k {
 
             listen_socket_t setup_listener(tcp::endpoint ep, bool v6_only = false);
 
-            // ed2k client identifier, issued by server
-            boost::uint32_t m_client_id;
-            boost::uint32_t m_tcp_flags;
-            boost::uint32_t m_aux_port;
-
             // is true if the session is paused
             bool m_paused;
 
@@ -422,6 +408,7 @@ namespace libed2k {
 
             int m_last_connect_duration;        //!< duration in milliseconds since last server connection was executed
             int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed
+            char m_server_connection_state;     //!< last measured server connection state
 
             // the main working thread
             // !!! should be last in the member list

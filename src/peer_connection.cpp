@@ -9,6 +9,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/util.hpp"
 #include "libed2k/alert_types.hpp"
+#include "libed2k/server_connection.hpp"
 
 using namespace libed2k;
 namespace ip = boost::asio::ip;
@@ -1038,7 +1039,7 @@ void peer_connection::write_hello()
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
     hello.m_hClient = settings.client_hash;
-    hello.m_network_point.m_nIP = m_ses.m_client_id;
+    hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
     hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
     hello.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));

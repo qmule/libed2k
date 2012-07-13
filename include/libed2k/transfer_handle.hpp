@@ -42,6 +42,7 @@ namespace libed2k
         bool is_paused() const;
         bool is_aborted() const;
         bool is_sequential_download() const;
+        bool is_announced() const;
         transfer_status status() const;
         void get_peer_info(std::vector<peer_info>& infos) const;
 

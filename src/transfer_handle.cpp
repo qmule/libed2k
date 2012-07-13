@@ -102,6 +102,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(is_sequential_download(), false);
     }
 
+    bool transfer_handle::is_announced() const
+    {
+        LIBED2K_FORWARD_RETURN(is_announced(), false);
+    }
+
     transfer_status transfer_handle::status() const
     {
         LIBED2K_FORWARD_RETURN(status(), transfer_status());

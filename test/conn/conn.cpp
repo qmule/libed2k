@@ -103,6 +103,8 @@ enum CONN_CMD
     cc_unsharef,
     cc_remove,
     cc_dump,
+    cc_connect,
+    cc_disconnect,
     cc_empty
 };
 
@@ -168,6 +170,14 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     {
         return cc_unsharef;
     }
+    else if (strCommand == "connect")
+    {
+        return cc_connect;
+    }
+    else if (strCommand == "disconnect")
+    {
+        return cc_disconnect;
+    }
 
     return cc_empty;
 }
@@ -192,7 +202,7 @@ int main(int argc, char* argv[])
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
     settings.server_keep_alive_timeout = -1;
-    settings.server_reconnect_timeout = -1;
+    settings.server_reconnect_timeout = 10;
     settings.server_hostname = argv[1];
     settings.server_timeout = 125;
     settings.server_port = atoi(argv[2]);
@@ -457,10 +467,16 @@ int main(int argc, char* argv[])
                     DBG("transfer: {" << i->hash().toString() << "}{"
                             << libed2k::convert_to_native(i->filepath().string()) << "}{"
                             << i->filesize() << "}{"
-                            << libed2k::transfer_status2string(i->status()));
+                            << libed2k::transfer_status2string(i->status()) << "}{A/S:" << ((i->is_announced())?"Y":"N") << "}");
                 }
                 break;
             }
+            case cc_connect:
+                ses.server_conn_start();
+                break;
+            case cc_disconnect:
+                ses.server_conn_stop();
+                break;
             default:
                 break;
         }

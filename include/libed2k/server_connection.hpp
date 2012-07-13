@@ -48,6 +48,12 @@ namespace libed2k
         bool offline()      const { return m_state == SC_OFFLINE; }
         bool online()       const { return m_state == SC_ONLINE; }
         bool connecting()   const { return m_state == SC_PROCESS; }
+        char state()        const { return m_state; }
+
+        boost::uint32_t client_id() const { return m_nClientId; }
+        boost::uint32_t tcp_flags() const { return m_nTCPFlags; }
+        boost::uint32_t aux_port()  const { return  m_nAuxPort; }
+
 
         void post_search_request(search_request& ro);
         void post_search_more_result_request();
