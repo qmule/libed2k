@@ -264,8 +264,6 @@ void peer_connection::second_tick(int tick_interval_ms)
 
     if (!is_closed())
     {
-        request_block();
-        send_block_requests();
         fill_send_buffer();
     }
 
