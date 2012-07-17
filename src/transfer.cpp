@@ -272,7 +272,6 @@ namespace libed2k
         while (!m_connections.empty())
         {
             peer_connection* p = *m_connections.begin();
-            DBG("*** CLOSING CONNECTION: " << ec.message());
 
             if (p->is_disconnecting())
                 m_connections.erase(m_connections.begin());
@@ -424,7 +423,7 @@ namespace libed2k
 
     void transfer::delete_files()
     {
-        DBG("deleting files in transfer");
+        DBG("deleting files in transfer {hash: " << m_filehash << ", files: " << m_filepath << "}");
 
         disconnect_all(errors::transfer_removed);
 
@@ -1096,9 +1095,7 @@ namespace libed2k
 
     void transfer::dequeue_transfer_check()
     {
-        DBG("transfer::dequeue_transfer_check");
         if (!m_queued_for_checking) return;
-        DBG("transfer::dequeue_transfer_check: start");
         m_queued_for_checking = false;
         m_ses.dequeue_check_torrent(shared_from_this());
     }
