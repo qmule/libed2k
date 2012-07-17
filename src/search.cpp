@@ -116,7 +116,7 @@ namespace libed2k
                 if (nCompleteSourcesCount != 0)
                 {
                     ADD_AND()
-                    vResult.push_back(search_request_entry(FT_COMPLETE_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
+                    vResult.push_back(search_request_entry(FT_COMPLETE_SOURCES, ED2K_SEARCH_OP_GREATER, nCompleteSourcesCount));
                 }
 
                 if (!strFileExtension.empty())
