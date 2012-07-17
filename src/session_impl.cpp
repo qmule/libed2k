@@ -165,6 +165,7 @@ void session_impl_base::save_state() const
 
 void session_impl_base::share_file(const std::string& strFilename, bool bUnshare)
 {
+    DBG("share_file{" << strFilename << "}{" << ((bUnshare)?"unshare":"share") << "}");
     fs::path p(convert_to_native(bom_filter(strFilename)));
 
     // verify parameter
@@ -214,6 +215,7 @@ bool paths_filter(std::deque<fs::path>& vp, const fs::path& p)
 
 void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare)
 {
+    DBG("share_dir {" << strRoot << "}{" << strPath << "}{" << ((bUnshare)?"unshare":"share") << "}");
     fs::path p(convert_to_native(bom_filter(strPath)));
 
     // verify parameter
@@ -492,9 +494,13 @@ void session_impl_base::update_pendings(const add_transfer_params& atp, bool rem
                     DBG("session_impl_base::update_pendings completed");
                     if (!itr->is_pending())                             // if collection changes status we will save it
                     {
-                        DBG("save collection and hash it");
-                        emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false);
-                        m_file_hasher.m_order.push(std::make_pair(fs::path(), itr->m_path));
+                        DBG("save collection and hash it: " << convert_to_native(bom_filter(itr->m_path.string())));
+
+                        if (emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false))
+                        {
+                            DBG("collection saves succesfully");
+                            m_file_hasher.m_order.push(std::make_pair(fs::path(), itr->m_path));
+                        }
                         m_pending_collections.erase(itr);               // remove collection from pending list
                     }
                 }
@@ -1008,12 +1014,12 @@ transfer_handle session_impl::add_transfer(
         if (!params.duplicate_is_error)
         {
             DBG("update pendings for change state for pending collections return existing transfer with same hash");
-            update_pendings(params, true);
+            update_pendings(params, false);
             return transfer_handle(transfer_ptr);
         }
 
         DBG("return invalid transfer");
-        update_pendings(params, true);
+        update_pendings(params, false);
         ec = errors::duplicate_transfer;
         return transfer_handle();
     }

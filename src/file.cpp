@@ -1111,15 +1111,15 @@ namespace libed2k
         // don't save empty collections
         if (m_files.empty())
         {
+            DBG("emule_collection::save empty");
             return false;
         }
 
-        // generate collection
-        std::ofstream fstr(strFilename.c_str(), std::ios_base::out | std::ios_base::binary);
-
-        if (fstr)
+        if (binary)
         {
-            if (binary)
+            std::ofstream fstr(strFilename.c_str(), std::ios_base::out | std::ios_base::binary);
+
+            if (fstr)
             {
                 emule_binary_collection ebc;
                 ebc.m_files.m_collection.resize(m_files.size());
@@ -1133,8 +1133,14 @@ namespace libed2k
 
                 archive::ed2k_oarchive foa(fstr);
                 foa << ebc;
+                return true;
             }
-            else
+        }
+        else
+        {
+            std::ofstream fstr(strFilename.c_str(), std::ios_base::out);
+
+            if (fstr)
             {
                 for (size_t n = 0; n < m_files.size(); ++n)
                 {
@@ -1145,10 +1151,9 @@ namespace libed2k
 
                     fstr << get_ed2k_link(n);
                 }
+
+                return true;
             }
-
-            return true;
-
         }
 
         return (false);
