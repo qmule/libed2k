@@ -553,13 +553,13 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
-    m_client_id(0),
     m_paused(false),
     m_max_connections(200),
     m_second_timer(time::seconds(1)),
     m_timer(m_io_service),
     m_last_connect_duration(0),
-    m_last_announce_duration(0)
+    m_last_announce_duration(0),
+    m_server_connection_state(SC_OFFLINE)
 {
     DBG("*** create ed2k session ***");
 
@@ -1276,6 +1276,21 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
+    // --------------------------------------------------------------
+    // server connection
+    // --------------------------------------------------------------
+    bool server_conn_change_state = m_server_connection_state != m_server_connection->state();
+
+    if (server_conn_change_state)
+    {
+        m_server_connection_state = m_server_connection->state();
+    }
+
+    if (m_server_connection->online()) announce(tick_interval_ms);
+
+    reconnect(tick_interval_ms);
+
+    m_server_connection->check_keep_alive(tick_interval_ms);
 
     // --------------------------------------------------------------
     // second_tick every transfer
@@ -1290,6 +1305,15 @@ void session_impl::on_tick(error_code const& e)
         if (t.state() == transfer_status::checking_files) ++num_checking;
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms);
+
+        // when server connection changes its state to offline - we drop announces status for all transfers
+        if (server_conn_change_state)
+        {
+            if (m_server_connection->offline())
+            {
+                t.set_announced(false);
+            }
+        }
     }
 
     // some people claim that there sometimes can be cases where
@@ -1313,10 +1337,6 @@ void session_impl::on_tick(error_code const& e)
     m_stat.second_tick(tick_interval_ms);
 
     connect_new_peers();
-
-    announce(tick_interval_ms);
-    reconnect(tick_interval_ms);
-    m_server_connection->check_keep_alive(tick_interval_ms);
 
     // --------------------------------------------------------------
     // disconnect peers when we have too many
@@ -1561,27 +1581,6 @@ void session_impl::reconnect(int tick_interval_ms)
     // perform reconnect
     m_last_connect_duration = 0;
     m_server_connection->start();
-}
-
-void session_impl::on_server_opened(
-    boost::uint32_t client_id,
-    boost::uint32_t tcp_flags,
-    boost::uint32_t aux_port)
-{
-    APP("server_opened: client_id=" << client_id);
-    m_client_id = client_id;
-    m_tcp_flags = tcp_flags;
-    m_aux_port  = aux_port;
-    m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, aux_port));
-}
-
-void session_impl::on_server_closed(const error_code& ec)
-{
-    DBG("session_impl::on_server_stopped");
-    m_client_id   = 0;
-    m_tcp_flags   = 0;
-    m_aux_port    = 0;
-    m_alerts.post_alert_should(server_connection_closed(ec));
 }
 
 void session_impl::server_conn_start()

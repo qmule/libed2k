@@ -889,7 +889,7 @@ namespace libed2k
 
         // TODO - implement generate file entry from transfer here
         entry.m_hFile = m_filehash;
-        entry.m_network_point.m_nIP     = m_ses.m_client_id;
+        entry.m_network_point.m_nIP     = m_ses.m_server_connection->client_id();
         entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
         entry.m_list.add_tag(make_string_tag(m_filepath.filename(), FT_FILENAME, true));
 
@@ -904,7 +904,7 @@ namespace libed2k
 
         bool bFileTypeAdded = false;
 
-        if (m_ses.m_tcp_flags & SRV_TCPFLG_TYPETAGINTEGER)
+        if (m_ses.m_server_connection->tcp_flags() & SRV_TCPFLG_TYPETAGINTEGER)
         {
             // Send integer file type tags to newer servers
             boost::uint32_t eFileType = GetED2KFileTypeSearchID(GetED2KFileTypeID(m_filepath.string()));
