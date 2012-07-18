@@ -124,6 +124,7 @@ namespace libed2k
 
         enum peer_speed_t { slow = 1, medium, fast };
         peer_speed_t peer_speed();
+        double peer_relative_speed();
 
         // is called once every second by the main loop
         void second_tick(int tick_interval_ms);
@@ -215,6 +216,7 @@ namespace libed2k
         bool attach_to_transfer(const md4_hash& hash);
 
         void request_block();
+        int num_blocks_to_request();
         // adds a block to the request queue
         // returns true if successful, false otherwise
         enum flags_t { req_time_critical = 1, req_busy = 2 };

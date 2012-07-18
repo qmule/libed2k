@@ -314,6 +314,24 @@ namespace libed2k
         return static_cast<size_t>(div_ceil(m_filesize, PIECE_SIZE));
     }
 
+    size_t transfer::num_free_blocks() const
+    {
+        size_t res = 0;
+        int pieces = int(num_pieces());
+
+        if (has_picker())
+        {
+            for (int p = 0; p < pieces; ++p)
+            {
+                piece_picker::downloading_piece dp;
+                m_picker->piece_info(p, dp);
+                res += (m_picker->blocks_in_piece(p) - dp.finished - dp.writing - dp.requested);
+            }
+        }
+
+        return res;
+    }
+
     // called when torrent is complete (all pieces downloaded)
     void transfer::completed()
     {

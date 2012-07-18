@@ -244,6 +244,15 @@ peer_connection::peer_speed_t peer_connection::peer_speed()
     return m_speed;
 }
 
+double peer_connection::peer_relative_speed()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    double download_rate = int(statistics().download_payload_rate());
+    double transfer_download_rate = int(t->statistics().download_payload_rate());
+    return transfer_download_rate > 0.0 ? download_rate / transfer_download_rate : 0;
+}
+
 void peer_connection::second_tick(int tick_interval_ms)
 {
     ptime now = time_now();
@@ -405,6 +414,20 @@ void peer_connection::request_block()
     assert(p.num_peers(busy_block) > 0);
 
     add_request(busy_block, peer_connection::req_busy);
+}
+
+int peer_connection::num_blocks_to_request()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    double speed = peer_relative_speed();
+    if (speed == 0.0) speed = 1;
+
+    int desired_queue_size =
+        std::min<int>(std::ceil(speed * t->num_free_blocks()),
+                      m_desired_queue_size);
+    return
+        desired_queue_size - (int)m_download_queue.size() - (int)m_request_queue.size();
 }
 
 bool peer_connection::add_request(const piece_block& block, int flags)

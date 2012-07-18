@@ -196,6 +196,7 @@ namespace libed2k {
         }
 
         size_t num_pieces() const;
+        size_t num_free_blocks() const;
 
         piece_manager& filesystem() { return *m_storage; }
 
