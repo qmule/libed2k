@@ -120,7 +120,7 @@ std::string EncryptPasswd(const std::string& strPasswd, const std::string& strFi
     }
     catch(...)
     {
-        DBG("hash file empty after error");
+        ERR("hash file: \"" << strFilename << "\" empty after error");
         memset( hashFile, 0x01, Weak::MD5::DIGESTSIZE );
     }
 
@@ -163,7 +163,7 @@ std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& st
     }
     catch(...)
     {
-        DBG("hash file empty after error");
+        ERR("hash file: \"" << strFilename << "\" empty after error");
         memset( hashFile, 0x01, Weak::MD5::DIGESTSIZE );
     }
 

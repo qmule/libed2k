@@ -48,7 +48,6 @@ namespace libed2k
 
         const session_settings& settings = m_ses.settings();
 
-        //m_deadline.expires_at(boost::posix_time::pos_infin);
         m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
 
         tcp::resolver::query q(settings.server_hostname,
@@ -202,6 +201,8 @@ namespace libed2k
             return;
         }
 
+        // stop deadline timer
+        m_deadline.cancel();
         m_ses.settings().server_ip = m_target.address().to_v4().to_ulong();
 
         DBG("connect to server:" << libtorrent::print_endpoint(m_target) << ", successfully");
@@ -254,9 +255,6 @@ namespace libed2k
 
             if (!m_write_order.empty())
             {
-                // set deadline timer
-                m_deadline.expires_from_now(boost::posix_time::seconds(m_ses.settings().server_timeout));
-
                 std::vector<boost::asio::const_buffer> buffers;
                 buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
                 buffers.push_back(boost::asio::buffer(m_write_order.front().second));
@@ -273,8 +271,6 @@ namespace libed2k
 
     void server_connection::do_read()
     {
-        m_deadline.expires_from_now(boost::posix_time::seconds(
-                                        m_ses.settings().server_timeout));
         boost::asio::async_read(m_socket,
                        boost::asio::buffer(&m_in_header, header_size),
                        boost::bind(&server_connection::handle_read_header,
