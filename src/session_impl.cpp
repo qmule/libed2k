@@ -1159,6 +1159,50 @@ void session_impl::free_disk_buffer(char* buf)
     m_disk_thread.free_buffer(buf);
 }
 
+session_status session_impl::status() const
+{
+    session_status s;
+
+    s.num_peers = (int)m_connections.size();
+
+    //s.total_redundant_bytes = m_total_redundant_bytes;
+    //s.total_failed_bytes = m_total_failed_bytes;
+
+    //s.up_bandwidth_queue = m_upload_rate.queue_size();
+    //s.down_bandwidth_queue = m_download_rate.queue_size();
+
+    //s.up_bandwidth_bytes_queue = m_upload_rate.queued_bytes();
+    //s.down_bandwidth_bytes_queue = m_download_rate.queued_bytes();
+
+    //s.has_incoming_connections = m_incoming_connection;
+
+    // total
+    s.download_rate = m_stat.download_rate();
+    s.total_upload = m_stat.total_upload();
+    s.upload_rate = m_stat.upload_rate();
+    s.total_download = m_stat.total_download();
+
+    // payload
+    s.payload_download_rate = m_stat.transfer_rate(stat::download_payload);
+    s.total_payload_download = m_stat.total_transfer(stat::download_payload);
+    s.payload_upload_rate = m_stat.transfer_rate(stat::upload_payload);
+    s.total_payload_upload = m_stat.total_transfer(stat::upload_payload);
+
+    // IP-overhead
+    s.ip_overhead_download_rate = m_stat.transfer_rate(stat::download_ip_protocol);
+    s.total_ip_overhead_download = m_stat.total_transfer(stat::download_ip_protocol);
+    s.ip_overhead_upload_rate = m_stat.transfer_rate(stat::upload_ip_protocol);
+    s.total_ip_overhead_upload = m_stat.total_transfer(stat::upload_ip_protocol);
+
+    // tracker
+    s.tracker_download_rate = m_stat.transfer_rate(stat::download_tracker_protocol);
+    s.total_tracker_download = m_stat.total_transfer(stat::download_tracker_protocol);
+    s.tracker_upload_rate = m_stat.transfer_rate(stat::upload_tracker_protocol);
+    s.total_tracker_upload = m_stat.total_transfer(stat::upload_tracker_protocol);
+
+    return s;
+}
+
 unsigned short session_impl::listen_port() const
 {
     if (m_listen_sockets.empty()) return 0;

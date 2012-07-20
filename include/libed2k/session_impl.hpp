@@ -161,7 +161,6 @@ namespace libed2k {
             // this has all torrents that wants to be checked in it
             check_queue_t m_queued_for_checking;
 
-
             // statistics gathered from all transfers.
             stat m_stat;
 
@@ -232,6 +231,7 @@ namespace libed2k {
 
             void close_connection(const peer_connection* p, const error_code& ec);
 
+            session_status status() const;
             unsigned short listen_port() const;
             const tcp::endpoint& server() const;
 

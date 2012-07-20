@@ -50,6 +50,12 @@ namespace libed2k
         if (!m_impl.unique()) m_impl->abort();
     }
 
+    session_status session::status() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->status();
+    }
+
     transfer_handle session::add_transfer(const add_transfer_params& params)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
