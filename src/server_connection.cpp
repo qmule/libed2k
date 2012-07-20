@@ -29,9 +29,7 @@ namespace libed2k
         m_nAuxPort(0),
         m_bInitialization(false),
         m_socket(ses.m_io_service),
-        m_deadline(ses.m_io_service),
-        m_udp_socket(ses.m_io_service),
-        m_udp_name_lookup(ses.m_io_service)
+        m_deadline(ses.m_io_service)
     {
     }
 
@@ -72,7 +70,6 @@ namespace libed2k
         m_socket.close();
         m_deadline.cancel();
         m_name_lookup.cancel();
-        m_udp_socket.close();
 
         m_nClientId = 0;
         m_nTCPFlags = 0;
@@ -163,27 +160,6 @@ namespace libed2k
         // execute connect
         m_deadline.expires_from_now(boost::posix_time::seconds(settings.server_timeout));
         m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
-    }
-
-
-    void server_connection::on_udp_name_lookup(
-        const error_code& error, udp::resolver::iterator i)
-    {
-        CHECK_ABORTED(error);
-        const session_settings& settings = m_ses.settings();
-
-        if (error || i == udp::resolver::iterator())
-        {
-            ERR("server name: " << settings.server_hostname
-                << ", resolve failed: " << error);
-            return;
-        }
-
-        m_udp_target = *i;
-
-        DBG("server name resolved: " << libtorrent::print_endpoint(m_udp_target));
-        // start udp socket on out host
-        m_udp_socket.open(udp::v4());
     }
 
     // private callback methods
@@ -492,98 +468,5 @@ namespace libed2k
    bool server_connection::compatible_state(char c) const
    {
        return (c & m_state);
-   }
-
-   void server_connection::handle_write_udp(const error_code& error, size_t nSize)
-   {
-
-       if (!error)
-       {
-           m_udp_order.pop_front();
-
-           if (!m_udp_order.empty())
-           {
-               std::vector<boost::asio::const_buffer> buffers;
-               buffers.push_back(boost::asio::buffer(&m_udp_order.front().first, header_size));
-               buffers.push_back(boost::asio::buffer(m_udp_order.front().second));
-               m_udp_socket.async_send_to(buffers, m_udp_target, boost::bind(&server_connection::handle_write_udp, self(),
-                                  boost::asio::placeholders::error,
-                                  boost::asio::placeholders::bytes_transferred));
-           }
-       }
-       else
-       {
-           close(error);
-
-       }
-   }
-
-   void server_connection::do_read_udp()
-   {
-    //   if (m_udp_socket.is_open())
-       {
-           DBG("server_connection::do_read_udp()");
-           m_udp_socket.async_receive(boost::asio::buffer(&m_in_udp_header, header_size),
-                              boost::bind(&server_connection::handle_read_header_udp,
-                                      self(),
-                                      boost::asio::placeholders::error,
-                                      boost::asio::placeholders::bytes_transferred));
-       }
-   }
-
-   void server_connection::handle_read_header_udp(const error_code& error, size_t nSize)
-   {
-       DBG("server_connection::handle_read_header_udp(" << error.message() << ")");
-
-       if (!error)
-       {
-          if (m_in_udp_container.size() < m_in_udp_header.m_size - 1)
-          {
-              m_in_udp_container.resize(m_in_udp_header.m_size - 1);
-          }
-
-          m_udp_socket.async_receive(boost::asio::buffer(&m_in_udp_container[0], m_in_udp_header.m_size - 1),
-                  boost::bind(&server_connection::handle_read_packet_udp, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
-       }
-       else
-       {
-           close(error);
-       }
-   }
-
-
-   void server_connection::handle_read_packet_udp(const error_code& error, size_t nSize)
-   {
-       if (!error)
-       {
-           DBG("server_connection::handle_read_packet_udp(" << error.message() << ", " << nSize << ", "); // << packetToString(m_in_udp_header.m_type));
-           boost::iostreams::stream_buffer<Device> buffer(&m_in_udp_container[0], m_in_udp_header.m_size - 1);
-           std::istream in_array_stream(&buffer);
-           archive::ed2k_iarchive ia(in_array_stream);
-
-           try
-           {
-               switch(m_in_udp_header.m_type)
-               {
-                   case OP_GLOBSERVSTATRES:
-                       {
-                           DBG("receive: OP_GLOBSERVSTATRES");
-                           global_server_state_res gres(m_in_udp_header.m_size - 1);
-                           ia >> gres;
-                           break;
-                       }
-                   default:
-                       DBG("receive " << m_in_udp_header.m_type);
-                       break;
-               }
-
-           }
-           catch(libed2k_exception&)
-           {
-               ERR("packet parse error");
-           }
-
-           do_read_udp();
-       }
    }
 }
