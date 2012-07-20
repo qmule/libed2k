@@ -272,7 +272,6 @@ namespace libed2k
         while (!m_connections.empty())
         {
             peer_connection* p = *m_connections.begin();
-            DBG("*** CLOSING CONNECTION: " << ec.message());
 
             if (p->is_disconnecting())
                 m_connections.erase(m_connections.begin());
@@ -313,6 +312,24 @@ namespace libed2k
     size_t transfer::num_pieces() const
     {
         return static_cast<size_t>(div_ceil(m_filesize, PIECE_SIZE));
+    }
+
+    size_t transfer::num_free_blocks() const
+    {
+        size_t res = 0;
+        int pieces = int(num_pieces());
+
+        if (has_picker())
+        {
+            for (int p = 0; p < pieces; ++p)
+            {
+                piece_picker::downloading_piece dp;
+                m_picker->piece_info(p, dp);
+                res += (m_picker->blocks_in_piece(p) - dp.finished - dp.writing - dp.requested);
+            }
+        }
+
+        return res;
     }
 
     // called when torrent is complete (all pieces downloaded)
@@ -424,7 +441,7 @@ namespace libed2k
 
     void transfer::delete_files()
     {
-        DBG("deleting files in transfer");
+        DBG("deleting files in transfer {hash: " << m_filehash << ", files: " << m_filepath << "}");
 
         disconnect_all(errors::transfer_removed);
 
@@ -1096,9 +1113,7 @@ namespace libed2k
 
     void transfer::dequeue_transfer_check()
     {
-        DBG("transfer::dequeue_transfer_check");
         if (!m_queued_for_checking) return;
-        DBG("transfer::dequeue_transfer_check: start");
         m_queued_for_checking = false;
         m_ses.dequeue_check_torrent(shared_from_this());
     }

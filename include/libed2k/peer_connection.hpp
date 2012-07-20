@@ -124,6 +124,7 @@ namespace libed2k
 
         enum peer_speed_t { slow = 1, medium, fast };
         peer_speed_t peer_speed();
+        double peer_rate();
 
         // is called once every second by the main loop
         void second_tick(int tick_interval_ms);
@@ -218,8 +219,11 @@ namespace libed2k
         // adds a block to the request queue
         // returns true if successful, false otherwise
         enum flags_t { req_time_critical = 1, req_busy = 2 };
-        bool add_request(piece_block const& b, int flags = 0);
+        bool add_request(const piece_block& b, int flags = 0);
         void send_block_requests();
+        void reset_block_requests();
+        bool requesting(const piece_block& b);
+        size_t num_requesting_busy_blocks();
 
         void send_meta();
         void fill_send_buffer();
@@ -384,7 +388,11 @@ namespace libed2k
 
         // the number of request we should queue up
         // at the remote end.
-        boost::uint8_t m_desired_queue_size;
+        size_t m_desired_queue_size;
+
+        // the maximum number of busy blocks we can
+        // request at a time
+        size_t m_max_busy_blocks;
 
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming

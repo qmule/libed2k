@@ -165,6 +165,7 @@ void session_impl_base::save_state() const
 
 void session_impl_base::share_file(const std::string& strFilename, bool bUnshare)
 {
+    DBG("share_file{" << strFilename << "}{" << ((bUnshare)?"unshare":"share") << "}");
     fs::path p(convert_to_native(bom_filter(strFilename)));
 
     // verify parameter
@@ -214,6 +215,7 @@ bool paths_filter(std::deque<fs::path>& vp, const fs::path& p)
 
 void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare)
 {
+    DBG("share_dir {" << strRoot << "}{" << strPath << "}{" << ((bUnshare)?"unshare":"share") << "}");
     fs::path p(convert_to_native(bom_filter(strPath)));
 
     // verify parameter
@@ -492,9 +494,13 @@ void session_impl_base::update_pendings(const add_transfer_params& atp, bool rem
                     DBG("session_impl_base::update_pendings completed");
                     if (!itr->is_pending())                             // if collection changes status we will save it
                     {
-                        DBG("save collection and hash it");
-                        emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false);
-                        m_file_hasher.m_order.push(std::make_pair(fs::path(), itr->m_path));
+                        DBG("save collection and hash it: " << convert_to_native(bom_filter(itr->m_path.string())));
+
+                        if (emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false))
+                        {
+                            DBG("collection saves succesfully");
+                            m_file_hasher.m_order.push(std::make_pair(fs::path(), itr->m_path));
+                        }
                         m_pending_collections.erase(itr);               // remove collection from pending list
                     }
                 }
@@ -1008,12 +1014,12 @@ transfer_handle session_impl::add_transfer(
         if (!params.duplicate_is_error)
         {
             DBG("update pendings for change state for pending collections return existing transfer with same hash");
-            update_pendings(params, true);
+            update_pendings(params, false);
             return transfer_handle(transfer_ptr);
         }
 
         DBG("return invalid transfer");
-        update_pendings(params, true);
+        update_pendings(params, false);
         ec = errors::duplicate_transfer;
         return transfer_handle();
     }
@@ -1151,6 +1157,50 @@ char* session_impl::allocate_disk_buffer(char const* category)
 void session_impl::free_disk_buffer(char* buf)
 {
     m_disk_thread.free_buffer(buf);
+}
+
+session_status session_impl::status() const
+{
+    session_status s;
+
+    s.num_peers = (int)m_connections.size();
+
+    //s.total_redundant_bytes = m_total_redundant_bytes;
+    //s.total_failed_bytes = m_total_failed_bytes;
+
+    //s.up_bandwidth_queue = m_upload_rate.queue_size();
+    //s.down_bandwidth_queue = m_download_rate.queue_size();
+
+    //s.up_bandwidth_bytes_queue = m_upload_rate.queued_bytes();
+    //s.down_bandwidth_bytes_queue = m_download_rate.queued_bytes();
+
+    //s.has_incoming_connections = m_incoming_connection;
+
+    // total
+    s.download_rate = m_stat.download_rate();
+    s.total_upload = m_stat.total_upload();
+    s.upload_rate = m_stat.upload_rate();
+    s.total_download = m_stat.total_download();
+
+    // payload
+    s.payload_download_rate = m_stat.transfer_rate(stat::download_payload);
+    s.total_payload_download = m_stat.total_transfer(stat::download_payload);
+    s.payload_upload_rate = m_stat.transfer_rate(stat::upload_payload);
+    s.total_payload_upload = m_stat.total_transfer(stat::upload_payload);
+
+    // IP-overhead
+    s.ip_overhead_download_rate = m_stat.transfer_rate(stat::download_ip_protocol);
+    s.total_ip_overhead_download = m_stat.total_transfer(stat::download_ip_protocol);
+    s.ip_overhead_upload_rate = m_stat.transfer_rate(stat::upload_ip_protocol);
+    s.total_ip_overhead_upload = m_stat.total_transfer(stat::upload_ip_protocol);
+
+    // tracker
+    s.tracker_download_rate = m_stat.transfer_rate(stat::download_tracker_protocol);
+    s.total_tracker_download = m_stat.total_transfer(stat::download_tracker_protocol);
+    s.tracker_upload_rate = m_stat.transfer_rate(stat::upload_tracker_protocol);
+    s.total_tracker_upload = m_stat.total_transfer(stat::upload_tracker_protocol);
+
+    return s;
 }
 
 unsigned short session_impl::listen_port() const

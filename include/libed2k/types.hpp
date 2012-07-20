@@ -25,6 +25,7 @@ namespace libtorrent {
     struct bitfield;
     class file_storage;
     struct torrent_status;
+    struct session_status;
     struct piece_block_progress;
     class stat;
     struct peer_info;
@@ -60,6 +61,7 @@ namespace libed2k
     typedef libtorrent::bitfield bitfield;
     typedef libtorrent::file_storage file_storage;
     typedef libtorrent::torrent_status transfer_status;
+    typedef libtorrent::session_status session_status;
     typedef libtorrent::piece_block_progress piece_block_progress;
     typedef libtorrent::stat stat;
     typedef libtorrent::peer_info peer_info;
