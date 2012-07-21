@@ -567,8 +567,8 @@ namespace libed2k
                     corr += block_bytes_wanted(piece_block(index, j));
                 }
                 assert(corr >= 0);
-                assert(index != last_piece || j < m_picker->blocks_in_last_piece() ||
-                       i->info[j].state != piece_picker::block_info::state_finished);
+                //assert(index != last_piece || j < m_picker->blocks_in_last_piece() ||
+                //       i->info[j].state != piece_picker::block_info::state_finished);
             }
 
             st.total_done += corr;

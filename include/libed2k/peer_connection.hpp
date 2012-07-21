@@ -45,7 +45,8 @@ namespace libed2k
     {
         pending_block(const piece_block& b, fsize_t fsize):
             skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
-            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL) {}
+            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL),
+            create_time(time_now()){}
 
         // the number of times the request
         // has been skipped by out of order blocks
@@ -71,6 +72,8 @@ namespace libed2k
         range<fsize_t> data_left;
         // disk receive buffer
         char* buffer;
+        // time when this block has been created
+        ptime create_time;
 
         bool operator==(const pending_block& b)
         {
@@ -221,7 +224,8 @@ namespace libed2k
         enum flags_t { req_time_critical = 1, req_busy = 2 };
         bool add_request(const piece_block& b, int flags = 0);
         void send_block_requests();
-        void reset_block_requests();
+        void abort_block_requests();
+        void abort_expired_requests();
         bool requesting(const piece_block& b);
         size_t num_requesting_busy_blocks();
 
