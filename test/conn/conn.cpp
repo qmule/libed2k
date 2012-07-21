@@ -201,10 +201,10 @@ int main(int argc, char* argv[])
     libed2k::session_settings settings;
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
-    settings.server_keep_alive_timeout = 25;
-    settings.server_reconnect_timeout = 10;
+    settings.server_keep_alive_timeout = -1;
+    settings.server_reconnect_timeout = -1;
     settings.server_hostname = argv[1];
-    settings.server_timeout = 125;
+    settings.server_timeout = 5;
     settings.server_port = atoi(argv[2]);
     settings.m_announce_timeout = 8;
     //settings.server_
