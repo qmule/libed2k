@@ -13,6 +13,7 @@ namespace libed2k
             server_timeout(220),
             peer_timeout(120),
             peer_connect_timeout(7),
+            block_request_timeout(10),
             allow_multiple_connections_per_ip(false),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
@@ -51,6 +52,9 @@ namespace libed2k
         // the connect does not succeed within this time, the
         // connection is dropped. The time is specified in seconds.
         int peer_connect_timeout;
+
+        // the number of seconds to wait for block request.
+        int block_request_timeout;
 
         // false to not allow multiple connections from the same
         // IP address. true will allow it.

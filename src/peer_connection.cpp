@@ -273,6 +273,8 @@ void peer_connection::second_tick(int tick_interval_ms)
         return;
     }
 
+    abort_expired_requests();
+
     if (!is_closed())
     {
         fill_send_buffer();
@@ -484,7 +486,7 @@ void peer_connection::send_block_requests()
         write_request_parts(rp);
 }
 
-void peer_connection::reset_block_requests()
+void peer_connection::abort_block_requests()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
@@ -512,6 +514,39 @@ void peer_connection::reset_block_requests()
         m_request_queue.clear();
         //m_outstanding_bytes = 0;
     }
+}
+
+void peer_connection::abort_expired_requests()
+{
+#define ABORT_EXPIRED(reqs)                                             \
+    for(std::vector<pending_block>::iterator pi = reqs.begin(); pi != reqs.end();) \
+    {                                                                   \
+        if (now - pi->create_time > time::seconds(settings.block_request_timeout)) \
+        {                                                               \
+            piece_block& b = pi->block;                                 \
+            DBG("abort expired block request: "                         \
+                "{piece: " << b.piece_index << ", block: " << b.block_index << \
+                ", remote: " << m_remote << "}");                       \
+            picker.abort_download(b);                                   \
+            pi = reqs.erase(pi);                                        \
+        }                                                               \
+        else                                                            \
+            ++pi;                                                       \
+    }
+
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    const session_settings& settings = m_ses.settings();
+
+    if (t && t->has_picker())
+    {
+        piece_picker& picker = t->picker();
+        ptime now = time_now();
+
+        ABORT_EXPIRED(m_download_queue);
+        ABORT_EXPIRED(m_request_queue);
+    }
+
+#undef ABORT_EXPIRED
 }
 
 bool peer_connection::requesting(const piece_block& b)
@@ -594,7 +629,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     {
         // make sure we keep all the stats!
         t->add_stats(m_statistics);
-        reset_block_requests();
+        abort_block_requests();
         //m_queued_time_critical = 0;
 
         t->remove_peer(this);
