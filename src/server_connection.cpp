@@ -178,6 +178,7 @@ namespace libed2k
         }
 
         // stop deadline timer
+        m_deadline.expires_at(boost::posix_time::pos_infin);
         m_deadline.cancel();
         m_ses.settings().server_ip = m_target.address().to_v4().to_ulong();
 
