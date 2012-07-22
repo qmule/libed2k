@@ -21,7 +21,6 @@ namespace libed2k
             listen_port(4662),
             client_name("http://www.aMule.org"),
             server_keep_alive_timeout(200),
-            server_ip(0),
             server_reconnect_timeout(5),
             max_peerlist_size(4000),
             download_rate_limit(-1),
@@ -71,11 +70,11 @@ namespace libed2k
         int server_port;
         // ed2k peer port for incoming peer connections
         int listen_port;
-
-        std::string     client_name; // ed2k client name
-        int             server_keep_alive_timeout;
-        unsigned long int server_ip; // todo: remove
-        int             server_reconnect_timeout;   //!< reconnect to server after fail, -1 - do nothing
+        // ed2k client name
+        std::string client_name;
+        int server_keep_alive_timeout;
+        // reconnect to server after fail, -1 - do nothing
+        int server_reconnect_timeout;
 
         // the max number of peers in the peer list
         // per transfer. This is the peers we know
@@ -100,13 +99,13 @@ namespace libed2k
         bool m_show_shared_files;       //!< show shared files to client
 
         //!< known.met file
-        std::string     m_known_file;
+        std::string m_known_file;
 
         //!< users files and directories
         //!< second parameter true for recursive search and false otherwise
         fd_list m_fd_list;
-
-        md4_hash client_hash;    // ed2k client hash, todo: remove
+        // ed2k client hash
+        md4_hash client_hash;
 
         /**
           * root directory for auto-creating collections

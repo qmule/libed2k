@@ -56,7 +56,6 @@ namespace libed2k {
             virtual void abort();
 
             const session_settings& settings() const { return m_settings; }
-            session_settings& settings() { return m_settings; }
 
             /**
               *  add transfer from another thread
