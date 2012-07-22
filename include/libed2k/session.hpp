@@ -107,7 +107,7 @@ namespace libed2k {
 
         session(const fingerprint& id, const char* listen_interface,
                 const session_settings& settings)
-        {
+        {            
             init(id, listen_interface, settings);
         }
         ~session();

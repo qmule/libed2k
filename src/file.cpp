@@ -778,7 +778,7 @@ namespace libed2k
     void file_hasher::operator()()
     {
         try
-        {
+        {            
             // prepare migration structure
             known_file_collection kfc;
 
@@ -844,8 +844,10 @@ namespace libed2k
                         }
 
                         // ok, we have equal change time - let's check filename
-                        if (pp.second.leaf() != kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))
+                        if (bom_filter(pp.second.filename()) != bom_filter(kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
                         {
+                            DBG("orig: " << convert_to_native(pp.second.filename()) 
+                                << " isn't equal: " << convert_to_native(bom_filter(kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
                             continue;
                         }
 
