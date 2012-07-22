@@ -519,7 +519,7 @@ namespace libed2k
     void transfer::bytes_done(transfer_status& st) const
     {
         st.total_wanted = filesize();
-        st.total_done = std::min<size_t>(num_have() * PIECE_SIZE, st.total_wanted);
+        st.total_done = std::min<fsize_t>(num_have() * PIECE_SIZE, st.total_wanted);
         st.total_wanted_done = st.total_done;
 
         if (!m_picker) return;

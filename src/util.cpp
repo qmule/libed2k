@@ -35,7 +35,7 @@ namespace libed2k
     {
         fsize_t begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
         fsize_t align_size = (piece + 1) * PIECE_SIZE;
-        fsize_t end = std::min(begin + BLOCK_SIZE, std::min(align_size, size));
+        fsize_t end = std::min<fsize_t>(begin + BLOCK_SIZE, std::min(align_size, size));
         assert(begin < end);
         return std::make_pair(begin, end);
     }
