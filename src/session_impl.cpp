@@ -854,7 +854,7 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {
-    APP("add transfer: {hash: " << params.file_hash << ", path: " << params.file_path
+    APP("add transfer: {hash: " << params.file_hash << ", path: " << convert_to_native(params.file_path.string())
         << ", size: " << params.file_size << "}");
 
     if (is_aborted())

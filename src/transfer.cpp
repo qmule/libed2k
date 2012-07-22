@@ -649,7 +649,7 @@ namespace libed2k
 
     void transfer::init()
     {
-        DBG("transfer::init: " << m_filepath.filename());
+        DBG("transfer::init: " << convert_to_native(m_filepath.filename()));
         file_storage& files = const_cast<file_storage&>(m_info->files());
         files.set_num_pieces(num_pieces());
         files.set_piece_length(PIECE_SIZE);
