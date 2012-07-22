@@ -77,7 +77,7 @@ namespace libed2k
         m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
-    const tcp::endpoint& server_connection::getServerEndpoint() const
+    const tcp::endpoint& server_connection::serverEndpoint() const
     {
         return (m_target);
     }
@@ -180,9 +180,8 @@ namespace libed2k
         // stop deadline timer
         m_deadline.expires_at(boost::posix_time::pos_infin);
         m_deadline.cancel();
-        m_ses.settings().server_ip = m_target.address().to_v4().to_ulong();
 
-        DBG("connect to server:" << libtorrent::print_endpoint(m_target) << ", successfully");
+        DBG("connect to server:" << m_target << ", successfully");
 
         const session_settings& settings = m_ses.settings();
 

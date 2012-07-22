@@ -1149,7 +1149,7 @@ void peer_connection::write_hello_answer()
     cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
     cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
     cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
-    cha.m_server_network_point.m_nIP   = m_ses.settings().server_ip;
+    cha.m_server_network_point.m_nIP = m_ses.server().address().to_v4().to_ulong();
 
     DBG("hello answer {client_hash: " << cha.m_hClient <<
         ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<

@@ -43,7 +43,7 @@ namespace libed2k
 
         void stop();
 
-        const tcp::endpoint& getServerEndpoint() const;
+        const tcp::endpoint& serverEndpoint() const;
 
         bool offline()      const { return m_state == SC_OFFLINE; }
         bool online()       const { return m_state == SC_ONLINE; }
