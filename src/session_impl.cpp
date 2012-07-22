@@ -300,14 +300,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
     // on unshare operation we check collections transfer and simple remove it if
     if (bUnshare && !collection_path.empty())
     {
-        boost::shared_ptr<transfer> p = find_transfer(collection_path).lock();
-
-        // remove transfer and delete collection file
-        if (p)
-        {
-            remove_transfer(p->handle(), session::delete_files);
-        }
-
+        remove_transfer(find_transfer(collection_path), session::delete_files);
         return;
     }
 
@@ -319,12 +312,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         {
             DBG("pending collection");
             // first - search file in transfers
-            if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
-            {
-                // we found transfer on pending collection - stop it
-                p->abort();
-            }
-
+            remove_transfer(find_transfer(pc.m_path), session::delete_files);
             // add current collection to pending list
             m_pending_collections.push_back(pc);
         }
@@ -340,7 +328,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
                 if (ecoll != pc.m_files)
                 {
                     // transfer exists but collection changed
-                    p->abort();
+                    remove_transfer(p->handle(), session::delete_files);
                     // save collection to disk and run hasher
                     emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
                     // run hash
