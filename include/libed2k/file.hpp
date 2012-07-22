@@ -289,7 +289,7 @@ namespace libed2k
     class file_hasher
     {
     public:
-        file_hasher(add_transfer_handler handler);
+        file_hasher(add_transfer_handler handler, const std::string& known_filename);
 
         /**
           * start monitor thread
@@ -311,8 +311,9 @@ namespace libed2k
     private:
         volatile bool           m_bCancel;
         add_transfer_handler    m_add_transfer;
+        std::string             m_known_filename;   //!< this parameter must contains
         boost::shared_ptr<boost::thread> m_thread;
-        boost::mutex m_mutex;
+        boost::mutex            m_mutex;
     };
 
     /**

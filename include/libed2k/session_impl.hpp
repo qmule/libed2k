@@ -41,20 +41,6 @@ namespace libed2k {
     {
         bool paths_filter(std::deque<fs::path>& vp, const fs::path& p);
 
-        struct dictionary_entry
-        {
-            dictionary_entry(fsize_t nFilesize);   // create and link
-            dictionary_entry();
-            fsize_t         file_size;
-            boost::uint32_t accepted;
-            boost::uint32_t requested;
-            boost::uint64_t transferred;
-            boost::uint8_t  priority;
-            md4_hash        m_hash;
-            bitfield        pieces;
-            std::vector<md4_hash> hashset;
-        };
-
         /**
           * class used for testing
          */
@@ -63,13 +49,6 @@ namespace libed2k {
         public:
             typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
-
-            /**
-              * change time + filename(native codepage)
-              * dictionary implement move semantics - when you get result dictionary lose it
-             */
-            typedef std::pair<boost::uint32_t, std::string> dictionary_key;
-            typedef std::map<dictionary_key, dictionary_entry> files_dictionary;
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
@@ -117,16 +96,6 @@ namespace libed2k {
             void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare);
 
             /**
-              * this method implements move semantic - when element found it will be erased
-              * @param change_time - change time from boost::filesystem last_write_time
-              * @param filename string in UTF-8 code page
-             */
-            dictionary_entry get_dictionary_entry(
-                boost::uint32_t change_time, const std::string& strFilename);
-
-            void load_dictionary();
-
-            /**
               * update collection entry in collection
               * @param bRemove - do not update entry - remove it
              */
@@ -168,12 +137,6 @@ namespace libed2k {
               * file hasher closed in self thread
              */
             file_hasher    m_file_hasher;
-
-            /**
-              * special index for access to files by last write time + file name
-              * file name in native code page
-             */
-            files_dictionary   m_dictionary;
 
             /**
               * pending collections list - when collection changes status from pending

@@ -62,30 +62,13 @@ namespace libed2k{
 
 namespace aux{
 
-dictionary_entry::dictionary_entry(fsize_t nFilesize) : file_size(nFilesize),
-        accepted(0),
-        requested(0),
-        transferred(0),
-        priority(0)
-{
-}
-
-dictionary_entry::dictionary_entry() :
-        file_size(0),
-        accepted(0),
-        requested(0),
-        transferred(0),
-        priority(0)
-{
-}
-
 
 session_impl_base::session_impl_base(const session_settings& settings) :
         m_io_service(),
         m_abort(false),
         m_settings(settings),
         m_transfers(),
-        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1)),
+        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1), settings.m_known_file),
         m_alerts(m_io_service)
 {
 }
@@ -348,121 +331,6 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         }
     }
 
-}
-
-// obsolete code - for compatibility with old emule
-dictionary_entry session_impl_base::get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename)
-{
-    dictionary_entry de;
-    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(change_time, strFilename));
-
-    if (itr != m_dictionary.end())
-    {
-        de = itr->second;
-        m_dictionary.erase(itr);
-    }
-
-    return (de);
-}
-
-// obsolete code - for compatibility with old emule version
-void session_impl_base::load_dictionary()
-{
-    m_dictionary.clear();
-
-    if (!m_settings.m_known_file.empty())
-    {
-        fs::ifstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
-
-        if (fstream)
-        {
-            libed2k::archive::ed2k_iarchive ifa(fstream);
-
-            try
-            {
-                known_file_collection kfc;                  //!< structured data buffer
-                ifa >> kfc;
-
-                // generate transfers
-                for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
-                {
-                    // generate transfer
-                    dictionary_key key;
-                    dictionary_entry entry;
-
-                    key.first = kfc.m_known_file_list.m_collection[n].m_nLastChanged;
-                    entry.m_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
-
-                    if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
-                    {
-                        // when file contain only one hash - we save main hash directly into container
-                        entry.hashset.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
-                    }
-                    else
-                    {
-                        entry.hashset = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
-                    }
-
-                    for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
-                    {
-                        const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
-
-                        switch(p->getNameId())
-                        {
-                            case FT_FILENAME:
-                            {
-                                // take only first file name tag
-                                if (key.second.empty())
-                                {
-                                    // dictionary contains names in UTF-8 codepage
-                                    key.second = bom_filter(p->asString());
-                                }
-
-                                break;
-                            }
-                            case FT_FILESIZE:
-                                entry.file_size = p->asInt();
-                                break;
-                            case FT_ATTRANSFERRED:
-                                entry.transferred += p->asInt();
-                                break;
-                            case FT_ATTRANSFERREDHI:
-                                entry.transferred += (p->asInt() << 32);
-                                break;
-                            case FT_ATREQUESTED:
-                                entry.requested = p->asInt();
-                                break;
-                            case FT_ATACCEPTED:
-                                entry.accepted = p->asInt();
-                                break;
-                            case FT_ULPRIORITY:
-                                entry.priority = p->asInt();
-                                break;
-                            default:
-                                // ignore unused tags like
-                                // FT_PERMISSIONS
-                                // FT_AICH_HASH:
-                                // and all kad tags
-                                break;
-                        }
-                    }
-
-                    entry.pieces = bitfield(piece_count(entry.file_size), 1);
-
-                    if (key.first != 0 && !key.second.empty())
-                    {
-                        // add new entry to dictionary
-                        m_dictionary.insert(std::make_pair(key, entry));
-                    }
-                }
-            }
-            catch(libed2k_exception& e)
-            {
-                // hide parse errors
-                ERR("session_impl_base::load_state: parse error " << e.what());
-            }
-        }
-    }
 }
 
 void session_impl_base::update_pendings(const add_transfer_params& atp, bool remove)
