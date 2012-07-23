@@ -191,7 +191,7 @@ namespace libed2k
         boost::uint32_t nCapability = /*CAPABLE_ZLIB */ CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
         boost::uint32_t nClientVersion  = (LIBED2K_VERSION_MAJOR << 24) | (LIBED2K_VERSION_MINOR << 17) | (LIBED2K_VERSION_TINY << 10) | (1 << 7);
 
-        login.m_hClient                 = settings.client_hash;
+        login.m_hClient                 = settings.user_agent;
         login.m_network_point.m_nIP     = 0;
         login.m_network_point.m_nPort   = settings.listen_port;
 

@@ -29,12 +29,9 @@ namespace libed2k
             m_max_announces_per_call(100),
             m_announce_timeout(-1),
             m_show_shared_catalogs(true),
-            m_show_shared_files(true)
+            m_show_shared_files(true),
+            user_agent(md4_hash::libed2k)
         {
-            // prepare empty client hash
-            client_hash = md4_hash::terminal;
-            client_hash[5] = 14;
-            client_hash[14] = 111;
         }
 
         // the number of seconds to wait for any activity on
@@ -97,6 +94,7 @@ namespace libed2k
         int m_announce_timeout;
         bool m_show_shared_catalogs;    //!< show shared catalogs to client
         bool m_show_shared_files;       //!< show shared files to client
+        md4_hash user_agent;            //!< ed2k client hash - user agent information
 
         //!< known.met file
         std::string m_known_file;
@@ -104,8 +102,6 @@ namespace libed2k
         //!< users files and directories
         //!< second parameter true for recursive search and false otherwise
         fd_list m_fd_list;
-        // ed2k client hash
-        md4_hash client_hash;
 
         /**
           * root directory for auto-creating collections

@@ -10,6 +10,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include "libed2k/md4_hash.hpp"
+#include <libtorrent/piece_picker.hpp>
+#include "libed2k/peer_connection.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_md4_hash)
 
@@ -46,6 +48,20 @@ BOOST_AUTO_TEST_CASE(test_compare)
     BOOST_CHECK(h1 == h2);
     BOOST_CHECK(h3 > h2);
     BOOST_CHECK_THROW(h3[16], libed2k::libed2k_exception);
+}
+
+BOOST_AUTO_TEST_CASE(test_user_agent)
+{
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::terminal), libed2k::SO_UNKNOWN);
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::libed2k), libed2k::SO_LIBED2K);
+    libed2k::md4_hash ml;
+    ml[5]   = 'M';
+    ml[14]  = 'L';
+    libed2k::md4_hash em;
+    em[5]   = 14;
+    em[14]  = 111;
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(ml), libed2k::SO_MLDONKEY);
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(em), libed2k::SO_EMULE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

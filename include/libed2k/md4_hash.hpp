@@ -34,6 +34,7 @@ namespace libed2k{
         friend class archive::access;
         typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
         static const md4_hash terminal;
+        static const md4_hash libed2k;
 
         enum { hash_size = MD4_HASH_SIZE };
 

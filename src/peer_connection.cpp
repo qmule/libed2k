@@ -12,6 +12,38 @@
 #include "libed2k/alert_types.hpp"
 #include "libed2k/server_connection.hpp"
 
+namespace libed2k
+{
+    EClientSoftware uagent2csoft(const md4_hash& ua_hash)
+    {
+        EClientSoftware cs = SO_UNKNOWN;
+
+        if ( ua_hash[5] == 13  && ua_hash[14] == 110 )
+        {
+            cs =  SO_OLDEMULE;
+        }
+        else if ( ua_hash[5] == 14  && ua_hash[14] == 111 )
+        {
+            cs = SO_EMULE;
+        }
+        else if ( ua_hash[5] == 'M' && ua_hash[14] == 'L' )
+        {
+            cs = SO_MLDONKEY;
+        }
+        else if ( ua_hash[5] == 'L' && ua_hash[14] == 'K')
+        {
+            cs = SO_LIBED2K;
+        }
+        else if ( ua_hash[5] == 'Q' && ua_hash[14] == 'M')
+        {
+            cs = SO_QMULE;
+        }
+
+        return cs;
+    }
+}
+
+
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
@@ -1107,7 +1139,7 @@ void peer_connection::write_hello()
     boost::uint32_t nVersion = m_ses.settings().m_version;
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
-    hello.m_hClient = settings.client_hash;
+    hello.m_hClient = settings.user_agent;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
     hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
@@ -1143,7 +1175,7 @@ void peer_connection::write_hello_answer()
     //TODO - replace this code
     // prepare hello answer
     client_hello_answer cha;
-    cha.m_hClient               = m_ses.settings().client_hash;
+    cha.m_hClient               = m_ses.settings().user_agent;
     cha.m_network_point.m_nIP   = 0;
     cha.m_network_point.m_nPort = m_ses.settings().listen_port;
 
