@@ -1172,11 +1172,10 @@ void peer_connection::write_ext_hello()
 
 void peer_connection::write_hello_answer()
 {
-    //TODO - replace this code
     // prepare hello answer
     client_hello_answer cha;
     cha.m_hClient               = m_ses.settings().user_agent;
-    cha.m_network_point.m_nIP   = 0;
+    cha.m_network_point.m_nIP   = m_ses.m_server_connection->client_id();
     cha.m_network_point.m_nPort = m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
@@ -1336,6 +1335,7 @@ void peer_connection::on_hello(const error_code& error)
         m_options.m_nPort = hello.m_network_point.m_nPort;
         DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
+        write_hello();
     }
     else
     {
