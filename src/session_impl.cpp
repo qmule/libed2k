@@ -98,54 +98,6 @@ bool dref_is_regular_file(fs::path p)
     return fs::is_regular_file(p);
 }
 
-void session_impl_base::save_state() const
-{
-    DBG("session_impl::save_state()");
-
-    // known.met isn't set - pass save state stage
-    if (m_settings.m_known_file.empty())
-    {
-        return;
-    }
-
-    known_file_collection kfc;
-
-    for (transfer_map::const_iterator i = m_transfers.begin(),
-            end(m_transfers.end()); i != end; ++i)
-    {
-        // don't save unfinished transfers in known.met
-        if (!i->second->is_finished())
-        {
-            continue;
-        }
-
-        try
-        {
-            kfc.m_known_file_list.add(known_file_entry(i->second->hash(),
-                i->second->hashset(),
-                i->second->filepath(),
-                i->second->filesize(),
-                i->second->getAcepted(),
-                i->second->getResuested(),
-                i->second->getTransferred(),
-                i->second->getPriority()));
-        }
-        catch(fs::filesystem_error& fe)
-        {
-            // we can get error when call last_write_time - ignore it and don't write this item into file
-            ERR("file system error on save_state: " << fe.what());
-        }
-    }
-
-    fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
-
-    if (fstream)
-    {
-        libed2k::archive::ed2k_oarchive ofa(fstream);
-        ofa << kfc;
-    }
-}
-
 void session_impl_base::share_file(const std::string& strFilename, bool bUnshare)
 {
     DBG("share_file{" << strFilename << "}{" << ((bUnshare)?"unshare":"share") << "}");
@@ -795,7 +747,6 @@ std::vector<transfer_handle> session_impl::get_transfers()
 void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
-    DBG("session_impl::queue_check_torrent: size " << m_queued_for_checking.size());
     BOOST_ASSERT(t->should_check_file());
     BOOST_ASSERT(t->state() != transfer_status::checking_files);
     if (m_queued_for_checking.empty())
@@ -811,7 +762,6 @@ void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
 
     BOOST_ASSERT(std::find(m_queued_for_checking.begin()
         , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
-    DBG("session_impl::queue_check_torrent: add transfer " << m_queued_for_checking.size());
 }
 
 void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
@@ -819,7 +769,6 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
     BOOST_ASSERT(t->state() == transfer_status::checking_files
         || t->state() == transfer_status::queued_for_checking);
 
-    DBG("session_impl::dequeue_check_torrent size: " << m_queued_for_checking.size());
     if (m_queued_for_checking.empty()) return;
 
     boost::shared_ptr<transfer> next_check = *m_queued_for_checking.begin();
@@ -839,7 +788,6 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
     if (next_check != t && t->state() == transfer_status::checking_files)
         next_check->start_checking();
 
-    DBG("session_impl::dequeue_check_torrent::remove transfer");
     m_queued_for_checking.erase(done);
 }
 
@@ -958,33 +906,6 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
                         libtorrent::seconds(m_settings.peer_connect_timeout));
 
     return (peer_connection_handle(c, this));
-}
-
-std::vector<transfer_handle> session_impl::add_transfer_dir(
-    const fs::path& dir, error_code& ec)
-{
-    DBG("using transfer dir: " << dir);
-    std::vector<transfer_handle> handles;
-
-    for (fs::recursive_directory_iterator i(dir), end; i != end; ++i)
-    {
-        if (fs::is_regular_file(i->path()))
-        {
-            known_file kfile(i->path().string());
-            kfile.init();
-            add_transfer_params params;
-            params.file_hash = kfile.getFileHash();
-            params.file_path = i->path();
-            params.file_size = fs::file_size(i->path());
-            params.seed_mode = true;
-            params.pieces = bitfield(piece_count(params.file_size), 1);
-            params.hashset = kfile.getPieceHashes();
-            transfer_handle handle = add_transfer(params, ec);
-            if (ec) break;
-            handles.push_back(handle);
-        }
-    }
-    return handles;
 }
 
 std::pair<char*, int> session_impl::allocate_buffer(int size)

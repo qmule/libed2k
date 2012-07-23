@@ -116,7 +116,6 @@ namespace libed2k {
 
         // all transfer_handles must be destructed before the session is destructed!
         transfer_handle add_transfer(const add_transfer_params& params);
-        std::vector<transfer_handle> add_transfer_dir(const fs::path& dir);
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
         void remove_transfer(const transfer_handle& h, int options = none);

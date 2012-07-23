@@ -66,16 +66,6 @@ namespace libed2k
         return ret;
     }
 
-    std::vector<transfer_handle> session::add_transfer_dir(const fs::path& dir)
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-
-        error_code ec;
-        std::vector<transfer_handle> ret = m_impl->add_transfer_dir(dir, ec);
-        if (ec) throw libed2k_exception(ec);
-        return ret;
-    }
-
     peer_connection_handle session::add_peer_connection(const net_identifier& np)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);

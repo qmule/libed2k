@@ -69,11 +69,6 @@ namespace libed2k {
             virtual std::vector<transfer_handle> get_transfers() = 0;
 
             /**
-              * save transfers to disk
-             */
-            void save_state() const;
-
-            /**
               * load transfers from disk
              */
             void load_state();
@@ -217,7 +212,6 @@ namespace libed2k {
             boost::intrusive_ptr<peer_connection> find_peer_connection(const net_identifier& np) const;
             boost::intrusive_ptr<peer_connection> find_peer_connection(const md4_hash& hash) const;
             peer_connection_handle add_peer_connection(net_identifier np, error_code& ec);
-            std::vector<transfer_handle> add_transfer_dir(const fs::path& dir, error_code& ec);
 
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }
