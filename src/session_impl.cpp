@@ -912,6 +912,8 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
     if (i != m_transfers.end())
     {
         transfer& t = *i->second;
+        md4_hash hash = t.hash();
+
         if (options & session::delete_files)
             t.delete_files();
         t.abort();
@@ -921,6 +923,8 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
         //t.set_queue_position(-1);
         m_transfers.erase(i);
         m_next_connect_transfer.validate();
+
+        m_alerts.post_alert_should(deleted_transfer_alert(hash));
     }
 }
 

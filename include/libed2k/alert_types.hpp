@@ -445,8 +445,7 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification;
 
-        deleted_transfer_alert(const transfer_handle& h, const md4_hash& hash):
-            m_handle(h), m_hash(hash) {}
+        deleted_transfer_alert(const md4_hash& hash): m_hash(hash) {}
 
         virtual int category() const { return static_category; }
 
@@ -457,6 +456,26 @@ namespace libed2k
 
         virtual std::string message() const { return std::string("deleted transfer"); }
         virtual char const* what() const { return "deleted transfer"; }
+
+        md4_hash m_hash;
+    };
+
+    struct deleted_file_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        deleted_file_alert(const transfer_handle& h, const md4_hash& hash):
+            m_handle(h), m_hash(hash) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new deleted_file_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("deleted file"); }
+        virtual char const* what() const { return "deleted file"; }
 
         transfer_handle m_handle;
         md4_hash m_hash;
