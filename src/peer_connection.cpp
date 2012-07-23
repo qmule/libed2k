@@ -308,6 +308,12 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
         return false;
     }
 
+    if (t == m_transfer.lock())
+    {
+        // this connection is already attached to the transfer
+        return true;
+    }
+
     // check to make sure we don't have another connection with the same
     // hash and peer_id. If we do. close this connection.
     if (!t->attach_peer(this)) return false;

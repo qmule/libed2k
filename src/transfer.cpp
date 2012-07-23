@@ -625,7 +625,7 @@ namespace libed2k
         if (ret != 0)
             m_ses.m_alerts.post_alert_should(delete_failed_transfer_alert(handle(), j.error));
         else
-            m_ses.m_alerts.post_alert_should(deleted_transfer_alert(handle(), hash()));
+            m_ses.m_alerts.post_alert_should(deleted_file_alert(handle(), hash()));
     }
 
     void transfer::on_transfer_aborted(int ret, disk_io_job const& j)
