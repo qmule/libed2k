@@ -1,4 +1,5 @@
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
 
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/storage.hpp>
@@ -212,7 +213,9 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.total_upload = m_statistics.total_payload_upload();
     p.ip = m_remote;
     p.connection_type = STANDARD_EDONKEY;
-    p.client = m_options.m_strName;
+    p.client = !m_options.m_strName.empty() && m_options.m_strName[0] == '[' ?
+        m_options.m_strName :
+        (boost::format("[%1%] %2%") % m_options.m_strModVersion % m_options.m_strName).str();
 
     if (boost::optional<piece_block_progress> ret = downloading_piece_progress())
     {
