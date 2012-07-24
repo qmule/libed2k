@@ -19,7 +19,7 @@ namespace libed2k
             send_socket_buffer_size(0),
             server_port(4661),
             listen_port(4662),
-            client_name("http://www.aMule.org"),
+            client_name("libed2k"),
             server_keep_alive_timeout(200),
             server_reconnect_timeout(5),
             max_peerlist_size(4000),
