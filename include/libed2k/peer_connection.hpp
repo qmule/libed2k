@@ -33,6 +33,33 @@
 
 namespace libed2k
 {
+    enum EClientSoftware
+    {
+        SO_EMULE            = 0,
+        SO_CDONKEY          = 1,
+        SO_LXMULE           = 2,
+        SO_AMULE            = 3,
+        SO_SHAREAZA         = 4,
+        SO_EMULEPLUS        = 5,
+        SO_HYDRANODE        = 6,
+        SO_NEW2_MLDONKEY    = 0x0a,
+        SO_LPHANT           = 0x14,
+        SO_NEW2_SHAREAZA    = 0x28,
+        SO_EDONKEYHYBRID    = 0x32,
+        SO_EDONKEY          = 0x33,
+        SO_MLDONKEY         = 0x34,
+        SO_OLDEMULE         = 0x35,
+        SO_UNKNOWN          = 0x36,
+        SO_NEW_SHAREAZA     = 0x44,
+        SO_NEW_MLDONKEY     = 0x98,
+        SO_LIBED2K          = 0x99,
+        SO_QMULE            = 0xA0,
+        SO_COMPAT_UNK       = 0xFF
+    };
+
+    EClientSoftware uagent2csoft(const md4_hash& ua_hash);
+
+
     class peer;
     class transfer;
     class md4_hash;
@@ -45,7 +72,8 @@ namespace libed2k
     {
         pending_block(const piece_block& b, fsize_t fsize):
             skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
-            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL) {}
+            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL),
+            create_time(time_now()){}
 
         // the number of times the request
         // has been skipped by out of order blocks
@@ -71,6 +99,8 @@ namespace libed2k
         range<fsize_t> data_left;
         // disk receive buffer
         char* buffer;
+        // time when this block has been created
+        ptime create_time;
 
         bool operator==(const pending_block& b)
         {
@@ -124,6 +154,7 @@ namespace libed2k
 
         enum peer_speed_t { slow = 1, medium, fast };
         peer_speed_t peer_speed();
+        double peer_rate();
 
         // is called once every second by the main loop
         void second_tick(int tick_interval_ms);
@@ -218,8 +249,12 @@ namespace libed2k
         // adds a block to the request queue
         // returns true if successful, false otherwise
         enum flags_t { req_time_critical = 1, req_busy = 2 };
-        bool add_request(piece_block const& b, int flags = 0);
+        bool add_request(const piece_block& b, int flags = 0);
         void send_block_requests();
+        void abort_block_requests();
+        void abort_expired_requests();
+        bool requesting(const piece_block& b);
+        size_t num_requesting_busy_blocks();
 
         void send_meta();
         void fill_send_buffer();
@@ -384,7 +419,11 @@ namespace libed2k
 
         // the number of request we should queue up
         // at the remote end.
-        boost::uint8_t m_desired_queue_size;
+        size_t m_desired_queue_size;
+
+        // the maximum number of busy blocks we can
+        // request at a time
+        size_t m_max_busy_blocks;
 
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming

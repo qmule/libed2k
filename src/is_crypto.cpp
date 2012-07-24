@@ -120,7 +120,7 @@ std::string EncryptPasswd(const std::string& strPasswd, const std::string& strFi
     }
     catch(...)
     {
-        DBG("hash file empty after error");
+        ERR("encrypt hash file: \"" << strFilename << "\" empty after error");
         memset( hashFile, 0x01, Weak::MD5::DIGESTSIZE );
     }
 
@@ -159,11 +159,11 @@ std::string DecryptPasswd(const std::string& strEncpasswd, const std::string& st
     try
     {
         CryptoPP::FileSource f(strFilename.c_str(), true, new CryptoPP::HashFilter(hash, new CryptoPP::ArraySink(hashFile, Weak::MD5::DIGESTSIZE)));
-        DBG("file hashed");
+        DBG("decrypt file hashed: " << strFilename);
     }
     catch(...)
     {
-        DBG("hash file empty after error");
+        ERR("decrypt hash file: \"" << strFilename << "\" empty after error");
         memset( hashFile, 0x01, Weak::MD5::DIGESTSIZE );
     }
 

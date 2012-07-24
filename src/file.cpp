@@ -551,140 +551,6 @@ namespace libed2k
         }
     }
 
-
-    known_file::known_file(const std::string& strFilename) : m_strFilename(strFilename)
-    {
-    }
-
-    const md4_hash& known_file::getFileHash() const
-    {
-        assert(!m_vHash.empty());
-        return (m_hFile);
-    }
-
-    const md4_hash& known_file::getPieceHash(size_t nPart) const
-    {
-        assert(!m_vHash.empty());
-
-        if (nPart >= m_vHash.size())
-        {
-            // index error
-        }
-
-        return (m_vHash[nPart]);
-    }
-
-
-    size_t known_file::getPiecesCount() const
-    {
-        assert(!m_vHash.empty());
-        return (m_vHash.size());
-    }
-
-    void known_file::init()
-    {
-        fs::path p(m_strFilename);
-
-        if (!fs::exists(p) || !fs::is_regular_file(p))
-        {
-            throw libed2k_exception(errors::file_unavaliable);
-        }
-
-        bool    bPartial = false; // check last part in file not full
-        uintmax_t nFileSize = boost::filesystem::file_size(p);
-
-        if (nFileSize == 0)
-        {
-            throw libed2k_exception(errors::filesize_is_zero);
-            return;
-        }
-
-        int nPartCount  = nFileSize / PIECE_SIZE + 1;
-        m_vHash.reserve(nPartCount);
-
-        bio::mapped_file_params mf_param;
-        mf_param.flags  = bio::mapped_file_base::readonly;
-        mf_param.path   = m_strFilename;
-        mf_param.length = 0;
-
-
-        bio::mapped_file_source fsource;
-        DBG("System alignment: " << bio::mapped_file::alignment());
-
-        uintmax_t nCurrentOffset = 0;
-        CryptoPP::Weak1::MD4 md4_hasher;
-
-        while(nCurrentOffset < nFileSize)
-        {
-            uintmax_t nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
-            uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
-
-            // calculate map size
-            uintmax_t nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
-
-            // correct map length
-            if (nMapLength > (nFileSize - nCurrentOffset))
-            {
-                nMapLength = nFileSize - nCurrentOffset + nDataCorrection;
-            }
-            else
-            {
-                nMapLength += nDataCorrection;
-            }
-
-            mf_param.offset = nMapPosition;
-            mf_param.length = nMapLength;
-            fsource.open(mf_param);
-
-            uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
-
-            DBG("Map position   : " << nMapPosition);
-            DBG("Data correction: " << nDataCorrection);
-            DBG("Map length     : " << nMapLength);
-            DBG("Map piece count: " << nMapLength / PIECE_SIZE);
-
-            while(nLocalOffset < nMapLength)
-            {
-                // calculate current part size size
-                uintmax_t nLength = PIECE_SIZE;
-
-                if (PIECE_SIZE > nMapLength - nLocalOffset)
-                {
-                    nLength = nMapLength-nLocalOffset;
-                    bPartial = true;
-                }
-
-                DBG("         local piece: " << nLength);
-
-                libed2k::md4_hash hash;
-                md4_hasher.CalculateDigest(hash.getContainer(), reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                m_vHash.push_back(hash);
-                // generate hash
-                nLocalOffset    += nLength;
-                nCurrentOffset  += nLength;
-            }
-
-            fsource.close();
-
-        }
-
-        // when we don't have last partial piece - add special hash
-        if (!bPartial)
-        {
-            m_vHash.push_back(md4_hash::fromString("31D6CFE0D16AE931B73C59D7E0C089C0"));
-        }
-
-        if (m_vHash.size() > 1)
-        {
-            md4_hasher.CalculateDigest(m_hFile.getContainer(), reinterpret_cast<const unsigned char*>(&m_vHash[0]), m_vHash.size()*libed2k::MD4_HASH_SIZE);
-        }
-        else
-        {
-            m_hFile = m_vHash[0];
-        }
-
-    }
-
     known_file_entry::known_file_entry()
     {
 
@@ -750,7 +616,10 @@ namespace libed2k
     transfer_resume_data::transfer_resume_data()
     {}
 
-    file_hasher::file_hasher(add_transfer_handler handler) : m_bCancel(false), m_add_transfer(handler)
+    file_hasher::file_hasher(add_transfer_handler handler, const std::string& known_filename) :
+            m_bCancel(false),
+            m_add_transfer(handler),
+            m_known_filename(known_filename)
     {
 
     }
@@ -775,7 +644,29 @@ namespace libed2k
     void file_hasher::operator()()
     {
         try
-        {
+        {            
+            // prepare migration structure
+            known_file_collection kfc;
+
+            if (!m_known_filename.empty())
+            {
+                std::ifstream fstream(convert_to_native(m_known_filename).c_str(), std::ios_base::binary | std::ios_base::in);
+
+                if (fstream)
+                {
+                    libed2k::archive::ed2k_iarchive ifa(fstream);
+
+                    try
+                    {
+                        ifa >> kfc;
+                    }
+                    catch(libed2k_exception&)
+                    {
+                        kfc.m_known_file_list.m_collection.clear();
+                    }
+                }
+            }
+
             while(1)
             {
                 // we have UTF-8 strings in path pair pair
@@ -799,112 +690,183 @@ namespace libed2k
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    bool    bPartial = false; // check last part in file not full
                     uintmax_t nFileSize = fs::file_size(p);
-                    atp.file_size = nFileSize;
-                    // we have all pieces
-                    atp.pieces = bitfield(piece_count(nFileSize), 1);
 
                     if (nFileSize == 0)
                     {
                         throw libed2k_exception(errors::filesize_is_zero);
                     }
 
-                    bio::mapped_file_params mf_param;
-                    mf_param.flags  = bio::mapped_file_base::readonly;
-                    mf_param.path   = p.string();
-                    mf_param.length = 0;
+                    atp.file_size = nFileSize;
+                    atp.pieces = bitfield(piece_count(nFileSize), 1);   // all pieces
 
-
-                    bio::mapped_file_source fsource;
-
-                    uintmax_t nCurrentOffset = 0;
-                    CryptoPP::Weak1::MD4 md4_hasher;
-
-                    while(nCurrentOffset < nFileSize)
+                    // search file in migration container
+                    for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
                     {
-                        if (m_bCancel)
+                        // pass file when change time isn't equal
+                        if ((fs::last_write_time(p)) != kfc.m_known_file_list.m_collection[n].m_nLastChanged)
                         {
-                            break;
+                            continue;
                         }
 
-                        uintmax_t nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
-                        uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
-
-                        // calculate map size
-                        uintmax_t nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
-
-                        // correct map length
-                        if (nMapLength > (nFileSize - nCurrentOffset))
+                        // ok, we have equal change time - let's check filename
+                        if (bom_filter(pp.second.filename()) != bom_filter(kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
                         {
-                            nMapLength = nFileSize - nCurrentOffset + nDataCorrection;
+                            DBG("orig: " << convert_to_native(pp.second.filename()) 
+                                << " isn't equal: " << convert_to_native(bom_filter(kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
+                            continue;
+                        }
+
+                        atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
+
+                        if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
+                        {
+                            // when file contain only one hash - we save main hash directly into container
+                            atp.hashset.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
                         }
                         else
                         {
-                            nMapLength += nDataCorrection;
+                            atp.hashset = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
                         }
 
-                        mf_param.offset = nMapPosition;
-                        mf_param.length = nMapLength;
-                        fsource.open(mf_param);
+                        for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
+                        {
+                            const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
 
-                        uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
+                            switch(p->getNameId())
+                            {
+                                case FT_FILESIZE:
+                                    //atp.file_size = p->asInt();
+                                    break;
+                                case FT_ATTRANSFERRED:
+                                    atp.transferred += p->asInt();
+                                    break;
+                                case FT_ATTRANSFERREDHI:
+                                    atp.transferred += (p->asInt() << 32);
+                                    break;
+                                case FT_ATREQUESTED:
+                                    atp.requested = p->asInt();
+                                    break;
+                                case FT_ATACCEPTED:
+                                    atp.accepted = p->asInt();
+                                    break;
+                                case FT_ULPRIORITY:
+                                    atp.priority = p->asInt();
+                                    break;
+                                default:
+                                    // ignore unused tags like
+                                    // FT_PERMISSIONS
+                                    // FT_AICH_HASH:
+                                    // and all kad tags
+                                    // also FT_FILENAME was already checked
+                                    break;
+                            }
+                        }
 
-                        DBG("{mpos: " << nMapPosition << "} {dt corr: "
-                                << nDataCorrection << "} {map len: "
-                                << nMapLength << "} {mpc: " << nMapLength / PIECE_SIZE << "}");
+                        DBG("metadata was migrated for {" << convert_to_native(atp.file_path.string()) << "}");
+                        break;
+                    }
 
-                        while(nLocalOffset < nMapLength)
+                    // execute real hashing when migration got nothing
+                    if (!atp.file_hash.defined())
+                    {
+                        bool    bPartial = false; // check last part in file not full
+                        bio::mapped_file_params mf_param;
+                        mf_param.flags  = bio::mapped_file_base::readonly;
+                        mf_param.path   = p.string();
+                        mf_param.length = 0;
+
+
+                        bio::mapped_file_source fsource;
+
+                        uintmax_t nCurrentOffset = 0;
+                        CryptoPP::Weak1::MD4 md4_hasher;
+
+                        while(nCurrentOffset < nFileSize)
                         {
                             if (m_bCancel)
                             {
                                 break;
                             }
 
-                            // calculate current part size size
-                            uintmax_t nLength = PIECE_SIZE;
+                            uintmax_t nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
+                            uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
 
-                            if (PIECE_SIZE > nMapLength - nLocalOffset)
+                            // calculate map size
+                            uintmax_t nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
+
+                            // correct map length
+                            if (nMapLength > (nFileSize - nCurrentOffset))
                             {
-                                nLength = nMapLength-nLocalOffset;
-                                bPartial = true;
+                                nMapLength = nFileSize - nCurrentOffset + nDataCorrection;
+                            }
+                            else
+                            {
+                                nMapLength += nDataCorrection;
                             }
 
-                            libed2k::md4_hash hash;
-                            md4_hasher.CalculateDigest(
-                                hash.getContainer(),
-                                reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                            atp.hashset.push_back(hash);
-                            // generate hash
-                            nLocalOffset    += nLength;
-                            nCurrentOffset  += nLength;
+                            mf_param.offset = nMapPosition;
+                            mf_param.length = nMapLength;
+                            fsource.open(mf_param);
+
+                            uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
+
+                            DBG("{mpos: " << nMapPosition << "} {dt corr: "
+                                    << nDataCorrection << "} {map len: "
+                                    << nMapLength << "} {mpc: " << nMapLength / PIECE_SIZE << "}");
+
+                            while(nLocalOffset < nMapLength)
+                            {
+                                if (m_bCancel)
+                                {
+                                    break;
+                                }
+
+                                // calculate current part size size
+                                uintmax_t nLength = PIECE_SIZE;
+
+                                if (PIECE_SIZE > nMapLength - nLocalOffset)
+                                {
+                                    nLength = nMapLength-nLocalOffset;
+                                    bPartial = true;
+                                }
+
+                                libed2k::md4_hash hash;
+                                md4_hasher.CalculateDigest(
+                                    hash.getContainer(),
+                                    reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
+                                atp.hashset.push_back(hash);
+                                // generate hash
+                                nLocalOffset    += nLength;
+                                nCurrentOffset  += nLength;
+                            }
+
+                            fsource.close();
+
                         }
 
-                        fsource.close();
+                        if (m_bCancel)
+                        {
+                            break;
+                        }
 
-                    }
+                        // when we don't have last partial piece - add special hash
+                        if (!bPartial)
+                        {
+                            atp.hashset.push_back(md4_hash::terminal);
+                        }
 
-                    if (m_bCancel)
-                    {
-                        break;
-                    }
-
-                    // when we don't have last partial piece - add special hash
-                    if (!bPartial)
-                    {
-                        atp.hashset.push_back(md4_hash::terminal);
-                    }
-
-                    if (atp.hashset.size() > 1)
-                    {
-                        md4_hasher.CalculateDigest(
-                            atp.file_hash.getContainer(),
-                            reinterpret_cast<const unsigned char*>(&atp.hashset[0]),
-                            atp.hashset.size()*libed2k::MD4_HASH_SIZE);
-                    }
-                    else
-                    {
-                        atp.file_hash = atp.hashset[0];
+                        if (atp.hashset.size() > 1)
+                        {
+                            md4_hasher.CalculateDigest(
+                                atp.file_hash.getContainer(),
+                                reinterpret_cast<const unsigned char*>(&atp.hashset[0]),
+                                atp.hashset.size()*libed2k::MD4_HASH_SIZE);
+                        }
+                        else
+                        {
+                            atp.file_hash = atp.hashset[0];
+                        }
                     }
 
                     m_add_transfer(atp);

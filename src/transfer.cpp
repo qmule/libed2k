@@ -314,6 +314,24 @@ namespace libed2k
         return static_cast<size_t>(div_ceil(m_filesize, PIECE_SIZE));
     }
 
+    size_t transfer::num_free_blocks() const
+    {
+        size_t res = 0;
+        int pieces = int(num_pieces());
+
+        if (has_picker())
+        {
+            for (int p = 0; p < pieces; ++p)
+            {
+                piece_picker::downloading_piece dp;
+                m_picker->piece_info(p, dp);
+                res += (m_picker->blocks_in_piece(p) - dp.finished - dp.writing - dp.requested);
+            }
+        }
+
+        return res;
+    }
+
     // called when torrent is complete (all pieces downloaded)
     void transfer::completed()
     {
@@ -501,7 +519,7 @@ namespace libed2k
     void transfer::bytes_done(transfer_status& st) const
     {
         st.total_wanted = filesize();
-        st.total_done = std::min<size_t>(num_have() * PIECE_SIZE, st.total_wanted);
+        st.total_done = std::min<fsize_t>(num_have() * PIECE_SIZE, st.total_wanted);
         st.total_wanted_done = st.total_done;
 
         if (!m_picker) return;
@@ -549,8 +567,8 @@ namespace libed2k
                     corr += block_bytes_wanted(piece_block(index, j));
                 }
                 assert(corr >= 0);
-                assert(index != last_piece || j < m_picker->blocks_in_last_piece() ||
-                       i->info[j].state != piece_picker::block_info::state_finished);
+                //assert(index != last_piece || j < m_picker->blocks_in_last_piece() ||
+                //       i->info[j].state != piece_picker::block_info::state_finished);
             }
 
             st.total_done += corr;
@@ -607,7 +625,7 @@ namespace libed2k
         if (ret != 0)
             m_ses.m_alerts.post_alert_should(delete_failed_transfer_alert(handle(), j.error));
         else
-            m_ses.m_alerts.post_alert_should(deleted_transfer_alert(handle(), hash()));
+            m_ses.m_alerts.post_alert_should(deleted_file_alert(handle(), hash()));
     }
 
     void transfer::on_transfer_aborted(int ret, disk_io_job const& j)
@@ -631,7 +649,7 @@ namespace libed2k
 
     void transfer::init()
     {
-        DBG("transfer::init: " << m_filepath.filename());
+        DBG("transfer::init: " << convert_to_native(m_filepath.filename()));
         file_storage& files = const_cast<file_storage&>(m_info->files());
         files.set_num_pieces(num_pieces());
         files.set_piece_length(PIECE_SIZE);

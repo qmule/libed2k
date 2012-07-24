@@ -62,30 +62,13 @@ namespace libed2k{
 
 namespace aux{
 
-dictionary_entry::dictionary_entry(fsize_t nFilesize) : file_size(nFilesize),
-        accepted(0),
-        requested(0),
-        transferred(0),
-        priority(0)
-{
-}
-
-dictionary_entry::dictionary_entry() :
-        file_size(0),
-        accepted(0),
-        requested(0),
-        transferred(0),
-        priority(0)
-{
-}
-
 
 session_impl_base::session_impl_base(const session_settings& settings) :
         m_io_service(),
         m_abort(false),
         m_settings(settings),
         m_transfers(),
-        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1)),
+        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1), settings.m_known_file),
         m_alerts(m_io_service)
 {
 }
@@ -113,54 +96,6 @@ void session_impl_base::post_transfer(add_transfer_params const& params)
 bool dref_is_regular_file(fs::path p)
 {
     return fs::is_regular_file(p);
-}
-
-void session_impl_base::save_state() const
-{
-    DBG("session_impl::save_state()");
-
-    // known.met isn't set - pass save state stage
-    if (m_settings.m_known_file.empty())
-    {
-        return;
-    }
-
-    known_file_collection kfc;
-
-    for (transfer_map::const_iterator i = m_transfers.begin(),
-            end(m_transfers.end()); i != end; ++i)
-    {
-        // don't save unfinished transfers in known.met
-        if (!i->second->is_finished())
-        {
-            continue;
-        }
-
-        try
-        {
-            kfc.m_known_file_list.add(known_file_entry(i->second->hash(),
-                i->second->hashset(),
-                i->second->filepath(),
-                i->second->filesize(),
-                i->second->getAcepted(),
-                i->second->getResuested(),
-                i->second->getTransferred(),
-                i->second->getPriority()));
-        }
-        catch(fs::filesystem_error& fe)
-        {
-            // we can get error when call last_write_time - ignore it and don't write this item into file
-            ERR("file system error on save_state: " << fe.what());
-        }
-    }
-
-    fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
-
-    if (fstream)
-    {
-        libed2k::archive::ed2k_oarchive ofa(fstream);
-        ofa << kfc;
-    }
 }
 
 void session_impl_base::share_file(const std::string& strFilename, bool bUnshare)
@@ -300,14 +235,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
     // on unshare operation we check collections transfer and simple remove it if
     if (bUnshare && !collection_path.empty())
     {
-        boost::shared_ptr<transfer> p = find_transfer(collection_path).lock();
-
-        // remove transfer and delete collection file
-        if (p)
-        {
-            remove_transfer(p->handle(), session::delete_files);
-        }
-
+        remove_transfer(find_transfer(collection_path), session::delete_files);
         return;
     }
 
@@ -319,12 +247,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         {
             DBG("pending collection");
             // first - search file in transfers
-            if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
-            {
-                // we found transfer on pending collection - stop it
-                p->abort();
-            }
-
+            remove_transfer(find_transfer(pc.m_path), session::delete_files);
             // add current collection to pending list
             m_pending_collections.push_back(pc);
         }
@@ -340,7 +263,7 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
                 if (ecoll != pc.m_files)
                 {
                     // transfer exists but collection changed
-                    p->abort();
+                    remove_transfer(p->handle(), session::delete_files);
                     // save collection to disk and run hasher
                     emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
                     // run hash
@@ -360,121 +283,6 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         }
     }
 
-}
-
-// obsolete code - for compatibility with old emule
-dictionary_entry session_impl_base::get_dictionary_entry(boost::uint32_t change_time, const std::string& strFilename)
-{
-    dictionary_entry de;
-    files_dictionary::iterator itr = m_dictionary.find(std::make_pair(change_time, strFilename));
-
-    if (itr != m_dictionary.end())
-    {
-        de = itr->second;
-        m_dictionary.erase(itr);
-    }
-
-    return (de);
-}
-
-// obsolete code - for compatibility with old emule version
-void session_impl_base::load_dictionary()
-{
-    m_dictionary.clear();
-
-    if (!m_settings.m_known_file.empty())
-    {
-        fs::ifstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
-
-        if (fstream)
-        {
-            libed2k::archive::ed2k_iarchive ifa(fstream);
-
-            try
-            {
-                known_file_collection kfc;                  //!< structured data buffer
-                ifa >> kfc;
-
-                // generate transfers
-                for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
-                {
-                    // generate transfer
-                    dictionary_key key;
-                    dictionary_entry entry;
-
-                    key.first = kfc.m_known_file_list.m_collection[n].m_nLastChanged;
-                    entry.m_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
-
-                    if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
-                    {
-                        // when file contain only one hash - we save main hash directly into container
-                        entry.hashset.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
-                    }
-                    else
-                    {
-                        entry.hashset = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
-                    }
-
-                    for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
-                    {
-                        const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
-
-                        switch(p->getNameId())
-                        {
-                            case FT_FILENAME:
-                            {
-                                // take only first file name tag
-                                if (key.second.empty())
-                                {
-                                    // dictionary contains names in UTF-8 codepage
-                                    key.second = bom_filter(p->asString());
-                                }
-
-                                break;
-                            }
-                            case FT_FILESIZE:
-                                entry.file_size = p->asInt();
-                                break;
-                            case FT_ATTRANSFERRED:
-                                entry.transferred += p->asInt();
-                                break;
-                            case FT_ATTRANSFERREDHI:
-                                entry.transferred += (p->asInt() << 32);
-                                break;
-                            case FT_ATREQUESTED:
-                                entry.requested = p->asInt();
-                                break;
-                            case FT_ATACCEPTED:
-                                entry.accepted = p->asInt();
-                                break;
-                            case FT_ULPRIORITY:
-                                entry.priority = p->asInt();
-                                break;
-                            default:
-                                // ignore unused tags like
-                                // FT_PERMISSIONS
-                                // FT_AICH_HASH:
-                                // and all kad tags
-                                break;
-                        }
-                    }
-
-                    entry.pieces = bitfield(piece_count(entry.file_size), 1);
-
-                    if (key.first != 0 && !key.second.empty())
-                    {
-                        // add new entry to dictionary
-                        m_dictionary.insert(std::make_pair(key, entry));
-                    }
-                }
-            }
-            catch(libed2k_exception& e)
-            {
-                // hide parse errors
-                ERR("session_impl_base::load_state: parse error " << e.what());
-            }
-        }
-    }
 }
 
 void session_impl_base::update_pendings(const add_transfer_params& atp, bool remove)
@@ -939,7 +747,6 @@ std::vector<transfer_handle> session_impl::get_transfers()
 void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
-    DBG("session_impl::queue_check_torrent: size " << m_queued_for_checking.size());
     BOOST_ASSERT(t->should_check_file());
     BOOST_ASSERT(t->state() != transfer_status::checking_files);
     if (m_queued_for_checking.empty())
@@ -955,7 +762,6 @@ void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
 
     BOOST_ASSERT(std::find(m_queued_for_checking.begin()
         , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
-    DBG("session_impl::queue_check_torrent: add transfer " << m_queued_for_checking.size());
 }
 
 void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
@@ -963,7 +769,6 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
     BOOST_ASSERT(t->state() == transfer_status::checking_files
         || t->state() == transfer_status::queued_for_checking);
 
-    DBG("session_impl::dequeue_check_torrent size: " << m_queued_for_checking.size());
     if (m_queued_for_checking.empty()) return;
 
     boost::shared_ptr<transfer> next_check = *m_queued_for_checking.begin();
@@ -983,7 +788,6 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
     if (next_check != t && t->state() == transfer_status::checking_files)
         next_check->start_checking();
 
-    DBG("session_impl::dequeue_check_torrent::remove transfer");
     m_queued_for_checking.erase(done);
 }
 
@@ -998,7 +802,7 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {
-    APP("add transfer: {hash: " << params.file_hash << ", path: " << params.file_path
+    APP("add transfer: {hash: " << params.file_hash << ", path: " << convert_to_native(params.file_path.string())
         << ", size: " << params.file_size << "}");
 
     if (is_aborted())
@@ -1056,6 +860,8 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
     if (i != m_transfers.end())
     {
         transfer& t = *i->second;
+        md4_hash hash = t.hash();
+
         if (options & session::delete_files)
             t.delete_files();
         t.abort();
@@ -1065,6 +871,8 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
         //t.set_queue_position(-1);
         m_transfers.erase(i);
         m_next_connect_transfer.validate();
+
+        m_alerts.post_alert_should(deleted_transfer_alert(hash));
     }
 }
 
@@ -1104,33 +912,6 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
     return (peer_connection_handle(c, this));
 }
 
-std::vector<transfer_handle> session_impl::add_transfer_dir(
-    const fs::path& dir, error_code& ec)
-{
-    DBG("using transfer dir: " << dir);
-    std::vector<transfer_handle> handles;
-
-    for (fs::recursive_directory_iterator i(dir), end; i != end; ++i)
-    {
-        if (fs::is_regular_file(i->path()))
-        {
-            known_file kfile(i->path().string());
-            kfile.init();
-            add_transfer_params params;
-            params.file_hash = kfile.getFileHash();
-            params.file_path = i->path();
-            params.file_size = fs::file_size(i->path());
-            params.seed_mode = true;
-            params.pieces = bitfield(piece_count(params.file_size), 1);
-            params.hashset = kfile.getPieceHashes();
-            transfer_handle handle = add_transfer(params, ec);
-            if (ec) break;
-            handles.push_back(handle);
-        }
-    }
-    return handles;
-}
-
 std::pair<char*, int> session_impl::allocate_buffer(int size)
 {
     int num_buffers = (size + send_buffer_size - 1) / send_buffer_size;
@@ -1157,6 +938,50 @@ char* session_impl::allocate_disk_buffer(char const* category)
 void session_impl::free_disk_buffer(char* buf)
 {
     m_disk_thread.free_buffer(buf);
+}
+
+session_status session_impl::status() const
+{
+    session_status s;
+
+    s.num_peers = (int)m_connections.size();
+
+    //s.total_redundant_bytes = m_total_redundant_bytes;
+    //s.total_failed_bytes = m_total_failed_bytes;
+
+    //s.up_bandwidth_queue = m_upload_rate.queue_size();
+    //s.down_bandwidth_queue = m_download_rate.queue_size();
+
+    //s.up_bandwidth_bytes_queue = m_upload_rate.queued_bytes();
+    //s.down_bandwidth_bytes_queue = m_download_rate.queued_bytes();
+
+    //s.has_incoming_connections = m_incoming_connection;
+
+    // total
+    s.download_rate = m_stat.download_rate();
+    s.total_upload = m_stat.total_upload();
+    s.upload_rate = m_stat.upload_rate();
+    s.total_download = m_stat.total_download();
+
+    // payload
+    s.payload_download_rate = m_stat.transfer_rate(stat::download_payload);
+    s.total_payload_download = m_stat.total_transfer(stat::download_payload);
+    s.payload_upload_rate = m_stat.transfer_rate(stat::upload_payload);
+    s.total_payload_upload = m_stat.total_transfer(stat::upload_payload);
+
+    // IP-overhead
+    s.ip_overhead_download_rate = m_stat.transfer_rate(stat::download_ip_protocol);
+    s.total_ip_overhead_download = m_stat.total_transfer(stat::download_ip_protocol);
+    s.ip_overhead_upload_rate = m_stat.transfer_rate(stat::upload_ip_protocol);
+    s.total_ip_overhead_upload = m_stat.total_transfer(stat::upload_ip_protocol);
+
+    // tracker
+    s.tracker_download_rate = m_stat.transfer_rate(stat::download_tracker_protocol);
+    s.total_tracker_download = m_stat.total_transfer(stat::download_tracker_protocol);
+    s.tracker_upload_rate = m_stat.transfer_rate(stat::upload_tracker_protocol);
+    s.total_tracker_upload = m_stat.total_transfer(stat::upload_tracker_protocol);
+
+    return s;
 }
 
 unsigned short session_impl::listen_port() const

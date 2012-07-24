@@ -13,6 +13,7 @@ namespace libed2k
             server_timeout(220),
             peer_timeout(120),
             peer_connect_timeout(7),
+            block_request_timeout(10),
             allow_multiple_connections_per_ip(false),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
@@ -20,7 +21,6 @@ namespace libed2k
             listen_port(4662),
             client_name("libed2k"),
             server_keep_alive_timeout(200),
-            server_ip(0),
             server_reconnect_timeout(5),
             max_peerlist_size(4000),
             download_rate_limit(-1),
@@ -29,12 +29,9 @@ namespace libed2k
             m_max_announces_per_call(100),
             m_announce_timeout(-1),
             m_show_shared_catalogs(true),
-            m_show_shared_files(true)
+            m_show_shared_files(true),
+            user_agent(md4_hash::libed2k)
         {
-            // prepare empty client hash
-            client_hash = md4_hash::terminal;
-            client_hash[5] = 14;
-            client_hash[14] = 111;
         }
 
         // the number of seconds to wait for any activity on
@@ -52,6 +49,9 @@ namespace libed2k
         // connection is dropped. The time is specified in seconds.
         int peer_connect_timeout;
 
+        // the number of seconds to wait for block request.
+        int block_request_timeout;
+
         // false to not allow multiple connections from the same
         // IP address. true will allow it.
         bool allow_multiple_connections_per_ip;
@@ -67,11 +67,11 @@ namespace libed2k
         int server_port;
         // ed2k peer port for incoming peer connections
         int listen_port;
-
-        std::string     client_name; // ed2k client name
-        int             server_keep_alive_timeout;
-        unsigned long int server_ip; // todo: remove
-        int             server_reconnect_timeout;   //!< reconnect to server after fail, -1 - do nothing
+        // ed2k client name
+        std::string client_name;
+        int server_keep_alive_timeout;
+        // reconnect to server after fail, -1 - do nothing
+        int server_reconnect_timeout;
 
         // the max number of peers in the peer list
         // per transfer. This is the peers we know
@@ -94,15 +94,14 @@ namespace libed2k
         int m_announce_timeout;
         bool m_show_shared_catalogs;    //!< show shared catalogs to client
         bool m_show_shared_files;       //!< show shared files to client
+        md4_hash user_agent;            //!< ed2k client hash - user agent information
 
         //!< known.met file
-        std::string     m_known_file;
+        std::string m_known_file;
 
         //!< users files and directories
         //!< second parameter true for recursive search and false otherwise
         fd_list m_fd_list;
-
-        md4_hash client_hash;    // ed2k client hash, todo: remove
 
         /**
           * root directory for auto-creating collections

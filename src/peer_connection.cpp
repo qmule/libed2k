@@ -1,3 +1,5 @@
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
 
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/storage.hpp>
@@ -10,6 +12,38 @@
 #include "libed2k/util.hpp"
 #include "libed2k/alert_types.hpp"
 #include "libed2k/server_connection.hpp"
+
+namespace libed2k
+{
+    EClientSoftware uagent2csoft(const md4_hash& ua_hash)
+    {
+        EClientSoftware cs = SO_UNKNOWN;
+
+        if ( ua_hash[5] == 13  && ua_hash[14] == 110 )
+        {
+            cs =  SO_OLDEMULE;
+        }
+        else if ( ua_hash[5] == 14  && ua_hash[14] == 111 )
+        {
+            cs = SO_EMULE;
+        }
+        else if ( ua_hash[5] == 'M' && ua_hash[14] == 'L' )
+        {
+            cs = SO_MLDONKEY;
+        }
+        else if ( ua_hash[5] == 'L' && ua_hash[14] == 'K')
+        {
+            cs = SO_LIBED2K;
+        }
+        else if ( ua_hash[5] == 'Q' && ua_hash[14] == 'M')
+        {
+            cs = SO_QMULE;
+        }
+
+        return cs;
+    }
+}
+
 
 using namespace libed2k;
 namespace ip = boost::asio::ip;
@@ -104,6 +138,7 @@ void peer_connection::reset()
     m_connection_ticket = -1;
     m_speed = slow;
     m_desired_queue_size = 32;
+    m_max_busy_blocks = 1;
 
     m_channel_state[upload_channel] = bw_idle;
     m_channel_state[download_channel] = bw_idle;
@@ -178,7 +213,9 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.total_upload = m_statistics.total_payload_upload();
     p.ip = m_remote;
     p.connection_type = STANDARD_EDONKEY;
-    p.client = m_options.m_strName;
+    p.client = !m_options.m_strName.empty() && m_options.m_strName[0] == '[' ?
+        m_options.m_strName :
+        (boost::format("[%1%] %2%") % m_options.m_strModVersion % m_options.m_strName).str();
 
     if (boost::optional<piece_block_progress> ret = downloading_piece_progress())
     {
@@ -244,6 +281,15 @@ peer_connection::peer_speed_t peer_connection::peer_speed()
     return m_speed;
 }
 
+double peer_connection::peer_rate()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    fsize_t downloaded = statistics().total_download();
+    fsize_t transfer_downloaded = t->statistics().total_download();
+    return (transfer_downloaded == 0 ? 0 : double(downloaded) / transfer_downloaded) * t->num_peers();
+}
+
 void peer_connection::second_tick(int tick_interval_ms)
 {
     ptime now = time_now();
@@ -261,6 +307,8 @@ void peer_connection::second_tick(int tick_interval_ms)
         disconnect(errors::timed_out_inactivity);
         return;
     }
+
+    abort_expired_requests();
 
     if (!is_closed())
     {
@@ -293,6 +341,12 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
         // paused transfer will not accept incoming connections
         DBG("rejected connection to paused torrent");
         return false;
+    }
+
+    if (t == m_transfer.lock())
+    {
+        // this connection is already attached to the transfer
+        return true;
     }
 
     // check to make sure we don't have another connection with the same
@@ -343,13 +397,13 @@ void peer_connection::request_block()
     // in the transfer, there are still some unrequested pieces
     // also, if we already have at least one outstanding
     // request, we shouldn't pick any busy pieces either
-    bool dont_pick_busy_blocks = 
+    bool dont_pick_busy_blocks =
         (p.num_have() + p.get_download_queue().size() < t->num_pieces()) ||
         m_download_queue.size() + m_request_queue.size() > 0;
 
     // this is filled with an interesting piece
     // that some other peer is currently downloading
-    piece_block busy_block = piece_block::invalid;
+    std::vector<piece_block> busy_blocks;
 
     for (std::vector<piece_block>::iterator i = interesting_pieces.begin();
          i != interesting_pieces.end(); ++i)
@@ -363,10 +417,10 @@ void peer_connection::request_block()
             // this block is busy. This means all the following blocks
             // in the interesting_pieces list are busy as well, we might
             // as well just exit the loop
-            if (dont_pick_busy_blocks) break;
+            if (dont_pick_busy_blocks || busy_blocks.size() >= m_max_busy_blocks) break;
 
             assert(p.num_peers(*i) > 0);
-            busy_block = *i;
+            busy_blocks.push_back(*i);
             continue;
         }
 
@@ -375,13 +429,7 @@ void peer_connection::request_block()
         // pieces we didn't request. Those aren't marked in the
         // piece picker, but we still keep track of them in the
         // download queue
-        if (std::find_if(m_download_queue.begin(), m_download_queue.end(),
-                         has_block(*i)) != m_download_queue.end() ||
-            std::find_if(m_request_queue.begin(), m_request_queue.end(),
-                         has_block(*i)) != m_request_queue.end())
-        {
-            continue;
-        }
+        if (requesting(*i)) continue;
 
         // ok, we found a piece that's not being downloaded
         // by somebody else. request it from this peer
@@ -393,18 +441,17 @@ void peer_connection::request_block()
     // if we don't have any potential busy blocks to request
     // or if we already have outstanding requests, don't
     // pick a busy piece
-    if (busy_block == piece_block::invalid ||
-        m_download_queue.size() + m_request_queue.size() > 0)
+    if (!busy_blocks.empty() && m_download_queue.size() + m_request_queue.size() == 0)
     {
-        return;
+        BOOST_FOREACH(piece_block& bb, busy_blocks) {
+            assert(p.is_requested(bb));
+            assert(!p.is_downloaded(bb));
+            assert(!p.is_finished(bb));
+            assert(p.num_peers(bb) > 0);
+
+            add_request(bb, peer_connection::req_busy);
+        }
     }
-
-    assert(p.is_requested(busy_block));
-    assert(!p.is_downloaded(busy_block));
-    assert(!p.is_finished(busy_block));
-    assert(p.num_peers(busy_block) > 0);
-
-    add_request(busy_block, peer_connection::req_busy);
 }
 
 bool peer_connection::add_request(const piece_block& block, int flags)
@@ -419,22 +466,13 @@ bool peer_connection::add_request(const piece_block& block, int flags)
     else if (speed == medium) state = piece_picker::medium;
     else state = piece_picker::slow;
 
-    if (flags & req_busy)
+    if ((flags & req_busy) && num_requesting_busy_blocks() >= m_max_busy_blocks)
     {
         // this block is busy (i.e. it has been requested
-        // from another peer already). Only allow one busy
-        // request in the pipeline at the time
-        for (std::vector<pending_block>::const_iterator i = m_download_queue.begin(),
-                 end(m_download_queue.end()); i != end; ++i)
-        {
-            if (i->busy) return false;
-        }
+        // from another peer already). Only allow m_max_busy_blocks busy
+        // requests in the pipeline at the time
 
-        for (std::vector<pending_block>::const_iterator i = m_request_queue.begin(),
-                 end(m_request_queue.end()); i != end; ++i)
-        {
-            if (i->busy) return false;
-        }
+        return false;
     }
 
     if (!t->picker().mark_as_downloading(block, get_peer(), state))
@@ -489,6 +527,98 @@ void peer_connection::send_block_requests()
         write_request_parts(rp);
 }
 
+void peer_connection::abort_block_requests()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (t && t->has_picker())
+    {
+        piece_picker& picker = t->picker();
+
+        while (!m_download_queue.empty())
+        {
+            pending_block& qe = m_download_queue.back();
+            if (!qe.timed_out && !qe.not_wanted) picker.abort_download(qe.block);
+            //m_outstanding_bytes -= t->to_req(qe.block).length;
+            //if (m_outstanding_bytes < 0) m_outstanding_bytes = 0;
+            m_download_queue.pop_back();
+        }
+        while (!m_request_queue.empty())
+        {
+            picker.abort_download(m_request_queue.back().block);
+            m_request_queue.pop_back();
+        }
+    }
+    else
+    {
+        m_download_queue.clear();
+        m_request_queue.clear();
+        //m_outstanding_bytes = 0;
+    }
+}
+
+void peer_connection::abort_expired_requests()
+{
+#define ABORT_EXPIRED(reqs)                                             \
+    for(std::vector<pending_block>::iterator pi = reqs.begin(); pi != reqs.end();) \
+    {                                                                   \
+        if (now - pi->create_time > time::seconds(settings.block_request_timeout)) \
+        {                                                               \
+            piece_block& b = pi->block;                                 \
+            DBG("abort expired block request: "                         \
+                "{piece: " << b.piece_index << ", block: " << b.block_index << \
+                ", remote: " << m_remote << "}");                       \
+            picker.abort_download(b);                                   \
+            pi = reqs.erase(pi);                                        \
+        }                                                               \
+        else                                                            \
+            ++pi;                                                       \
+    }
+
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    const session_settings& settings = m_ses.settings();
+
+    if (t && t->has_picker())
+    {
+        piece_picker& picker = t->picker();
+        ptime now = time_now();
+
+        ABORT_EXPIRED(m_download_queue);
+        ABORT_EXPIRED(m_request_queue);
+    }
+
+#undef ABORT_EXPIRED
+}
+
+bool peer_connection::requesting(const piece_block& b)
+{
+    return
+        std::find_if(m_download_queue.begin(), m_download_queue.end(),
+                     has_block(b)) != m_download_queue.end() ||
+        std::find_if(m_request_queue.begin(), m_request_queue.end(),
+                     has_block(b)) != m_request_queue.end();
+}
+
+size_t peer_connection::num_requesting_busy_blocks()
+{
+    size_t res = 0;
+
+    for (std::vector<pending_block>::const_iterator i = m_download_queue.begin(),
+             end(m_download_queue.end()); i != end; ++i)
+    {
+        if (i->busy) ++res;
+    }
+
+    for (std::vector<pending_block>::const_iterator i = m_request_queue.begin(),
+             end(m_request_queue.end()); i != end; ++i)
+    {
+        if (i->busy) ++res;
+    }
+
+    return res;
+}
+
+
 bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
 {
     if (disk_buffer_size == 0) return true;
@@ -540,31 +670,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     {
         // make sure we keep all the stats!
         t->add_stats(m_statistics);
-
-        if (t->has_picker())
-        {
-            piece_picker& picker = t->picker();
-
-            while (!m_download_queue.empty())
-            {
-                pending_block& qe = m_download_queue.back();
-                if (!qe.timed_out && !qe.not_wanted) picker.abort_download(qe.block);
-                //m_outstanding_bytes -= t->to_req(qe.block).length;
-                //if (m_outstanding_bytes < 0) m_outstanding_bytes = 0;
-                m_download_queue.pop_back();
-            }
-            while (!m_request_queue.empty())
-            {
-                picker.abort_download(m_request_queue.back().block);
-                m_request_queue.pop_back();
-            }
-        }
-        else
-        {
-            m_download_queue.clear();
-            m_request_queue.clear();
-            //m_outstanding_bytes = 0;
-        }
+        abort_block_requests();
         //m_queued_time_critical = 0;
 
         t->remove_peer(this);
@@ -1036,7 +1142,7 @@ void peer_connection::write_hello()
     boost::uint32_t nVersion = m_ses.settings().m_version;
     client_hello hello;
     hello.m_nHashLength = MD4_HASH_SIZE;
-    hello.m_hClient = settings.client_hash;
+    hello.m_hClient = settings.user_agent;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
     hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
@@ -1069,11 +1175,10 @@ void peer_connection::write_ext_hello()
 
 void peer_connection::write_hello_answer()
 {
-    //TODO - replace this code
     // prepare hello answer
     client_hello_answer cha;
-    cha.m_hClient               = m_ses.settings().client_hash;
-    cha.m_network_point.m_nIP   = 0;
+    cha.m_hClient               = m_ses.settings().user_agent;
+    cha.m_network_point.m_nIP   = m_ses.m_server_connection->client_id();
     cha.m_network_point.m_nPort = m_ses.settings().listen_port;
 
     boost::uint32_t nVersion = 0x3c;
@@ -1084,7 +1189,7 @@ void peer_connection::write_hello_answer()
     cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
     cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
     cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
-    cha.m_server_network_point.m_nIP   = m_ses.settings().server_ip;
+    cha.m_server_network_point.m_nIP = m_ses.server().address().to_v4().to_ulong();
 
     DBG("hello answer {client_hash: " << cha.m_hClient <<
         ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<
@@ -1233,6 +1338,7 @@ void peer_connection::on_hello(const error_code& error)
         m_options.m_nPort = hello.m_network_point.m_nPort;
         DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
+        write_hello();
     }
     else
     {

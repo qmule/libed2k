@@ -41,20 +41,6 @@ namespace libed2k {
     {
         bool paths_filter(std::deque<fs::path>& vp, const fs::path& p);
 
-        struct dictionary_entry
-        {
-            dictionary_entry(fsize_t nFilesize);   // create and link
-            dictionary_entry();
-            fsize_t         file_size;
-            boost::uint32_t accepted;
-            boost::uint32_t requested;
-            boost::uint64_t transferred;
-            boost::uint8_t  priority;
-            md4_hash        m_hash;
-            bitfield        pieces;
-            std::vector<md4_hash> hashset;
-        };
-
         /**
           * class used for testing
          */
@@ -64,20 +50,12 @@ namespace libed2k {
             typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
             typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
 
-            /**
-              * change time + filename(native codepage)
-              * dictionary implement move semantics - when you get result dictionary lose it
-             */
-            typedef std::pair<boost::uint32_t, std::string> dictionary_key;
-            typedef std::map<dictionary_key, dictionary_entry> files_dictionary;
-
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
 
             virtual void abort();
 
             const session_settings& settings() const { return m_settings; }
-            session_settings& settings() { return m_settings; }
 
             /**
               *  add transfer from another thread
@@ -89,11 +67,6 @@ namespace libed2k {
             virtual void remove_transfer(const transfer_handle& h, int options) = 0;
 
             virtual std::vector<transfer_handle> get_transfers() = 0;
-
-            /**
-              * save transfers to disk
-             */
-            void save_state() const;
 
             /**
               * load transfers from disk
@@ -115,16 +88,6 @@ namespace libed2k {
               * @param bUnshare - if we need un-share directory set parameter to true
              */
             void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare);
-
-            /**
-              * this method implements move semantic - when element found it will be erased
-              * @param change_time - change time from boost::filesystem last_write_time
-              * @param filename string in UTF-8 code page
-             */
-            dictionary_entry get_dictionary_entry(
-                boost::uint32_t change_time, const std::string& strFilename);
-
-            void load_dictionary();
 
             /**
               * update collection entry in collection
@@ -161,7 +124,6 @@ namespace libed2k {
             // this has all torrents that wants to be checked in it
             check_queue_t m_queued_for_checking;
 
-
             // statistics gathered from all transfers.
             stat m_stat;
 
@@ -169,12 +131,6 @@ namespace libed2k {
               * file hasher closed in self thread
              */
             file_hasher    m_file_hasher;
-
-            /**
-              * special index for access to files by last write time + file name
-              * file name in native code page
-             */
-            files_dictionary   m_dictionary;
 
             /**
               * pending collections list - when collection changes status from pending
@@ -232,6 +188,7 @@ namespace libed2k {
 
             void close_connection(const peer_connection* p, const error_code& ec);
 
+            session_status status() const;
             unsigned short listen_port() const;
             const tcp::endpoint& server() const;
 
@@ -255,7 +212,6 @@ namespace libed2k {
             boost::intrusive_ptr<peer_connection> find_peer_connection(const net_identifier& np) const;
             boost::intrusive_ptr<peer_connection> find_peer_connection(const md4_hash& hash) const;
             peer_connection_handle add_peer_connection(net_identifier np, error_code& ec);
-            std::vector<transfer_handle> add_transfer_dir(const fs::path& dir, error_code& ec);
 
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }

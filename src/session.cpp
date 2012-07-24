@@ -50,22 +50,18 @@ namespace libed2k
         if (!m_impl.unique()) m_impl->abort();
     }
 
+    session_status session::status() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->status();
+    }
+
     transfer_handle session::add_transfer(const add_transfer_params& params)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
 
         error_code ec;
         transfer_handle ret = m_impl->add_transfer(params, ec);
-        if (ec) throw libed2k_exception(ec);
-        return ret;
-    }
-
-    std::vector<transfer_handle> session::add_transfer_dir(const fs::path& dir)
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-
-        error_code ec;
-        std::vector<transfer_handle> ret = m_impl->add_transfer_dir(dir, ec);
         if (ec) throw libed2k_exception(ec);
         return ret;
     }

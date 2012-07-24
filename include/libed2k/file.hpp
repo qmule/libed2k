@@ -97,28 +97,6 @@ namespace libed2k
     const boost::uint8_t  MET_HEADER                  = 0x0E;
     const boost::uint8_t  MET_HEADER_WITH_LARGEFILES  = 0x0F;
 
-    // obsolete class
-    class known_file
-    {
-    public:
-        // TODO: should use fs::path as parameter
-        known_file(const std::string& strFilename);
-
-        /**
-          * calculate file parameters
-         */
-        void init();
-
-        const md4_hash& getFileHash() const;
-        const md4_hash& getPieceHash(size_t nPart) const;
-        size_t          getPiecesCount() const;
-        const std::vector<md4_hash>& getPieceHashes() const { return m_vHash; }
-    private:
-        std::string             m_strFilename;
-        std::vector<md4_hash>   m_vHash;
-        md4_hash                m_hFile;
-    };
-
     typedef container_holder<boost::uint16_t, std::vector<md4_hash> > hash_list;
 
     /**
@@ -289,7 +267,7 @@ namespace libed2k
     class file_hasher
     {
     public:
-        file_hasher(add_transfer_handler handler);
+        file_hasher(add_transfer_handler handler, const std::string& known_filename);
 
         /**
           * start monitor thread
@@ -311,8 +289,9 @@ namespace libed2k
     private:
         volatile bool           m_bCancel;
         add_transfer_handler    m_add_transfer;
+        std::string             m_known_filename;   //!< this parameter must contains
         boost::shared_ptr<boost::thread> m_thread;
-        boost::mutex m_mutex;
+        boost::mutex            m_mutex;
     };
 
     /**
