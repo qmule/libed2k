@@ -11,7 +11,6 @@
 #include <boost/aligned_storage.hpp>
 
 #include <libtorrent/error_code.hpp>
-#include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
@@ -256,7 +255,7 @@ namespace libed2k
         bool requesting(const piece_block& b);
         size_t num_requesting_busy_blocks();
 
-        void send_meta();
+        void send_deferred();
         void fill_send_buffer();
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
@@ -269,8 +268,10 @@ namespace libed2k
         template<typename T>
         void do_write(T& t)
         {
-            assert(m_channel_state[upload_channel] == bw_idle);
-            base_connection::do_write(t);
+            if (m_channel_state[upload_channel] == bw_idle)
+                base_connection::do_write(t);
+            else
+                defer_write(t);
         }
 
         // the following functions appends messages
@@ -324,14 +325,14 @@ namespace libed2k
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
 
-        void send_throw_meta_order(const client_meta_packet& s)
-        {
-            m_messages_order.push_back(s);
+        template<typename T>
+        void defer_write(const T& t) { m_deferred.push_back(make_message(t)); }
 
-            if (!is_closed())
-            {
-                fill_send_buffer();
-            }
+        template<typename T>
+        void send_throw_meta_order(const T& t)
+        {
+            defer_write(t);
+            if (!is_closed()) fill_send_buffer();
         }
 
         template <typename Struct>
@@ -462,16 +463,10 @@ namespace libed2k
 
         int m_disk_recv_buffer_size;
 
-        /**
-          * this flag will active after hello -> hello_answer order
-         */
+        // this flag will active after hello -> hello_answer order
         bool m_handshake_complete;
 
-        /**
-          * special order for client messages
-          *
-         */
-        std::deque<client_meta_packet>  m_messages_order;
+        std::deque<message> m_deferred;
 
         enum channels
         {
@@ -499,7 +494,6 @@ namespace libed2k
         misc_options    m_misc_options;
         misc_options2   m_misc_options2;
     };
-
 }
 
 #endif

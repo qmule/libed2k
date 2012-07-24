@@ -398,60 +398,6 @@ namespace libed2k
         m_strMessage.assign(strMessage, 0, m_nMsgLength);
     }
 
-    client_meta_packet::client_meta_packet(const client_message& cmessage)
-    {
-        m_message = cmessage;
-        m_proto = get_proto_type(m_message);
-    }
-
-    client_meta_packet::client_meta_packet(const client_shared_files_request& frequest)
-    {
-        m_files_request = frequest;
-        m_proto = get_proto_type(m_files_request);
-    }
-
-    client_meta_packet::client_meta_packet(const client_shared_files_denied& sfd)
-    {
-        m_files_denied = sfd;
-        m_proto = get_proto_type(m_files_denied);
-    }
-
-    client_meta_packet::client_meta_packet(const client_shared_directories_request& drequest)
-    {
-        m_directories_request = drequest;
-        m_proto = get_proto_type(m_directories_request);
-    }
-
-    client_meta_packet::client_meta_packet(const client_shared_directories_answer& danswer)
-    {
-        m_directories_answer = danswer;
-        m_proto = get_proto_type(m_directories_answer);
-    }
-
-    client_meta_packet::client_meta_packet(const client_shared_directory_files& frequest)
-    {
-        m_directory_files_request = frequest;
-        m_proto = get_proto_type(m_directory_files_request);
-    }
-
-    client_meta_packet::client_meta_packet(const client_shared_files_answer& flist)
-    {
-        m_shared_files_list = flist;
-        m_proto = get_proto_type(m_shared_files_list);
-    }
-
-    client_meta_packet::client_meta_packet(const client_directory_content_request& ismoddr)
-    {
-        m_ismod_directory_request = ismoddr;
-        m_proto = get_proto_type(m_ismod_directory_request);
-    }
-
-    client_meta_packet::client_meta_packet(const client_directory_content_result& ismod_dir_cr)
-    {
-        m_ismod_directory_result = ismod_dir_cr;
-        m_proto = get_proto_type(m_ismod_directory_result);
-    }
-
     peer_connection_options::peer_connection_options() : m_nVersion(0),
                  m_nModVersion(0),
                  m_nPort(0),

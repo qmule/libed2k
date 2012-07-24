@@ -56,6 +56,11 @@ namespace libed2k{
 
     protected:
 
+        struct message {
+            libed2k_header header;
+            std::string body;
+        };
+
         typedef boost::iostreams::basic_array_source<char> Device;
 
         // constructor method
@@ -64,8 +69,31 @@ namespace libed2k{
         void do_read();
         void do_write();
 
+        template <typename T>
+        message make_message(const T& t)
+        {
+            message msg;
+
+            msg.header.m_protocol = packet_type<T>::protocol;
+            boost::iostreams::back_insert_device<std::string> inserter(msg.body);
+            boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
+                s(inserter);
+
+            // Serialize the data first so we know how large it is.
+            archive::ed2k_oarchive oa(s);
+            oa << const_cast<T&>(t);
+            s.flush();
+            // packet size without protocol type and packet body size field
+            msg.header.m_size = body_size(t, msg.body) + 1;
+            msg.header.m_type = packet_type<T>::value;
+
+            return msg;
+        }
+
         template<typename T>
-        void do_write(T& t);
+        void do_write(const T& t) { do_write_message(make_message(t)); }
+
+        void do_write_message(const message& msg);
 
         void copy_send_buffer(const char* buf, int size);
 
@@ -74,8 +102,6 @@ namespace libed2k{
         { m_send_buffer.append_buffer(buffer, size, size, destructor); }
 
         virtual void on_timeout(const error_code& e);
-
-        typedef libtorrent::chained_buffer chained_buffer;
 
         /**
          * call when socket got packets header
@@ -112,7 +138,24 @@ namespace libed2k{
          * on error return false
          */
         template<typename T>
-        bool decode_packet(T& t);
+        bool decode_packet(T& t)
+        {
+            try
+            {
+                boost::iostreams::stream_buffer<base_connection::Device> buffer(
+                    &m_in_container[0], m_in_header.m_size - 1);
+                std::istream in_array_stream(&buffer);
+                archive::ed2k_iarchive ia(in_array_stream);
+                ia >> t;
+            }
+            catch(libed2k_exception& e)
+            {
+                DBG("Error on conversion " << e.what());
+                return (false);
+            }
+
+            return (true);
+        }
 
         template <typename Self>
         boost::intrusive_ptr<Self> self_as()
@@ -222,55 +265,7 @@ namespace libed2k{
             return allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>(
                 handler, m_write_handler_storage);
         }
-
     };
-
-    template<typename T>
-    void base_connection::do_write(T& t)
-    {
-        libed2k_header header;
-        header.m_protocol = packet_type<T>::protocol;
-
-        std::string body;
-        boost::iostreams::back_insert_device<std::string> inserter(body);
-        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
-            s(inserter);
-
-        // Serialize the data first so we know how large it is.
-        archive::ed2k_oarchive oa(s);
-        oa << t;
-        s.flush();
-        // packet size without protocol type and packet body size field
-        header.m_size = body_size(t, body) + 1;
-        header.m_type = packet_type<T>::value;
-
-        copy_send_buffer((char*)(&header), header_size);
-        copy_send_buffer(body.c_str(), body.size());
-
-        m_statistics.sent_bytes(0, header_size + body.size());
-
-        do_write();
-    }
-
-    template<typename T>
-    bool base_connection::decode_packet(T& t)
-    {
-        try
-        {
-            boost::iostreams::stream_buffer<base_connection::Device> buffer(
-                &m_in_container[0], m_in_header.m_size - 1);
-            std::istream in_array_stream(&buffer);
-            archive::ed2k_iarchive ia(in_array_stream);
-            ia >> t;
-        }
-        catch(libed2k_exception& e)
-        {
-            DBG("Error on conversion " << e.what());
-            return (false);
-        }
-
-        return (true);
-    }
 }
 
 #endif

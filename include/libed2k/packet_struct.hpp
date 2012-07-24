@@ -1502,7 +1502,6 @@ namespace libed2k
         static const proto_type value = OP_MESSAGE;
         static const proto_type protocol = OP_EDONKEYPROT;
     };
-
     template<> struct packet_type<client_captcha_request>{
         static const proto_type value   = OP_CHATCAPTCHAREQ;
         static const proto_type protocol= OP_EMULEPROT;
@@ -1537,50 +1536,6 @@ namespace libed2k
     {
         return std::make_pair(packet_type<T>::value, packet_type<T>::protocol);
     }
-
-    /**
-      * this structure used for handle set of different structures
-     */
-    struct client_meta_packet
-    {
-        client_meta_packet(const client_message& cmessage);
-        client_meta_packet(const client_shared_files_request& frequest);
-        client_meta_packet(const client_shared_files_denied& sfd);
-        client_meta_packet(const client_shared_files_answer& flist);
-        client_meta_packet(const client_shared_directories_request& drequest);
-        client_meta_packet(const client_shared_directories_answer& danswer);
-        client_meta_packet(const client_shared_directory_files& frequest);
-        client_meta_packet(const client_directory_content_request& ismoddr);
-        client_meta_packet(const client_directory_content_result& ismod_dir_cr);
-
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            if (m_proto == get_proto_type(m_message))
-            {
-                ar & m_message;
-                return;
-            }
-
-            if (m_proto == get_proto_type(m_files_request))
-            {
-                ar & m_files_request;
-                return;
-            }
-
-        }
-
-        client_message                      m_message;
-        client_shared_files_request         m_files_request;
-        client_shared_files_denied          m_files_denied;
-        client_shared_files_answer          m_shared_files_list;
-        client_shared_directories_request   m_directories_request;
-        client_shared_directories_answer    m_directories_answer;
-        client_shared_directory_files       m_directory_files_request;
-        client_directory_content_request    m_ismod_directory_request;
-        client_directory_content_result     m_ismod_directory_result;
-        proto_type      m_proto;
-    };
 
     /**
       * peer connection internal structure

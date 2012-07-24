@@ -31,6 +31,7 @@ namespace libtorrent {
     struct peer_info;
     class entry;
     struct lazy_entry;
+    struct chained_buffer;
 
     namespace aux{
         struct eh_initializer;
@@ -67,6 +68,7 @@ namespace libed2k
     typedef libtorrent::peer_info peer_info;
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
+    typedef libtorrent::chained_buffer chained_buffer;
 
     namespace detail = libtorrent::detail;
 

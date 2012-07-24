@@ -821,82 +821,52 @@ bool peer_connection::operator==(const md4_hash& hash) const
 
 void peer_connection::send_message(const std::string& strMessage)
 {
-    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+    m_ses.m_io_service.post(
+        boost::bind(
+            &peer_connection::send_throw_meta_order<client_message>,
             self_as<peer_connection>(), client_message(strMessage)));
 }
 
 void peer_connection::request_shared_files()
 {
-    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+    m_ses.m_io_service.post(
+        boost::bind(
+            &peer_connection::send_throw_meta_order<client_shared_files_request>,
             self_as<peer_connection>(), client_shared_files_request()));
 }
 
 void peer_connection::request_shared_directories()
 {
-    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
-                self_as<peer_connection>(), client_shared_directories_request()));
+    m_ses.m_io_service.post(
+        boost::bind(
+            &peer_connection::send_throw_meta_order<client_shared_directories_request>,
+            self_as<peer_connection>(), client_shared_directories_request()));
 }
 
 void peer_connection::request_shared_directory_files(const std::string& strDirectory)
 {
-    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
-                    self_as<peer_connection>(), client_shared_directory_files(strDirectory)));
+    m_ses.m_io_service.post(
+        boost::bind(
+            &peer_connection::send_throw_meta_order<client_shared_directory_files>,
+            self_as<peer_connection>(), client_shared_directory_files(strDirectory)));
 }
 
 void peer_connection::request_ismod_directory_files(const md4_hash& hash)
 {
-    m_ses.m_io_service.post(boost::bind(&peer_connection::send_throw_meta_order,
+    m_ses.m_io_service.post(
+        boost::bind(
+            &peer_connection::send_throw_meta_order<client_directory_content_request>,
             self_as<peer_connection>(), client_directory_content_request(hash)));
 }
 
-void peer_connection::send_meta()
+void peer_connection::send_deferred()
 {
-    if (!m_messages_order.empty())
-    {
-        switch(m_messages_order.front().m_proto)
-        {
-            case OP_MESSAGE:                                                    // message to user
-                 DBG("peer_connection::send_meta: " << m_messages_order.front().m_message.m_strMessage);
-                 do_write(m_messages_order.front().m_message);
-                 break;
-            case OP_ASKSHAREDFILES:                                             // ask shared files from user
-                DBG("peer_connection::send_meta: query shared files");
-                do_write(m_messages_order.front().m_files_request);
-                break;
-            case OP_ASKSHAREDDENIEDANS:
-                DBG("peer_connection::send_meta: ask files denied");
-                do_write(m_messages_order.front().m_files_denied);
-                break;
-            case OP_ASKSHAREDDIRSANS:
-                DBG("peer_connection::send_meta: ask shared directories");
-                do_write(m_messages_order.front().m_directories_answer);
-                break;
-            case OP_ASKSHAREDDIRS:
-                DBG("peer_connection::send_meta: query shared directories");
-                do_write(m_messages_order.front().m_directories_request);
-                break;
-            case OP_ASKSHAREDFILESDIR:
-                DBG("peer_connection::send_meta: query shared directory files");
-                do_write(m_messages_order.front().m_directory_files_request);
-                break;
-            case OP_ASKSHAREDFILESANSWER:                                       // offer shared files to user
-                DBG("peer_connection::send_meta: offer files");
-                do_write(m_messages_order.front().m_shared_files_list);
-                break;
-            case OP_ASKDIRCONTENTS:
-                DBG("peer_connection::send_meta: ismod directory request");
-                do_write(m_messages_order.front().m_ismod_directory_request);
-                break;
-            case OP_ASKDIRCONTENTSANS:
-                DBG("peer_connection::send_meta: ismod directory result");
-                do_write(m_messages_order.front().m_ismod_directory_result);
-                break;
-            default:
-                BOOST_ASSERT(false);
-                break;
-        }
+    assert(m_channel_state[upload_channel] == bw_idle);
 
-        m_messages_order.pop_front();
+    while (!m_deferred.empty())
+    {
+        do_write_message(m_deferred.front());
+        m_deferred.pop_front();
     }
 }
 
@@ -906,7 +876,7 @@ void peer_connection::fill_send_buffer()
 
     int buffer_size_watermark = 10 * BLOCK_SIZE;
 
-    if (m_handshake_complete) { send_meta(); }
+    if (m_handshake_complete) { send_deferred(); }
 
     if (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
     {
@@ -1338,6 +1308,7 @@ void peer_connection::on_hello(const error_code& error)
         m_options.m_nPort = hello.m_network_point.m_nPort;
         DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
+        write_hello();
     }
     else
     {

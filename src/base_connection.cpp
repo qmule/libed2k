@@ -69,6 +69,15 @@ namespace libed2k
         m_write_in_progress = true;
     }
 
+    void base_connection::do_write_message(const message& msg) {
+        copy_send_buffer((char*)(&msg.header), header_size);
+        copy_send_buffer(msg.body.c_str(), msg.body.size());
+
+        m_statistics.sent_bytes(0, header_size + msg.body.size());
+
+        do_write();
+    }
+
     void base_connection::copy_send_buffer(char const* buf, int size)
     {
         int free_space = m_send_buffer.space_in_last_buffer();
