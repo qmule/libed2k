@@ -1417,8 +1417,8 @@ void peer_connection::on_hello_answer(const error_code& error)
     // peer handshake completed
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    if (t) write_file_request(t->hash());
-    else fill_send_buffer();
+    if (t && !t->is_finished()) write_file_request(t->hash());
+	else fill_send_buffer();
 }
 
 void peer_connection::on_ext_hello(const error_code& error)
