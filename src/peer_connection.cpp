@@ -1561,7 +1561,7 @@ void peer_connection::on_file_status(const error_code& error)
             t->picker().inc_refcount(fs.m_status);
             if (t->filesize() < PIECE_SIZE)
                 write_start_upload(fs.m_hFile);
-            else
+            else if (fs.m_status.count() > 0)
                 write_hashset_request(fs.m_hFile);
         }
         else
@@ -1607,14 +1607,16 @@ void peer_connection::on_hashset_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
-        DBG("hash set answer " << ha.m_hFile << " <== " << m_remote);
+        const std::vector<md4_hash>& hashes = ha.m_vhParts.m_collection;
+        DBG("hash set answer " << ha.m_hFile <<
+            " {count: " << hashes.size() << "} <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
-        if (t->hash() == ha.m_hFile)
+        if (t->hash() == ha.m_hFile && hashes.size() > 0)
         {
-            t->hashset(ha.m_vhParts.m_collection);
+            t->hashset(hashes);
             write_start_upload(t->hash());
         }
         else

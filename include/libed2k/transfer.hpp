@@ -53,7 +53,10 @@ namespace libed2k {
 
         const bitfield& verified_pieces() const { return m_verified; }
         const std::vector<md4_hash>& hashset() const { return m_hashset; }
-        void hashset(const std::vector<md4_hash>& hs) { m_hashset = hs; }
+        void hashset(const std::vector<md4_hash>& hs) {
+            assert(hs.size() > 0);
+            m_hashset = hs;
+        }
         const md4_hash& hash(size_t piece) const { return m_hashset.at(piece); }
 
         transfer_handle handle();

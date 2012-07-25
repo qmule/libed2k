@@ -259,6 +259,10 @@ namespace libed2k
         {
             peer_connection* peer = *i;
 
+            // incoming peers that haven't finished the handshake should
+            // not be included in this list
+            if (peer->get_transfer().expired()) continue;
+
             infos.push_back(peer_info());
             peer_info& p = infos.back();
 
