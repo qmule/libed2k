@@ -48,7 +48,7 @@ namespace libed2k{
         /**
          * connection closed when his socket is not opened
          */
-        bool is_closed() const { return !m_socket->is_open(); }
+        bool is_closed() const { return !m_socket || !m_socket->is_open(); }
         const tcp::endpoint& remote() const { return m_remote; }
         boost::shared_ptr<tcp::socket> socket() { return m_socket; }
 
