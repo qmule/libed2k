@@ -131,7 +131,10 @@ namespace libed2k
 
                     if (size == 0)
                     {
-                        on_read_packet(boost::system::error_code(), 0); // all data was read - execute callback
+                        // all data was read - execute callback
+                        m_ses.m_io_service.post(
+                            boost::bind(&base_connection::on_read_packet,
+                                        self(), boost::system::error_code(), 0));
                     }
                     else
                     {
@@ -162,6 +165,8 @@ namespace libed2k
 
     void base_connection::on_read_packet(const error_code& error, size_t nSize)
     {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
         // keep ourselves alive in until this function exits in
         // case we disconnect
         boost::intrusive_ptr<base_connection> me(self());
@@ -213,6 +218,8 @@ namespace libed2k
 
     void base_connection::on_write(const error_code& error, size_t nSize)
     {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
         // keep ourselves alive in until this function exits in
         // case we disconnect
         boost::intrusive_ptr<base_connection> me(self());
