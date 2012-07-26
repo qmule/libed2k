@@ -62,6 +62,7 @@ BOOST_AUTO_TEST_CASE(test_user_agent)
     em[14]  = 111;
     BOOST_CHECK_EQUAL(libed2k::uagent2csoft(ml), libed2k::SO_MLDONKEY);
     BOOST_CHECK_EQUAL(libed2k::uagent2csoft(em), libed2k::SO_EMULE);
+    BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::emule), libed2k::SO_EMULE);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
