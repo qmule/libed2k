@@ -88,7 +88,7 @@ namespace libed2k
                 if (libtorrent::lazy_bdecode(&m_resume_data[0], &m_resume_data[0]
                     + m_resume_data.size(), m_resume_entry) != 0)
                 {
-                    DBG("fast resume parse error");
+                    ERR("fast resume parse error");
                     std::vector<char>().swap(m_resume_data);
                     m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
                 }
@@ -981,7 +981,6 @@ namespace libed2k
 
     void transfer::on_save_resume_data(int ret, disk_io_job const& j)
     {
-        DBG("transfer::on_save_resume_data");
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         if (!j.resume_data)
@@ -1141,7 +1140,6 @@ namespace libed2k
 
     void transfer::write_resume_data(entry& ret) const
     {
-        DBG("transfer::write_resume_data");
         ret["file-format"] = "libed2k resume file";
         ret["file-version"] = 1;
         ret["libed2k-version"] = LIBED2K_VERSION;

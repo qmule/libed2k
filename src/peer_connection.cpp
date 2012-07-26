@@ -339,7 +339,7 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
     if (t->is_paused())
     {
         // paused transfer will not accept incoming connections
-        DBG("rejected connection to paused torrent");
+        DBG("rejected connection to paused transfer");
         return false;
     }
 
@@ -1457,7 +1457,7 @@ void peer_connection::on_file_request(const error_code& error)
         if (attach_to_transfer(fr.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_status(fr.m_hFile, t->verified_pieces());
+            write_file_answer(t->hash(), t->filepath().filename());
         }
         else
         {
