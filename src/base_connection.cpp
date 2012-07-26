@@ -110,6 +110,8 @@ namespace libed2k
 
     void base_connection::on_read_header(const error_code& error, size_t nSize)
     {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
         // keep ourselves alive in until this function exits in
         // case we disconnect
         boost::intrusive_ptr<base_connection> me(self());

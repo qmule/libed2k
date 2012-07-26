@@ -997,6 +997,8 @@ void peer_connection::receive_data(const peer_request& req)
 void peer_connection::on_receive_data(
     const error_code& error, std::size_t bytes_transferred, peer_request r, peer_request left)
 {
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+
     // keep ourselves alive in until this function exits in
     // case we disconnect
     boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
