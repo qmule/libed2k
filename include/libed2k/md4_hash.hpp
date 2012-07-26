@@ -35,6 +35,7 @@ namespace libed2k{
         typedef boost::uint8_t md4hash_container[MD4_HASH_SIZE];
         static const md4_hash terminal;
         static const md4_hash libed2k;
+        static const md4_hash emule;
 
         enum { hash_size = MD4_HASH_SIZE };
 

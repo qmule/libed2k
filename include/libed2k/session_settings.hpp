@@ -30,7 +30,7 @@ namespace libed2k
             m_announce_timeout(-1),
             m_show_shared_catalogs(true),
             m_show_shared_files(true),
-            user_agent(md4_hash::libed2k)
+            user_agent(md4_hash::emule)
         {
         }
 
