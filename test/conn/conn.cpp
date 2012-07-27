@@ -95,6 +95,7 @@ enum CONN_CMD
 {
     cc_search,
     cc_download,
+    cc_download_all,
     cc_save_fast_resume,
     cc_restore,
     cc_share,
@@ -137,6 +138,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "load")
     {
         return cc_download;
+    }
+    else if (strCommand == "loadall")
+    {
+        return cc_download_all;
     }
     else if (strCommand == "save")
     {
@@ -265,8 +270,8 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, strArg);
-                ses.post_search_request(order);
+                search_request sr = libed2k::generateSearchRequest(1000000000,0,100,0, "", "", "", 0, 0, strArg);
+                ses.post_search_request(sr);
                 break;
             }
             case cc_download:
@@ -291,6 +296,40 @@ int main(int argc, char* argv[])
 
                     ses.add_transfer(params);
                 }
+                break;
+            }
+            case cc_download_all:
+            {
+                int nBorder = atoi(strArg.c_str());
+                DBG("Load first " << nBorder);
+                for (size_t nIndex = 0; nIndex < vSF.m_collection.size(); ++nIndex)
+                {
+                    if (nIndex >= nBorder)
+                    {
+                        break;
+                    }
+
+                    DBG("load for: " << nIndex << " " << vSF.m_collection[nIndex].m_hFile.toString());
+                    libed2k::add_transfer_params params;
+                    params.file_hash = vSF.m_collection[nIndex].m_hFile;
+                    params.file_path = strIncomingDirectory;
+                    params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
+                    params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
+
+                    if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
+                    {
+                        params.file_size += vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI)->asInt() << 32;
+                    }
+
+                    ses.add_transfer(params);
+#ifndef WIN32
+                    sleep(1);
+#else
+                    Sleep(500);
+#endif
+
+                }
+
                 break;
             }
             case cc_remove:
@@ -582,8 +621,6 @@ int main(int argc, char* argv[])
                 std::cout << "server initalized: cid: "
                         << p->m_nClientId
                         << std::endl;
-                DBG("send search request");
-                ses.post_search_request(order);
             }
             else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
             {
@@ -608,35 +645,29 @@ int main(int argc, char* argv[])
             {
 
                 DBG("RESULT: " << p->m_files.m_collection.size());
-                p->m_files.dump();
-                if (vSF.m_collection.empty())
+                vSF.clear();
+                vSF = p->m_files;
+
+                boost::uint64_t nSize = 0;
+
+                for (size_t n = 0; n < vSF.m_size; ++n)
                 {
+                    boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
+                    boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
 
-                    DBG("RESULT: " << p->m_files.m_collection.size());
-                    p->m_files.dump();
-                    vSF = p->m_files;
-
-                    boost::uint64_t nSize = 0;
-
-                    for (size_t n = 0; n < vSF.m_size; ++n)
+                    if (low.get())
                     {
-                        boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
-                        boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
-
-                        if (low.get())
-                        {
-                            nSize = low->asInt();
-                        }
-
-                        if (hi.get())
-                        {
-                            nSize += hi->asInt() << 32;
-                        }
-
-                        DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                                << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                                << " size: " << nSize);
+                        nSize = low->asInt();
                     }
+
+                    if (hi.get())
+                    {
+                        nSize += hi->asInt() << 32;
+                    }
+
+                    DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                            << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
+                            << " size: " << nSize);
                 }
 
 #if 0
