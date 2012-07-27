@@ -4,6 +4,8 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/thread.hpp>
+#include <boost/asio/error.hpp>
 
 #include <libtorrent/torrent_handle.hpp>
 #include <libtorrent/bencode.hpp>
@@ -187,6 +189,176 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     return cc_empty;
 }
 
+libed2k::shared_files_list vSF;
+boost::mutex m_sf_mutex;
+
+void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
+{
+    if (ec == boost::asio::error::operation_aborted)
+    {
+        return;
+    }
+
+    std::auto_ptr<alert> a = ps->pop_alert();
+
+    while(a.get())
+    {
+        if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
+        {
+            server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
+            std::cout << "server initalized: cid: "
+                    << p->m_nClientId
+                    << std::endl;
+        }
+        else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
+        {
+            DBG("server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->m_strServer);
+        }
+        else if (dynamic_cast<server_status_alert*>(a.get()))
+        {
+            server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
+            DBG("server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
+        }
+        else if (dynamic_cast<server_message_alert*>(a.get()))
+        {
+            server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
+            std::cout << "msg: " << p->m_strMessage << std::endl;
+        }
+        else if (dynamic_cast<server_identity_alert*>(a.get()))
+        {
+            server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
+            DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
+        }
+        else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
+        {
+            boost::mutex::scoped_lock l(m_sf_mutex);
+            DBG("RESULT: " << p->m_files.m_collection.size());
+            vSF.clear();
+            vSF = p->m_files;
+
+            boost::uint64_t nSize = 0;
+
+            for (size_t n = 0; n < vSF.m_size; ++n)
+            {
+                boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
+                boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
+
+                if (low.get())
+                {
+                    nSize = low->asInt();
+                }
+
+                if (hi.get())
+                {
+                    nSize += hi->asInt() << 32;
+                }
+
+                DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                        << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
+                        << " size: " << nSize);
+            }
+        }
+        else if(dynamic_cast<peer_message_alert*>(a.get()))
+        {
+            peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
+            DBG("MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
+        }
+        else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
+        {
+            DBG("peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
+        }
+        else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
+        {
+            DBG("captcha request ");
+            FILE* fp = fopen("./captcha.bmp", "wb");
+
+            if (fp)
+            {
+                fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
+                fclose(fp);
+            }
+
+        }
+        else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
+        {
+            DBG("captcha result " << p->m_nResult);
+        }
+        else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
+        {
+            DBG("peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
+        }
+        else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
+        {
+            DBG("peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
+        }
+        else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
+        {
+            DBG("peer shared directories: " << int2ipstr(p->m_np.m_nIP) << " count: " << p->m_dirs.size());
+
+            for (size_t n = 0; n < p->m_dirs.size(); ++n)
+            {
+                DBG("DIR: " << p->m_dirs[n]);
+            }
+        }
+        else if (save_resume_data_alert* p = dynamic_cast<save_resume_data_alert*>(a.get()))
+        {
+            DBG("save_resume_data_alert");
+        }
+        else if (save_resume_data_failed_alert* p = dynamic_cast<save_resume_data_failed_alert*>(a.get()))
+        {
+            DBG("save_resume_data_failed_alert");
+        }
+        else
+        {
+            std::cout << "Unknown alert: " << a.get()->message() << std::endl;
+        }
+
+        a = ps->pop_alert();
+    }
+
+    pt->expires_at(pt->expires_at() + boost::posix_time::seconds(3));
+    pt->async_wait(boost::bind(&alerts_reader, boost::asio::placeholders::error, pt, ps));
+}
+
+void save_fast_resume(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
+{
+    if (ec == boost::asio::error::operation_aborted)
+    {
+        return;
+    }
+
+    // actually we save nothing - only for test
+    std::vector<libed2k::transfer_handle> v = ps->get_transfers();
+    int num_resume_data = 0;
+
+    for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
+    {
+       libed2k::transfer_handle h = *i;
+
+       if (!h.is_valid()) continue;
+
+       DBG("save transfer " << h.hash().toString());
+
+       try
+       {
+
+         if (h.status().state == libed2k::transfer_status::checking_files ||
+             h.status().state == libed2k::transfer_status::queued_for_checking) continue;
+         h.save_resume_data();
+         ++num_resume_data;
+       }
+       catch(libed2k::libed2k_exception& e)
+       {
+           ERR("save error: " << e.what());
+       }
+    }
+
+    DBG("total saved: "<< num_resume_data);
+
+    pt->expires_at(pt->expires_at() + boost::posix_time::minutes(3));
+    pt->async_wait(boost::bind(&save_fast_resume, boost::asio::placeholders::error, pt, ps));
+}
+
 int main(int argc, char* argv[])
 {
     LOGGER_INIT(LOG_ALL)
@@ -215,6 +387,14 @@ int main(int argc, char* argv[])
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
+
+
+    boost::asio::io_service io;
+    boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
+    boost::asio::deadline_timer fs_timer(io, boost::posix_time::minutes(3));
+    alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
+    fs_timer.async_wait(boost::bind(save_fast_resume, boost::asio::placeholders::error, &fs_timer, &ses));
+    boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
 
 
     /*
@@ -252,7 +432,6 @@ int main(int argc, char* argv[])
     net_identifier ni(address2int(a), nPort);
 
     std::string strArg;
-    libed2k::shared_files_list vSF;
     std::deque<std::string> vpaths;
 
     while ((std::cin >> strUser))
@@ -276,6 +455,7 @@ int main(int argc, char* argv[])
             }
             case cc_download:
             {
+                boost::mutex::scoped_lock l(m_sf_mutex);
                 int nIndex = atoi(strArg.c_str());
 
                 DBG("execute load for " << nIndex);
@@ -601,195 +781,12 @@ int main(int argc, char* argv[])
                 break;
             };
         }
-
-        if (strUser.size() > 1)
-        {
-            if (!pch.empty())
-            {
-                pch.send_message(strUser);
-            }
-        }
-
-
-        std::auto_ptr<alert> a = ses.pop_alert();
-
-        while(a.get())
-        {
-            if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
-            {
-                server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
-                std::cout << "server initalized: cid: "
-                        << p->m_nClientId
-                        << std::endl;
-            }
-            else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
-            {
-                DBG("server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->m_strServer);
-            }
-            else if (dynamic_cast<server_status_alert*>(a.get()))
-            {
-                server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
-                DBG("server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
-            }
-            else if (dynamic_cast<server_message_alert*>(a.get()))
-            {
-                server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
-                std::cout << "msg: " << p->m_strMessage << std::endl;
-            }
-            else if (dynamic_cast<server_identity_alert*>(a.get()))
-            {
-                server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
-                DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
-            }
-            else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
-            {
-
-                DBG("RESULT: " << p->m_files.m_collection.size());
-                vSF.clear();
-                vSF = p->m_files;
-
-                boost::uint64_t nSize = 0;
-
-                for (size_t n = 0; n < vSF.m_size; ++n)
-                {
-                    boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
-                    boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
-
-                    if (low.get())
-                    {
-                        nSize = low->asInt();
-                    }
-
-                    if (hi.get())
-                    {
-                        nSize += hi->asInt() << 32;
-                    }
-
-                    DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                            << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                            << " size: " << nSize);
-                }
-
-#if 0
-
-                if (shared_directory_files_alert* p2 = dynamic_cast<shared_directory_files_alert*>(p))
-                {
-                    DBG("shared dir files: " << int2ipstr(p2->m_np.m_nIP) << " count " << p2->m_files.m_collection.size() << " for " << p2->m_strDirectory);
-                    //p->m_files.dump();
-                }
-                else
-                {
-
-                    // ok, prepare to get sources
-                    //p->m_result.dump();
-                    DBG("Results count: " << p->m_files.m_collection.size());
-
-                    if (p->m_more)
-                    {
-                        DBG("Request more results");
-                        ses.post_search_more_result_request();
-                    }
-                }
-
-                /*
-                for (int n = 0; n < p->m_list.m_collection.size(); n++)
-                {
-
-                }
-*/
-                //if (p->m_list.m_collection.size() > 10)
-                //{
-                    // generate continue request
-                    //search_request sr2;
-                    //ses.post_search_more_result_request();
-                //}
-
-                //int nIndex = p->m_result.m_results_list.m_collection.size() - 1;
-
-                //if (nIndex > 0)
-                //{
-
-                    //DBG("Search related files");
-
-                    //search_request sr2 = generateSearchRequest(p->m_list.m_collection[nIndex].m_hFile);
-                    //ses.post_search_request(sr2);
-
-                    /*
-
-                    const boost::shared_ptr<base_tag> src = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_COMPLETE_SOURCES);
-                    const boost::shared_ptr<base_tag> sz = p->m_list.m_collection[nIndex].m_list.getTagByNameId(FT_FILESIZE);
-
-                    if (src.get() && sz.get())
-                    {
-                        DBG("Complete sources: " << src.get()->asInt());
-                        DBG("Size: " << sz.get()->asInt());
-                        ses.post_sources_request(p->m_list.m_collection[nIndex].m_hFile, sz.get()->asInt());
-                        // request sources
-
-                    }
-                    */
-
-                //}
-#endif
-            }
-            else if(dynamic_cast<peer_message_alert*>(a.get()))
-            {
-                peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
-                DBG("MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
-            }
-            else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
-            {
-                DBG("peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
-            }
-            else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
-            {
-                DBG("captcha request ");
-                FILE* fp = fopen("./captcha.bmp", "wb");
-
-                if (fp)
-                {
-                    fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
-                    fclose(fp);
-                }
-
-            }
-            else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
-            {
-                DBG("captcha result " << p->m_nResult);
-            }
-            else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
-            {
-                DBG("peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
-            }
-            else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
-            {
-                DBG("peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
-            }
-            else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
-            {
-                DBG("peer shared directories: " << int2ipstr(p->m_np.m_nIP) << " count: " << p->m_dirs.size());
-
-                for (size_t n = 0; n < p->m_dirs.size(); ++n)
-                {
-                    DBG("DIR: " << p->m_dirs[n]);
-                }
-            }
-            else if (save_resume_data_alert* p = dynamic_cast<save_resume_data_alert*>(a.get()))
-            {
-                DBG("save_resume_data_alert");
-            }
-            else if (save_resume_data_failed_alert* p = dynamic_cast<save_resume_data_failed_alert*>(a.get()))
-            {
-                DBG("save_resume_data_failed_alert");
-            }
-            else
-            {
-                std::cout << "Unknown alert: " << a.get()->message() << std::endl;
-            }
-
-            a = ses.pop_alert();
-        }
     }
+
+    // cancel background operations and wait
+    io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));
+    io.post(boost::bind(&boost::asio::deadline_timer::cancel, &fs_timer));
+    t.join();
 
     return 0;
 }
