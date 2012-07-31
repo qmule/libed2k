@@ -17,6 +17,8 @@ namespace libed2k
             allow_multiple_connections_per_ip(false),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
+            max_queued_disk_bytes(256 * 1024),
+            send_buffer_watermark(100 * 1024),
             server_port(4661),
             listen_port(4662),
             client_name("libed2k"),
@@ -60,6 +62,25 @@ namespace libed2k
         // 0 means OS default
         int recv_socket_buffer_size;
         int send_socket_buffer_size;
+
+        // the maximum number of bytes a connection may have
+        // pending in the disk write queue before its download
+        // rate is being throttled. This prevents fast downloads
+        // to slow medias to allocate more and more memory
+        // indefinitely. This should be set to at least 16 kB
+        // to not completely disrupt normal downloads. If it's
+        // set to 0, you will be starving the disk thread and
+        // nothing will be written to disk.
+        // this is a per session setting.
+        int max_queued_disk_bytes;
+
+        // if the send buffer has fewer bytes than this, we'll
+        // read another 16kB block onto it. If set too small,
+        // upload rate capacity will suffer. If set too high,
+        // memory will be wasted.
+        // The actual watermark may be lower than this in case
+        // the upload rate is low, this is the upper limit.
+        int send_buffer_watermark;
 
         // ed2k server hostname
         std::string server_hostname;

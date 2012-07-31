@@ -218,11 +218,21 @@ namespace libed2k {
             int max_connections() const { return m_max_connections; }
             int num_connections() const { return m_connections.size(); }
 
+            bool has_peer(const peer_connection* p) const
+            {
+                return std::find_if(
+                    m_connections.begin(), m_connections.end(),
+                    boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p)
+                    != m_connections.end();
+            }
+
             std::pair<char*, int> allocate_buffer(int size);
             void free_buffer(char* buf, int size);
 
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
+
+            std::string buffer_usage();
 
             void on_disk_queue();
 
@@ -303,7 +313,6 @@ namespace libed2k {
             // since they will still have references to it
             // when they are destructed.
             libtorrent::file_pool m_filepool;
-
 
             // handles disk io requests asynchronously
             // peers have pointers into the disk buffer

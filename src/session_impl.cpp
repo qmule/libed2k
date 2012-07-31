@@ -4,6 +4,8 @@
 #endif
 
 #include <algorithm>
+#include <boost/format.hpp>
+
 #include <libtorrent/peer_connection.hpp>
 #include <libtorrent/socket.hpp>
 
@@ -588,7 +590,7 @@ bool session_impl::listen_on(const char* net_interface)
     open_listen_port();
     m_server_connection->start();
 
-    bool new_listen_address = m_listen_interface.address() != new_interface.address();
+    //bool new_listen_address = m_listen_interface.address() != new_interface.address();
 
     return !m_listen_sockets.empty();
 }
@@ -977,6 +979,12 @@ void session_impl::free_disk_buffer(char* buf)
     m_disk_thread.free_buffer(buf);
 }
 
+std::string session_impl::buffer_usage()
+{
+    return (boost::format("{disk_queued: %1%}")
+            % m_disk_thread.queue_buffer_size()).str();
+}
+
 session_status session_impl::status() const
 {
     session_status s;
@@ -1210,6 +1218,8 @@ void session_impl::on_tick(error_code const& e)
     // disconnect peers when we have too many
     // --------------------------------------------------------------
     // TODO: should it be implemented?
+
+    DBG("buffer usage: " << buffer_usage());
 }
 
 void session_impl::connect_new_peers()
