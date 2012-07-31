@@ -1516,11 +1516,11 @@ namespace libed2k
     };
     template<> struct packet_type<client_directory_content_request>{ // ismod
         static const proto_type value       = OP_ASKDIRCONTENTS;
-        static const proto_type protocol    = OP_EMULEPROT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_directory_content_result>{  // ismod
         static const proto_type value       = OP_ASKDIRCONTENTSANS;
-        static const proto_type protocol    = OP_EMULEPROT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
     };
 
 
