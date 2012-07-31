@@ -793,6 +793,8 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
 
 void session_impl::close_connection(const peer_connection* p, const error_code& ec)
 {
+    assert(p->is_disconnecting());
+
     connection_map::iterator i =
         std::find_if(m_connections.begin(), m_connections.end(),
                      boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p);
@@ -955,7 +957,7 @@ session_status session_impl::status() const
     //s.up_bandwidth_bytes_queue = m_upload_rate.queued_bytes();
     //s.down_bandwidth_bytes_queue = m_download_rate.queued_bytes();
 
-    //s.has_incoming_connections = m_incoming_connection;
+    s.has_incoming_connections = false;
 
     // total
     s.download_rate = m_stat.download_rate();

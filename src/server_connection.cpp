@@ -36,7 +36,6 @@ namespace libed2k
     server_connection::~server_connection()
     {
         stop();
-        boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
     void server_connection::start()

@@ -22,7 +22,6 @@ namespace libed2k
 
     base_connection::~base_connection()
     {
-        boost::singleton_pool<boost::pool_allocator_tag, sizeof(char)>::release_memory();
     }
 
     void base_connection::reset()

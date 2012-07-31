@@ -651,8 +651,6 @@ void peer_connection::on_timeout()
 
 void peer_connection::disconnect(error_code const& ec, int error)
 {
-    // TODO: implement
-
     //if (error > 0) m_failed = true;
     if (m_disconnecting) return;
 
@@ -682,6 +680,10 @@ void peer_connection::disconnect(error_code const& ec, int error)
     m_ses.close_connection(this, ec);
     m_ses.m_alerts.post_alert_should(
         peer_disconnected_alert(get_network_point(), get_connection_hash(), ec));
+
+    // we should only disconnect while we still have
+    // at least one reference left to the connection
+    assert(refcount() > 0);
 }
 
 void peer_connection::connect(int ticket)
