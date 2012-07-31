@@ -143,6 +143,12 @@ namespace libed2k
         return m_impl->listen_on(port, net_interface);
     }
 
+    void session::set_settings(const session_settings& settings)
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->m_settings = settings;
+    }
+
     transfer_handle session::find_transfer(const md4_hash & hash) const
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
