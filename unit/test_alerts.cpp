@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE(test_alerts)
     std::auto_ptr<libed2k::alert> a;
 
     a = pop_alert(al);
-    int nCount = 0;
+    unsigned int nCount = 0;
 
     while (a.get())
     {
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(test_alerts)
         a = pop_alert(al);
     }
 
-    BOOST_CHECK_EQUAL(nCount, 3);
+    BOOST_CHECK_EQUAL(nCount, 3U);
 
     if (al.should_post<libed2k::server_connection_initialized_alert>())
     {
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(test_alerts)
 
     BOOST_REQUIRE(a.get());
     BOOST_REQUIRE(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get()));
-    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->m_nClientId, 90);
+    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->m_nClientId, 90U);
 
     t.join();
 

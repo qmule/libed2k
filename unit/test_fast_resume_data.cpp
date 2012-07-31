@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
     }
 
     std::vector<libed2k::transfer_handle> vt = session.get_transfers();
-    BOOST_CHECK_EQUAL(vt.size(), 1);
+    BOOST_CHECK_EQUAL(vt.size(), 1U);
     return;
 
     int num_resume_data = 0;

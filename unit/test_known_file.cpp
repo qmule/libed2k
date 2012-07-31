@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
     //std::transform(excludes.begin(), excludes.end(), std::back_inserter(ex_paths), boost::bind(&string2path, strPath, _1));
     std::copy(libed2k::fs::directory_iterator(path), libed2k::fs::directory_iterator(), std::back_inserter(fpaths));
     fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&libed2k::aux::paths_filter, ex_paths, _1)), fpaths.end());
-    BOOST_REQUIRE_EQUAL(fpaths.size(), 5);
+    BOOST_REQUIRE_EQUAL(fpaths.size(), 5U);
 
     {
         std::ofstream of1((p1 / "file1.txt").string().c_str());
@@ -466,7 +466,7 @@ BOOST_AUTO_TEST_CASE(test_share_file_share_dir)
 
     // we have to find all transfers
     BOOST_CHECK(st.get_transfers().size() == (6 + 2 + 2));
-    BOOST_CHECK(st.get_transfers_map().size() == 0);    // we found all transfers
+    BOOST_CHECK(st.get_transfers_map().size() == 0U);    // we found all transfers
 
     st.save();
     st.share_dir(strRoot, strPath1, v, true);

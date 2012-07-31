@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(div_ceil_test)
     BOOST_CHECK_EQUAL(libed2k::div_ceil(13,2), 7);
     boost::uint64_t n = 0;
     BOOST_CHECK_EQUAL(libed2k::div_ceil(0, libed2k::PIECE_SIZE), 0);
-    BOOST_CHECK_EQUAL(libed2k::div_ceil(n, libed2k::PIECE_SIZE), 0);
+    BOOST_CHECK_EQUAL(libed2k::div_ceil(n, libed2k::PIECE_SIZE), 0U);
 }
 
 BOOST_AUTO_TEST_CASE(range_test)
