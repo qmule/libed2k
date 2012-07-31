@@ -194,7 +194,13 @@ void peer_connection::reset()
 
 peer_connection::~peer_connection()
 {
+    assert(m_disconnecting);
+
     m_disk_recv_buffer_size = 0;
+
+    assert(!m_ses.has_peer(this));
+    assert(m_request_queue.empty());
+    assert(m_download_queue.empty());
 }
 
 void peer_connection::init()
