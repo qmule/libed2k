@@ -260,6 +260,13 @@ namespace libed2k
         void load(Archive& ar)
         {
             ar & m_size;
+
+            // avoid huge memory allocation
+            if (m_size > MAX_SERVICE_PACKET_LEN)
+            {
+                throw libed2k::libed2k_exception(libed2k::errors::decode_packet_error);
+            }
+
             m_collection.resize(static_cast<size_t>(m_size));
 
             for (size_type i = 0; i < m_size; i++)
@@ -1366,10 +1373,12 @@ namespace libed2k
     // ismod files result
     struct client_directory_content_result
     {
+        md4_hash            m_hdirectory;
         shared_files_list   m_files;
         template<typename Archive>
         void serialize(Archive& ar)
         {
+            ar & m_hdirectory;
             ar & m_files;
         }
     };

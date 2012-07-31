@@ -399,7 +399,7 @@ void array_tag::load(archive::ed2k_iarchive& ar)
     if (nSize > 0)
     {
         // avoid huge memory allocation on incorrect tags
-        if (nSize > 65535)
+        if (nSize > MAX_SERVICE_PACKET_LEN)
         {
             int nSignLength = -1*nSize;
 

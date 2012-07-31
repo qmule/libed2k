@@ -1881,10 +1881,10 @@ void peer_connection::on_ismod_directory_files(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_directory_content_result, cdcr);
-        m_ses.m_alerts.post_alert_should(shared_files_alert(get_network_point(),
+        m_ses.m_alerts.post_alert_should(ismod_shared_directory_files_alert(get_network_point(),
                 get_connection_hash(),
-                cdcr.m_files,
-                false));
+                cdcr.m_hdirectory,
+                cdcr.m_files));
     }
     else
     {

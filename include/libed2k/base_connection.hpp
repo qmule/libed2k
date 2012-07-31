@@ -54,14 +54,14 @@ namespace libed2k{
 
         const stat& statistics() const { return m_statistics; }
 
+        typedef boost::iostreams::basic_array_source<char> Device;
+
     protected:
 
         struct message {
             libed2k_header header;
             std::string body;
         };
-
-        typedef boost::iostreams::basic_array_source<char> Device;
 
         // constructor method
         void reset();

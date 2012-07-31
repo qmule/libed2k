@@ -16,6 +16,7 @@
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/base_connection.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_archive)
 
@@ -391,7 +392,7 @@ BOOST_AUTO_TEST_CASE(test_tag_conversation)
     libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
     in_array_archive >> tl;
 
-    BOOST_REQUIRE_EQUAL(tl.count(), 2);
+    BOOST_REQUIRE_EQUAL(tl.count(), 2U);
     BOOST_CHECK_EQUAL(tl[0]->getNameId(), 0xED);
     BOOST_CHECK_EQUAL(tl[1]->getType(), libed2k::TAGTYPE_UINT64);
 
@@ -456,7 +457,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     src_list.add_tag(libed2k::make_typed_tag(libed2k::md4_hash(libed2k::md4_hash::terminal), libed2k::FT_AICH_HASH,  true));         // 9
 
 
-    BOOST_REQUIRE_EQUAL(src_list.count(), 10);
+    BOOST_REQUIRE_EQUAL(src_list.count(), 10U);
 
     for (size_t n = 0; n < src_list.count(); n++)
     {
@@ -688,7 +689,7 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     libed2k::emule_collection ec = libed2k::emule_collection::fromFile("test_collection.emulecollection");
 #endif
 
-    BOOST_REQUIRE_EQUAL(ec.m_files.size(), 3);
+    BOOST_REQUIRE_EQUAL(ec.m_files.size(), 3U);
     BOOST_CHECK_EQUAL(ec.m_files.at(0).m_filename, "file3.txt");
     BOOST_CHECK_EQUAL(ec.m_files.at(1).m_filename, "file2.txt");
     BOOST_CHECK_EQUAL(ec.m_files.at(2).m_filename, "file1.txt");
@@ -698,7 +699,7 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     libed2k::emule_collection ec_text = libed2k::emule_collection::fromFile("test_text_collection.emulecollection");
 #endif
 
-    BOOST_REQUIRE_EQUAL(ec_text.m_files.size(), 3);
+    BOOST_REQUIRE_EQUAL(ec_text.m_files.size(), 3U);
     BOOST_CHECK_EQUAL(ec_text.m_files.at(0).m_filename, "1.txt");
     BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filename, "2.txt");
     BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filename, "xxx.txt");
@@ -769,6 +770,53 @@ BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)
     sstream_out.seekg(0, std::ios::beg);
     libed2k::archive::ed2k_iarchive in_string_archive(sstream_out);
     in_string_archive >> trd_dst;
+}
+
+BOOST_AUTO_TEST_CASE(test_incorrect_packet)
+{
+    // hash
+    // uint32 size - incorrect size
+    char chPacket[] = {'\x11', '\x12', '\x14', '\xFF', '\xEE', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10',
+            '\xEF', '\x10', '\x1F',  '\x10'}; // uint32 huge size
+
+    boost::iostreams::stream_buffer<libed2k::base_connection::Device> buffer(&chPacket[0], sizeof(chPacket));
+    std::istream in_array_stream(&buffer);
+    libed2k::archive::ed2k_iarchive ia(in_array_stream);
+
+    bool bException = false;
+
+    try
+    {
+        libed2k::client_directory_content_result t;
+        ia >> t;
+    }
+    catch(libed2k::libed2k_exception& e)
+    {
+        bException = true;
+        BOOST_CHECK(e.error() == static_cast<boost::system::error_code>(libed2k::errors::decode_packet_error));
+    }
+
+    BOOST_CHECK(bException);
+}
+
+BOOST_AUTO_TEST_CASE(test_incorrect_packet_2)
+{
+    char chPacket[] = {'\x11', '\x12', '\x14', '\xFF', '\xEE', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10',
+                '\x10', '\x00', '\x00',  '\x00'}; // uint32 huge size
+
+    char chPacketCorrect[] = {'\x11', '\x12', '\x14', '\xFF', '\xEE', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10', '\x10',
+                    '\x00', '\x00', '\x00',  '\x00'};
+
+    boost::iostreams::stream_buffer<libed2k::base_connection::Device> buffer(&chPacket[0], sizeof(chPacket));
+    std::istream in_array_stream(&buffer);
+    libed2k::archive::ed2k_iarchive ia(in_array_stream);
+    libed2k::client_directory_content_result t;
+    BOOST_CHECK_THROW(ia >> t, libed2k::libed2k_exception);
+
+    boost::iostreams::stream_buffer<libed2k::base_connection::Device> buffer_correct(&chPacketCorrect[0], sizeof(chPacketCorrect));
+    std::istream in_array_stream_corr(&buffer_correct);
+    libed2k::archive::ed2k_iarchive ia_corr(in_array_stream_corr);
+    BOOST_CHECK_NO_THROW(ia_corr >> t);
 }
 
 

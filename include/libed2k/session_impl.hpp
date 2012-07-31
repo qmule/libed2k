@@ -160,6 +160,8 @@ namespace libed2k {
 
             void open_listen_port();
 
+            bool listen_on(const char* net_interface);
+
             void update_disk_thread_settings();
 
             void async_accept(boost::shared_ptr<tcp::acceptor> const& listener);

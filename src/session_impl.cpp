@@ -558,6 +558,41 @@ void session_impl::open_listen_port()
     }
 }
 
+bool session_impl::listen_on(const char* net_interface)
+{
+    tcp::endpoint new_interface;
+
+    if (net_interface && std::strlen(net_interface) > 0)
+    {
+        error_code ec;
+        new_interface = tcp::endpoint(ip::address::from_string(net_interface, ec), m_settings.listen_port);
+
+        if (ec)
+        {
+            ERR("session_impl::listen_on: " << net_interface << " failed with: " << ec.message());
+            return false;
+        }
+    }
+    else
+        new_interface = tcp::endpoint(ip::address_v4::any(), m_settings.listen_port);
+
+
+    // if the interface is the same and the socket is open
+    // don't do anything
+    if (new_interface == m_listen_interface
+        && !m_listen_sockets.empty()) return true;
+
+    m_listen_interface = new_interface;
+
+    m_server_connection->stop();
+    open_listen_port();
+    m_server_connection->start();
+
+    bool new_listen_address = m_listen_interface.address() != new_interface.address();
+
+    return !m_listen_sockets.empty();
+}
+
 void session_impl::update_disk_thread_settings()
 {
     disk_io_job j;

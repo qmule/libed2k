@@ -280,6 +280,31 @@ namespace libed2k
         std::string m_strDirectory;
     };
 
+    struct ismod_shared_directory_files_alert : shared_files_alert
+    {
+        const static int static_category = alert::peer_notification;
+
+        ismod_shared_directory_files_alert(const net_identifier& np,
+                const md4_hash& hash,
+                const md4_hash& dir_hash,
+                const shared_files_list& files) :
+            shared_files_alert(np, hash, files, false), m_dir_hash(dir_hash)
+        {
+        }
+
+        virtual int category() const { return static_category; }
+
+        virtual std::string message() const { return "search result for directory from peer"; }
+        virtual char const* what() const { return "search result for directory from peer"; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return (std::auto_ptr<alert>(new ismod_shared_directory_files_alert(*this)));
+        }
+
+        md4_hash m_dir_hash;
+    };
+
     struct peer_connected_alert : peer_alert
     {
 
