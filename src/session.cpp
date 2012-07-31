@@ -137,10 +137,10 @@ namespace libed2k
         m_impl->m_io_service.post(boost::bind(&aux::session_impl::post_sources_request, m_impl, hFile, nSize));
     }
 
-    bool session::listen_on(const char* net_interface /*= 0*/)
+    bool session::listen_on(int port, const char* net_interface /*= 0*/)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return m_impl->listen_on(net_interface);
+        return m_impl->listen_on(port, net_interface);
     }
 
     transfer_handle session::find_transfer(const md4_hash & hash) const

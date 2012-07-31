@@ -558,14 +558,15 @@ void session_impl::open_listen_port()
     }
 }
 
-bool session_impl::listen_on(const char* net_interface)
+bool session_impl::listen_on(int port, const char* net_interface)
 {
+    DBG("listen_on(" << ((net_interface)?net_interface:"null") << ":" << port);
     tcp::endpoint new_interface;
 
     if (net_interface && std::strlen(net_interface) > 0)
     {
         error_code ec;
-        new_interface = tcp::endpoint(ip::address::from_string(net_interface, ec), m_settings.listen_port);
+        new_interface = tcp::endpoint(ip::address::from_string(net_interface, ec), port);
 
         if (ec)
         {
@@ -574,7 +575,7 @@ bool session_impl::listen_on(const char* net_interface)
         }
     }
     else
-        new_interface = tcp::endpoint(ip::address_v4::any(), m_settings.listen_port);
+        new_interface = tcp::endpoint(ip::address_v4::any(), port);
 
 
     // if the interface is the same and the socket is open
@@ -583,12 +584,13 @@ bool session_impl::listen_on(const char* net_interface)
         && !m_listen_sockets.empty()) return true;
 
     m_listen_interface = new_interface;
+    m_settings.listen_port = port;
 
-    m_server_connection->stop();
-    open_listen_port();
-    m_server_connection->start();
+    server_conn_stop();     // stop server connection and deannounce all transfers
+    open_listen_port();     // reset listener
+    server_conn_start();    // start server connection, announces will execute in on_tick
 
-    bool new_listen_address = m_listen_interface.address() != new_interface.address();
+    //bool new_listen_address = m_listen_interface.address() != new_interface.address();
 
     return !m_listen_sockets.empty();
 }
@@ -1147,6 +1149,7 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // server connection
     // --------------------------------------------------------------
+    // we always check status changing because it check before reconnect processing
     bool server_conn_change_state = m_server_connection_state != m_server_connection->state();
 
     if (server_conn_change_state)
@@ -1459,6 +1462,12 @@ void session_impl::server_conn_start()
 void session_impl::server_conn_stop()
 {
     m_server_connection->stop();
+
+    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    {
+        transfer& t = *i->second;
+        t.set_announced(false);
+    }
 }
 }
 }

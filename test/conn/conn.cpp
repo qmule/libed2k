@@ -108,6 +108,7 @@ enum CONN_CMD
     cc_dump,
     cc_connect,
     cc_disconnect,
+    cc_listen,
     cc_empty
 };
 
@@ -185,6 +186,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     {
         return cc_disconnect;
     }
+    else if (strCommand == "listen")
+    {
+        return cc_listen;
+    }
 
     return cc_empty;
 }
@@ -206,33 +211,31 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
         {
             server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
-            std::cout << "server initalized: cid: "
-                    << p->m_nClientId
-                    << std::endl;
+            DBG("ALERT:  " << "server initalized: cid: " << p->m_nClientId);
         }
         else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
         {
-            DBG("server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->m_strServer);
+            DBG("ALERT: server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->m_strServer);
         }
         else if (dynamic_cast<server_status_alert*>(a.get()))
         {
             server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
-            DBG("server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
+            DBG("ALERT: server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
         }
         else if (dynamic_cast<server_message_alert*>(a.get()))
         {
             server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
-            std::cout << "msg: " << p->m_strMessage << std::endl;
+            DBG("ALERT: " << "msg: " << p->m_strMessage);
         }
         else if (dynamic_cast<server_identity_alert*>(a.get()))
         {
             server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
-            DBG("server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
+            DBG("ALERT: server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
         }
         else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
         {
             boost::mutex::scoped_lock l(m_sf_mutex);
-            DBG("RESULT: " << p->m_files.m_collection.size());
+            DBG("ALERT: RESULT: " << p->m_files.m_collection.size());
             vSF.clear();
             vSF = p->m_files;
 
@@ -253,7 +256,7 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                     nSize += hi->asInt() << 32;
                 }
 
-                DBG("indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
                         << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
                         << " size: " << nSize);
             }
@@ -261,15 +264,15 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         else if(dynamic_cast<peer_message_alert*>(a.get()))
         {
             peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
-            DBG("MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
+            DBG("ALERT: MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
         }
         else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
         {
-            DBG("peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
+            DBG("ALERT: peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
         }
         else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
         {
-            DBG("captcha request ");
+            DBG("ALERT: captcha request ");
             FILE* fp = fopen("./captcha.bmp", "wb");
 
             if (fp)
@@ -281,15 +284,15 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         }
         else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
         {
-            DBG("captcha result " << p->m_nResult);
+            DBG("ALERT: captcha result " << p->m_nResult);
         }
         else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
         {
-            DBG("peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
+            DBG("ALERT: peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
         }
         else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
         {
-            DBG("peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
+            DBG("ALERT: peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
         }
         else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
         {
@@ -297,20 +300,20 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
 
             for (size_t n = 0; n < p->m_dirs.size(); ++n)
             {
-                DBG("DIR: " << p->m_dirs[n]);
+                DBG("ALERT: DIR: " << p->m_dirs[n]);
             }
         }
         else if (save_resume_data_alert* p = dynamic_cast<save_resume_data_alert*>(a.get()))
         {
-            DBG("save_resume_data_alert");
+            DBG("ALERT: save_resume_data_alert");
         }
         else if (save_resume_data_failed_alert* p = dynamic_cast<save_resume_data_failed_alert*>(a.get()))
         {
-            DBG("save_resume_data_failed_alert");
+            DBG("ALERT: save_resume_data_failed_alert");
         }
         else
         {
-            std::cout << "Unknown alert: " << a.get()->message() << std::endl;
+            DBG("ALERT: Unknown alert: " << a.get()->message());
         }
 
         a = ps->pop_alert();
@@ -695,6 +698,16 @@ int main(int argc, char* argv[])
                 break;
             case cc_disconnect:
                 ses.server_conn_stop();
+                break;
+            case cc_listen:
+                if (ses.listen_on(atoi(strArg.c_str()), "0.0.0.0"))
+                {
+                    DBG("Ok, listen on " << strArg);
+                }
+                else
+                {
+                    DBG("Unable to reset port");
+                }
                 break;
             default:
                 break;
