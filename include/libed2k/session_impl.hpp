@@ -161,6 +161,8 @@ namespace libed2k {
             void open_listen_port();
 
             bool listen_on(int port, const char* net_interface);
+            bool is_listening() const;
+            unsigned short listen_port() const;
 
             void update_disk_thread_settings();
 
@@ -191,7 +193,6 @@ namespace libed2k {
             void close_connection(const peer_connection* p, const error_code& ec);
 
             session_status status() const;
-            unsigned short listen_port() const;
             const tcp::endpoint& server() const;
 
             virtual void abort();
