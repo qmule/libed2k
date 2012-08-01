@@ -101,6 +101,9 @@ namespace libed2k{
         void append_send_buffer(char* buffer, int size, Destructor const& destructor)
         { m_send_buffer.append_buffer(buffer, size, size, destructor); }
 
+        int send_buffer_size() const { return m_send_buffer.size(); }
+        int send_buffer_capacity() const { return m_send_buffer.capacity(); }
+
         virtual void on_timeout(const error_code& e);
 
         /**

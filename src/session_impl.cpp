@@ -983,8 +983,21 @@ void session_impl::free_disk_buffer(char* buf)
 
 std::string session_impl::buffer_usage()
 {
-    return (boost::format("{disk_queued: %1%}")
-            % m_disk_thread.queue_buffer_size()).str();
+    int send_buffer_capacity = 0;
+    int used_send_buffer = 0;
+    for (connection_map::const_iterator i = m_connections.begin(),
+             end(m_connections.end()); i != end; ++i)
+    {
+        send_buffer_capacity += (*i)->send_buffer_capacity();
+        used_send_buffer += (*i)->send_buffer_size();
+    }
+
+    return (boost::format(
+                "{disk_queued: %1%, send_buf_size: %2%, used_send_buf: %3%, send_buf_utilization: %4%}")
+            % m_disk_thread.queue_buffer_size()
+            % send_buffer_capacity
+            % used_send_buffer
+            % (used_send_buffer * 100.f / send_buffer_capacity)).str();
 }
 
 session_status session_impl::status() const
