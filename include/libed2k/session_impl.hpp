@@ -161,6 +161,7 @@ namespace libed2k {
             void open_listen_port();
 
             bool listen_on(int port, const char* net_interface);
+            bool is_listening() const;
 
             void update_disk_thread_settings();
 

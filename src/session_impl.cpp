@@ -597,6 +597,11 @@ bool session_impl::listen_on(int port, const char* net_interface)
     return !m_listen_sockets.empty();
 }
 
+bool session_impl::is_listening() const
+{
+    return !m_listen_sockets.empty();
+}
+
 void session_impl::update_disk_thread_settings()
 {
     disk_io_job j;

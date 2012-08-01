@@ -137,6 +137,7 @@ namespace libed2k {
         void post_search_more_result_request();
         void post_cancel_search();
         bool listen_on(int port, const char* net_interface = 0);
+        bool is_listening() const;
         void set_settings(const session_settings& settings);
 
         /**
