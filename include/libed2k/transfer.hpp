@@ -37,10 +37,11 @@ namespace libed2k {
     {
     public:
         /**
-          * it is fake transfer constructor for using in unit tests
-          * you shouldn't it anywhere except unit tests
+         * it is fake transfer constructor for using in unit tests
+         * you shouldn't it anywhere except unit tests
          */
-        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl, const md4_hash& hash, const fs::path p, fsize_t size);
+        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
+                 const md4_hash& hash, const fs::path p, fsize_t size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
@@ -81,6 +82,8 @@ namespace libed2k {
         // decreased in the piece_picker
         void remove_peer(peer_connection* p);
         void get_peer_info(std::vector<peer_info>& infos);
+        bool has_peer(peer_connection* p) const
+        { return m_connections.find(p) != m_connections.end(); }
 
         bool want_more_connections() const;
         void disconnect_all(const error_code& ec);

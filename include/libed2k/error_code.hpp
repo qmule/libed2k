@@ -32,7 +32,7 @@ namespace libed2k
             decode_packet_error,
             invalid_protocol_type,
             // transport errors
-            session_is_closing,
+            session_closing,
             duplicate_transfer,
             transfer_paused,
             transfer_finished,
@@ -43,11 +43,13 @@ namespace libed2k
             timed_out_inactivity,
             self_connection,
             duplicate_peer_id,
+            peer_not_constructed,
             too_many_connections,
             invalid_transfer_handle,
             invalid_peer_connection_handle,
             session_pointer_is_null,
             destructing_transfer,
+            transfer_not_ready,
             // service errors
             filesize_is_zero,
             file_unavaliable,

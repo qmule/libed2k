@@ -300,6 +300,15 @@ void peer_connection::second_tick(int tick_interval_ms)
 {
     ptime now = time_now();
     boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (!t || m_disconnecting)
+    {
+        m_ses.m_half_open.done(m_connection_ticket);
+        m_connecting = false;
+        disconnect(errors::transfer_aborted);
+        return;
+    }
 
     // if the peer hasn't said a thing for a certain
     // time, it is considered to have timed out
@@ -351,8 +360,14 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
 
     if (t == m_transfer.lock())
     {
-        // this connection is already attached to the transfer
+        // this connection is already attached to the same transfer
         return true;
+    }
+
+    if (has_transfer())
+    {
+        // this connection is already attached to other transfer
+        return false;
     }
 
     // check to make sure we don't have another connection with the same
@@ -680,6 +695,12 @@ void peer_connection::disconnect(error_code const& ec, int error)
         t->remove_peer(this);
         m_transfer.reset();
     }
+
+    // since this connection doesn't have a transfer reference
+    // no transfer should have a reference to this connection either
+    for (aux::session_impl::transfer_map::const_iterator i = m_ses.m_transfers.begin(),
+             end(m_ses.m_transfers.end()); i != end; ++i)
+        assert(!i->second->has_peer(this));
 
     m_disconnecting = true;
     base_connection::close(ec); // close transport
@@ -1470,7 +1491,6 @@ void peer_connection::on_file_request(const error_code& error)
         else
         {
             write_no_file(fr.m_hFile);
-            disconnect(errors::file_unavaliable, 2);
         }
     }
     else

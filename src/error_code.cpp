@@ -26,7 +26,7 @@ namespace libed2k
             "decode packet error",
             "invalid protocol type",
             // transport errors
-            "session is closing",
+            "session closing",
             "duplicate transfer",
             "transfer paused",
             "transfer finished",
@@ -37,11 +37,13 @@ namespace libed2k
             "timed out inactivity",
             "connection to itself",
             "duplicate peer id",
+            "peer not constructed",
             "too many connections",
             "invalid transfer handle",
             "invalid peer connection handle",
             "session pointer is null",
             "destructing transfer",
+            "transfer not ready",
             // service errors
             "file size is zero",
             "file not exists or is not regular file",

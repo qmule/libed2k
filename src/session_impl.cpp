@@ -859,7 +859,7 @@ transfer_handle session_impl::add_transfer(
 
     if (is_aborted())
     {
-        ec = errors::session_is_closing;
+        ec = errors::session_closing;
         return transfer_handle();
     }
 
@@ -934,7 +934,7 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
 
     if (is_aborted())
     {
-        ec = errors::session_is_closing;
+        ec = errors::session_closing;
         return peer_connection_handle();
     }
 
@@ -1075,7 +1075,7 @@ void session_impl::abort()
 
     DBG("aborting all server requests");
     //m_server_connection.abort_all_requests();
-    m_server_connection->close(errors::session_is_closing);
+    m_server_connection->close(errors::session_closing);
 
     for (transfer_map::iterator i = m_transfers.begin();
          i != m_transfers.end(); ++i)

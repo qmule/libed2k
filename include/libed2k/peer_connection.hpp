@@ -142,6 +142,7 @@ namespace libed2k
 
         aux::session_impl& session() { return m_ses; }
         boost::weak_ptr<transfer> get_transfer() { return m_transfer; }
+        bool has_transfer() const { return !m_transfer.expired(); }
 
         peer* get_peer() const { return m_peer; }
         void set_peer(peer* pi) { m_peer = pi; }
