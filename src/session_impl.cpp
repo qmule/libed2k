@@ -602,6 +602,12 @@ bool session_impl::is_listening() const
     return !m_listen_sockets.empty();
 }
 
+unsigned short session_impl::listen_port() const
+{
+    if (m_listen_sockets.empty()) return 0;
+    return m_listen_sockets.front().external_port;
+}
+
 void session_impl::update_disk_thread_settings()
 {
     disk_io_job j;
@@ -1034,12 +1040,6 @@ session_status session_impl::status() const
     s.total_tracker_upload = m_stat.total_transfer(stat::upload_tracker_protocol);
 
     return s;
-}
-
-unsigned short session_impl::listen_port() const
-{
-    if (m_listen_sockets.empty()) return 0;
-    return m_listen_sockets.front().external_port;
 }
 
 const tcp::endpoint& session_impl::server() const

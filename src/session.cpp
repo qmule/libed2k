@@ -149,6 +149,12 @@ namespace libed2k
         return m_impl->is_listening();
     }
 
+    unsigned short session::listen_port() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->listen_port();
+    }
+
     void session::set_settings(const session_settings& settings)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
