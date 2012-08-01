@@ -140,6 +140,7 @@ namespace libed2k {
         bool is_listening() const;
         unsigned short listen_port() const;
         void set_settings(const session_settings& settings);
+        session_settings settings() const;
 
         /**
           * search sources for file

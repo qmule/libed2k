@@ -161,6 +161,12 @@ namespace libed2k
         m_impl->m_settings = settings;
     }
 
+    session_settings session::settings() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->m_settings;
+    }
+
     transfer_handle session::find_transfer(const md4_hash & hash) const
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
