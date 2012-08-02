@@ -518,10 +518,10 @@ void session_impl::operator()()
     {
         boost::mutex::scoped_lock l(m_mutex);
         open_listen_port();
+        m_server_connection->start();
     }
 
     m_file_hasher.start();
-    m_server_connection->start();
 
 
     bool stop_loop = false;
