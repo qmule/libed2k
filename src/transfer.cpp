@@ -198,19 +198,30 @@ namespace libed2k
 
     bool transfer::attach_peer(peer_connection* p)
     {
-        // TODO: check transfer for validness
+        assert(!p->has_transfer());
+
+        if (m_state == transfer_status::queued_for_checking ||
+            m_state == transfer_status::checking_files ||
+            m_state == transfer_status::checking_resume_data)
+        {
+            p->disconnect(errors::transfer_not_ready);
+            return false;
+        }
 
         if (m_ses.m_connections.find(p) == m_ses.m_connections.end())
         {
+            p->disconnect(errors::peer_not_constructed);
             return false;
         }
         if (m_ses.is_aborted())
         {
+            p->disconnect(errors::session_closing);
             return false;
         }
         if (!m_policy.new_connection(*p))
             return false;
 
+        assert(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
         return true;
     }
