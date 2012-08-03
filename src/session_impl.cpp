@@ -1004,7 +1004,8 @@ std::string session_impl::buffer_usage()
     }
 
     return (boost::format(
-                "{disk_queued: %1%, send_buf_size: %2%, used_send_buf: %3%, send_buf_utilization: %4%}")
+                "{disk_queued: %1%, send_buf_size: %2%,"
+                " used_send_buf: %3%, send_buf_utilization: %4%}")
             % m_disk_thread.queue_buffer_size()
             % send_buffer_capacity
             % used_send_buffer
@@ -1239,8 +1240,6 @@ void session_impl::on_tick(error_code const& e)
     // disconnect peers when we have too many
     // --------------------------------------------------------------
     // TODO: should it be implemented?
-
-    DBG("buffer usage: " << buffer_usage());
 }
 
 void session_impl::connect_new_peers()

@@ -121,6 +121,8 @@ namespace libed2k
         if (!error)
         {
             size_t size = service_size(m_in_header);
+            assert(size < 1024 * 1024);
+
             switch(m_in_header.m_protocol)
             {
                 case OP_EDONKEYPROT:

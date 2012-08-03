@@ -1,6 +1,3 @@
-
-// ed2k peer connection
-
 #ifndef __LIBED2K_PEER_CONNECTION__
 #define __LIBED2K_PEER_CONNECTION__
 
@@ -245,6 +242,8 @@ namespace libed2k
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
 
+        void do_read();
+
         void request_block();
         // adds a block to the request queue
         // returns true if successful, false otherwise
@@ -265,6 +264,7 @@ namespace libed2k
                                     peer_request r, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
+        void on_skip_data(const error_code& error, peer_request r);
 
         template<typename T>
         void do_write(T& t)

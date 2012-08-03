@@ -92,6 +92,29 @@ size_t block_size(const piece_block& b, fsize_t s)
     return size_t(r.second - r.first);
 }
 
+void async_skip_bytes(tcp::socket& s, int n, boost::function<void(error_code const&)> h,
+                      char* buf = NULL, const error_code& ec = error_code(), std::size_t bytes_transferred = 0)
+{
+    const std::size_t skip_buf_size = 4096;
+
+    if (!buf) {
+        // first launch
+        buf = new char[skip_buf_size];
+    }
+    else {
+        assert(int(bytes_transferred) <= n);
+        n -= bytes_transferred;
+        if (ec || n == 0) {
+            delete[] buf;
+            h(ec);
+            return;
+        }
+    }
+
+    s.async_read_some(boost::asio::buffer(buf, std::min<std::size_t>(skip_buf_size, n)),
+                      boost::bind(&async_skip_bytes, boost::ref(s), n, h, buf, _1, _2));
+}
+
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
@@ -380,6 +403,25 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
     // our initialization
     if (t->ready_for_connections()) init();
     return true;
+}
+
+void peer_connection::do_read()
+{
+    if (!can_read())
+    {
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+
+        DBG((boost::format("cannot read: {disk_queue: %1%, disk_queue_limit: %2%}")
+             % ((t && t->get_storage()) ? t->filesystem().queued_bytes() : 0)
+             % m_ses.settings().max_queued_disk_bytes).str());
+
+        // if we block reading, waiting for the disk, we will wake up
+        // by the disk_io_thread posting a message every time it drops
+        // from being at or exceeding the limit down to below the limit
+        return;
+    }
+
+    base_connection::do_read();
 }
 
 void peer_connection::request_block()
@@ -799,8 +841,19 @@ bool peer_connection::can_write() const
 
 bool peer_connection::can_read(char* state) const
 {
-    // TODO - should implement
-    return (true);
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    bool disk = m_ses.settings().max_queued_disk_bytes == 0 ||
+        !t || t->get_storage() == 0 ||
+        t->filesystem().queued_bytes() < m_ses.settings().max_queued_disk_bytes;
+
+    if (!disk)
+    {
+        if (state) *state = bw_disk;
+        return false;
+    }
+
+    return !m_connecting && !m_disconnecting;
 }
 
 bool peer_connection::can_request() const
@@ -903,11 +956,9 @@ void peer_connection::fill_send_buffer()
 {
     if (m_channel_state[upload_channel] != bw_idle) return;
 
-    int buffer_size_watermark = 10 * BLOCK_SIZE;
-
     if (m_handshake_complete) { send_deferred(); }
 
-    if (!m_requests.empty() && m_send_buffer.size() < buffer_size_watermark)
+    if (!m_requests.empty() && m_send_buffer.size() < m_ses.settings().send_buffer_watermark)
     {
         const peer_request& req = m_requests.front();
         write_part(req);
@@ -985,6 +1036,9 @@ void peer_connection::receive_data(const peer_request& req)
 
     if (r.length > 0)
     {
+        m_channel_state[download_channel] = bw_network;
+        m_read_in_progress = true;
+
         std::vector<pending_block>::iterator b =
             std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(block));
 
@@ -994,6 +1048,10 @@ void peer_connection::receive_data(const peer_request& req)
                 " : {piece: "<< block.piece_index <<
                 ", block: " << block.block_index << ", length: " << r.length
                 << "} was not in the request queue");
+            async_skip_bytes(
+                *m_socket, r.length,
+                make_read_handler(boost::bind(&peer_connection::on_skip_data,
+                                              self_as<peer_connection>(), _1, r)));
             return;
         }
 
@@ -1013,8 +1071,6 @@ void peer_connection::receive_data(const peer_request& req)
             *m_socket, boost::asio::buffer(b->buffer + offset_in_block(r), r.length),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
                                           self_as<peer_connection>(), _1, _2, r, left)));
-        m_channel_state[download_channel] = bw_network;
-        m_read_in_progress = true;
     }
     else
     {
@@ -1114,6 +1170,18 @@ void peer_connection::on_receive_data(
     }
 }
 
+void peer_connection::on_skip_data(const error_code& error, peer_request r)
+{
+    boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+    m_read_in_progress = false;
+    m_channel_state[download_channel] = bw_idle;
+
+    do_read();
+    request_block();
+    send_block_requests();
+}
+
 void peer_connection::on_disk_write_complete(
     int ret, disk_io_job const& j, peer_request r, peer_request left, boost::shared_ptr<transfer> t)
 {
@@ -1126,7 +1194,7 @@ void peer_connection::on_disk_write_complete(
     {
         // in case the outstanding bytes just dropped down
         // to allow to receive more data
-        //do_read();
+        do_read();
 
         if (t->is_seed()) return;
 

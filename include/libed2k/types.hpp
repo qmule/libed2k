@@ -24,6 +24,7 @@ namespace libtorrent {
     class listen_failed_alert;
     struct bitfield;
     class file_storage;
+    class storage_interface;
     struct torrent_status;
     struct session_status;
     struct piece_block_progress;
@@ -61,6 +62,7 @@ namespace libed2k
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
     typedef libtorrent::file_storage file_storage;
+    typedef libtorrent::storage_interface storage_interface;
     typedef libtorrent::torrent_status transfer_status;
     typedef libtorrent::session_status session_status;
     typedef libtorrent::piece_block_progress piece_block_progress;

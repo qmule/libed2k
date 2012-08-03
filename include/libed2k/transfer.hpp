@@ -205,6 +205,11 @@ namespace libed2k {
         size_t num_free_blocks() const;
 
         piece_manager& filesystem() { return *m_storage; }
+        storage_interface* get_storage()
+        {
+            if (!m_owning_storage) return 0;
+            return m_owning_storage->get_storage_impl();
+        }
 
         // unless this returns true, new connections must wait
         // with their initialization.

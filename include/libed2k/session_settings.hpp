@@ -17,7 +17,7 @@ namespace libed2k
             allow_multiple_connections_per_ip(false),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
-            max_queued_disk_bytes(256 * 1024),
+            max_queued_disk_bytes(1024 * 1024),
             send_buffer_watermark(100 * 1024),
             server_port(4661),
             listen_port(4662),
