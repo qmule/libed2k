@@ -379,6 +379,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
 {
     DBG("*** create ed2k session ***");
 
+    if (!listen_interface) listen_interface = "0.0.0.0";
     error_code ec;
     m_listen_interface = tcp::endpoint(
         ip::address::from_string(listen_interface, ec), settings.listen_port);
@@ -517,10 +518,10 @@ void session_impl::operator()()
     {
         boost::mutex::scoped_lock l(m_mutex);
         open_listen_port();
+        m_server_connection->start();
     }
 
     m_file_hasher.start();
-    m_server_connection->start();
 
 
     bool stop_loop = false;
