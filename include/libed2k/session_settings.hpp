@@ -1,6 +1,8 @@
 #ifndef __LIBED2K_SESSION_SETTINGS__
 #define __LIBED2K_SESSION_SETTINGS__
 
+#include <limits>
+
 namespace libed2k
 {
 
@@ -17,7 +19,7 @@ namespace libed2k
             allow_multiple_connections_per_ip(false),
             recv_socket_buffer_size(0),
             send_socket_buffer_size(0),
-            max_queued_disk_bytes(1024 * 1024),
+            max_queued_disk_bytes(std::numeric_limits<int>::max()),
             send_buffer_watermark(100 * 1024),
             server_port(4661),
             listen_port(4662),
