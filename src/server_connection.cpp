@@ -257,10 +257,16 @@ namespace libed2k
     void server_connection::handle_read_header(const error_code& error, size_t nSize)
     {
         CHECK_ABORTED(error);
+        error_code ec = error;
 
-        if (!error)
+        if (!ec)
         {
-            size_t nSize = m_in_header.m_size - 1;
+            ec = m_in_header.check_packet();
+        }
+
+        if (!ec)
+        {
+            size_t nSize = m_in_header.service_size();
 
             switch(m_in_header.m_protocol)
             {
@@ -292,14 +298,13 @@ namespace libed2k
                     break;
                 }
                 default:
-                    close(errors::invalid_protocol_type);
+                    assert(false);  // it is impossible since check packet
                     break;
             }
-
         }
         else
         {
-            close(error);
+            close(ec);
         }
     }
 

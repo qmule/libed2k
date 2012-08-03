@@ -126,8 +126,6 @@ namespace libed2k{
          */
         void check_deadline();
 
-        size_t service_size(const libed2k_header& header);
-
         template <typename Struct>
         size_t body_size(const Struct& s, const std::string& body)
         { return body.size(); }

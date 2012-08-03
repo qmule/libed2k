@@ -31,6 +31,8 @@ namespace libed2k
             tag_list_index_error,
             decode_packet_error,
             invalid_protocol_type,
+            unsupported_protocol_type,
+            invalid_packet_size,
             // transport errors
             session_closing,
             duplicate_transfer,
