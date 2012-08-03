@@ -1,8 +1,4 @@
-ifdef PRODUCTION
 LIB=libed2k.a
-else 
-LIB=libed2kd.a
-endif
 
 CXXFLAGS = -I../include
 OBJF = $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
