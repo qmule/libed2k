@@ -2,7 +2,7 @@
 #include <boost/logging/writer/ts_write.hpp>
 #include "libed2k/log.hpp"
 
-#ifndef _RELEASE
+#ifdef LIBED2K_DEBUG
 
 using namespace boost::logging;
 

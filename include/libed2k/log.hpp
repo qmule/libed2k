@@ -12,7 +12,7 @@ BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 #include <boost/logging/writer/ts_write.hpp>
 #endif
 
-#ifndef __RELEASE
+#ifdef LIBED2K_DEBUG
 
 using namespace boost::logging;
 
