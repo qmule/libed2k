@@ -1017,6 +1017,7 @@ namespace libed2k
 
     void transfer::file_checked()
     {
+        DBG("transfer::file_checked");
         //BOOST_ASSERT(m_torrent_file->is_valid());
 
         if (m_abort) return;

@@ -25,6 +25,8 @@ namespace libed2k
             "tag list index error",
             "decode packet error",
             "invalid protocol type",
+            "unsupported protocol type",
+            "invalid packet size",
             // transport errors
             "session closing",
             "duplicate transfer",

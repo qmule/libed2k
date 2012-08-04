@@ -2,7 +2,6 @@
 
 namespace libed2k
 {
-
     const char* packetToString(proto_type protocol)
     {
         static const char* pchUnknown = "Unknown packet";

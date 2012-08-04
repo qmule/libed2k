@@ -312,6 +312,46 @@ namespace libed2k
           * create empty unknown packet
          */
         libed2k_header() : m_protocol(OP_EDONKEYPROT), m_size(1), m_type(0){}
+
+        /**
+          * check packet data is correct
+          * on debug assert will generate on size error
+         */
+        inline error_code check_packet() const
+        {
+            //1. first stage - check opcode
+            switch (m_protocol)
+            {
+            case OP_EDONKEYPROT:    // correct
+            case OP_EMULEPROT:      // correct
+                break;
+            case OP_PACKEDPROT:     // unsupported
+                return errors::unsupported_protocol_type;
+            default:                // invalid
+                return errors::invalid_protocol_type;
+            }
+
+            assert(m_size > 0 && m_size < MAX_SERVICE_PACKET_LEN);
+
+            if ((m_size < 1) || (m_size > MAX_SERVICE_PACKET_LEN))
+            {
+                return errors::invalid_packet_size;
+            }
+
+            return errors::no_error;
+        }
+
+        inline size_t service_size() const
+        {
+            size_t res;
+            if (m_type == OP_SENDINGPART)
+                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+            else if(m_type == OP_SENDINGPART_I64)
+                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
+            else
+                res = m_size - 1;
+            return res;
+        }
     };
 #pragma pack(pop)
 

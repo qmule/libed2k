@@ -118,10 +118,16 @@ namespace libed2k
         m_statistics.received_bytes(0, nSize);
         if (is_closed()) return;
 
-        if (!error)
+        error_code ec = error;
+
+        if (!ec)
         {
-            size_t size = service_size(m_in_header);
-            assert(size < 1024 * 1024);
+            ec = m_in_header.check_packet();
+        }
+
+        if (!ec)
+        {
+            size_t size = m_in_header.service_size();
 
             switch(m_in_header.m_protocol)
             {
@@ -153,13 +159,13 @@ namespace libed2k
                     break;
                 }
                 default:
-                    close(errors::invalid_protocol_type);
+                    assert(false);
                     break;
             }
         }
         else
         {
-            close(error);
+            close(ec);
         }
 
     }
@@ -260,18 +266,6 @@ namespace libed2k
 
         // Put the actor back to sleep.
         m_deadline.async_wait(boost::bind(&base_connection::check_deadline, self()));
-    }
-
-    size_t base_connection::service_size(const libed2k_header& header)
-    {
-        size_t res;
-        if (header.m_type == OP_SENDINGPART)
-            res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
-        else if(header.m_type == OP_SENDINGPART_I64)
-            res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
-        else
-            res = header.m_size - 1;
-        return res;
     }
 
     void base_connection::add_handler(std::pair<proto_type, proto_type> ptype, packet_handler handler)
