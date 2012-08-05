@@ -1,5 +1,3 @@
-// ed2k transfer handle
-
 #ifndef __LIBED2K_TRANSFER_HANDLE__
 #define __LIBED2K_TRANSFER_HANDLE__
 
@@ -41,11 +39,12 @@ namespace libed2k
         bool is_finished() const;
         bool is_paused() const;
         bool is_aborted() const;
-        bool is_sequential_download() const;
         bool is_announced() const;
         transfer_status status() const;
         void get_peer_info(std::vector<peer_info>& infos) const;
-
+        void set_piece_priority(int index, int priority) const;
+        int piece_priority(int index) const;
+        bool is_sequential_download() const;
         void set_sequential_download(bool sd) const;
         void set_upload_limit(int limit) const;
         int upload_limit() const;

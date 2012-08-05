@@ -97,11 +97,6 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(is_aborted(), false);
     }
 
-    bool transfer_handle::is_sequential_download() const
-    {
-        LIBED2K_FORWARD_RETURN(is_sequential_download(), false);
-    }
-
     bool transfer_handle::is_announced() const
     {
         LIBED2K_FORWARD_RETURN(is_announced(), false);
@@ -115,6 +110,21 @@ namespace libed2k
     void transfer_handle::get_peer_info(std::vector<peer_info>& infos) const
     {
         LIBED2K_FORWARD(get_peer_info(infos));
+    }
+
+    void transfer_handle::set_piece_priority(int index, int priority) const
+    {
+        LIBED2K_FORWARD(set_piece_priority(index, priority));
+    }
+
+    int transfer_handle::piece_priority(int index) const
+    {
+        LIBED2K_FORWARD_RETURN(piece_priority(index), 0);
+    }
+
+    bool transfer_handle::is_sequential_download() const
+    {
+        LIBED2K_FORWARD_RETURN(is_sequential_download(), false);
     }
 
     void transfer_handle::set_sequential_download(bool sd) const

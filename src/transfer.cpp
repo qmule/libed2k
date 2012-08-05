@@ -468,11 +468,33 @@ namespace libed2k
         }
     }
 
-    void transfer::set_sequential_download(bool sd)
+    void transfer::set_piece_priority(int index, int priority)
     {
-        m_sequential_download = sd;
+        if (is_seed()) return;
+
+        // this call is only valid on transfers with metadata
+        assert(m_picker.get());
+        assert(index >= 0);
+        assert(index < int(num_pieces()));
+        if (index < 0 || index >= int(num_pieces())) return;
+
+        m_picker->set_piece_priority(index, priority);
     }
 
+    int transfer::piece_priority(int index) const
+    {
+        if (is_seed()) return 1;
+
+        // this call is only valid on transfers with metadata
+        assert(m_picker.get());
+        assert(index >= 0);
+        assert(index < int(num_pieces()));
+        if (index < 0 || index >= int(num_pieces())) return 0;
+
+        return m_picker->piece_priority(index);
+    }
+
+    void transfer::set_sequential_download(bool sd) { m_sequential_download = sd; }
 
     void transfer::piece_failed(int index)
     {
