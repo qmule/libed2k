@@ -1,5 +1,3 @@
-// ed2k session
-
 #ifndef __LIBED2K_SESSION__
 #define __LIBED2K_SESSION__
 
@@ -159,14 +157,19 @@ namespace libed2k {
         /**
           * share single file, collection is empty
          */
-        void share_file(const std::string& strFilename);
-        void unshare_file(const std::string& strFilename);
+        void share_file(const std::string& strFilename, bool unshare = false);
+        void unshare_file(const std::string& strFilename) { share_file(strFilename, true); }
 
         /**
           * share directory, when root < path - collection name will generate
          */
-        void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
-        void unshare_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes);
+        void share_dir(const std::string& strRoot, const std::string& strPath,
+                       const std::deque<std::string>& excludes, bool unshare = false);
+        void unshare_dir(const std::string& strRoot, const std::string& strPath,
+                         const std::deque<std::string>& excludes) {
+            share_dir(strRoot, strPath, excludes, true);
+        }
+
     private:
         void init(const fingerprint& id, const char* listen_interface,
                   const session_settings& settings);

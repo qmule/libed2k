@@ -219,23 +219,16 @@ namespace libed2k
         m_impl->resume();
     }
 
-    void session::share_file(const std::string& strFilename)
+    void session::share_file(const std::string& strFilename, bool unshare)
     {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_file, m_impl, strFilename, false));
+        m_impl->m_io_service.post(
+            boost::bind(&aux::session_impl::share_file, m_impl, strFilename, unshare));
     }
 
-    void session::unshare_file(const std::string& strFilename)
+    void session::share_dir(const std::string& strRoot, const std::string& strPath,
+                            const std::deque<std::string>& excludes, bool unshare)
     {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_file, m_impl, strFilename, true));
-    }
-
-    void session::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
-    {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, false));
-    }
-
-    void session::unshare_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes)
-    {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, true));
+        m_impl->m_io_service.post(
+            boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, unshare));
     }
 }
