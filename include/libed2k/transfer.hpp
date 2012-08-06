@@ -121,6 +121,8 @@ namespace libed2k {
         int download_limit() const;
         void delete_files();
 
+        void piece_availability(std::vector<int>& avail) const;
+
         void set_piece_priority(int index, int priority);
         int piece_priority(int index) const;
 

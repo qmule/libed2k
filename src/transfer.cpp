@@ -468,6 +468,17 @@ namespace libed2k
         }
     }
 
+    void transfer::piece_availability(std::vector<int>& avail) const
+    {
+        if (is_seed())
+        {
+            avail.clear();
+            return;
+        }
+
+        m_picker->get_availability(avail);
+    }
+
     void transfer::set_piece_priority(int index, int priority)
     {
         if (is_seed()) return;
@@ -548,6 +559,21 @@ namespace libed2k
         //st.connections_limit = m_max_connections;
 
         st.state = m_state;
+
+        if (has_picker())
+        {
+            st.sparse_regions = m_picker->sparse_regions();
+            int num_pieces = m_picker->num_pieces();
+            st.pieces.resize(num_pieces, false);
+            for (int i = 0; i < num_pieces; ++i)
+                if (m_picker->have_piece(i)) st.pieces.set_bit(i);
+        }
+        else if (is_seed())
+        {
+            int num_pieces = this->num_pieces();
+            st.pieces.resize(num_pieces, true);
+        }
+        st.num_pieces = num_have();
 
         return st;
     }

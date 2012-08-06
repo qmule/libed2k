@@ -112,6 +112,11 @@ namespace libed2k
         LIBED2K_FORWARD(get_peer_info(infos));
     }
 
+    void transfer_handle::piece_availability(std::vector<int>& avail) const
+    {
+        LIBED2K_FORWARD(piece_availability(avail));
+    }
+
     void transfer_handle::set_piece_priority(int index, int priority) const
     {
         LIBED2K_FORWARD(set_piece_priority(index, priority));

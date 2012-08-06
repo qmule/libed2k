@@ -42,6 +42,8 @@ namespace libed2k
         bool is_announced() const;
         transfer_status status() const;
         void get_peer_info(std::vector<peer_info>& infos) const;
+
+        void piece_availability(std::vector<int>& avail) const;
         void set_piece_priority(int index, int priority) const;
         int piece_priority(int index) const;
         bool is_sequential_download() const;
