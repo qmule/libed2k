@@ -812,8 +812,13 @@ int peer_connection::picker_options() const
     {
         ret |= piece_picker::sequential | piece_picker::ignore_whole_pieces;
     }
+    else
+    {
+        ret |= piece_picker::rarest_first | piece_picker::speed_affinity;
+    }
 
-    ret |= piece_picker::rarest_first | piece_picker::speed_affinity;
+    // only one of rarest_first, common_first and sequential can be set.
+    assert(bool(ret & piece_picker::rarest_first) + bool(ret & piece_picker::sequential) <= 1);
 
     return ret;
 }
