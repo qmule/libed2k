@@ -375,6 +375,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_timer(m_io_service),
     m_last_connect_duration(0),
     m_last_announce_duration(0),
+    m_user_announced(false),
     m_server_connection_state(SC_OFFLINE)
 {
     DBG("*** create ed2k session ***");
@@ -1422,6 +1423,10 @@ void session_impl::announce(int tick_interval_ms)
     m_last_announce_duration = 0;
 
     shared_files_list offer_list;
+    __file_size total_size;
+    total_size.nQuadPart = 0;
+    bool new_announces = false;  // check we have new announces
+
 
     for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
@@ -1433,6 +1438,7 @@ void session_impl::announce(int tick_interval_ms)
         }
 
         transfer& t = *i->second;
+        total_size.nQuadPart += t.filesize();
 
         // add transfer to announce list when it has one piece at least and it is not announced yet
         if (!t.is_announced())
@@ -1443,9 +1449,50 @@ void session_impl::announce(int tick_interval_ms)
             {
                 offer_list.add(se);
                 t.set_announced(true); // mark transfer as announced
+                new_announces = true;
             }
         }
 
+    }
+
+    // generate announce for user as transfer when new announces or user is not announced yet(when transfers list empty)
+    // NOTE - new_announces doesn't work since server doesn't update users transfer information after first announce
+    if (new_announces || !m_user_announced)
+    {
+        DBG("new announces exist - re-announce user with correct size");
+        shared_file_entry se;
+        se.m_hFile = m_settings.user_agent;
+
+        if (m_server_connection->tcp_flags() & SRV_TCPFLG_COMPRESSION)
+        {
+            // publishing an incomplete file
+            se.m_network_point.m_nIP    = 0xFBFBFBFB;
+            se.m_network_point.m_nPort  = 0xFBFB;
+        }
+        else
+        {
+            se.m_network_point.m_nIP     = m_server_connection->client_id();
+            se.m_network_point.m_nPort   = settings().listen_port;
+        }
+
+        // file name is user name with special mark
+        se.m_list.add_tag(make_string_tag(std::string("+++USERNICK+++ ") + m_settings.client_name, FT_FILENAME, true));
+        se.m_list.add_tag(make_typed_tag(m_server_connection->client_id(), FT_FILESIZE, true));
+
+        // write users size
+        if (m_server_connection->tcp_flags() & SRV_TCPFLG_NEWTAGS)
+        {
+            se.m_list.add_tag(make_typed_tag(total_size.nLowPart, FT_MEDIA_LENGTH, true));
+            se.m_list.add_tag(make_typed_tag(total_size.nHighPart, FT_MEDIA_BITRATE, true));
+        }
+        else
+        {
+            se.m_list.add_tag(make_typed_tag(total_size.nLowPart, FT_ED2K_MEDIA_LENGTH, false));
+            se.m_list.add_tag(make_typed_tag(total_size.nHighPart, FT_ED2K_MEDIA_BITRATE, false));
+        }
+
+        offer_list.add(se);
+        m_user_announced = true;
     }
 
     if (offer_list.m_size > 0)
@@ -1496,6 +1543,8 @@ void session_impl::server_conn_stop()
         transfer& t = *i->second;
         t.set_announced(false);
     }
+
+    m_user_announced = false;
 }
 }
 }

@@ -376,6 +376,7 @@ namespace libed2k {
 
             int m_last_connect_duration;        //!< duration in milliseconds since last server connection was executed
             int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed
+            bool m_user_announced;              //!< ismod extension - share user as file
             char m_server_connection_state;     //!< last measured server connection state
 
             // the main working thread

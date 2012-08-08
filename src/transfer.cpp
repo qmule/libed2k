@@ -969,8 +969,30 @@ namespace libed2k
 
         // TODO - implement generate file entry from transfer here
         entry.m_hFile = m_filehash;
-        entry.m_network_point.m_nIP     = m_ses.m_server_connection->client_id();
-        entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
+        if (m_ses.m_server_connection->tcp_flags() & SRV_TCPFLG_COMPRESSION)
+        {
+            DBG("server support compression");
+
+            if (!is_seed())
+            {
+                // publishing an incomplete file
+                entry.m_network_point.m_nIP     = 0xFCFCFCFC;
+                entry.m_network_point.m_nPort   = 0xFCFC;
+            }
+            else
+            {
+                // publishing a complete file
+                entry.m_network_point.m_nIP     = 0xFBFBFBFB;
+                entry.m_network_point.m_nPort   = 0xFBFB;
+            }
+        }
+        else
+        {
+            DBG("servers isn't support compression");
+            entry.m_network_point.m_nIP     = m_ses.m_server_connection->client_id();
+            entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
+        }
+
         entry.m_list.add_tag(make_string_tag(m_filepath.filename(), FT_FILENAME, true));
 
         __file_size fs;
