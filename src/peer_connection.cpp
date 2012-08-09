@@ -1412,7 +1412,12 @@ void peer_connection::on_hello(const error_code& error)
         m_options.m_nPort = hello.m_network_point.m_nPort;
         DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
-        write_hello();
+
+        //write hello only if we didn't send it yet - when we isn't active peer
+        if (!m_active)
+        {
+            write_hello();
+        }
     }
     else
     {
