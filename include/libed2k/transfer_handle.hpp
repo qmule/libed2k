@@ -62,6 +62,7 @@ namespace libed2k
         fs::path save_path() const;
         void save_resume_data() const;
 
+        void move_storage(fs::path const& save_path) const;
         bool rename_file(const std::string& name) const;
 
         bool operator==(const transfer_handle& h) const

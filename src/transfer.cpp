@@ -454,6 +454,20 @@ namespace libed2k
         return 0;
     }
 
+    void transfer::move_storage(const fs::path& save_path)
+    {
+        if (m_owning_storage.get())
+        {
+            m_owning_storage->async_move_storage(
+                save_path, boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
+        }
+        else
+        {
+            m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), save_path.string()));
+            m_filepath = save_path / m_filepath.filename();
+        }
+    }
+
     bool transfer::rename_file(const std::string& name)
     {
         DBG("renaming file in transfer {hash: " << m_filehash <<
@@ -719,6 +733,23 @@ namespace libed2k
             DBG("file rename failed {hash: " << m_filehash << ", err: " << j.error << "}");
             m_ses.m_alerts.post_alert_should(
                 file_rename_failed_alert(handle(), j.error));
+        }
+    }
+
+    void transfer::on_storage_moved(int ret, disk_io_job const& j)
+    {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        if (ret == 0)
+        {
+            DBG("storage successfully moved {hash: " << m_filehash << ", to: " << j.str << "}");
+            m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), j.str));
+            m_filepath = fs::path(j.str) / m_filepath.filename();
+        }
+        else
+        {
+            DBG("storage move failed {hash: " << m_filehash << ", err: " << j.error << "}");
+            m_ses.m_alerts.post_alert_should(storage_moved_failed_alert(handle(), j.error));
         }
     }
 

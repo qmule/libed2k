@@ -215,6 +215,7 @@ namespace libed2k {
             return m_owning_storage->get_storage_impl();
         }
 
+        void move_storage(const fs::path& save_path);
         bool rename_file(const std::string& name);
         void delete_files();
 
@@ -282,6 +283,7 @@ namespace libed2k {
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
         void on_file_renamed(int ret, disk_io_job const& j);
+        void on_storage_moved(int ret, disk_io_job const& j);
         void on_transfer_aborted(int ret, disk_io_job const& j);
         void on_transfer_paused(int ret, disk_io_job const& j);
         void on_save_resume_data(int ret, disk_io_job const& j);

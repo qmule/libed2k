@@ -192,6 +192,11 @@ namespace libed2k
         LIBED2K_FORWARD(save_resume_data());
     }
 
+    void transfer_handle::move_storage(const fs::path& save_path) const
+    {
+        LIBED2K_FORWARD(move_storage(save_path));
+    }
+
     bool transfer_handle::rename_file(const std::string& name) const
     {
         LIBED2K_FORWARD_RETURN(rename_file(name), false);
