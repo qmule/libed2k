@@ -485,6 +485,48 @@ namespace libed2k
         md4_hash m_hash;
     };
 
+    struct file_renamed_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        file_renamed_alert(const transfer_handle& h, const std::string& name):
+            m_handle(h), m_name(name) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new file_renamed_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("renamed file"); }
+        virtual char const* what() const { return "renamed file"; }
+
+        transfer_handle m_handle;
+        std::string m_name;
+    };
+
+    struct file_rename_failed_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        file_rename_failed_alert(const transfer_handle& h, const error_code& error):
+            m_handle(h), m_error(error) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new file_rename_failed_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("rename failed transfer"); }
+        virtual char const* what() const { return "rename failed transfer"; }
+
+        transfer_handle m_handle;
+        error_code m_error;
+    };
+
     struct deleted_file_alert : alert
     {
         const static int static_category = alert::status_notification;

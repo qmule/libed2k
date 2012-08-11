@@ -119,7 +119,6 @@ namespace libed2k {
         int upload_limit() const;
         void set_download_limit(int limit);
         int download_limit() const;
-        void delete_files();
 
         void piece_availability(std::vector<int>& avail) const;
 
@@ -216,6 +215,9 @@ namespace libed2k {
             return m_owning_storage->get_storage_impl();
         }
 
+        bool rename_file(const std::string& name);
+        void delete_files();
+
         // unless this returns true, new connections must wait
         // with their initialization.
         bool ready_for_connections() const { return true; }
@@ -224,9 +226,6 @@ namespace libed2k {
         boost::uint32_t getResuested() const { return m_requested; }
         boost::uint64_t getTransferred() const { return m_transferred; }
         boost::uint8_t  getPriority() const { return m_priority; }
-
-
-        void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
         /**
           * async generate fast resume data and emit alert
@@ -254,10 +253,7 @@ namespace libed2k {
           * call after transfer checking completed
          */
         void file_checked();
-
-
         void start_checking();
-        void on_piece_checked(int ret, disk_io_job const& j);
 
         void set_error(error_code const& ec);
 
@@ -283,15 +279,17 @@ namespace libed2k {
 
         std::set<peer_connection*> m_connections;
 
-    private:
         void on_files_released(int ret, disk_io_job const& j);
         void on_files_deleted(int ret, disk_io_job const& j);
-        void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
+        void on_file_renamed(int ret, disk_io_job const& j);
         void on_transfer_aborted(int ret, disk_io_job const& j);
         void on_transfer_paused(int ret, disk_io_job const& j);
         void on_save_resume_data(int ret, disk_io_job const& j);
         void on_resume_data_checked(int ret, disk_io_job const& j);
+        void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
+        void on_piece_checked(int ret, disk_io_job const& j);
 
+    private:
         // will initialize the storage and the piece-picker
         void init();
         void bytes_done(transfer_status& st) const;

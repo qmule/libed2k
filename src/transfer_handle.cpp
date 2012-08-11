@@ -192,6 +192,11 @@ namespace libed2k
         LIBED2K_FORWARD(save_resume_data());
     }
 
+    bool transfer_handle::rename_file(const std::string& name) const
+    {
+        LIBED2K_FORWARD_RETURN(rename_file(name), false);
+    }
+
     std::string transfer_status2string(const transfer_status& s)
     {
         static std::string vstr[] =

@@ -454,9 +454,20 @@ namespace libed2k
         return 0;
     }
 
+    bool transfer::rename_file(const std::string& name)
+    {
+        DBG("renaming file in transfer {hash: " << m_filehash <<
+            ", from: " << m_filepath.filename() << ", to: " << name << "}");
+        if (!m_owning_storage.get()) return false;
+
+        m_owning_storage->async_rename_file(
+            0, name, boost::bind(&transfer::on_file_renamed, shared_from_this(), _1, _2));
+        return true;
+    }
+
     void transfer::delete_files()
     {
-        DBG("deleting files in transfer {hash: " << m_filehash << ", files: " << m_filepath << "}");
+        DBG("deleting file in transfer {hash: " << m_filehash << ", files: " << m_filepath << "}");
 
         disconnect_all(errors::transfer_removed);
 
@@ -689,6 +700,26 @@ namespace libed2k
             m_ses.m_alerts.post_alert_should(delete_failed_transfer_alert(handle(), j.error));
         else
             m_ses.m_alerts.post_alert_should(deleted_file_alert(handle(), hash()));
+    }
+
+    void transfer::on_file_renamed(int ret, disk_io_job const& j)
+    {
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        assert(j.piece == 0);
+
+        if (ret == 0)
+        {
+            DBG("file successfully renamed {hash: " << m_filehash << ", to: " << j.str << "}");
+            m_ses.m_alerts.post_alert_should(file_renamed_alert(handle(), j.str));
+            m_filepath.remove_filename() /= j.str;
+        }
+        else
+        {
+            DBG("file rename failed {hash: " << m_filehash << ", err: " << j.error << "}");
+            m_ses.m_alerts.post_alert_should(
+                file_rename_failed_alert(handle(), j.error));
+        }
     }
 
     void transfer::on_transfer_aborted(int ret, disk_io_job const& j)
