@@ -16,13 +16,16 @@ namespace libed2k
     /**
       * fake constructor
      */
-    transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,const md4_hash& hash, const fs::path p, fsize_t size):
-            m_ses(ses),
-            m_filehash(hash),
-            m_filepath(p),
-            m_filesize(size),
-            m_policy(this, pl),
-            m_minute_timer(time::minutes(1), time::min_date_time)
+    transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
+                       const md4_hash& hash, const fs::path p, fsize_t size):
+        m_ses(ses),
+        m_filehash(hash),
+        m_filepath(p),
+        m_filesize(size),
+        m_complete(-1),
+        m_incomplete(-1),
+        m_policy(this, pl),
+        m_minute_timer(time::minutes(1), time::min_date_time)
     {}
 
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
@@ -43,6 +46,8 @@ namespace libed2k
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
+        m_complete(p.num_complete_sources),
+        m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
         m_info(new libtorrent::torrent_info(libtorrent::sha1_hash())),
         m_accepted(p.accepted),
@@ -540,6 +545,15 @@ namespace libed2k
     {
     }
 
+    int transfer::num_seeds() const
+    {
+        int ret = 0;
+        for (std::set<peer_connection*>::const_iterator i = m_connections.begin(),
+                 end(m_connections.end()); i != end; ++i)
+            if ((*i)->is_seed()) ++ret;
+        return ret;
+    }
+
     bool transfer::is_paused() const
     {
         return m_paused || m_ses.is_paused();
@@ -556,6 +570,9 @@ namespace libed2k
 
         st.all_time_upload = m_total_uploaded;
         st.all_time_download = m_total_downloaded;
+
+        st.num_complete = m_complete;
+        st.num_incomplete = m_incomplete;
 
         // payload transfer
         st.total_payload_download = m_stat.total_payload_download();
@@ -581,7 +598,7 @@ namespace libed2k
         //st.list_seeds = m_policy.num_seeds();
         //st.connect_candidates = m_policy.num_connect_candidates();
         st.num_connections = m_connections.size();
-        //st.connections_limit = m_max_connections;
+        st.connections_limit = 0; // TODO: m_max_connections;
 
         st.state = m_state;
 
@@ -1291,11 +1308,8 @@ namespace libed2k
         ret["total_uploaded"] = m_total_uploaded;
         ret["total_downloaded"] = m_total_downloaded;
 
-        int seeds = 0;
-        int downloaders = 0;
-
-        ret["num_seeds"] = seeds;
-        ret["num_downloaders"] = downloaders;
+        ret["num_seeds"] = m_complete;
+        ret["num_downloaders"] = m_incomplete;
 
         ret["sequential_download"] = m_sequential_download;
 
@@ -1413,6 +1427,8 @@ namespace libed2k
         set_upload_limit(rd.dict_find_int_value("upload_rate_limit", -1));
         set_download_limit(rd.dict_find_int_value("download_rate_limit", -1));
         m_seed_mode = rd.dict_find_int_value("seed_mode", 0);
+        m_complete = rd.dict_find_int_value("num_seeds", -1);
+        m_incomplete = rd.dict_find_int_value("num_downloaders", -1);
 
         int sequential_ = rd.dict_find_int_value("sequential_download", -1);
         if (sequential_ != -1) set_sequential_download(sequential_);

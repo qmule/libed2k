@@ -25,6 +25,8 @@ namespace libed2k
     {
         file_size = 0;
         seed_mode = false;
+        num_complete_sources = -1;
+        num_incomplete_sources = -1;
         resume_data = 0;
         storage_mode = storage_mode_sparse;
         duplicate_is_error = false;

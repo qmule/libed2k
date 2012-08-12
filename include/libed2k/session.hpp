@@ -36,8 +36,9 @@ namespace libed2k {
     public:
         add_transfer_params() { reset(); }
 
-        add_transfer_params(const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
-                            const bitfield& ps, const std::vector<md4_hash>& hset)
+        add_transfer_params(
+            const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
+            const bitfield& ps, const std::vector<md4_hash>& hset)
         {
             reset();
             file_hash = hash;
@@ -60,6 +61,8 @@ namespace libed2k {
         storage_mode_t storage_mode;
         bool duplicate_is_error;
         bool seed_mode;
+        int num_complete_sources;
+        int num_incomplete_sources;
 
         boost::uint32_t accepted;
         boost::uint32_t requested;

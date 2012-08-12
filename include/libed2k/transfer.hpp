@@ -93,7 +93,7 @@ namespace libed2k {
 
         // the number of peers that belong to this torrent
         int num_peers() const { return (int)m_connections.size(); }
-        int num_seeds() const { return 0; } //TODO - implement it
+        int num_seeds() const;
 
         bool is_paused() const;
         bool is_seed() const
@@ -340,6 +340,9 @@ namespace libed2k {
 
         // Indicates whether transfer will download anything
         bool m_seed_mode;
+
+        int m_complete;
+        int m_incomplete;
 
         policy m_policy;
 
