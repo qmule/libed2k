@@ -870,7 +870,7 @@ bool peer_connection::can_request() const
 bool peer_connection::is_seed() const
 {
     const bitfield& pieces = m_remote_pieces;
-    int pieces_count  = pieces.count();
+    int pieces_count = pieces.count();
     return pieces_count == (int)pieces.size() && pieces_count > 0;
 }
 
