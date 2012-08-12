@@ -163,6 +163,7 @@ namespace libed2k {
             bool listen_on(int port, const char* net_interface);
             bool is_listening() const;
             unsigned short listen_port() const;
+            char server_connection_state() const;
 
             void update_disk_thread_settings();
 

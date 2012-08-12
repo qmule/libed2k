@@ -207,6 +207,18 @@ namespace libed2k
         m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_stop, m_impl));
     }
 
+    bool session::server_conn_online() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return (m_impl->server_connection_state() == SC_ONLINE);
+    }
+
+    bool session::server_conn_offline() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return (m_impl->server_connection_state() == SC_OFFLINE);
+    }
+
     void session::pause()
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);

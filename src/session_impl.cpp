@@ -610,6 +610,12 @@ unsigned short session_impl::listen_port() const
     return m_listen_sockets.front().external_port;
 }
 
+char session_impl::server_connection_state() const
+{
+    // return flag from session_impl for sync access by main mutex
+    return m_server_connection_state;
+}
+
 void session_impl::update_disk_thread_settings()
 {
     disk_io_job j;
