@@ -368,6 +368,12 @@ BOOST_AUTO_TEST_CASE(test_base_collection_extractor)
     BOOST_CHECK_EQUAL(sp8.second, "share-mule-games");
 #endif
 
+    // remove / and .
+    std::pair<std::string, std::string> sp9 =
+                libed2k::extract_base_collection(libed2k::fs::path("/home/apavlov/"), libed2k::fs::path("/home/apavlov/data/"));
+    BOOST_CHECK(sp9.first.empty());
+    BOOST_CHECK(sp9.second.empty());
+
 }
 
 BOOST_AUTO_TEST_CASE(test_share_file_share_dir)

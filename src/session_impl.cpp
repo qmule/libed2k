@@ -23,6 +23,10 @@
 
 namespace libed2k{
 
+    /**
+      * never set root as path with last directory separator because it will be implemented as additional directory
+      * for example /home/apavlov/ = /home/apavlov/.
+     */
     std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path)
     {
         std::string strBase;
