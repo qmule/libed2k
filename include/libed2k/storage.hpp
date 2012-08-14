@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_STORAGE_HPP_INCLUDE
-#define TORRENT_STORAGE_HPP_INCLUDE
+#ifndef LIBED2K_STORAGE_HPP_INCLUDE
+#define LIBED2K_STORAGE_HPP_INCLUDE
 
 #include <vector>
 #include <sys/types.h>
@@ -52,38 +52,42 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-#include "libtorrent/torrent_info.hpp"
-#include "libtorrent/piece_picker.hpp"
-#include "libtorrent/intrusive_ptr_base.hpp"
-#include "libtorrent/peer_request.hpp"
-#include "libtorrent/hasher.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/file.hpp"
-#include "libtorrent/disk_buffer_holder.hpp"
-#include "libtorrent/thread.hpp"
-#include "libtorrent/storage_defs.hpp"
-#include "libtorrent/allocator.hpp"
+#include <libtorrent/torrent_info.hpp>
+#include <libtorrent/piece_picker.hpp>
+#include <libtorrent/intrusive_ptr_base.hpp>
+#include <libtorrent/peer_request.hpp>
+#include <libtorrent/hasher.hpp>
+#include <libed2k/config.hpp>
+#include <libtorrent/file.hpp>
+#include <libed2k/disk_buffer_holder.hpp>
+#include <libtorrent/thread.hpp>
+#include <libed2k/storage_defs.hpp>
+#include <libtorrent/allocator.hpp>
 
 namespace libtorrent
 {
 	class session;
 	struct file_pool;
+	struct session_settings;
+}
+
+namespace libed2k
+{
 	struct disk_io_job;
 	struct disk_buffer_pool;
-	struct session_settings;
 
-	TORRENT_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
+	LIBED2K_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
 		file_storage const& t
 		, std::string const& p);
 
-	TORRENT_EXTRA_EXPORT bool match_filesizes(
+	LIBED2K_EXTRA_EXPORT bool match_filesizes(
 		file_storage const& t
 		, std::string const& p
 		, std::vector<std::pair<size_type, std::time_t> > const& sizes
 		, bool compact_mode
 		, std::string* error = 0);
 /*
-	struct TORRENT_EXTRA_EXPORT file_allocation_failed: std::exception
+	struct LIBED2K_EXTRA_EXPORT file_allocation_failed: std::exception
 	{
 		file_allocation_failed(const char* error_msg): m_msg(error_msg) {}
 		virtual const char* what() const throw() { return m_msg.c_str(); }
@@ -91,7 +95,7 @@ namespace libtorrent
 		std::string m_msg;
 	};
 */
-	struct TORRENT_EXTRA_EXPORT partial_hash
+	struct LIBED2K_EXTRA_EXPORT partial_hash
 	{
 		partial_hash(): offset(0) {}
 		// the number of bytes in the piece that has been hashed
@@ -100,7 +104,7 @@ namespace libtorrent
 		hasher h;
 	};
 
-	struct TORRENT_EXPORT storage_interface
+	struct LIBED2K_EXPORT storage_interface
 	{
 		storage_interface(): m_disk_pool(0), m_settings(0) {}
 		// create directories and set file sizes
@@ -181,7 +185,7 @@ namespace libtorrent
 		session_settings* m_settings;
 	};
 
-	class TORRENT_EXPORT default_storage : public storage_interface, boost::noncopyable
+	class LIBED2K_EXPORT default_storage : public storage_interface, boost::noncopyable
 	{
 	public:
 		default_storage(file_storage const& fs, file_storage const* mapped, std::string const& path
@@ -285,7 +289,7 @@ namespace libtorrent
 
 	struct disk_io_thread;
 
-	class TORRENT_EXTRA_EXPORT piece_manager
+	class LIBED2K_EXTRA_EXPORT piece_manager
 		: public intrusive_ptr_base<piece_manager>
 		, boost::noncopyable
 	{
@@ -405,12 +409,12 @@ namespace libtorrent
 		// this function returns true if the checking is complete
 		int check_files(int& current_slot, int& have_piece, error_code& error);
 
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
 		bool compact_allocation() const
 		{ return m_storage_mode == storage_mode_compact; }
 #endif
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		std::string name() const { return m_info->name(); }
 #endif
 
@@ -461,9 +465,9 @@ namespace libtorrent
 		int move_storage_impl(std::string const& save_path);
 
 		int allocate_slot_for_piece(int piece_index);
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		void check_invariant() const;
-#ifdef TORRENT_STORAGE_DEBUG
+#ifdef LIBED2K_STORAGE_DEBUG
 		void debug_log() const;
 #endif
 #endif
@@ -555,5 +559,4 @@ namespace libtorrent
 
 }
 
-#endif // TORRENT_STORAGE_HPP_INCLUDED
-
+#endif // LIBED2K_STORAGE_HPP_INCLUDED

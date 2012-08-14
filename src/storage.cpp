@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include <libtorrent/pch.hpp>
 
 #include <ctime>
 #include <algorithm>
@@ -53,25 +53,25 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include "libtorrent/config.hpp"
-#include "libtorrent/storage.hpp"
-#include "libtorrent/torrent.hpp"
-#include "libtorrent/hasher.hpp"
-#include "libtorrent/session.hpp"
-#include "libtorrent/peer_id.hpp"
-#include "libtorrent/file.hpp"
-#include "libtorrent/invariant_check.hpp"
-#include "libtorrent/file_pool.hpp"
-#include "libtorrent/aux_/session_impl.hpp"
-#include "libtorrent/disk_buffer_holder.hpp"
-#include "libtorrent/alloca.hpp"
-#include "libtorrent/allocator.hpp" // page_size
+#include <libed2k/config.hpp>
+#include <libed2k/storage.hpp>
+#include <libtorrent/torrent.hpp>
+#include <libtorrent/hasher.hpp>
+#include <libtorrent/session.hpp>
+#include <libtorrent/peer_id.hpp>
+#include <libtorrent/file.hpp>
+#include <libtorrent/invariant_check.hpp>
+#include <libtorrent/file_pool.hpp>
+#include <libed2k/session_impl.hpp>
+#include <libed2k/disk_buffer_holder.hpp>
+#include <libed2k/alloca.hpp"
+#include <libtorrent/allocator.hpp> // page_size
 
 #include <cstdio>
 
-//#define TORRENT_PARTIAL_HASH_LOG
+//#define LIBED2K_PARTIAL_HASH_LOG
 
-#if TORRENT_USE_IOSTREAM
+#if LIBED2K_USE_IOSTREAM
 #include <ios>
 #include <iostream>
 #include <iomanip>
@@ -97,12 +97,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 // for convert_to_wstring and convert_to_native
-#include "libtorrent/escape_string.hpp"
+#include <libtorrent/escape_string.hpp>
 
-#if defined TORRENT_DEBUG && defined TORRENT_STORAGE_DEBUG && TORRENT_USE_IOSTREAM
+#if defined LIBED2K_DEBUG && defined LIBED2K_STORAGE_DEBUG && LIBED2K_USE_IOSTREAM
 namespace
 {
-	using namespace libtorrent;
+	using namespace libed2k;
 
 	void print_to_log(std::string const& s)
 	{
@@ -113,7 +113,7 @@ namespace
 }
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 	std::vector<std::pair<size_type, std::time_t> > get_filesizes(
 		file_storage const& storage, std::string const& p)
@@ -296,7 +296,7 @@ namespace libtorrent
 			std::memset(i->iov_base, 0, i->iov_len);
 	}
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	int count_bufs(file::iovec_t const* bufs, int bytes)
 	{
 		int size = 0;
@@ -305,7 +305,7 @@ namespace libtorrent
 		for (file::iovec_t const* i = bufs;; ++i, ++count)
 		{
 			size += i->iov_len;
-			TORRENT_ASSERT(size <= bytes);
+			LIBED2K_ASSERT(size <= bytes);
 			if (size >= bytes) return count;
 		}
 	}
@@ -314,7 +314,7 @@ namespace libtorrent
 	int piece_manager::hash_for_slot(int slot, partial_hash& ph, int piece_size
 		, int small_piece_size, sha1_hash* small_hash)
 	{
-		TORRENT_ASSERT_VAL(!error(), error());
+		LIBED2K_ASSERT_VAL(!error(), error());
 		int num_read = 0;
 		int slot_size = piece_size - ph.offset;
 		if (slot_size > 0)
@@ -331,7 +331,7 @@ namespace libtorrent
 			// single buffer
 			if (m_storage->settings().optimize_hashing_for_speed)
 			{
-				file::iovec_t* bufs = TORRENT_ALLOCA(file::iovec_t, num_blocks);
+				file::iovec_t* bufs = LIBED2K_ALLOCA(file::iovec_t, num_blocks);
 				for (int i = 0; i < num_blocks; ++i)
 				{
 					bufs[i].iov_base = m_storage->disk_pool()->allocate_buffer("hash temp");
@@ -408,7 +408,7 @@ namespace libtorrent
 	{
 		if (mapped) m_mapped_files.reset(new file_storage(*mapped));
 
-		TORRENT_ASSERT(m_files.begin() != m_files.end());
+		LIBED2K_ASSERT(m_files.begin() != m_files.end());
 		m_save_path = complete(path);
 	}
 
@@ -485,7 +485,7 @@ namespace libtorrent
 
 	void default_storage::finalize_file(int index)
 	{
-		TORRENT_ASSERT(index >= 0 && index < files().num_files());
+		LIBED2K_ASSERT(index >= 0 && index < files().num_files());
 		if (index < 0 || index >= files().num_files()) return;
 	
 		error_code ec;
@@ -590,7 +590,7 @@ namespace libtorrent
 
 	bool default_storage::write_resume_data(entry& rd) const
 	{
-		TORRENT_ASSERT(rd.type() == entry::dictionary_t);
+		LIBED2K_ASSERT(rd.type() == entry::dictionary_t);
 
 		std::vector<std::pair<size_type, std::time_t> > file_sizes
 			= get_filesizes(files(), m_save_path);
@@ -610,8 +610,8 @@ namespace libtorrent
 
 	int default_storage::sparse_end(int slot) const
 	{
-		TORRENT_ASSERT(slot >= 0);
-		TORRENT_ASSERT(slot < m_files.num_pieces());
+		LIBED2K_ASSERT(slot >= 0);
+		LIBED2K_ASSERT(slot < m_files.num_pieces());
 
 		size_type file_offset = (size_type)slot * m_files.piece_length();
 		file_storage::iterator file_iter;
@@ -623,7 +623,7 @@ namespace libtorrent
 
 			file_offset -= file_iter->size;
 			++file_iter;
-			TORRENT_ASSERT(file_iter != files().end());
+			LIBED2K_ASSERT(file_iter != files().end());
 		}
 	
 		error_code ec;
@@ -810,7 +810,7 @@ namespace libtorrent
 		return ret;
 	}
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 /*
 	void default_storage::shuffle()
 	{
@@ -840,9 +840,9 @@ namespace libtorrent
 */
 #endif
 
-#define TORRENT_ALLOCATE_BLOCKS(bufs, num_blocks, piece_size) \
+#define LIBED2K_ALLOCATE_BLOCKS(bufs, num_blocks, piece_size) \
 	int num_blocks = (piece_size + disk_pool()->block_size() - 1) / disk_pool()->block_size(); \
-	file::iovec_t* bufs = TORRENT_ALLOCA(file::iovec_t, num_blocks); \
+	file::iovec_t* bufs = LIBED2K_ALLOCA(file::iovec_t, num_blocks); \
 	for (int i = 0, size = piece_size; i < num_blocks; ++i) \
 	{ \
 		bufs[i].iov_base = disk_pool()->allocate_buffer("move temp"); \
@@ -850,11 +850,11 @@ namespace libtorrent
 		size -= bufs[i].iov_len; \
 	}
 
-#define TORRENT_FREE_BLOCKS(bufs, num_blocks) \
+#define LIBED2K_FREE_BLOCKS(bufs, num_blocks) \
 	for (int i = 0; i < num_blocks; ++i) \
 		disk_pool()->free_buffer((char*)bufs[i].iov_base);
 
-#define TORRENT_SET_SIZE(bufs, size, num_bufs) \
+#define LIBED2K_SET_SIZE(bufs, size, num_bufs) \
 	for (num_bufs = 0; size > 0; size -= disk_pool()->block_size(), ++num_bufs) \
 		bufs[num_bufs].iov_len = (std::min)(disk_pool()->block_size(), size)
 	
@@ -864,14 +864,14 @@ namespace libtorrent
 		bool r = true;
 		int piece_size = m_files.piece_size(dst_slot);
 
-		TORRENT_ALLOCATE_BLOCKS(bufs, num_blocks, piece_size);
+		LIBED2K_ALLOCATE_BLOCKS(bufs, num_blocks, piece_size);
 
 		readv(bufs, src_slot, 0, num_blocks); if (error()) goto ret;
 		writev(bufs, dst_slot, 0, num_blocks); if (error()) goto ret;
 
 		r = false;
 ret:
-		TORRENT_FREE_BLOCKS(bufs, num_blocks)
+		LIBED2K_FREE_BLOCKS(bufs, num_blocks)
 		return r;
 	}
 
@@ -883,8 +883,8 @@ ret:
 		int piece1_size = m_files.piece_size(slot2);
 		int piece2_size = m_files.piece_size(slot1);
 
-		TORRENT_ALLOCATE_BLOCKS(bufs1, num_blocks1, piece1_size);
-		TORRENT_ALLOCATE_BLOCKS(bufs2, num_blocks2, piece2_size);
+		LIBED2K_ALLOCATE_BLOCKS(bufs1, num_blocks1, piece1_size);
+		LIBED2K_ALLOCATE_BLOCKS(bufs2, num_blocks2, piece2_size);
 
 		readv(bufs1, slot1, 0, num_blocks1); if (error()) goto ret;
 		readv(bufs2, slot2, 0, num_blocks2); if (error()) goto ret;
@@ -893,8 +893,8 @@ ret:
 
 		r = false;
 ret:
-		TORRENT_FREE_BLOCKS(bufs1, num_blocks1)
-		TORRENT_FREE_BLOCKS(bufs2, num_blocks2)
+		LIBED2K_FREE_BLOCKS(bufs1, num_blocks1)
+		LIBED2K_FREE_BLOCKS(bufs2, num_blocks2)
 		return r;
 	}
 
@@ -908,30 +908,30 @@ ret:
 		int piece2_size = m_files.piece_size(slot3);
 		int piece3_size = m_files.piece_size(slot1);
 
-		TORRENT_ALLOCATE_BLOCKS(bufs1, num_blocks1, piece_size);
-		TORRENT_ALLOCATE_BLOCKS(bufs2, num_blocks2, piece_size);
+		LIBED2K_ALLOCATE_BLOCKS(bufs1, num_blocks1, piece_size);
+		LIBED2K_ALLOCATE_BLOCKS(bufs2, num_blocks2, piece_size);
 
 		int tmp1 = 0;
 		int tmp2 = 0;
-		TORRENT_SET_SIZE(bufs1, piece1_size, tmp1);
+		LIBED2K_SET_SIZE(bufs1, piece1_size, tmp1);
 		readv(bufs1, slot1, 0, tmp1); if (error()) goto ret;
-		TORRENT_SET_SIZE(bufs2, piece2_size, tmp2);
+		LIBED2K_SET_SIZE(bufs2, piece2_size, tmp2);
 		readv(bufs2, slot2, 0, tmp2); if (error()) goto ret;
 		writev(bufs1, slot2, 0, tmp1); if (error()) goto ret;
-		TORRENT_SET_SIZE(bufs1, piece3_size, tmp1);
+		LIBED2K_SET_SIZE(bufs1, piece3_size, tmp1);
 		readv(bufs1, slot3, 0, tmp1); if (error()) goto ret;
 		writev(bufs2, slot3, 0, tmp2); if (error()) goto ret;
 		writev(bufs1, slot1, 0, tmp1); if (error()) goto ret;
 ret:
-		TORRENT_FREE_BLOCKS(bufs1, num_blocks1)
-		TORRENT_FREE_BLOCKS(bufs2, num_blocks2)
+		LIBED2K_FREE_BLOCKS(bufs1, num_blocks1)
+		LIBED2K_FREE_BLOCKS(bufs2, num_blocks2)
 		return r;
 	}
 
 	int default_storage::writev(file::iovec_t const* bufs, int slot, int offset
 		, int num_bufs)
 	{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		disk_buffer_pool* pool = disk_pool();
 		if (pool)
 		{
@@ -941,7 +941,7 @@ ret:
 #endif
 		fileop op = { &file::writev, &default_storage::write_unaligned
 			, m_settings ? settings().disk_io_write_mode : 0, file::read_write };
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		int ret = readwritev(bufs, slot, offset, num_bufs, op);
 		if (pool)
 		{
@@ -956,9 +956,9 @@ ret:
 
 	size_type default_storage::physical_offset(int slot, int offset)
 	{
-		TORRENT_ASSERT(slot >= 0);
-		TORRENT_ASSERT(slot < m_files.num_pieces());
-		TORRENT_ASSERT(offset >= 0);
+		LIBED2K_ASSERT(slot >= 0);
+		LIBED2K_ASSERT(slot < m_files.num_pieces());
+		LIBED2K_ASSERT(offset >= 0);
 
 		// find the file and file
 		size_type tor_off = size_type(slot)
@@ -972,10 +972,10 @@ ret:
 			// update offset as well, since we're moving it up ahead
 			tor_off = file_iter->offset;
 		}
-		TORRENT_ASSERT(!file_iter->pad_file);
+		LIBED2K_ASSERT(!file_iter->pad_file);
 
 		size_type file_offset = tor_off - file_iter->offset;
-		TORRENT_ASSERT(file_offset >= 0);
+		LIBED2K_ASSERT(file_offset >= 0);
 
 		// open the file read only to avoid re-opening
 		// it in case it's already opened in read-only mode
@@ -997,7 +997,7 @@ ret:
 	void default_storage::hint_read(int slot, int offset, int size)
 	{
 		size_type start = slot * (size_type)m_files.piece_length() + offset;
-		TORRENT_ASSERT(start + size <= m_files.total_size());
+		LIBED2K_ASSERT(start + size <= m_files.total_size());
 
 		size_type file_offset = start;
 		file_storage::iterator file_iter;
@@ -1010,7 +1010,7 @@ ret:
 
 			file_offset -= file_iter->size;
 			++file_iter;
-			TORRENT_ASSERT(file_iter != files().end());
+			LIBED2K_ASSERT(file_iter != files().end());
 		}
 
 		boost::intrusive_ptr<file> file_handle;
@@ -1020,12 +1020,12 @@ ret:
 		if (offset + bytes_left > slot_size)
 			bytes_left = slot_size - offset;
 
-		TORRENT_ASSERT(bytes_left >= 0);
+		LIBED2K_ASSERT(bytes_left >= 0);
 
 		int file_bytes_left;
 		for (;bytes_left > 0; ++file_iter, bytes_left -= file_bytes_left)
 		{
-			TORRENT_ASSERT(file_iter != files().end());
+			LIBED2K_ASSERT(file_iter != files().end());
 
 			file_bytes_left = bytes_left;
 			if (file_offset + file_bytes_left > file_iter->size)
@@ -1050,7 +1050,7 @@ ret:
 	int default_storage::readv(file::iovec_t const* bufs, int slot, int offset
 		, int num_bufs)
 	{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		disk_buffer_pool* pool = disk_pool();
 		if (pool)
 		{
@@ -1060,11 +1060,11 @@ ret:
 #endif
 		fileop op = { &file::readv, &default_storage::read_unaligned
 			, m_settings ? settings().disk_io_read_mode : 0, file::read_only };
-#ifdef TORRENT_SIMULATE_SLOW_READ
+#ifdef LIBED2K_SIMULATE_SLOW_READ
 		boost::thread::sleep(boost::get_system_time()
 			+ boost::posix_time::milliseconds(1000));
 #endif
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		int ret = readwritev(bufs, slot, offset, num_bufs, op);
 		if (pool)
 		{
@@ -1085,24 +1085,24 @@ ret:
 	int default_storage::readwritev(file::iovec_t const* bufs, int slot, int offset
 		, int num_bufs, fileop const& op)
 	{
-		TORRENT_ASSERT(bufs != 0);
-		TORRENT_ASSERT(slot >= 0);
-		TORRENT_ASSERT(slot < m_files.num_pieces());
-		TORRENT_ASSERT(offset >= 0);
-		TORRENT_ASSERT(offset < m_files.piece_size(slot));
-		TORRENT_ASSERT(num_bufs > 0);
+		LIBED2K_ASSERT(bufs != 0);
+		LIBED2K_ASSERT(slot >= 0);
+		LIBED2K_ASSERT(slot < m_files.num_pieces());
+		LIBED2K_ASSERT(offset >= 0);
+		LIBED2K_ASSERT(offset < m_files.piece_size(slot));
+		LIBED2K_ASSERT(num_bufs > 0);
 
 		int size = bufs_size(bufs, num_bufs);
-		TORRENT_ASSERT(size > 0);
+		LIBED2K_ASSERT(size > 0);
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		std::vector<file_slice> slices
 			= files().map_block(slot, offset, size);
-		TORRENT_ASSERT(!slices.empty());
+		LIBED2K_ASSERT(!slices.empty());
 #endif
 
 		size_type start = slot * (size_type)m_files.piece_length() + offset;
-		TORRENT_ASSERT(start + size <= m_files.total_size());
+		LIBED2K_ASSERT(start + size <= m_files.total_size());
 
 		// find the file iterator and file offset
 		size_type file_offset = start;
@@ -1116,7 +1116,7 @@ ret:
 
 			file_offset -= file_iter->size;
 			++file_iter;
-			TORRENT_ASSERT(file_iter != files().end());
+			LIBED2K_ASSERT(file_iter != files().end());
 		}
 
 		int buf_pos = 0;
@@ -1129,22 +1129,22 @@ ret:
 		if (offset + bytes_left > slot_size)
 			bytes_left = slot_size - offset;
 
-		TORRENT_ASSERT(bytes_left >= 0);
+		LIBED2K_ASSERT(bytes_left >= 0);
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		int counter = 0;
 #endif
 
-		file::iovec_t* tmp_bufs = TORRENT_ALLOCA(file::iovec_t, num_bufs);
-		file::iovec_t* current_buf = TORRENT_ALLOCA(file::iovec_t, num_bufs);
+		file::iovec_t* tmp_bufs = LIBED2K_ALLOCA(file::iovec_t, num_bufs);
+		file::iovec_t* current_buf = LIBED2K_ALLOCA(file::iovec_t, num_bufs);
 		copy_bufs(bufs, size, current_buf);
-		TORRENT_ASSERT(count_bufs(current_buf, size) == num_bufs);
+		LIBED2K_ASSERT(count_bufs(current_buf, size) == num_bufs);
 		int file_bytes_left;
 		for (;bytes_left > 0; ++file_iter, bytes_left -= file_bytes_left
 			, buf_pos += file_bytes_left)
 		{
-			TORRENT_ASSERT(file_iter != files().end());
-			TORRENT_ASSERT(buf_pos >= 0);
+			LIBED2K_ASSERT(file_iter != files().end());
+			LIBED2K_ASSERT(buf_pos >= 0);
 
 			file_bytes_left = bytes_left;
 			if (file_offset + file_bytes_left > file_iter->size)
@@ -1152,11 +1152,11 @@ ret:
 
 			if (file_bytes_left == 0) continue;
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
-			TORRENT_ASSERT(int(slices.size()) > counter);
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
+			LIBED2K_ASSERT(int(slices.size()) > counter);
 			size_type slice_size = slices[counter].size;
-			TORRENT_ASSERT(slice_size == file_bytes_left);
-			TORRENT_ASSERT((files().begin() + slices[counter].file_index)
+			LIBED2K_ASSERT(slice_size == file_bytes_left);
+			LIBED2K_ASSERT((files().begin() + slices[counter].file_index)
 				== file_iter);
 			++counter;
 #endif
@@ -1166,12 +1166,12 @@ ret:
 				if (op.mode == file::read_only)
 				{
 					int num_tmp_bufs = copy_bufs(current_buf, file_bytes_left, tmp_bufs);
-					TORRENT_ASSERT(count_bufs(tmp_bufs, file_bytes_left) == num_tmp_bufs);
-					TORRENT_ASSERT(num_tmp_bufs <= num_bufs);
+					LIBED2K_ASSERT(count_bufs(tmp_bufs, file_bytes_left) == num_tmp_bufs);
+					LIBED2K_ASSERT(num_tmp_bufs <= num_bufs);
 					clear_bufs(tmp_bufs, num_tmp_bufs);
 				}
 				advance_bufs(current_buf, file_bytes_left);
-				TORRENT_ASSERT(count_bufs(current_buf, bytes_left - file_bytes_left) <= num_bufs);
+				LIBED2K_ASSERT(count_bufs(current_buf, bytes_left - file_bytes_left) <= num_bufs);
 				file_offset = 0;
 				continue;
 			}
@@ -1193,14 +1193,14 @@ ret:
 			if (!file_handle || ec)
 			{
 				std::string path = combine_path(m_save_path, files().file_path(*file_iter));
-				TORRENT_ASSERT(ec);
+				LIBED2K_ASSERT(ec);
 				set_error(path, ec);
 				return -1;
 			}
 
 			int num_tmp_bufs = copy_bufs(current_buf, file_bytes_left, tmp_bufs);
-			TORRENT_ASSERT(count_bufs(tmp_bufs, file_bytes_left) == num_tmp_bufs);
-			TORRENT_ASSERT(num_tmp_bufs <= num_bufs);
+			LIBED2K_ASSERT(count_bufs(tmp_bufs, file_bytes_left) == num_tmp_bufs);
+			LIBED2K_ASSERT(num_tmp_bufs <= num_bufs);
 			int bytes_transferred = 0;
 			// if the file is opened in no_buffer mode, and the
 			// read is unaligned, we need to fall back on a slow
@@ -1230,7 +1230,7 @@ ret:
 			{
 				bytes_transferred = (int)((*file_handle).*op.regular_op)(adjusted_offset
 					, tmp_bufs, num_tmp_bufs, ec);
-				TORRENT_ASSERT(bytes_transferred <= bufs_size(tmp_bufs, num_tmp_bufs));
+				LIBED2K_ASSERT(bytes_transferred <= bufs_size(tmp_bufs, num_tmp_bufs));
 			}
 			file_offset = 0;
 
@@ -1244,7 +1244,7 @@ ret:
 				return bytes_transferred;
 
 			advance_bufs(current_buf, bytes_transferred);
-			TORRENT_ASSERT(count_bufs(current_buf, bytes_left - file_bytes_left) <= num_bufs);
+			LIBED2K_ASSERT(count_bufs(current_buf, bytes_left - file_bytes_left) <= num_bufs);
 		}
 		return size;
 	}
@@ -1264,11 +1264,11 @@ ret:
 
 		const int size = bufs_size(bufs, num_bufs);
 		const int start_adjust = file_offset & pos_align;
-		TORRENT_ASSERT(start_adjust == (file_offset % file_handle->pos_alignment()));
+		LIBED2K_ASSERT(start_adjust == (file_offset % file_handle->pos_alignment()));
 		const size_type aligned_start = file_offset - start_adjust;
 		const int aligned_size = ((size+start_adjust) & size_align)
 			? ((size+start_adjust) & ~size_align) + size_align + 1 : size + start_adjust;
-		TORRENT_ASSERT((aligned_size & size_align) == 0);
+		LIBED2K_ASSERT((aligned_size & size_align) == 0);
 
 		// allocate a temporary, aligned, buffer
 		aligned_holder aligned_buf(aligned_size);
@@ -1276,7 +1276,7 @@ ret:
 		size_type ret = file_handle->readv(aligned_start, &b, 1, ec);
 		if (ret < 0)
 		{
-			TORRENT_ASSERT(ec);
+			LIBED2K_ASSERT(ec);
 			return ret;
 		}
 		if (ret - start_adjust < size) return (std::max)(ret - start_adjust, size_type(0));
@@ -1301,11 +1301,11 @@ ret:
 
 		const int size = bufs_size(bufs, num_bufs);
 		const int start_adjust = file_offset & pos_align;
-		TORRENT_ASSERT(start_adjust == (file_offset % file_handle->pos_alignment()));
+		LIBED2K_ASSERT(start_adjust == (file_offset % file_handle->pos_alignment()));
 		const size_type aligned_start = file_offset - start_adjust;
 		const int aligned_size = ((size+start_adjust) & size_align)
 			? ((size+start_adjust) & ~size_align) + size_align + 1 : size + start_adjust;
-		TORRENT_ASSERT((aligned_size & size_align) == 0);
+		LIBED2K_ASSERT((aligned_size & size_align) == 0);
 
 		size_type actual_file_size = file_handle->get_size(ec);
 		if (ec && ec != make_error_code(boost::system::errc::no_such_file_or_directory)) return -1;
@@ -1319,7 +1319,7 @@ ret:
 		{
 			size_type ret = file_handle->readv(aligned_start, &b, 1, ec);
 			if (ec
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 				&& ec != error_code(ERROR_HANDLE_EOF, get_system_category())
 #endif
 				)
@@ -1342,7 +1342,7 @@ ret:
 
 		if (ret < 0)
 		{
-			TORRENT_ASSERT(ec);
+			LIBED2K_ASSERT(ec);
 			return ret;
 		}
 		if (ret - start_adjust < size) return (std::max)(ret - start_adjust, size_type(0));
@@ -1394,7 +1394,7 @@ ret:
 
 	int disabled_storage::readv(file::iovec_t const* bufs, int slot, int offset, int num_bufs)
 	{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		disk_buffer_pool* pool = disk_pool();
 		if (pool)
 		{
@@ -1405,7 +1405,7 @@ ret:
 		int ret = 0;
 		for (int i = 0; i < num_bufs; ++i)
 			ret += bufs[i].iov_len;
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		if (pool)
 		{
 			pool->m_disk_access_log << log_time() << " read_end "
@@ -1417,7 +1417,7 @@ ret:
 
 	int disabled_storage::writev(file::iovec_t const* bufs, int slot, int offset, int num_bufs)
 	{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		disk_buffer_pool* pool = disk_pool();
 		if (pool)
 		{
@@ -1428,7 +1428,7 @@ ret:
 		int ret = 0;
 		for (int i = 0; i < num_bufs; ++i)
 			ret += bufs[i].iov_len;
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		if (pool)
 		{
 			pool->m_disk_access_log << log_time() << " write_end "
@@ -1545,7 +1545,7 @@ ret:
 	void piece_manager::async_check_fastresume(lazy_entry const* resume_data
 		, boost::function<void(int, disk_io_job const&)> const& handler)
 	{
-		TORRENT_ASSERT(resume_data != 0);
+		LIBED2K_ASSERT(resume_data != 0);
 		disk_io_job j;
 		j.storage = this;
 		j.action = disk_io_job::check_fastresume;
@@ -1586,13 +1586,13 @@ ret:
 		j.buffer_size = r.length;
 		j.buffer = 0;
 		j.cache_min_time = cache_expiry;
-		TORRENT_ASSERT(r.length <= 16 * 1024);
+		LIBED2K_ASSERT(r.length <= 16 * 1024);
 		m_io_thread.add_job(j, handler);
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		mutex::scoped_lock l(m_mutex);
 		// if this assert is hit, it suggests
 		// that check_files was not successful
-		TORRENT_ASSERT(slot_for(r.piece) >= 0);
+		LIBED2K_ASSERT(slot_for(r.piece) >= 0);
 #endif
 	}
 
@@ -1629,13 +1629,13 @@ ret:
 
 		// if a buffer is not specified, only one block can be read
 		// since that is the size of the pool allocator's buffers
-		TORRENT_ASSERT(r.length <= 16 * 1024);
+		LIBED2K_ASSERT(r.length <= 16 * 1024);
 		m_io_thread.add_job(j, handler);
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		mutex::scoped_lock l(m_mutex);
 		// if this assert is hit, it suggests
 		// that check_files was not successful
-		TORRENT_ASSERT(slot_for(r.piece) >= 0);
+		LIBED2K_ASSERT(slot_for(r.piece) >= 0);
 #endif
 	}
 
@@ -1644,9 +1644,9 @@ ret:
 		, disk_buffer_holder& buffer
 		, boost::function<void(int, disk_io_job const&)> const& handler)
 	{
-		TORRENT_ASSERT(r.length <= 16 * 1024);
+		LIBED2K_ASSERT(r.length <= 16 * 1024);
 		// the buffer needs to be allocated through the io_thread
-		TORRENT_ASSERT(m_io_thread.is_disk_buffer(buffer.get()));
+		LIBED2K_ASSERT(m_io_thread.is_disk_buffer(buffer.get()));
 
 		disk_io_job j;
 		j.storage = this;
@@ -1680,7 +1680,7 @@ ret:
 
 	sha1_hash piece_manager::hash_for_piece_impl(int piece, int* readback)
 	{
-		TORRENT_ASSERT(!m_storage->error());
+		LIBED2K_ASSERT(!m_storage->error());
 
 		partial_hash ph;
 
@@ -1692,7 +1692,7 @@ ret:
 		}
 
 		int slot = slot_for(piece);
-		TORRENT_ASSERT(slot != has_no_slot);
+		LIBED2K_ASSERT(slot != has_no_slot);
 		int read = hash_for_slot(slot, ph, m_files.piece_size(piece));
 		if (readback) *readback = read;
 		if (m_storage->error()) return sha1_hash(0);
@@ -1748,9 +1748,9 @@ ret:
 
 		if (m_storage_mode != internal_storage_mode_compact_deprecated) return;
 
-		TORRENT_ASSERT(piece_index >= 0 && piece_index < (int)m_piece_to_slot.size());
+		LIBED2K_ASSERT(piece_index >= 0 && piece_index < (int)m_piece_to_slot.size());
 		int slot_index = m_piece_to_slot[piece_index];
-		TORRENT_ASSERT(slot_index >= 0);
+		LIBED2K_ASSERT(slot_index >= 0);
 
 		m_slot_to_piece[slot_index] = unassigned;
 		m_piece_to_slot[piece_index] = has_no_slot;
@@ -1771,9 +1771,9 @@ ret:
 		, int offset
 		, int num_bufs)
 	{
-		TORRENT_ASSERT(bufs);
-		TORRENT_ASSERT(offset >= 0);
-		TORRENT_ASSERT(num_bufs > 0);
+		LIBED2K_ASSERT(bufs);
+		LIBED2K_ASSERT(offset >= 0);
+		LIBED2K_ASSERT(num_bufs > 0);
 		m_last_piece = piece_index;
 		int slot = slot_for(piece_index);
 		return m_storage->readv(bufs, slot, offset, num_bufs);
@@ -1785,14 +1785,14 @@ ret:
 	  , int offset
 	  , int num_bufs)
 	{
-		TORRENT_ASSERT(bufs);
-		TORRENT_ASSERT(offset >= 0);
-		TORRENT_ASSERT(num_bufs > 0);
-		TORRENT_ASSERT(piece_index >= 0 && piece_index < m_files.num_pieces());
+		LIBED2K_ASSERT(bufs);
+		LIBED2K_ASSERT(offset >= 0);
+		LIBED2K_ASSERT(num_bufs > 0);
+		LIBED2K_ASSERT(piece_index >= 0 && piece_index < m_files.num_pieces());
 
 		int size = bufs_size(bufs, num_bufs);
 
-		file::iovec_t* iov = TORRENT_ALLOCA(file::iovec_t, num_bufs);
+		file::iovec_t* iov = LIBED2K_ALLOCA(file::iovec_t, num_bufs);
 		std::copy(bufs, bufs + num_bufs, iov);
 		m_last_piece = piece_index;
 		int slot = allocate_slot_for_piece(piece_index);
@@ -1802,20 +1802,20 @@ ret:
 
 		if (m_storage->settings().disable_hash_checks) return ret;
 
-#if defined TORRENT_PARTIAL_HASH_LOG && TORRENT_USE_IOSTREAM
+#if defined LIBED2K_PARTIAL_HASH_LOG && LIBED2K_USE_IOSTREAM
 		std::ofstream out("partial_hash.log", std::ios::app);
 #endif
 
 		if (offset == 0)
 		{
 			partial_hash& ph = m_piece_hasher[piece_index];
-			TORRENT_ASSERT(ph.offset == 0);
+			LIBED2K_ASSERT(ph.offset == 0);
 			ph.offset = size;
 
 			for (file::iovec_t* i = iov, *end(iov + num_bufs); i < end; ++i)
 				ph.h.update((char const*)i->iov_base, i->iov_len);
 
-#if defined TORRENT_PARTIAL_HASH_LOG && TORRENT_USE_IOSTREAM
+#if defined LIBED2K_PARTIAL_HASH_LOG && LIBED2K_USE_IOSTREAM
 			out << time_now_string() << " NEW ["
 				" s: " << this
 				<< " p: " << piece_index
@@ -1830,14 +1830,14 @@ ret:
 			std::map<int, partial_hash>::iterator i = m_piece_hasher.find(piece_index);
 			if (i != m_piece_hasher.end())
 			{
-#ifdef TORRENT_DEBUG
-				TORRENT_ASSERT(i->second.offset > 0);
+#ifdef LIBED2K_DEBUG
+				LIBED2K_ASSERT(i->second.offset > 0);
 				int hash_offset = i->second.offset;
-				TORRENT_ASSERT(offset >= hash_offset);
+				LIBED2K_ASSERT(offset >= hash_offset);
 #endif
 				if (offset == i->second.offset)
 				{
-#ifdef TORRENT_PARTIAL_HASH_LOG
+#ifdef LIBED2K_PARTIAL_HASH_LOG
 					out << time_now_string() << " UPDATING ["
 						" s: " << this
 						<< " p: " << piece_index
@@ -1852,7 +1852,7 @@ ret:
 						i->second.offset += b->iov_len;
 					}
 				}
-#ifdef TORRENT_PARTIAL_HASH_LOG
+#ifdef LIBED2K_PARTIAL_HASH_LOG
 				else
 				{
 					out << time_now_string() << " SKIPPING (out of order) ["
@@ -1865,7 +1865,7 @@ ret:
 				}
 #endif
 			}
-#ifdef TORRENT_PARTIAL_HASH_LOG
+#ifdef LIBED2K_PARTIAL_HASH_LOG
 			else
 			{
 				out << time_now_string() << " SKIPPING (no entry) ["
@@ -1886,8 +1886,8 @@ ret:
 		int piece_index
 		, int offset)
 	{
-		TORRENT_ASSERT(offset >= 0);
-		TORRENT_ASSERT(piece_index >= 0 && piece_index < m_files.num_pieces());
+		LIBED2K_ASSERT(offset >= 0);
+		LIBED2K_ASSERT(piece_index >= 0 && piece_index < m_files.num_pieces());
 
 		int slot = slot_for(piece_index);
 		// we may not have a slot for this piece yet.
@@ -1969,12 +1969,12 @@ ret:
 					if (m_storage_mode == internal_storage_mode_compact_deprecated)
 						m_free_slots.push_back(other_slot);
 				}
-				TORRENT_ASSERT(m_piece_to_slot[piece_index] != current_slot);
-				TORRENT_ASSERT(m_piece_to_slot[piece_index] >= 0);
+				LIBED2K_ASSERT(m_piece_to_slot[piece_index] != current_slot);
+				LIBED2K_ASSERT(m_piece_to_slot[piece_index] >= 0);
 				m_piece_to_slot[piece_index] = has_no_slot;
 			}
 			
-			TORRENT_ASSERT(m_piece_to_slot[piece_index] == has_no_slot);
+			LIBED2K_ASSERT(m_piece_to_slot[piece_index] == has_no_slot);
 
 			return piece_index;
 		}
@@ -1992,12 +1992,12 @@ ret:
 
 		if (free_piece >= 0)
 		{
-			TORRENT_ASSERT(m_piece_to_slot[free_piece] == has_no_slot);
+			LIBED2K_ASSERT(m_piece_to_slot[free_piece] == has_no_slot);
 			return free_piece;
 		}
 		else
 		{
-			TORRENT_ASSERT(free_piece == unassigned);
+			LIBED2K_ASSERT(free_piece == unassigned);
 			return unassigned;
 		}
 	}
@@ -2023,7 +2023,7 @@ ret:
 					m_unallocated_slots.clear();
 					m_free_slots.clear();
 				}
-				TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+				LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 				return need_full_check;
 			}
 		}
@@ -2032,7 +2032,7 @@ ret:
 		{
 			// in compact mode without checking, we need to
 			// populate the unallocated list
-			TORRENT_ASSERT(m_unallocated_slots.empty());
+			LIBED2K_ASSERT(m_unallocated_slots.empty());
 			for (int i = 0, end(m_files.num_pieces()); i < end; ++i)
 				m_unallocated_slots.push_back(i);
 			m_piece_to_slot.clear();
@@ -2049,7 +2049,7 @@ ret:
 		if (m_storage->initialize(m_storage_mode == storage_mode_allocate))
 		{
 			error = m_storage->error();
-			TORRENT_ASSERT(error);
+			LIBED2K_ASSERT(error);
 			return fatal_disk_error;
 		}
 		m_state = state_finished;
@@ -2079,7 +2079,7 @@ ret:
 
 		INVARIANT_CHECK;
 
-		TORRENT_ASSERT(m_files.piece_length() > 0);
+		LIBED2K_ASSERT(m_files.piece_length() > 0);
 		
 		m_current_slot = 0;
 
@@ -2163,7 +2163,7 @@ ret:
 					}
 					else
 					{
-						TORRENT_ASSERT(index == unallocated);
+						LIBED2K_ASSERT(index == unallocated);
 						if (m_storage_mode == internal_storage_mode_compact_deprecated)
 							m_unallocated_slots.push_back(i);
 					}
@@ -2201,8 +2201,8 @@ ret:
 			}
 			else
 			{
-				TORRENT_ASSERT(m_free_slots.empty());
-				TORRENT_ASSERT(m_unallocated_slots.empty());
+				LIBED2K_ASSERT(m_free_slots.empty());
+				LIBED2K_ASSERT(m_unallocated_slots.empty());
 
 				if (out_of_place)
 				{
@@ -2211,7 +2211,7 @@ ret:
 					m_state = state_expand_pieces;
 					m_current_slot = 0;
 					error = errors::pieces_need_reorder;
-					TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+					LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 					return need_full_check;
 				}
 			}
@@ -2283,7 +2283,7 @@ ret:
 	{
 		if (m_state == state_none) return check_no_fastresume(error);
 
-		TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+		LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 
 		current_slot = m_current_slot;
 		have_piece = -1;
@@ -2307,7 +2307,7 @@ ret:
 					if (m_storage->readv(&b, piece, 0, 1) != piece_size)
 					{
 						error = m_storage->error();
-						TORRENT_ASSERT(error);
+						LIBED2K_ASSERT(error);
 						return fatal_disk_error;
 					}
 					m_scratch_piece = other_piece;
@@ -2321,7 +2321,7 @@ ret:
 				if (m_storage->writev(&b, piece, 0, 1) != piece_size)
 				{
 					error = m_storage->error();
-					TORRENT_ASSERT(error);
+					LIBED2K_ASSERT(error);
 					return fatal_disk_error;
 				}
 				m_piece_to_slot[piece] = piece;
@@ -2329,7 +2329,7 @@ ret:
 
 				if (other_piece >= 0) m_scratch_buffer.swap(m_scratch_buffer2);
 		
-				TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+				LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 				return need_full_check;
 			}
 
@@ -2345,10 +2345,10 @@ ret:
 				return check_init_storage(error);
 			}
 
-			TORRENT_ASSERT(m_current_slot < m_files.num_pieces());
+			LIBED2K_ASSERT(m_current_slot < m_files.num_pieces());
 
 			int piece = m_slot_to_piece[m_current_slot];
-			TORRENT_ASSERT(piece >= 0);
+			LIBED2K_ASSERT(piece >= 0);
 			int other_piece = m_slot_to_piece[piece];
 			if (other_piece >= 0)
 			{
@@ -2363,7 +2363,7 @@ ret:
 				if (m_storage->readv(&b, piece, 0, 1) != piece_size)
 				{
 					error = m_storage->error();
-					TORRENT_ASSERT(error);
+					LIBED2K_ASSERT(error);
 					return fatal_disk_error;
 				}
 				m_scratch_piece = other_piece;
@@ -2380,20 +2380,20 @@ ret:
 			m_slot_to_piece[m_current_slot] = unassigned;
 			m_slot_to_piece[piece] = piece;
 		
-			TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+			LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 			return need_full_check;
 		}
 
-		TORRENT_ASSERT(m_state == state_full_check);
+		LIBED2K_ASSERT(m_state == state_full_check);
 		if (m_state == state_finished) return 0;
 
 		int skip = check_one_piece(have_piece);
-		TORRENT_ASSERT(m_current_slot <= m_files.num_pieces());
+		LIBED2K_ASSERT(m_current_slot <= m_files.num_pieces());
 
 		if (skip == -1)
 		{
 			error = m_storage->error();
-			TORRENT_ASSERT(error);
+			LIBED2K_ASSERT(error);
 			return fatal_disk_error;
 		}
 
@@ -2409,14 +2409,14 @@ ret:
 			{
 				for (int i = m_current_slot; i < m_current_slot + skip - 1; ++i)
 				{
-					TORRENT_ASSERT(m_slot_to_piece[i] == unallocated);
+					LIBED2K_ASSERT(m_slot_to_piece[i] == unallocated);
 					m_unallocated_slots.push_back(i);
 				}
 			}
 
 			// current slot will increase by one below
 			m_current_slot += skip - 1;
-			TORRENT_ASSERT(m_current_slot <= m_files.num_pieces());
+			LIBED2K_ASSERT(m_current_slot <= m_files.num_pieces());
 		}
 
 		++m_current_slot;
@@ -2424,7 +2424,7 @@ ret:
 
 		if (m_current_slot >= m_files.num_pieces())
 		{
-			TORRENT_ASSERT(m_current_slot == m_files.num_pieces());
+			LIBED2K_ASSERT(m_current_slot == m_files.num_pieces());
 
 			// clear the memory we've been using
 			std::multimap<sha1_hash, int>().swap(m_hash_to_piece);
@@ -2448,7 +2448,7 @@ ret:
 					m_state = state_expand_pieces;
 					m_current_slot = 0;
 					current_slot = m_current_slot;
-					TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+					LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 					return need_full_check;
 				}
 			}
@@ -2459,7 +2459,7 @@ ret:
 			return check_init_storage(error);
 		}
 
-		TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+		LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
 		return need_full_check;
 	}
 
@@ -2474,11 +2474,11 @@ ret:
 			if (file_offset > current_offset) break;
 		}
 
-		TORRENT_ASSERT(file_offset > current_offset);
+		LIBED2K_ASSERT(file_offset > current_offset);
 		int ret = static_cast<int>(
 			(file_offset - current_offset + m_files.piece_length() - 1)
 			/ m_files.piece_length());
-		TORRENT_ASSERT(ret >= 1);
+		LIBED2K_ASSERT(ret >= 1);
 		return ret;
 	}
 
@@ -2489,9 +2489,9 @@ ret:
 		//    DO THE FULL CHECK
 		// ------------------------
 
-		TORRENT_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
-		TORRENT_ASSERT(int(m_slot_to_piece.size()) == m_files.num_pieces());
-		TORRENT_ASSERT(have_piece == -1);
+		LIBED2K_ASSERT(int(m_piece_to_slot.size()) == m_files.num_pieces());
+		LIBED2K_ASSERT(int(m_slot_to_piece.size()) == m_files.num_pieces());
+		LIBED2K_ASSERT(have_piece == -1);
 
 		// initialization for the full check
 		if (m_hash_to_piece.empty())
@@ -2520,7 +2520,7 @@ ret:
 		if (read_short)
 		{
 			if (m_storage->error()
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 				&& m_storage->error() != error_code(ERROR_PATH_NOT_FOUND, get_system_category())
 				&& m_storage->error() != error_code(ERROR_FILE_NOT_FOUND, get_system_category())
 				&& m_storage->error() != error_code(ERROR_HANDLE_EOF, get_system_category())
@@ -2544,7 +2544,7 @@ ret:
 			&& piece_index >= 0)
 			m_out_of_place = true;
 
-		TORRENT_ASSERT(piece_index == unassigned || piece_index >= 0);
+		LIBED2K_ASSERT(piece_index == unassigned || piece_index >= 0);
 
 		const bool this_should_move = piece_index >= 0 && m_slot_to_piece[piece_index] != unallocated;
 		const bool other_should_move = m_piece_to_slot[m_current_slot] != has_no_slot;
@@ -2578,10 +2578,10 @@ ret:
 		// case 1
 		if (this_should_move && !other_should_move)
 		{
-			TORRENT_ASSERT(piece_index != m_current_slot);
+			LIBED2K_ASSERT(piece_index != m_current_slot);
 
 			const int other_slot = piece_index;
-			TORRENT_ASSERT(other_slot >= 0);
+			LIBED2K_ASSERT(other_slot >= 0);
 			int other_piece = m_slot_to_piece[other_slot];
 
 			m_slot_to_piece[other_slot] = piece_index;
@@ -2593,7 +2593,7 @@ ret:
 			{
 				std::vector<int>::iterator i =
 					std::find(m_free_slots.begin(), m_free_slots.end(), other_slot);
-				TORRENT_ASSERT(i != m_free_slots.end());
+				LIBED2K_ASSERT(i != m_free_slots.end());
 				if (m_storage_mode == internal_storage_mode_compact_deprecated)
 				{
 					m_free_slots.erase(i);
@@ -2610,17 +2610,17 @@ ret:
 
 			if (ret) return skip_file();
 
-			TORRENT_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
+			LIBED2K_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
 				|| m_piece_to_slot[m_slot_to_piece[m_current_slot]] == m_current_slot);
 		}
 		// case 2
 		else if (!this_should_move && other_should_move)
 		{
-			TORRENT_ASSERT(piece_index != m_current_slot);
+			LIBED2K_ASSERT(piece_index != m_current_slot);
 
 			const int other_piece = m_current_slot;
 			const int other_slot = m_piece_to_slot[other_piece];
-			TORRENT_ASSERT(other_slot >= 0);
+			LIBED2K_ASSERT(other_slot >= 0);
 
 			m_slot_to_piece[m_current_slot] = other_piece;
 			m_slot_to_piece[other_slot] = piece_index;
@@ -2644,27 +2644,27 @@ ret:
 			m_last_piece = other_piece;
 			if (ret) return skip_file();
 
-			TORRENT_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
+			LIBED2K_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
 				|| m_piece_to_slot[m_slot_to_piece[m_current_slot]] == m_current_slot);
 		}
 		else if (this_should_move && other_should_move)
 		{
-			TORRENT_ASSERT(piece_index != m_current_slot);
-			TORRENT_ASSERT(piece_index >= 0);
+			LIBED2K_ASSERT(piece_index != m_current_slot);
+			LIBED2K_ASSERT(piece_index >= 0);
 
 			const int piece1 = m_slot_to_piece[piece_index];
 			const int piece2 = m_current_slot;
 			const int slot1 = piece_index;
 			const int slot2 = m_piece_to_slot[piece2];
 
-			TORRENT_ASSERT(slot1 >= 0);
-			TORRENT_ASSERT(slot2 >= 0);
-			TORRENT_ASSERT(piece2 >= 0);
+			LIBED2K_ASSERT(slot1 >= 0);
+			LIBED2K_ASSERT(slot2 >= 0);
+			LIBED2K_ASSERT(piece2 >= 0);
 
 			if (slot1 == slot2)
 			{
 				// this means there are only two pieces involved in the swap
-				TORRENT_ASSERT(piece1 >= 0);
+				LIBED2K_ASSERT(piece1 >= 0);
 
 				// movement diagram:
 				// +-------------------------------+
@@ -2677,19 +2677,19 @@ ret:
 				m_piece_to_slot[piece_index] = slot1;
 				m_piece_to_slot[piece1] = m_current_slot;
 
-				TORRENT_ASSERT(piece1 == m_current_slot);
-				TORRENT_ASSERT(piece_index == slot1);
+				LIBED2K_ASSERT(piece1 == m_current_slot);
+				LIBED2K_ASSERT(piece_index == slot1);
 
 				m_last_piece = piece_index;
 				m_storage->swap_slots(m_current_slot, slot1);
 
-				TORRENT_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
+				LIBED2K_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
 					|| m_piece_to_slot[m_slot_to_piece[m_current_slot]] == m_current_slot);
 			}
 			else
 			{
-				TORRENT_ASSERT(slot1 != slot2);
-				TORRENT_ASSERT(piece1 != piece2);
+				LIBED2K_ASSERT(slot1 != slot2);
+				LIBED2K_ASSERT(piece1 != piece2);
 
 				// movement diagram:
 				// +-----------------------------------------+
@@ -2707,7 +2707,7 @@ ret:
 				{
 					std::vector<int>::iterator i =
 						std::find(m_free_slots.begin(), m_free_slots.end(), slot1);
-					TORRENT_ASSERT(i != m_free_slots.end());
+					LIBED2K_ASSERT(i != m_free_slots.end());
 					if (m_storage_mode == internal_storage_mode_compact_deprecated)
 					{
 						m_free_slots.erase(i);
@@ -2730,15 +2730,15 @@ ret:
 				m_last_piece = piece_index;
 				if (ret) return skip_file();
 
-				TORRENT_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
+				LIBED2K_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
 					|| m_piece_to_slot[m_slot_to_piece[m_current_slot]] == m_current_slot);
 			}
 		}
 		else
 		{
-			TORRENT_ASSERT(m_piece_to_slot[m_current_slot] == has_no_slot || piece_index != m_current_slot);
-			TORRENT_ASSERT(m_slot_to_piece[m_current_slot] == unallocated);
-			TORRENT_ASSERT(piece_index == unassigned || m_piece_to_slot[piece_index] == has_no_slot);
+			LIBED2K_ASSERT(m_piece_to_slot[m_current_slot] == has_no_slot || piece_index != m_current_slot);
+			LIBED2K_ASSERT(m_slot_to_piece[m_current_slot] == unallocated);
+			LIBED2K_ASSERT(piece_index == unassigned || m_piece_to_slot[piece_index] == has_no_slot);
 
 			// the slot was identified as piece 'piece_index'
 			if (piece_index != unassigned)
@@ -2748,7 +2748,7 @@ ret:
 
 			m_slot_to_piece[m_current_slot] = piece_index;
 
-			TORRENT_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
+			LIBED2K_ASSERT(m_slot_to_piece[m_current_slot] == unassigned
 				|| m_piece_to_slot[m_slot_to_piece[m_current_slot]] == m_current_slot);
 		}
 
@@ -2767,8 +2767,8 @@ ret:
 
 	void piece_manager::switch_to_full_mode()
 	{
-		TORRENT_ASSERT(m_storage_mode == internal_storage_mode_compact_deprecated);	
-		TORRENT_ASSERT(m_unallocated_slots.empty());	
+		LIBED2K_ASSERT(m_storage_mode == internal_storage_mode_compact_deprecated);	
+		LIBED2K_ASSERT(m_unallocated_slots.empty());	
 		// we have allocated all slots, switch to
 		// full allocation mode in order to free
 		// some unnecessary memory.
@@ -2785,27 +2785,27 @@ ret:
 
 		if (m_storage_mode != internal_storage_mode_compact_deprecated) return piece_index;
 
-#ifdef TORRENT_EXPENSIVE_INVARIANT_CHECKS
+#ifdef LIBED2K_EXPENSIVE_INVARIANT_CHECKS
 		INVARIANT_CHECK;
 #endif
 
-		TORRENT_ASSERT(piece_index >= 0);
-		TORRENT_ASSERT(piece_index < (int)m_piece_to_slot.size());
-		TORRENT_ASSERT(m_piece_to_slot.size() == m_slot_to_piece.size());
+		LIBED2K_ASSERT(piece_index >= 0);
+		LIBED2K_ASSERT(piece_index < (int)m_piece_to_slot.size());
+		LIBED2K_ASSERT(m_piece_to_slot.size() == m_slot_to_piece.size());
 
 		int slot_index = m_piece_to_slot[piece_index];
 
 		if (slot_index != has_no_slot)
 		{
-			TORRENT_ASSERT(slot_index >= 0);
-			TORRENT_ASSERT(slot_index < (int)m_slot_to_piece.size());
+			LIBED2K_ASSERT(slot_index >= 0);
+			LIBED2K_ASSERT(slot_index < (int)m_slot_to_piece.size());
 			return slot_index;
 		}
 
 		if (m_free_slots.empty())
 		{
 			allocate_slots_impl(1, lock);
-			TORRENT_ASSERT(!m_free_slots.empty());
+			LIBED2K_ASSERT(!m_free_slots.empty());
 		}
 
 		std::vector<int>::iterator iter(
@@ -2816,8 +2816,8 @@ ret:
 
 		if (iter == m_free_slots.end())
 		{
-			TORRENT_ASSERT(m_slot_to_piece[piece_index] != unassigned);
-			TORRENT_ASSERT(!m_free_slots.empty());
+			LIBED2K_ASSERT(m_slot_to_piece[piece_index] != unassigned);
+			LIBED2K_ASSERT(!m_free_slots.empty());
 			iter = m_free_slots.end() - 1;
 
 			// special case to make sure we don't use the last slot
@@ -2826,7 +2826,7 @@ ret:
 			{
 				if (m_free_slots.size() == 1)
 					allocate_slots_impl(1, lock);
-				TORRENT_ASSERT(m_free_slots.size() > 1);
+				LIBED2K_ASSERT(m_free_slots.size() > 1);
 				// assumes that all allocated slots
 				// are put at the end of the free_slots vector
 				iter = m_free_slots.end() - 1;
@@ -2836,7 +2836,7 @@ ret:
 		slot_index = *iter;
 		m_free_slots.erase(iter);
 
-		TORRENT_ASSERT(m_slot_to_piece[slot_index] == unassigned);
+		LIBED2K_ASSERT(m_slot_to_piece[slot_index] == unassigned);
 
 		m_slot_to_piece[slot_index] = piece_index;
 		m_piece_to_slot[piece_index] = slot_index;
@@ -2847,7 +2847,7 @@ ret:
 			&& m_slot_to_piece[piece_index] >= 0)
 		{
 
-#if defined TORRENT_DEBUG && defined TORRENT_STORAGE_DEBUG && TORRENT_USE_IOSTREAM
+#if defined LIBED2K_DEBUG && defined LIBED2K_STORAGE_DEBUG && LIBED2K_USE_IOSTREAM
 			std::stringstream s;
 
 			s << "there is another piece at our slot, swapping..";
@@ -2865,7 +2865,7 @@ ret:
 #endif
 
 			int piece_at_our_slot = m_slot_to_piece[piece_index];
-			TORRENT_ASSERT(m_piece_to_slot[piece_at_our_slot] == piece_index);
+			LIBED2K_ASSERT(m_piece_to_slot[piece_at_our_slot] == piece_index);
 
 			std::swap(
 				m_slot_to_piece[piece_index]
@@ -2878,17 +2878,17 @@ ret:
 			m_last_piece = piece_index;
 			m_storage->move_slot(piece_index, slot_index);
 
-			TORRENT_ASSERT(m_slot_to_piece[piece_index] == piece_index);
-			TORRENT_ASSERT(m_piece_to_slot[piece_index] == piece_index);
+			LIBED2K_ASSERT(m_slot_to_piece[piece_index] == piece_index);
+			LIBED2K_ASSERT(m_piece_to_slot[piece_index] == piece_index);
 
 			slot_index = piece_index;
 
-#if defined TORRENT_DEBUG && defined TORRENT_STORAGE_DEBUG
+#if defined LIBED2K_DEBUG && defined LIBED2K_STORAGE_DEBUG
 			debug_log();
 #endif
 		}
-		TORRENT_ASSERT(slot_index >= 0);
-		TORRENT_ASSERT(slot_index < (int)m_slot_to_piece.size());
+		LIBED2K_ASSERT(slot_index >= 0);
+		LIBED2K_ASSERT(slot_index < (int)m_slot_to_piece.size());
 
 		if (m_free_slots.empty() && m_unallocated_slots.empty())
 			switch_to_full_mode();
@@ -2899,22 +2899,22 @@ ret:
 	bool piece_manager::allocate_slots_impl(int num_slots, mutex::scoped_lock& l
 		, bool abort_on_disk)
 	{
-		TORRENT_ASSERT(num_slots > 0);
+		LIBED2K_ASSERT(num_slots > 0);
 
-#ifdef TORRENT_EXPENSIVE_INVARIANT_CHECKS
+#ifdef LIBED2K_EXPENSIVE_INVARIANT_CHECKS
 		INVARIANT_CHECK;
 #endif
 
-		TORRENT_ASSERT(!m_unallocated_slots.empty());
-		TORRENT_ASSERT(m_storage_mode == internal_storage_mode_compact_deprecated);
+		LIBED2K_ASSERT(!m_unallocated_slots.empty());
+		LIBED2K_ASSERT(m_storage_mode == internal_storage_mode_compact_deprecated);
 
 		bool written = false;
 
 		for (int i = 0; i < num_slots && !m_unallocated_slots.empty(); ++i)
 		{
 			int pos = m_unallocated_slots.front();
-			TORRENT_ASSERT(m_slot_to_piece[pos] == unallocated);
-			TORRENT_ASSERT(m_piece_to_slot[pos] != pos);
+			LIBED2K_ASSERT(m_slot_to_piece[pos] == unallocated);
+			LIBED2K_ASSERT(m_piece_to_slot[pos] != pos);
 
 			int new_free_slot = pos;
 			if (m_piece_to_slot[pos] != has_no_slot)
@@ -2932,76 +2932,76 @@ ret:
 			if (abort_on_disk && written) break;
 		}
 
-		TORRENT_ASSERT(m_free_slots.size() > 0);
+		LIBED2K_ASSERT(m_free_slots.size() > 0);
 		return written;
 	}
 
 	int piece_manager::slot_for(int piece) const
 	{
 		if (m_storage_mode != internal_storage_mode_compact_deprecated) return piece;
-		TORRENT_ASSERT(piece < int(m_piece_to_slot.size()));
-		TORRENT_ASSERT(piece >= 0);
+		LIBED2K_ASSERT(piece < int(m_piece_to_slot.size()));
+		LIBED2K_ASSERT(piece >= 0);
 		return m_piece_to_slot[piece];
 	}
 
 	int piece_manager::piece_for(int slot) const
 	{
 		if (m_storage_mode != internal_storage_mode_compact_deprecated) return slot;
-		TORRENT_ASSERT(slot < int(m_slot_to_piece.size()));
-		TORRENT_ASSERT(slot >= 0);
+		LIBED2K_ASSERT(slot < int(m_slot_to_piece.size()));
+		LIBED2K_ASSERT(slot >= 0);
 		return m_slot_to_piece[slot];
 	}
 		
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 	void piece_manager::check_invariant() const
 	{
-		TORRENT_ASSERT(m_current_slot <= m_files.num_pieces());
+		LIBED2K_ASSERT(m_current_slot <= m_files.num_pieces());
 		
 		if (m_unallocated_slots.empty()
 			&& m_free_slots.empty()
 			&& m_state == state_finished)
 		{
-			TORRENT_ASSERT(m_storage_mode != internal_storage_mode_compact_deprecated
+			LIBED2K_ASSERT(m_storage_mode != internal_storage_mode_compact_deprecated
 				|| m_files.num_pieces() == 0);
 		}
 		
 		if (m_storage_mode != internal_storage_mode_compact_deprecated)
 		{
-			TORRENT_ASSERT(m_unallocated_slots.empty());
-			TORRENT_ASSERT(m_free_slots.empty());
+			LIBED2K_ASSERT(m_unallocated_slots.empty());
+			LIBED2K_ASSERT(m_free_slots.empty());
 		}
 		
 		if (m_storage_mode != internal_storage_mode_compact_deprecated
 			&& m_state != state_expand_pieces
 			&& m_state != state_full_check)
 		{
-			TORRENT_ASSERT(m_piece_to_slot.empty());
-			TORRENT_ASSERT(m_slot_to_piece.empty());
+			LIBED2K_ASSERT(m_piece_to_slot.empty());
+			LIBED2K_ASSERT(m_slot_to_piece.empty());
 		}
 		else
 		{
 			if (m_piece_to_slot.empty()) return;
 
-			TORRENT_ASSERT((int)m_piece_to_slot.size() == m_files.num_pieces());
-			TORRENT_ASSERT((int)m_slot_to_piece.size() == m_files.num_pieces());
+			LIBED2K_ASSERT((int)m_piece_to_slot.size() == m_files.num_pieces());
+			LIBED2K_ASSERT((int)m_slot_to_piece.size() == m_files.num_pieces());
 
 			for (std::vector<int>::const_iterator i = m_free_slots.begin();
 					i != m_free_slots.end(); ++i)
 			{
-				TORRENT_ASSERT(*i < (int)m_slot_to_piece.size());
-				TORRENT_ASSERT(*i >= 0);
-				TORRENT_ASSERT(m_slot_to_piece[*i] == unassigned);
-				TORRENT_ASSERT(std::find(i+1, m_free_slots.end(), *i)
+				LIBED2K_ASSERT(*i < (int)m_slot_to_piece.size());
+				LIBED2K_ASSERT(*i >= 0);
+				LIBED2K_ASSERT(m_slot_to_piece[*i] == unassigned);
+				LIBED2K_ASSERT(std::find(i+1, m_free_slots.end(), *i)
 						== m_free_slots.end());
 			}
 
 			for (std::vector<int>::const_iterator i = m_unallocated_slots.begin();
 					i != m_unallocated_slots.end(); ++i)
 			{
-				TORRENT_ASSERT(*i < (int)m_slot_to_piece.size());
-				TORRENT_ASSERT(*i >= 0);
-				TORRENT_ASSERT(m_slot_to_piece[*i] == unallocated);
-				TORRENT_ASSERT(std::find(i+1, m_unallocated_slots.end(), *i)
+				LIBED2K_ASSERT(*i < (int)m_slot_to_piece.size());
+				LIBED2K_ASSERT(*i >= 0);
+				LIBED2K_ASSERT(m_slot_to_piece[*i] == unallocated);
+				LIBED2K_ASSERT(std::find(i+1, m_unallocated_slots.end(), *i)
 						== m_unallocated_slots.end());
 			}
 
@@ -3010,46 +3010,46 @@ ret:
 				// Check domain of piece_to_slot's elements
 				if (m_piece_to_slot[i] != has_no_slot)
 				{
-					TORRENT_ASSERT(m_piece_to_slot[i] >= 0);
-					TORRENT_ASSERT(m_piece_to_slot[i] < (int)m_slot_to_piece.size());
+					LIBED2K_ASSERT(m_piece_to_slot[i] >= 0);
+					LIBED2K_ASSERT(m_piece_to_slot[i] < (int)m_slot_to_piece.size());
 				}
 
 				// Check domain of slot_to_piece's elements
 				if (m_slot_to_piece[i] != unallocated
 						&& m_slot_to_piece[i] != unassigned)
 				{
-					TORRENT_ASSERT(m_slot_to_piece[i] >= 0);
-					TORRENT_ASSERT(m_slot_to_piece[i] < (int)m_piece_to_slot.size());
+					LIBED2K_ASSERT(m_slot_to_piece[i] >= 0);
+					LIBED2K_ASSERT(m_slot_to_piece[i] < (int)m_piece_to_slot.size());
 				}
 
 				// do more detailed checks on piece_to_slot
 				if (m_piece_to_slot[i] >= 0)
 				{
-					TORRENT_ASSERT(m_slot_to_piece[m_piece_to_slot[i]] == i);
+					LIBED2K_ASSERT(m_slot_to_piece[m_piece_to_slot[i]] == i);
 					if (m_piece_to_slot[i] != i)
 					{
-						TORRENT_ASSERT(m_slot_to_piece[i] == unallocated);
+						LIBED2K_ASSERT(m_slot_to_piece[i] == unallocated);
 					}
 				}
 				else
 				{
-					TORRENT_ASSERT(m_piece_to_slot[i] == has_no_slot);
+					LIBED2K_ASSERT(m_piece_to_slot[i] == has_no_slot);
 				}
 
 				// do more detailed checks on slot_to_piece
 
 				if (m_slot_to_piece[i] >= 0)
 				{
-					TORRENT_ASSERT(m_slot_to_piece[i] < (int)m_piece_to_slot.size());
-					TORRENT_ASSERT(m_piece_to_slot[m_slot_to_piece[i]] == i);
-#ifdef TORRENT_STORAGE_DEBUG
-					TORRENT_ASSERT(
+					LIBED2K_ASSERT(m_slot_to_piece[i] < (int)m_piece_to_slot.size());
+					LIBED2K_ASSERT(m_piece_to_slot[m_slot_to_piece[i]] == i);
+#ifdef LIBED2K_STORAGE_DEBUG
+					LIBED2K_ASSERT(
 							std::find(
 								m_unallocated_slots.begin()
 								, m_unallocated_slots.end()
 								, i) == m_unallocated_slots.end()
 							);
-					TORRENT_ASSERT(
+					LIBED2K_ASSERT(
 							std::find(
 								m_free_slots.begin()
 								, m_free_slots.end()
@@ -3059,8 +3059,8 @@ ret:
 				}
 				else if (m_slot_to_piece[i] == unallocated)
 				{
-#ifdef TORRENT_STORAGE_DEBUG
-					TORRENT_ASSERT(m_unallocated_slots.empty()
+#ifdef LIBED2K_STORAGE_DEBUG
+					LIBED2K_ASSERT(m_unallocated_slots.empty()
 							|| (std::find(
 									m_unallocated_slots.begin()
 									, m_unallocated_slots.end()
@@ -3070,8 +3070,8 @@ ret:
 				}
 				else if (m_slot_to_piece[i] == unassigned)
 				{
-#ifdef TORRENT_STORAGE_DEBUG
-					TORRENT_ASSERT(
+#ifdef LIBED2K_STORAGE_DEBUG
+					LIBED2K_ASSERT(
 							std::find(
 								m_free_slots.begin()
 								, m_free_slots.end()
@@ -3081,13 +3081,13 @@ ret:
 				}
 				else
 				{
-					TORRENT_ASSERT(false && "m_slot_to_piece[i] is invalid");
+					LIBED2K_ASSERT(false && "m_slot_to_piece[i] is invalid");
 				}
 			}
 		}
 	}
 
-#if defined(TORRENT_STORAGE_DEBUG) && TORRENT_USE_IOSTREAM
+#if defined(LIBED2K_STORAGE_DEBUG) && LIBED2K_USE_IOSTREAM
 	void piece_manager::debug_log() const
 	{
 		std::stringstream s;
@@ -3106,5 +3106,4 @@ ret:
 	}
 #endif
 #endif
-} // namespace libtorrent
-
+} // namespace libed2k

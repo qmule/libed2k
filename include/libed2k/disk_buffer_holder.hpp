@@ -30,20 +30,20 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_DISK_BUFFER_HOLDER_HPP_INCLUDED
-#define TORRENT_DISK_BUFFER_HOLDER_HPP_INCLUDED
+#ifndef LIBED2K_DISK_BUFFER_HOLDER_HPP_INCLUDED
+#define LIBED2K_DISK_BUFFER_HOLDER_HPP_INCLUDED
 
-#include "libtorrent/config.hpp"
-#include "libtorrent/assert.hpp"
+#include <libed2k/config.hpp>
+#include <libed2k/assert.hpp>
 #include <algorithm>
 
-namespace libtorrent
+namespace libed2k
 {
 
 	namespace aux { struct session_impl; }
 	struct disk_buffer_pool;
 
-	struct TORRENT_EXTRA_EXPORT disk_buffer_holder
+	struct LIBED2K_EXTRA_EXPORT disk_buffer_holder
 	{
 		disk_buffer_holder(aux::session_impl& ses, char* buf);
 		disk_buffer_holder(disk_buffer_pool& disk_pool, char* buf);
@@ -53,7 +53,7 @@ namespace libtorrent
 		void reset(char* buf = 0);
 		void swap(disk_buffer_holder& h)
 		{
-			TORRENT_ASSERT(&h.m_disk_pool == &m_disk_pool);
+			LIBED2K_ASSERT(&h.m_disk_pool == &m_disk_pool);
 			std::swap(h.m_buf, m_buf);
 		}
 
@@ -69,4 +69,3 @@ namespace libtorrent
 }
 
 #endif
-

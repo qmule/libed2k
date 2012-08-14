@@ -30,36 +30,36 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_DISK_BUFFER_POOL
-#define TORRENT_DISK_BUFFER_POOL
+#ifndef LIBED2K_DISK_BUFFER_POOL
+#define LIBED2K_DISK_BUFFER_POOL
 
-#include "libtorrent/config.hpp"
-#include "libtorrent/thread.hpp"
-#include "libtorrent/session_settings.hpp"
-#include "libtorrent/allocator.hpp"
+#include <libed2k/config.hpp>
+#include <libtorrent/thread.hpp>
+#include <libtorrent/session_settings.hpp>
+#include <libtorrent/allocator.hpp>
 
-#ifndef TORRENT_DISABLE_POOL_ALLOCATOR
+#ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
 #include <boost/pool/pool.hpp>
 #endif
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 #include <fstream>
 #endif
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 #include <map>
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
-	struct TORRENT_EXTRA_EXPORT disk_buffer_pool : boost::noncopyable
+	struct LIBED2K_EXTRA_EXPORT disk_buffer_pool : boost::noncopyable
 	{
 		disk_buffer_pool(int block_size);
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		~disk_buffer_pool();
 #endif
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		bool is_disk_buffer(char* buffer
 			, mutex::scoped_lock& l) const;
 		bool is_disk_buffer(char* buffer) const;
@@ -71,12 +71,12 @@ namespace libtorrent
 
 		int block_size() const { return m_block_size; }
 
-#ifdef TORRENT_STATS
+#ifdef LIBED2K_STATS
 		int disk_allocations() const
 		{ return m_allocations; }
 #endif
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		std::ofstream m_disk_access_log;
 #endif
 
@@ -101,16 +101,16 @@ namespace libtorrent
 
 		mutable mutex m_pool_mutex;
 
-#ifndef TORRENT_DISABLE_POOL_ALLOCATOR
+#ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
 		// memory pool for read and write operations
 		// and disk cache
 		boost::pool<page_aligned_allocator> m_pool;
 #endif
 
-#if defined TORRENT_DISK_STATS || defined TORRENT_STATS
+#if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
 		int m_allocations;
 #endif
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 	public:
 		void rename_buffer(char* buf, char const* category);
 	protected:
@@ -119,12 +119,12 @@ namespace libtorrent
 		std::ofstream m_log;
 	private:
 #endif
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		int m_magic;
 #endif
 	};
 
 }
 
-#endif // TORRENT_DISK_BUFFER_POOL
+#endif // LIBED2K_DISK_BUFFER_POOL
 

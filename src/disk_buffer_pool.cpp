@@ -30,60 +30,60 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/disk_buffer_pool.hpp"
-#include "libtorrent/assert.hpp"
+#include <libed2k/disk_buffer_pool.hpp>
+#include <libed2k/assert.hpp>
 #include <algorithm>
 
-#if TORRENT_USE_MLOCK && !defined TORRENT_WINDOWS
+#if LIBED2K_USE_MLOCK && !defined LIBED2K_WINDOWS
 #include <sys/mman.h>
 #endif
 
-#ifdef TORRENT_DISK_STATS
-#include "libtorrent/time.hpp"
+#ifdef LIBED2K_DISK_STATS
+#include <libtorrent/time.hpp>
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 	disk_buffer_pool::disk_buffer_pool(int block_size)
 		: m_block_size(block_size)
 		, m_in_use(0)
-#ifndef TORRENT_DISABLE_POOL_ALLOCATOR
+#ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
 		, m_pool(block_size, m_settings.cache_buffer_chunk_size)
 #endif
 	{
-#if defined TORRENT_DISK_STATS || defined TORRENT_STATS
+#if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
 		m_allocations = 0;
 #endif
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		m_log.open("disk_buffers.log", std::ios::trunc);
 		m_categories["read cache"] = 0;
 		m_categories["write cache"] = 0;
 
 		m_disk_access_log.open("disk_access.log", std::ios::trunc);
 #endif
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		m_magic = 0x1337;
 #endif
 	}
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	disk_buffer_pool::~disk_buffer_pool()
 	{
-		TORRENT_ASSERT(m_magic == 0x1337);
+		LIBED2K_ASSERT(m_magic == 0x1337);
 		m_magic = 0;
 	}
 #endif
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS || defined TORRENT_DISK_STATS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS || defined LIBED2K_DISK_STATS
 	bool disk_buffer_pool::is_disk_buffer(char* buffer
 		, mutex::scoped_lock& l) const
 	{
-		TORRENT_ASSERT(m_magic == 0x1337);
-#ifdef TORRENT_DISK_STATS
+		LIBED2K_ASSERT(m_magic == 0x1337);
+#ifdef LIBED2K_DISK_STATS
 		if (m_buf_to_category.find(buffer)
 			== m_buf_to_category.end()) return false;
 #endif
-#ifdef TORRENT_DISABLE_POOL_ALLOCATOR
+#ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
 		return true;
 #else
 		return m_pool.is_from(buffer);
@@ -100,18 +100,18 @@ namespace libtorrent
 	char* disk_buffer_pool::allocate_buffer(char const* category)
 	{
 		mutex::scoped_lock l(m_pool_mutex);
-		TORRENT_ASSERT(m_magic == 0x1337);
-#ifdef TORRENT_DISABLE_POOL_ALLOCATOR
+		LIBED2K_ASSERT(m_magic == 0x1337);
+#ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
 		char* ret = page_aligned_allocator::malloc(m_block_size);
 #else
 		char* ret = (char*)m_pool.malloc();
 		m_pool.set_next_size(m_settings.cache_buffer_chunk_size);
 #endif
 		++m_in_use;
-#if TORRENT_USE_MLOCK
+#if LIBED2K_USE_MLOCK
 		if (m_settings.lock_disk_cache)
 		{
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 			VirtualLock(ret, m_block_size);
 #else
 			mlock(ret, m_block_size);
@@ -119,24 +119,24 @@ namespace libtorrent
 		}
 #endif
 
-#if defined TORRENT_DISK_STATS || defined TORRENT_STATS
+#if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
 		++m_allocations;
 #endif
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		++m_categories[category];
 		m_buf_to_category[ret] = category;
 		m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
 #endif
-		TORRENT_ASSERT(ret == 0 || is_disk_buffer(ret, l));
+		LIBED2K_ASSERT(ret == 0 || is_disk_buffer(ret, l));
 		return ret;
 	}
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 	void disk_buffer_pool::rename_buffer(char* buf, char const* category)
 	{
 		mutex::scoped_lock l(m_pool_mutex);
-		TORRENT_ASSERT(is_disk_buffer(buf, l));
-		TORRENT_ASSERT(m_categories.find(m_buf_to_category[buf])
+		LIBED2K_ASSERT(is_disk_buffer(buf, l));
+		LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
 			!= m_categories.end());
 		std::string const& prev_category = m_buf_to_category[buf];
 		--m_categories[prev_category];
@@ -145,7 +145,7 @@ namespace libtorrent
 		++m_categories[category];
 		m_buf_to_category[buf] = category;
 		m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
-		TORRENT_ASSERT(m_categories.find(m_buf_to_category[buf])
+		LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
 			!= m_categories.end());
 	}
 #endif
@@ -160,7 +160,7 @@ namespace libtorrent
 		for (; bufvec != end; ++bufvec)
 		{
 			char* buf = *bufvec;
-			TORRENT_ASSERT(buf);
+			LIBED2K_ASSERT(buf);
 			free_buffer_impl(buf, l);;
 		}
 	}
@@ -173,31 +173,31 @@ namespace libtorrent
 
 	void disk_buffer_pool::free_buffer_impl(char* buf, mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(buf);
-		TORRENT_ASSERT(m_magic == 0x1337);
-		TORRENT_ASSERT(is_disk_buffer(buf, l));
-#if defined TORRENT_DISK_STATS || defined TORRENT_STATS
+		LIBED2K_ASSERT(buf);
+		LIBED2K_ASSERT(m_magic == 0x1337);
+		LIBED2K_ASSERT(is_disk_buffer(buf, l));
+#if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
 		--m_allocations;
 #endif
-#ifdef TORRENT_DISK_STATS
-		TORRENT_ASSERT(m_categories.find(m_buf_to_category[buf])
+#ifdef LIBED2K_DISK_STATS
+		LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
 			!= m_categories.end());
 		std::string const& category = m_buf_to_category[buf];
 		--m_categories[category];
 		m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
 		m_buf_to_category.erase(buf);
 #endif
-#if TORRENT_USE_MLOCK
+#if LIBED2K_USE_MLOCK
 		if (m_settings.lock_disk_cache)
 		{
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 			VirtualUnlock(buf, m_block_size);
 #else
 			munlock(buf, m_block_size);
 #endif		
 		}
 #endif
-#ifdef TORRENT_DISABLE_POOL_ALLOCATOR
+#ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
 		page_aligned_allocator::free(buf);
 #else
 		m_pool.free(buf);
@@ -207,8 +207,8 @@ namespace libtorrent
 
 	void disk_buffer_pool::release_memory()
 	{
-		TORRENT_ASSERT(m_magic == 0x1337);
-#ifndef TORRENT_DISABLE_POOL_ALLOCATOR
+		LIBED2K_ASSERT(m_magic == 0x1337);
+#ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
 		mutex::scoped_lock l(m_pool_mutex);
 		m_pool.release_memory();
 #endif

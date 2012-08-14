@@ -30,10 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_DISK_IO_THREAD
-#define TORRENT_DISK_IO_THREAD
+#ifndef LIBED2K_DISK_IO_THREAD
+#define LIBED2K_DISK_IO_THREAD
 
-#include "libtorrent/storage.hpp"
+#include <libed2k/storage.hpp>
 #include "libtorrent/allocator.hpp"
 #include "libtorrent/io_service.hpp"
 #include "libtorrent/sliding_average.hpp"
@@ -43,16 +43,16 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/noncopyable.hpp>
 #include <boost/shared_array.hpp>
 #include <deque>
-#include "libtorrent/config.hpp"
-#include "libtorrent/thread.hpp"
-#include "libtorrent/disk_buffer_pool.hpp"
+#include <libed2k/config.hpp>
+#include <libtorrent/thread.hpp>
+#include <libed2k/disk_buffer_pool.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 	using boost::multi_index::multi_index_container;
 	using boost::multi_index::ordered_non_unique;
@@ -224,7 +224,7 @@ namespace libtorrent
 	
 	// this is a singleton consisting of the thread and a queue
 	// of disk io jobs
-	struct TORRENT_EXTRA_EXPORT disk_io_thread : disk_buffer_pool
+	struct LIBED2K_EXTRA_EXPORT disk_io_thread : disk_buffer_pool
 	{
 		disk_io_thread(io_service& ios
 			, boost::function<void()> const& queue_callback
@@ -257,7 +257,7 @@ namespace libtorrent
 
 		void thread_fun();
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		void check_invariant() const;
 #endif
 		
@@ -419,7 +419,7 @@ namespace libtorrent
 		typedef std::multimap<size_type, disk_io_job> read_jobs_t;
 		read_jobs_t m_sorted_read_jobs;
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		std::ofstream m_log;
 #endif
 

@@ -30,23 +30,23 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/disk_buffer_holder.hpp"
-#include "libtorrent/aux_/session_impl.hpp"
-#include "libtorrent/disk_io_thread.hpp"
+#include <libed2k/disk_buffer_holder.hpp>
+#include <libed2k/session_impl.hpp>
+#include <libed2k/disk_io_thread.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 
 	disk_buffer_holder::disk_buffer_holder(aux::session_impl& ses, char* buf)
 		: m_disk_pool(ses.m_disk_thread), m_buf(buf)
 	{
-		TORRENT_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
+		LIBED2K_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
 	}
 
 	disk_buffer_holder::disk_buffer_holder(disk_buffer_pool& iothread, char* buf)
 		: m_disk_pool(iothread), m_buf(buf)
 	{
-		TORRENT_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
+		LIBED2K_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
 	}
 
 	void disk_buffer_holder::reset(char* buf)

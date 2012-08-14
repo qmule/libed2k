@@ -34,36 +34,36 @@ POSSIBILITY OF SUCH DAMAGE.
 	Disk queue elevator patch by Morten Husveit
 */
 
-#include "libtorrent/storage.hpp"
-#include "libtorrent/disk_io_thread.hpp"
-#include "libtorrent/disk_buffer_holder.hpp"
-#include "libtorrent/alloca.hpp"
-#include "libtorrent/invariant_check.hpp"
-#include "libtorrent/error_code.hpp"
-#include "libtorrent/error.hpp"
-#include "libtorrent/file_pool.hpp"
+#include <libed2k/storage.hpp>
+#include <libed2k/disk_io_thread.hpp>
+#include <libed2k/disk_buffer_holder.hpp>
+#include <libed2k/alloca.hpp>
+#include <libtorrent/invariant_check.hpp>
+#include <libtorrent/error_code.hpp>
+#include <libtorrent/error.hpp>
+#include <libtorrent/file_pool.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/bind.hpp>
 
-#include "libtorrent/time.hpp"
+#include <libtorrent/time.hpp>
 
-#if TORRENT_USE_MLOCK && !defined TORRENT_WINDOWS
+#if LIBED2K_USE_MLOCK && !defined LIBED2K_WINDOWS
 #include <sys/mman.h>
 #endif
 
-#ifdef TORRENT_BSD
+#ifdef LIBED2K_BSD
 #include <sys/sysctl.h>
 #endif
 
-#if TORRENT_USE_RLIMIT
+#if LIBED2K_USE_RLIMIT
 #include <sys/resource.h>
 #endif
 
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 #include <linux/unistd.h>
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 	bool should_cancel_on_abort(disk_io_job const& j);
 	bool is_read_operation(disk_io_job const& j);
@@ -96,7 +96,7 @@ namespace libtorrent
 
 	disk_io_thread::~disk_io_thread()
 	{
-		TORRENT_ASSERT(m_abort == true);
+		LIBED2K_ASSERT(m_abort == true);
 	}
 
 	void disk_io_thread::abort()
@@ -114,7 +114,7 @@ namespace libtorrent
 	{
 		m_disk_io_thread.join();
 		mutex::scoped_lock l(m_queue_mutex);
-		TORRENT_ASSERT(m_abort == true);
+		LIBED2K_ASSERT(m_abort == true);
 		m_jobs.clear();
 	}
 
@@ -207,7 +207,7 @@ namespace libtorrent
 			{
 				if (i->action == disk_io_job::write)
 				{
-					TORRENT_ASSERT(m_queue_buffer_size >= i->buffer_size);
+					LIBED2K_ASSERT(m_queue_buffer_size >= i->buffer_size);
 					m_queue_buffer_size -= i->buffer_size;
 				}
 				post_callback(*i, -3);
@@ -227,7 +227,7 @@ namespace libtorrent
 		update_last_use(int exp): expire(exp) {}
 		void operator()(disk_io_thread::cached_piece_entry& p)
 		{
-			TORRENT_ASSERT(p.storage);
+			LIBED2K_ASSERT(p.storage);
 			p.expire = time_now() + seconds(expire);
 		}
 		int expire;
@@ -240,7 +240,7 @@ namespace libtorrent
 		cache_piece_index_t& idx = cache.get<0>();
 		cache_piece_index_t::iterator i
 			= idx.find(std::pair<void*, int>(j.storage.get(), j.piece));
-		TORRENT_ASSERT(i == idx.end() || (i->storage == j.storage && i->piece == j.piece));
+		LIBED2K_ASSERT(i == idx.end() || (i->storage == j.storage && i->piece == j.piece));
 		return i;
 	}
 	
@@ -257,9 +257,9 @@ namespace libtorrent
 		time_duration cut_off = seconds(m_settings.cache_expiry);
 		while (i != widx.end() && now - i->expire > cut_off)
 		{
-			TORRENT_ASSERT(i->storage);
+			LIBED2K_ASSERT(i->storage);
 			flush_range(const_cast<cached_piece_entry&>(*i), 0, INT_MAX, l);
-			TORRENT_ASSERT(i->num_blocks == 0);
+			LIBED2K_ASSERT(i->num_blocks == 0);
 
 			// we want to keep the piece in here to have an accurate
 			// number for next_block_to_hash, if we're in avoid_readback mode
@@ -572,13 +572,13 @@ namespace libtorrent
 	{
 		INVARIANT_CHECK;
 
-		TORRENT_ASSERT(start < end);
+		LIBED2K_ASSERT(start < end);
 
 		int piece_size = p.storage->info()->piece_size(p.piece);
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		m_log << log_time() << " flushing " << piece_size << std::endl;
 #endif
-		TORRENT_ASSERT(piece_size > 0);
+		LIBED2K_ASSERT(piece_size > 0);
 		
 		int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
 		int buffer_size = 0;
@@ -588,7 +588,7 @@ namespace libtorrent
 		file::iovec_t* iov = 0;
 		int iov_counter = 0;
 		if (m_settings.coalesce_writes) buf.reset(new (std::nothrow) char[piece_size]);
-		else iov = TORRENT_ALLOCA(file::iovec_t, blocks_in_piece);
+		else iov = LIBED2K_ALLOCA(file::iovec_t, blocks_in_piece);
 
 		end = (std::min)(end, blocks_in_piece);
 		int num_write_calls = 0;
@@ -599,7 +599,7 @@ namespace libtorrent
 			{
 				if (buffer_size == 0) continue;
 			
-				TORRENT_ASSERT(buffer_size <= i * m_block_size);
+				LIBED2K_ASSERT(buffer_size <= i * m_block_size);
 				l.unlock();
 				if (iov)
 				{
@@ -610,7 +610,7 @@ namespace libtorrent
 				}
 				else
 				{
-					TORRENT_ASSERT(buf);
+					LIBED2K_ASSERT(buf);
 					file::iovec_t b = { buf.get(), buffer_size };
 					int ret = p.storage->write_impl(&b, p.piece, (std::min)(
 						i * m_block_size, piece_size) - buffer_size, 1);
@@ -624,24 +624,24 @@ namespace libtorrent
 				continue;
 			}
 			int block_size = (std::min)(piece_size - i * m_block_size, m_block_size);
-			TORRENT_ASSERT(offset + block_size <= piece_size);
-			TORRENT_ASSERT(offset + block_size > 0);
+			LIBED2K_ASSERT(offset + block_size <= piece_size);
+			LIBED2K_ASSERT(offset + block_size > 0);
 			if (iov)
 			{
-				TORRENT_ASSERT(!buf);
+				LIBED2K_ASSERT(!buf);
 				iov[iov_counter].iov_base = p.blocks[i].buf;
 				iov[iov_counter].iov_len = block_size;
 				++iov_counter;
 			}
 			else
 			{
-				TORRENT_ASSERT(buf);
-				TORRENT_ASSERT(iov == 0);
+				LIBED2K_ASSERT(buf);
+				LIBED2K_ASSERT(iov == 0);
 				std::memcpy(buf.get() + offset, p.blocks[i].buf, block_size);
 				offset += m_block_size;
 			}
 			buffer_size += block_size;
-			TORRENT_ASSERT(p.num_blocks > 0);
+			LIBED2K_ASSERT(p.num_blocks > 0);
 			--p.num_blocks;
 			++m_cache_stats.blocks_written;
 			--m_cache_stats.cache_size;
@@ -681,11 +681,11 @@ namespace libtorrent
 		if (ret > 0)
 			p.num_contiguous_blocks = contiguous_blocks(p);
 
-		TORRENT_ASSERT(buffer_size == 0);
+		LIBED2K_ASSERT(buffer_size == 0);
 //		std::cerr << " flushing p: " << p.piece << " cached_blocks: " << m_cache_stats.cache_size << std::endl;
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		for (int i = start; i < end; ++i)
-			TORRENT_ASSERT(p.blocks[i].buf == 0);
+			LIBED2K_ASSERT(p.blocks[i].buf == 0);
 #endif
 		return ret;
 	}
@@ -697,9 +697,9 @@ namespace libtorrent
 		, mutex::scoped_lock& l)
 	{
 		INVARIANT_CHECK;
-		TORRENT_ASSERT(find_cached_piece(m_pieces, j, l) == m_pieces.end());
-		TORRENT_ASSERT((j.offset & (m_block_size-1)) == 0);
-		TORRENT_ASSERT(j.cache_min_time >= 0);
+		LIBED2K_ASSERT(find_cached_piece(m_pieces, j, l) == m_pieces.end());
+		LIBED2K_ASSERT((j.offset & (m_block_size-1)) == 0);
+		LIBED2K_ASSERT(j.cache_min_time >= 0);
 		cached_piece_entry p;
 
 		int piece_size = j.storage->info()->piece_size(j.piece);
@@ -708,7 +708,7 @@ namespace libtorrent
 		// there's only one block in it
 		if (blocks_in_piece <= 1) return -1;
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		rename_buffer(j.buffer, "write cache");
 #endif
 
@@ -726,7 +726,7 @@ namespace libtorrent
 		p.blocks[block].callback.swap(handler);
 		++m_cache_stats.cache_size;
 		cache_lru_index_t& idx = m_pieces.get<1>();
-		TORRENT_ASSERT(p.storage);
+		LIBED2K_ASSERT(p.storage);
 		idx.insert(p);
 		return 0;
 	}
@@ -736,7 +736,7 @@ namespace libtorrent
 	int disk_io_thread::read_into_piece(cached_piece_entry& p, int start_block
 		, int options, int num_blocks, mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(num_blocks > 0);
+		LIBED2K_ASSERT(num_blocks > 0);
 		int piece_size = p.storage->info()->piece_size(p.piece);
 		int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
 
@@ -744,7 +744,7 @@ namespace libtorrent
 		int num_read = 0;
 
 		int iov_counter = 0;
-		file::iovec_t* iov = TORRENT_ALLOCA(file::iovec_t, (std::min)(blocks_in_piece - start_block, num_blocks));
+		file::iovec_t* iov = LIBED2K_ALLOCA(file::iovec_t, (std::min)(blocks_in_piece - start_block, num_blocks));
 
 		int piece_offset = start_block * m_block_size;
 
@@ -756,7 +756,7 @@ namespace libtorrent
 				|| in_use() < m_settings.cache_size); ++i)
 		{
 			int block_size = (std::min)(piece_size - piece_offset, m_block_size);
-			TORRENT_ASSERT(piece_offset <= piece_size);
+			LIBED2K_ASSERT(piece_offset <= piece_size);
 
 			// this is a block that is already allocated
 			// free it and allocate a new one
@@ -795,15 +795,15 @@ namespace libtorrent
 			return -2;
 		}
 
-		TORRENT_ASSERT(iov_counter <= (std::min)(blocks_in_piece - start_block, num_blocks));
+		LIBED2K_ASSERT(iov_counter <= (std::min)(blocks_in_piece - start_block, num_blocks));
 
 		// the buffer_size is the size of the buffer we need to read
 		// all these blocks.
 		const int buffer_size = (std::min)((end_block - start_block) * m_block_size
 			, piece_size - start_block * m_block_size);
-		TORRENT_ASSERT(buffer_size > 0);
-		TORRENT_ASSERT(buffer_size <= piece_size);
-		TORRENT_ASSERT(buffer_size + start_block * m_block_size <= piece_size);
+		LIBED2K_ASSERT(buffer_size > 0);
+		LIBED2K_ASSERT(buffer_size <= piece_size);
+		LIBED2K_ASSERT(buffer_size + start_block * m_block_size <= piece_size);
 
 		if (m_settings.coalesce_reads)
 			buf.reset(new (std::nothrow) char[buffer_size]);
@@ -833,9 +833,9 @@ namespace libtorrent
 			int offset = 0;
 			for (int i = 0; i < iov_counter; ++i)
 			{
-				TORRENT_ASSERT(iov[i].iov_base);
-				TORRENT_ASSERT(iov[i].iov_len > 0);
-				TORRENT_ASSERT(int(offset + iov[i].iov_len) <= buffer_size);
+				LIBED2K_ASSERT(iov[i].iov_base);
+				LIBED2K_ASSERT(iov[i].iov_len > 0);
+				LIBED2K_ASSERT(int(offset + iov[i].iov_len) <= buffer_size);
 				std::memcpy(iov[i].iov_base, buf.get() + offset, iov[i].iov_len);
 				offset += iov[i].iov_len;
 			}
@@ -862,7 +862,7 @@ namespace libtorrent
 			}
 		}
 
-		TORRENT_ASSERT(ret == buffer_size);
+		LIBED2K_ASSERT(ret == buffer_size);
 		return ret;
 	}
 
@@ -872,12 +872,12 @@ namespace libtorrent
 	{
 		INVARIANT_CHECK;
 
-		TORRENT_ASSERT(j.cache_min_time >= 0);
+		LIBED2K_ASSERT(j.cache_min_time >= 0);
 
 		// this function will create a new cached_piece_entry
 		// and requires that it doesn't already exist
 		cache_piece_index_t& idx = m_read_pieces.get<0>();
-		TORRENT_ASSERT(find_cached_piece(m_read_pieces, j, l) == idx.end());
+		LIBED2K_ASSERT(find_cached_piece(m_read_pieces, j, l) == idx.end());
 
 		int piece_size = j.storage->info()->piece_size(j.piece);
 		int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
@@ -910,13 +910,13 @@ namespace libtorrent
 
 		int ret = read_into_piece(p, start_block, 0, blocks_to_read, l);
 
-		TORRENT_ASSERT(p.storage);
+		LIBED2K_ASSERT(p.storage);
 		if (ret >= 0) idx.insert(p);
 
 		return ret;
 	}
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 	void disk_io_thread::check_invariant() const
 	{
 		int cached_write_blocks = 0;
@@ -925,10 +925,10 @@ namespace libtorrent
 			, end(idx.end()); i != end; ++i)
 		{
 			cached_piece_entry const& p = *i;
-			TORRENT_ASSERT(p.blocks);
-//			TORRENT_ASSERT(p.num_contiguous_blocks == contiguous_blocks(p));
+			LIBED2K_ASSERT(p.blocks);
+//			LIBED2K_ASSERT(p.num_contiguous_blocks == contiguous_blocks(p));
 			
-			TORRENT_ASSERT(p.storage);
+			LIBED2K_ASSERT(p.storage);
 			int piece_size = p.storage->info()->piece_size(p.piece);
 			int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
 			int blocks = 0;
@@ -936,13 +936,13 @@ namespace libtorrent
 			{
 				if (p.blocks[k].buf)
 				{
-#if !defined TORRENT_DISABLE_POOL_ALLOCATOR && defined TORRENT_EXPENSIVE_INVARIANT_CHECKS
-					TORRENT_ASSERT(is_disk_buffer(p.blocks[k].buf));
+#if !defined LIBED2K_DISABLE_POOL_ALLOCATOR && defined LIBED2K_EXPENSIVE_INVARIANT_CHECKS
+					LIBED2K_ASSERT(is_disk_buffer(p.blocks[k].buf));
 #endif
 					++blocks;
 				}
 			}
-//			TORRENT_ASSERT(blocks == p.num_blocks);
+//			LIBED2K_ASSERT(blocks == p.num_blocks);
 			cached_write_blocks += blocks;
 		}
 	
@@ -951,7 +951,7 @@ namespace libtorrent
 			, end(m_read_pieces.end()); i != end; ++i)
 		{
 			cached_piece_entry const& p = *i;
-			TORRENT_ASSERT(p.blocks);
+			LIBED2K_ASSERT(p.blocks);
 			
 			int piece_size = p.storage->info()->piece_size(p.piece);
 			int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
@@ -960,29 +960,29 @@ namespace libtorrent
 			{
 				if (p.blocks[k].buf)
 				{
-#if !defined TORRENT_DISABLE_POOL_ALLOCATOR && defined TORRENT_EXPENSIVE_INVARIANT_CHECKS
-					TORRENT_ASSERT(is_disk_buffer(p.blocks[k].buf));
+#if !defined LIBED2K_DISABLE_POOL_ALLOCATOR && defined LIBED2K_EXPENSIVE_INVARIANT_CHECKS
+					LIBED2K_ASSERT(is_disk_buffer(p.blocks[k].buf));
 #endif
 					++blocks;
 				}
 			}
-//			TORRENT_ASSERT(blocks == p.num_blocks);
+//			LIBED2K_ASSERT(blocks == p.num_blocks);
 			cached_read_blocks += blocks;
 		}
 
-		TORRENT_ASSERT(cached_read_blocks == m_cache_stats.read_cache_size);
-		TORRENT_ASSERT(cached_read_blocks + cached_write_blocks == m_cache_stats.cache_size);
+		LIBED2K_ASSERT(cached_read_blocks == m_cache_stats.read_cache_size);
+		LIBED2K_ASSERT(cached_read_blocks + cached_write_blocks == m_cache_stats.cache_size);
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		int read_allocs = m_categories.find(std::string("read cache"))->second;
 		int write_allocs = m_categories.find(std::string("write cache"))->second;
-		TORRENT_ASSERT(cached_read_blocks == read_allocs);
-		TORRENT_ASSERT(cached_write_blocks == write_allocs);
+		LIBED2K_ASSERT(cached_read_blocks == read_allocs);
+		LIBED2K_ASSERT(cached_write_blocks == write_allocs);
 #endif
 
 		// when writing, there may be a one block difference, right before an old piece
 		// is flushed
-		TORRENT_ASSERT(m_cache_stats.cache_size <= m_settings.cache_size + 1);
+		LIBED2K_ASSERT(m_cache_stats.cache_size <= m_settings.cache_size + 1);
 	}
 #endif
 
@@ -994,7 +994,7 @@ namespace libtorrent
 	{
 		INVARIANT_CHECK;
 
-		TORRENT_ASSERT(j.cache_min_time >= 0);
+		LIBED2K_ASSERT(j.cache_min_time >= 0);
 
 		cache_piece_index_t& idx = m_read_pieces.get<0>();
 		p = find_cached_piece(m_read_pieces, j, l);
@@ -1035,25 +1035,25 @@ namespace libtorrent
 
 			hit = false;
 			if (ret < 0) return ret;
-			TORRENT_ASSERT(pe.storage);
+			LIBED2K_ASSERT(pe.storage);
 			p = idx.insert(pe).first;
 		}
 		else
 		{
 			idx.modify(p, update_last_use(j.cache_min_time));
 		}
-		TORRENT_ASSERT(!m_read_pieces.empty());
-		TORRENT_ASSERT(p->piece == j.piece);
-		TORRENT_ASSERT(p->storage == j.storage);
+		LIBED2K_ASSERT(!m_read_pieces.empty());
+		LIBED2K_ASSERT(p->piece == j.piece);
+		LIBED2K_ASSERT(p->storage == j.storage);
 		return ret;
 	}
 
 	// cache the entire piece and hash it
 	int disk_io_thread::read_piece_from_cache_and_hash(disk_io_job const& j, sha1_hash& h)
 	{
-		TORRENT_ASSERT(j.buffer);
+		LIBED2K_ASSERT(j.buffer);
 
-		TORRENT_ASSERT(j.cache_min_time >= 0);
+		LIBED2K_ASSERT(j.cache_min_time >= 0);
 
 		mutex::scoped_lock l(m_piece_mutex);
 
@@ -1076,7 +1076,7 @@ namespace libtorrent
 
 			for (int i = 0; i < blocks_in_piece; ++i)
 			{
-				TORRENT_ASSERT(p->blocks[i].buf);
+				LIBED2K_ASSERT(p->blocks[i].buf);
 				ctx.update((char const*)p->blocks[i].buf, (std::min)(piece_size, m_block_size));
 				piece_size -= m_block_size;
 			}
@@ -1084,7 +1084,7 @@ namespace libtorrent
 		}
 
 		ret = copy_from_piece(const_cast<cached_piece_entry&>(*p), hit, j, l);
-		TORRENT_ASSERT(ret > 0);
+		LIBED2K_ASSERT(ret > 0);
 		if (ret < 0) return ret;
 		cache_piece_index_t& idx = m_read_pieces.get<0>();
 		if (p->num_blocks == 0) idx.erase(p);
@@ -1099,9 +1099,9 @@ namespace libtorrent
 			|| !m_settings.use_read_cache
 			|| (m_settings.explicit_read_cache && !hit))
 		{
-			TORRENT_ASSERT(!m_read_pieces.empty());
-			TORRENT_ASSERT(p->piece == j.piece);
-			TORRENT_ASSERT(p->storage == j.storage);
+			LIBED2K_ASSERT(!m_read_pieces.empty());
+			LIBED2K_ASSERT(p->piece == j.piece);
+			LIBED2K_ASSERT(p->storage == j.storage);
 			if (p != m_read_pieces.end())
 			{
 				free_piece(const_cast<cached_piece_entry&>(*p), l);
@@ -1128,7 +1128,7 @@ namespace libtorrent
 		int block_offset = j.offset & (m_block_size-1);
 		int size = j.buffer_size;
 		int min_blocks_to_read = block_offset > 0 && (size > m_block_size - block_offset) ? 2 : 1;
-		TORRENT_ASSERT(size <= m_block_size);
+		LIBED2K_ASSERT(size <= m_block_size);
 		int start_block = block;
 		// if we have to read more than one block, and
 		// the first block is there, make sure we test
@@ -1136,10 +1136,10 @@ namespace libtorrent
 		if (p.blocks[start_block].buf != 0 && min_blocks_to_read > 1)
 			++start_block;
 
-#ifdef TORRENT_DEBUG	
+#ifdef LIBED2K_DEBUG	
 		int piece_size = j.storage->info()->piece_size(j.piece);
 		int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
-		TORRENT_ASSERT(start_block < blocks_in_piece);
+		LIBED2K_ASSERT(start_block < blocks_in_piece);
 #endif
 
 		return p.blocks[start_block].buf != 0;
@@ -1148,7 +1148,7 @@ namespace libtorrent
 	int disk_io_thread::copy_from_piece(cached_piece_entry& p, bool& hit
 		, disk_io_job const& j, mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(j.buffer);
+		LIBED2K_ASSERT(j.buffer);
 
 		// copy from the cache and update the last use timestamp
 		int block = j.offset / m_block_size;
@@ -1156,14 +1156,14 @@ namespace libtorrent
 		int buffer_offset = 0;
 		int size = j.buffer_size;
 		int min_blocks_to_read = block_offset > 0 && (size > m_block_size - block_offset) ? 2 : 1;
-		TORRENT_ASSERT(size <= m_block_size);
+		LIBED2K_ASSERT(size <= m_block_size);
 		int start_block = block;
 		if (p.blocks[start_block].buf != 0 && min_blocks_to_read > 1)
 			++start_block;
 
 		int piece_size = j.storage->info()->piece_size(j.piece);
 		int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
-		TORRENT_ASSERT(start_block < blocks_in_piece);
+		LIBED2K_ASSERT(start_block < blocks_in_piece);
 
 		// if block_offset > 0, we need to read two blocks, and then
 		// copy parts of both, because it's not aligned to the block
@@ -1197,7 +1197,7 @@ namespace libtorrent
 			hit = false;
 			if (ret < 0) return ret;
 			if (ret < size + block_offset) return -2;
-			TORRENT_ASSERT(p.blocks[block].buf);
+			LIBED2K_ASSERT(p.blocks[block].buf);
 		}
 
 		// build a vector of all the buffers we need to free
@@ -1205,7 +1205,7 @@ namespace libtorrent
 		std::vector<char*> buffers;
 		while (size > 0)
 		{
-			TORRENT_ASSERT(p.blocks[block].buf);
+			LIBED2K_ASSERT(p.blocks[block].buf);
 			int to_copy = (std::min)(m_block_size
 					- block_offset, size);
 			std::memcpy(j.buffer + buffer_offset
@@ -1238,8 +1238,8 @@ namespace libtorrent
 
 	int disk_io_thread::try_read_from_cache(disk_io_job const& j, bool& hit, int flags)
 	{
-		TORRENT_ASSERT(j.buffer);
-		TORRENT_ASSERT(j.cache_min_time >= 0);
+		LIBED2K_ASSERT(j.buffer);
+		LIBED2K_ASSERT(j.cache_min_time >= 0);
 
 		mutex::scoped_lock l(m_piece_mutex);
 		if (!m_settings.use_read_cache) return -2;
@@ -1269,12 +1269,12 @@ namespace libtorrent
 			if (ret < 0) return ret;
 
 			p = find_cached_piece(m_read_pieces, j, l);
-			TORRENT_ASSERT(!m_read_pieces.empty());
-			TORRENT_ASSERT(p->piece == j.piece);
-			TORRENT_ASSERT(p->storage == j.storage);
+			LIBED2K_ASSERT(!m_read_pieces.empty());
+			LIBED2K_ASSERT(p->piece == j.piece);
+			LIBED2K_ASSERT(p->storage == j.storage);
 		}
 
-		TORRENT_ASSERT(p != idx.end());
+		LIBED2K_ASSERT(p != idx.end());
 
 		ret = copy_from_piece(const_cast<cached_piece_entry&>(*p), hit, j, l);
 		if (ret < 0) return ret;
@@ -1301,11 +1301,11 @@ namespace libtorrent
 		for (job_queue_t::iterator i = completed_jobs->begin()
 			, end(completed_jobs->end()); i != end; ++i)
 		{
-			TORRENT_TRY
+			LIBED2K_TRY
 			{
 				i->first.callback(i->second, i->first);
 			}
-			TORRENT_CATCH(std::exception& e)
+			LIBED2K_CATCH(std::exception& e)
 			{}
 		}
 	}
@@ -1339,7 +1339,7 @@ namespace libtorrent
 			int ret = try_read_from_cache(j, hit, cache_only);
 			if (hit && ret >= 0)
 			{
-				TORRENT_ASSERT(f);
+				LIBED2K_ASSERT(f);
 				const_cast<disk_io_job&>(j).callback.swap(
 					const_cast<boost::function<void(int, disk_io_job const&)>&>(f));
 				job_queue_t* q = new job_queue_t;
@@ -1361,18 +1361,18 @@ namespace libtorrent
 	int disk_io_thread::add_job(disk_io_job const& j
 		, boost::function<void(int, disk_io_job const&)> const& f)
 	{
-		TORRENT_ASSERT(!m_abort);
-		TORRENT_ASSERT(j.storage
+		LIBED2K_ASSERT(!m_abort);
+		LIBED2K_ASSERT(j.storage
 			|| j.action == disk_io_job::abort_thread
 			|| j.action == disk_io_job::update_settings);
-		TORRENT_ASSERT(j.buffer_size <= m_block_size);
+		LIBED2K_ASSERT(j.buffer_size <= m_block_size);
 		mutex::scoped_lock l(m_queue_mutex);
 		return add_job(j, l, f);
 	}
 
 	bool disk_io_thread::test_error(disk_io_job& j)
 	{
-		TORRENT_ASSERT(j.storage);
+		LIBED2K_ASSERT(j.storage);
 		error_code const& ec = j.storage->error();
 		if (ec)
 		{
@@ -1380,7 +1380,7 @@ namespace libtorrent
 			j.str.clear();
 			j.error = ec;
 			j.error_file = j.storage->error_file();
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 			printf("ERROR: '%s' in %s\n", ec.message().c_str(), j.error_file.c_str());
 #endif
 			j.storage->clear_error();
@@ -1425,25 +1425,25 @@ namespace libtorrent
 
 	bool should_cancel_on_abort(disk_io_job const& j)
 	{
-		TORRENT_ASSERT(j.action >= 0 && j.action < int(sizeof(action_flags)));
+		LIBED2K_ASSERT(j.action >= 0 && j.action < int(sizeof(action_flags)));
 		return action_flags[j.action] & cancel_on_abort;
 	}
 
 	bool is_read_operation(disk_io_job const& j)
 	{
-		TORRENT_ASSERT(j.action >= 0 && j.action < int(sizeof(action_flags)));
+		LIBED2K_ASSERT(j.action >= 0 && j.action < int(sizeof(action_flags)));
 		return action_flags[j.action] & read_operation;
 	}
 
 	bool operation_has_buffer(disk_io_job const& j)
 	{
-		TORRENT_ASSERT(j.action >= 0 && j.action < int(sizeof(action_flags)));
+		LIBED2K_ASSERT(j.action >= 0 && j.action < int(sizeof(action_flags)));
 		return action_flags[j.action] & buffer_operation;
 	}
 
 	void disk_io_thread::thread_fun()
 	{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 		m_log.open("disk_io_thread.log", std::ios::trunc);
 #endif
 
@@ -1451,7 +1451,7 @@ namespace libtorrent
 		// this machine. This is used for automatically
 		// sizing the disk cache size when it's set to
 		// automatic.
-#ifdef TORRENT_BSD
+#ifdef LIBED2K_BSD
 #ifdef HW_MEMSIZE
 		int mib[2] = { CTL_HW, HW_MEMSIZE };
 #else
@@ -1463,21 +1463,21 @@ namespace libtorrent
 		size_t len = sizeof(m_physical_ram);
 		if (sysctl(mib, 2, &m_physical_ram, &len, NULL, 0) != 0)
 			m_physical_ram = 0;
-#elif defined TORRENT_WINDOWS
+#elif defined LIBED2K_WINDOWS
 		MEMORYSTATUSEX ms;
 		ms.dwLength = sizeof(MEMORYSTATUSEX);
 		if (GlobalMemoryStatusEx(&ms))
 			m_physical_ram = ms.ullTotalPhys;
 		else
 			m_physical_ram = 0;
-#elif defined TORRENT_LINUX
+#elif defined LIBED2K_LINUX
 		m_physical_ram = sysconf(_SC_PHYS_PAGES);
 		m_physical_ram *= sysconf(_SC_PAGESIZE);
-#elif defined TORRENT_AMIGA
+#elif defined LIBED2K_AMIGA
 		m_physical_ram = AvailMem(MEMF_PUBLIC);
 #endif
 
-#if TORRENT_USE_RLIMIT
+#if LIBED2K_USE_RLIMIT
 		if (m_physical_ram > 0)
 		{
 			struct rlimit r;
@@ -1498,7 +1498,7 @@ namespace libtorrent
 
 		for (;;)
 		{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 			m_log << log_time() << " idle" << std::endl;
 #endif
 
@@ -1538,7 +1538,7 @@ namespace libtorrent
 					, end(widx.end()); i != end; ++i)
 					flush_range(const_cast<cached_piece_entry&>(*i), 0, INT_MAX, l);
 
-#ifdef TORRENT_DISABLE_POOL_ALLOCATOR
+#ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
 				// since we're aborting the thread, we don't actually
 				// need to free all the blocks individually. We can just
 				// clear the piece list and the memory will be freed when we
@@ -1596,7 +1596,7 @@ namespace libtorrent
 				m_jobs.pop_front();
 				if (j.action == disk_io_job::write)
 				{
-					TORRENT_ASSERT(m_queue_buffer_size >= j.buffer_size);
+					LIBED2K_ASSERT(m_queue_buffer_size >= j.buffer_size);
 					m_queue_buffer_size -= j.buffer_size;
 					
 					if (m_exceeded_write_queue)
@@ -1632,7 +1632,7 @@ namespace libtorrent
 					// it immediately
 					if (m_settings.use_read_cache)
 					{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 						m_log << log_time() << " check_cache_hit" << std::endl;
 #endif
 						// unfortunately we need to lock the cache
@@ -1655,10 +1655,10 @@ namespace libtorrent
 					j.storage->hint_read_impl(j.piece, j.offset, j.buffer_size);
 				}
 
-				TORRENT_ASSERT(j.offset >= 0);
+				LIBED2K_ASSERT(j.offset >= 0);
 				if (m_settings.allow_reordered_disk_operations && defer)
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " sorting_job" << std::endl;
 #endif
 					ptime sort_start = time_now_hires();
@@ -1686,7 +1686,7 @@ namespace libtorrent
 
 				immediate_jobs_in_row = 0;
 
-				TORRENT_ASSERT(!m_sorted_read_jobs.empty());
+				LIBED2K_ASSERT(!m_sorted_read_jobs.empty());
 
 				// if m_sorted_read_jobs used to be empty,
 				// we need to update the elevator position
@@ -1702,9 +1702,9 @@ namespace libtorrent
 					elevator_direction = -1;
 					--elevator_job_pos;
 				}
-				TORRENT_ASSERT(!m_sorted_read_jobs.empty());
+				LIBED2K_ASSERT(!m_sorted_read_jobs.empty());
 
-				TORRENT_ASSERT(elevator_job_pos != m_sorted_read_jobs.end());
+				LIBED2K_ASSERT(elevator_job_pos != m_sorted_read_jobs.end());
 				j = elevator_job_pos->second;
 				read_jobs_t::iterator to_erase = elevator_job_pos;
 
@@ -1718,7 +1718,7 @@ namespace libtorrent
 				if (elevator_direction > 0) ++elevator_job_pos;
 				else --elevator_job_pos;
 
-				TORRENT_ASSERT(to_erase != elevator_job_pos);
+				LIBED2K_ASSERT(to_erase != elevator_job_pos);
 				last_elevator_pos = to_erase->first;
 				m_sorted_read_jobs.erase(to_erase);
 			}
@@ -1735,10 +1735,10 @@ namespace libtorrent
 
 			int ret = 0;
 
-			TORRENT_ASSERT(j.storage
+			LIBED2K_ASSERT(j.storage
 				|| j.action == disk_io_job::abort_thread
 				|| j.action == disk_io_job::update_settings);
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 			ptime start = time_now();
 #endif
 
@@ -1746,7 +1746,7 @@ namespace libtorrent
 				j.cache_min_time = j.cache_min_time == 0 ? m_settings.default_cache_min_age
 					: (std::max)(m_settings.default_cache_min_age, j.cache_min_time);
 
-			TORRENT_TRY
+			LIBED2K_TRY
 			{
 
 			if (j.storage && j.storage->get_storage_impl()->m_settings == 0)
@@ -1756,15 +1756,15 @@ namespace libtorrent
 			{
 				case disk_io_job::update_settings:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " update_settings " << std::endl;
 #endif
-					TORRENT_ASSERT(j.buffer);
+					LIBED2K_ASSERT(j.buffer);
 					session_settings const* s = ((session_settings*)j.buffer);
-					TORRENT_ASSERT(s->cache_size >= 0);
-					TORRENT_ASSERT(s->cache_expiry > 0);
+					LIBED2K_ASSERT(s->cache_size >= 0);
+					LIBED2K_ASSERT(s->cache_expiry > 0);
 
-#if defined TORRENT_WINDOWS
+#if defined LIBED2K_WINDOWS
 					if (m_settings.low_prio_disk != s->low_prio_disk)
 					{
 						m_file_pool.set_low_prio_io(s->low_prio_disk);
@@ -1799,7 +1799,7 @@ namespace libtorrent
 				}
 				case disk_io_job::abort_torrent:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " abort_torrent " << std::endl;
 #endif
 					mutex::scoped_lock jl(m_queue_mutex);
@@ -1815,7 +1815,7 @@ namespace libtorrent
 						{
 							if (i->action == disk_io_job::write)
 							{
-								TORRENT_ASSERT(m_queue_buffer_size >= i->buffer_size);
+								LIBED2K_ASSERT(m_queue_buffer_size >= i->buffer_size);
 								m_queue_buffer_size -= i->buffer_size;
 							}
 							post_callback(*i, -3);
@@ -1864,7 +1864,7 @@ namespace libtorrent
 				}
 				case disk_io_job::abort_thread:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " abort_thread " << std::endl;
 #endif
 					// clear all read jobs
@@ -1877,7 +1877,7 @@ namespace libtorrent
 						{
 							if (i->action == disk_io_job::write)
 							{
-								TORRENT_ASSERT(m_queue_buffer_size >= i->buffer_size);
+								LIBED2K_ASSERT(m_queue_buffer_size >= i->buffer_size);
 								m_queue_buffer_size -= i->buffer_size;
 							}
 							post_callback(*i, -3);
@@ -1906,13 +1906,13 @@ namespace libtorrent
 				}
 				case disk_io_job::read_and_hash:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " read_and_hash " << j.buffer_size << std::endl;
 #endif
 					INVARIANT_CHECK;
-					TORRENT_ASSERT(j.buffer == 0);
+					LIBED2K_ASSERT(j.buffer == 0);
 					j.buffer = allocate_buffer("send buffer");
-					TORRENT_ASSERT(j.buffer_size <= m_block_size);
+					LIBED2K_ASSERT(j.buffer_size <= m_block_size);
 					if (j.buffer == 0)
 					{
 						ret = -1;
@@ -1956,16 +1956,16 @@ namespace libtorrent
 						break;
 					}
 
-					TORRENT_ASSERT(j.buffer == read_holder.get());
+					LIBED2K_ASSERT(j.buffer == read_holder.get());
 					read_holder.release();
-#if TORRENT_DISK_STATS
+#if LIBED2K_DISK_STATS
 					rename_buffer(j.buffer, "released send buffer");
 #endif
 					break;
 				}
 				case disk_io_job::finalize_file:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " finalize_file " << j.piece << std::endl;
 #endif
 					j.storage->finalize_file(j.piece);
@@ -1978,15 +1978,15 @@ namespace libtorrent
 						ret = -1;
 						break;
 					}
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time();
 #endif
 					INVARIANT_CHECK;
 					if (j.buffer == 0) j.buffer = allocate_buffer("send buffer");
-					TORRENT_ASSERT(j.buffer_size <= m_block_size);
+					LIBED2K_ASSERT(j.buffer_size <= m_block_size);
 					if (j.buffer == 0)
 					{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 						m_log << " read 0" << std::endl;
 #endif
 						ret = -1;
@@ -2008,7 +2008,7 @@ namespace libtorrent
 					bool hit;
 					ret = try_read_from_cache(j, hit);
 
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << (hit?" read-cache-hit ":" read ") << j.buffer_size << std::endl;
 #endif
 					// -2 means there's no space in the read cache
@@ -2047,42 +2047,42 @@ namespace libtorrent
 						m_read_time.add_sample(total_microseconds(now - operation_start));
 						m_cache_stats.cumulative_read_time += total_milliseconds(now - operation_start);
 					}
-					TORRENT_ASSERT(j.buffer == read_holder.get());
+					LIBED2K_ASSERT(j.buffer == read_holder.get());
 					read_holder.release();
-#if TORRENT_DISK_STATS
+#if LIBED2K_DISK_STATS
 					rename_buffer(j.buffer, "released send buffer");
 #endif
 					break;
 				}
 				case disk_io_job::write:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " write " << j.buffer_size << std::endl;
 #endif
 					mutex::scoped_lock l(m_piece_mutex);
 					INVARIANT_CHECK;
 
-					TORRENT_ASSERT(!j.storage->error());
-					TORRENT_ASSERT(j.cache_min_time >= 0);
+					LIBED2K_ASSERT(!j.storage->error());
+					LIBED2K_ASSERT(j.cache_min_time >= 0);
 
 					if (in_use() >= m_settings.cache_size)
 					{
 						flush_cache_blocks(l, in_use() - m_settings.cache_size + 1);
 						if (test_error(j)) break;
 					}
-					TORRENT_ASSERT(!j.storage->error());
+					LIBED2K_ASSERT(!j.storage->error());
 
 					cache_piece_index_t& idx = m_pieces.get<0>();
 					cache_piece_index_t::iterator p = find_cached_piece(m_pieces, j, l);
 					int block = j.offset / m_block_size;
-					TORRENT_ASSERT(j.buffer);
-					TORRENT_ASSERT(j.buffer_size <= m_block_size);
+					LIBED2K_ASSERT(j.buffer);
+					LIBED2K_ASSERT(j.buffer_size <= m_block_size);
 					int piece_size = j.storage->info()->piece_size(j.piece);
 					int blocks_in_piece = (piece_size + m_block_size - 1) / m_block_size;
 					if (p != idx.end())
 					{
 						bool recalc_contiguous = false;
-						TORRENT_ASSERT(p->blocks[block].buf == 0);
+						LIBED2K_ASSERT(p->blocks[block].buf == 0);
 						if (p->blocks[block].buf)
 						{
 							free_buffer(p->blocks[block].buf);
@@ -2100,7 +2100,7 @@ namespace libtorrent
 						}
 						p->blocks[block].buf = j.buffer;
 						p->blocks[block].callback.swap(j.callback);
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 						rename_buffer(j.buffer, "write cache");
 #endif
 						++m_cache_stats.cache_size;
@@ -2122,11 +2122,11 @@ namespace libtorrent
 
 						if (p->num_blocks == 0 && p->next_block_to_hash == 0) idx.erase(p);
 						test_error(j);
-						TORRENT_ASSERT(!j.storage->error());
+						LIBED2K_ASSERT(!j.storage->error());
 					}
 					else
 					{
-						TORRENT_ASSERT(!j.storage->error());
+						LIBED2K_ASSERT(!j.storage->error());
 						if (cache_block(j, j.callback, j.cache_min_time, l) < 0)
 						{
 							l.unlock();
@@ -2146,7 +2146,7 @@ namespace libtorrent
 							j.storage->clear_error();
 							break;
 						}
-						TORRENT_ASSERT(!j.storage->error());
+						LIBED2K_ASSERT(!j.storage->error());
 					}
 					// we've now inserted the buffer
 					// in the cache, we should not
@@ -2158,7 +2158,7 @@ namespace libtorrent
 						flush_cache_blocks(l, in_use() - m_settings.cache_size);
 						test_error(j);
 					}
-					TORRENT_ASSERT(!j.storage->error());
+					LIBED2K_ASSERT(!j.storage->error());
 
 					break;
 				}
@@ -2171,11 +2171,11 @@ namespace libtorrent
 						ret = -1;
 						break;
 					}
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " cache " << j.piece << std::endl;
 #endif
 					INVARIANT_CHECK;
-					TORRENT_ASSERT(j.buffer == 0);
+					LIBED2K_ASSERT(j.buffer == 0);
 
 					cache_piece_index_t::iterator p;
 					bool hit;
@@ -2187,10 +2187,10 @@ namespace libtorrent
 				}
 				case disk_io_job::hash:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " hash" << std::endl;
 #endif
-					TORRENT_ASSERT(!j.storage->error());
+					LIBED2K_ASSERT(!j.storage->error());
 					mutex::scoped_lock l(m_piece_mutex);
 					INVARIANT_CHECK;
 
@@ -2198,7 +2198,7 @@ namespace libtorrent
 					cache_piece_index_t::iterator i = find_cached_piece(m_pieces, j, l);
 					if (i != idx.end())
 					{
-						TORRENT_ASSERT(i->storage);
+						LIBED2K_ASSERT(i->storage);
 						int ret = flush_range(const_cast<cached_piece_entry&>(*i), 0, INT_MAX, l);
 						idx.erase(i);
 						if (test_error(j))
@@ -2238,10 +2238,10 @@ namespace libtorrent
 				}
 				case disk_io_job::move_storage:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " move" << std::endl;
 #endif
-					TORRENT_ASSERT(j.buffer == 0);
+					LIBED2K_ASSERT(j.buffer == 0);
 					ret = j.storage->move_storage_impl(j.str);
 					if (ret != 0)
 					{
@@ -2253,10 +2253,10 @@ namespace libtorrent
 				}
 				case disk_io_job::release_files:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " release" << std::endl;
 #endif
-					TORRENT_ASSERT(j.buffer == 0);
+					LIBED2K_ASSERT(j.buffer == 0);
 
 					mutex::scoped_lock l(m_piece_mutex);
 					INVARIANT_CHECK;
@@ -2282,10 +2282,10 @@ namespace libtorrent
 				}
 				case disk_io_job::clear_read_cache:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " clear-cache" << std::endl;
 #endif
-					TORRENT_ASSERT(j.buffer == 0);
+					LIBED2K_ASSERT(j.buffer == 0);
 
 					mutex::scoped_lock l(m_piece_mutex);
 					INVARIANT_CHECK;
@@ -2310,10 +2310,10 @@ namespace libtorrent
 				}
 				case disk_io_job::delete_files:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " delete" << std::endl;
 #endif
-					TORRENT_ASSERT(j.buffer == 0);
+					LIBED2K_ASSERT(j.buffer == 0);
 
 					mutex::scoped_lock l(m_piece_mutex);
 					INVARIANT_CHECK;
@@ -2337,10 +2337,10 @@ namespace libtorrent
 							buffers.push_back(i->blocks[j].buf);
 							i->blocks[j].buf = 0;
 							--m_cache_stats.cache_size;
-							TORRENT_ASSERT(e.num_blocks > 0);
+							LIBED2K_ASSERT(e.num_blocks > 0);
 							--e.num_blocks;
 						}
-						TORRENT_ASSERT(i->num_blocks == 0);
+						LIBED2K_ASSERT(i->num_blocks == 0);
 					}
 					idx.erase(start, end);
 					l.unlock();
@@ -2353,25 +2353,25 @@ namespace libtorrent
 				}
 				case disk_io_job::check_fastresume:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " check_fastresume" << std::endl;
 #endif
 					lazy_entry const* rd = (lazy_entry const*)j.buffer;
-					TORRENT_ASSERT(rd != 0);
+					LIBED2K_ASSERT(rd != 0);
 					ret = j.storage->check_fastresume(*rd, j.error);
 					test_error(j);
 					break;
 				}
 				case disk_io_job::check_files:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " check_files" << std::endl;
 #endif
 					int piece_size = j.storage->info()->piece_length();
 					for (int processed = 0; processed < 4 * 1024 * 1024; processed += piece_size)
 					{
 						ptime now = time_now_hires();
-						TORRENT_ASSERT(now >= m_last_file_check);
+						LIBED2K_ASSERT(now >= m_last_file_check);
 						// this happens sometimes on windows for some reason
 						if (now < m_last_file_check) now = m_last_file_check;
 
@@ -2382,7 +2382,7 @@ namespace libtorrent
 								* (piece_size / (16 * 1024))
 								- total_milliseconds(now - m_last_file_check);
 							if (sleep_time < 0) sleep_time = 0;
-							TORRENT_ASSERT(sleep_time < 5 * 1000);
+							LIBED2K_ASSERT(sleep_time < 5 * 1000);
 	
 							sleep(sleep_time);
 						}
@@ -2398,11 +2398,11 @@ namespace libtorrent
 						m_hash_time.add_sample(total_microseconds(done - hash_start));
 						m_cache_stats.cumulative_hash_time += total_milliseconds(done - hash_start);
 
-						TORRENT_TRY {
-							TORRENT_ASSERT(j.callback);
+						LIBED2K_TRY {
+							LIBED2K_ASSERT(j.callback);
 							if (j.callback && ret == piece_manager::need_full_check)
 								post_callback(j, ret);
-						} TORRENT_CATCH(std::exception&) {}
+						} LIBED2K_CATCH(std::exception&) {}
 						if (ret != piece_manager::need_full_check) break;
 					}
 					if (test_error(j))
@@ -2410,7 +2410,7 @@ namespace libtorrent
 						ret = piece_manager::fatal_disk_error;
 						break;
 					}
-					TORRENT_ASSERT(ret != -2 || j.error);
+					LIBED2K_ASSERT(ret != -2 || j.error);
 					
 					// if the check is not done, add it at the end of the job queue
 					if (ret == piece_manager::need_full_check)
@@ -2425,7 +2425,7 @@ namespace libtorrent
 				}
 				case disk_io_job::save_resume_data:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " save_resume_data" << std::endl;
 #endif
 					j.resume_data.reset(new entry(entry::dictionary_t));
@@ -2435,7 +2435,7 @@ namespace libtorrent
 				}
 				case disk_io_job::rename_file:
 				{
-#ifdef TORRENT_DISK_STATS
+#ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " rename_file" << std::endl;
 #endif
 					ret = j.storage->rename_file_impl(j.piece, j.str);
@@ -2447,16 +2447,16 @@ namespace libtorrent
 				}
 				}
 			}
-			TORRENT_CATCH(std::exception& e)
+			LIBED2K_CATCH(std::exception& e)
 			{
-				TORRENT_DECLARE_DUMMY(std::exception, e);
+				LIBED2K_DECLARE_DUMMY(std::exception, e);
 				ret = -1;
-				TORRENT_TRY {
+				LIBED2K_TRY {
 					j.str = e.what();
-				} TORRENT_CATCH(std::exception&) {}
+				} LIBED2K_CATCH(std::exception&) {}
 			}
 
-			TORRENT_ASSERT(!j.storage || !j.storage->error());
+			LIBED2K_ASSERT(!j.storage || !j.storage->error());
 
 			ptime done = time_now_hires();
 			m_job_time.add_sample(total_microseconds(done - operation_start));
@@ -2464,20 +2464,20 @@ namespace libtorrent
 
 //			if (!j.callback) std::cerr << "DISK THREAD: no callback specified" << std::endl;
 //			else std::cerr << "DISK THREAD: invoking callback" << std::endl;
-			TORRENT_TRY {
-				TORRENT_ASSERT(ret != -2 || j.error
+			LIBED2K_TRY {
+				LIBED2K_ASSERT(ret != -2 || j.error
 					|| j.action == disk_io_job::hash);
-#if TORRENT_DISK_STATS
+#if LIBED2K_DISK_STATS
 				if ((j.action == disk_io_job::read || j.action == disk_io_job::read_and_hash)
 					&& j.buffer != 0)
 					rename_buffer(j.buffer, "posted send buffer");
 #endif
 				post_callback(j, ret);
-			} TORRENT_CATCH(std::exception&) {
-				TORRENT_ASSERT(false);
+			} LIBED2K_CATCH(std::exception&) {
+				LIBED2K_ASSERT(false);
 			}
 		}
-		TORRENT_ASSERT(false);
+		LIBED2K_ASSERT(false);
 	}
 }
 
