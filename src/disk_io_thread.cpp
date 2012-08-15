@@ -1661,13 +1661,13 @@ namespace libed2k
 #ifdef LIBED2K_DISK_STATS
 					m_log << log_time() << " sorting_job" << std::endl;
 #endif
-					libtorrent::ptime sort_start = time_now_hires();
+					libtorrent::ptime sort_start = libtorrent::time_now_hires();
 
 					size_type phys_off = j.storage->physical_offset(j.piece, j.offset);
 					need_update_elevator_pos = need_update_elevator_pos || m_sorted_read_jobs.empty();
 					m_sorted_read_jobs.insert(std::pair<size_type, disk_io_job>(phys_off, j));
 
-					libtorrent::ptime now = time_now_hires();
+					libtorrent::ptime now = libtorrent::time_now_hires();
 					m_sort_time.add_sample(total_microseconds(now - sort_start));
 					m_job_time.add_sample(total_microseconds(now - operation_start));
 					m_cache_stats.cumulative_sort_time += total_milliseconds(now - sort_start);
@@ -2043,7 +2043,7 @@ namespace libed2k
 					}
 					if (!hit)
 					{
-						libtorrent::ptime now = time_now_hires();
+						libtorrent::ptime now = libtorrent::time_now_hires();
 						m_read_time.add_sample(total_microseconds(now - operation_start));
 						m_cache_stats.cumulative_read_time += total_milliseconds(now - operation_start);
 					}
@@ -2130,7 +2130,7 @@ namespace libed2k
 						if (cache_block(j, j.callback, j.cache_min_time, l) < 0)
 						{
 							l.unlock();
-							libtorrent::ptime start = time_now_hires();
+							libtorrent::ptime start = libtorrent::time_now_hires();
 							file::iovec_t iov = {j.buffer, j.buffer_size};
 							ret = j.storage->write_impl(&iov, j.piece, j.offset, 1);
 							l.lock();
@@ -2139,7 +2139,7 @@ namespace libed2k
 								test_error(j);
 								break;
 							}
-							libtorrent::ptime done = time_now_hires();
+							libtorrent::ptime done = libtorrent::time_now_hires();
 							m_write_time.add_sample(total_microseconds(done - start));
 							m_cache_stats.cumulative_write_time += total_milliseconds(done - start);
 							// we successfully wrote the block. Ignore previous errors
@@ -2215,7 +2215,7 @@ namespace libed2k
 						break;
 					}
 
-					libtorrent::ptime hash_start = time_now_hires();
+					libtorrent::ptime hash_start = libtorrent::time_now_hires();
 
 					int readback = 0;
 					sha1_hash h = j.storage->hash_for_piece_impl(j.piece, &readback);
@@ -2231,7 +2231,7 @@ namespace libed2k
 					ret = (j.storage->info()->hash_for_piece(j.piece) == h)?0:-2;
 					if (ret == -2) j.storage->mark_failed(j.piece);
 
-					libtorrent::ptime done = time_now_hires();
+					libtorrent::ptime done = libtorrent::time_now_hires();
 					m_hash_time.add_sample(total_microseconds(done - hash_start));
 					m_cache_stats.cumulative_hash_time += total_milliseconds(done - hash_start);
 					break;
@@ -2370,7 +2370,7 @@ namespace libed2k
 					int piece_size = j.storage->info()->piece_length();
 					for (int processed = 0; processed < 4 * 1024 * 1024; processed += piece_size)
 					{
-						libtorrent::ptime now = time_now_hires();
+						libtorrent::ptime now = libtorrent::time_now_hires();
 						LIBED2K_ASSERT(now >= m_last_file_check);
 						// this happens sometimes on windows for some reason
 						if (now < m_last_file_check) now = m_last_file_check;
@@ -2386,15 +2386,15 @@ namespace libed2k
 	
 							sleep(sleep_time);
 						}
-						m_last_file_check = time_now_hires();
+						m_last_file_check = libtorrent::time_now_hires();
 #endif
 
-						libtorrent::ptime hash_start = time_now_hires();
+						libtorrent::ptime hash_start = libtorrent::time_now_hires();
 						if (m_waiting_to_shutdown) break;
 
 						ret = j.storage->check_files(j.piece, j.offset, j.error);
 
-						libtorrent::ptime done = time_now_hires();
+						libtorrent::ptime done = libtorrent::time_now_hires();
 						m_hash_time.add_sample(total_microseconds(done - hash_start));
 						m_cache_stats.cumulative_hash_time += total_milliseconds(done - hash_start);
 
@@ -2458,7 +2458,7 @@ namespace libed2k
 
 			LIBED2K_ASSERT(!j.storage || !j.storage->error());
 
-			libtorrent::ptime done = time_now_hires();
+			libtorrent::ptime done = libtorrent::time_now_hires();
 			m_job_time.add_sample(total_microseconds(done - operation_start));
 			m_cache_stats.cumulative_job_time += total_milliseconds(done - operation_start);
 
