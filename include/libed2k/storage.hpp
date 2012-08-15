@@ -60,7 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libtorrent/file.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
-#include <libtorrent/thread.hpp>
+//#include <libtorrent/thread.hpp>
 #include <libed2k/storage_defs.hpp>
 #include <libtorrent/allocator.hpp>
 

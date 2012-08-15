@@ -34,7 +34,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_DISK_BUFFER_POOL
 
 #include <libed2k/config.hpp>
-#include <libtorrent/thread.hpp>
+//#include <libtorrent/thread.hpp>
+#include <libtorrent/socket.hpp>
 #include <libtorrent/session_settings.hpp>
 #include <libtorrent/allocator.hpp>
 

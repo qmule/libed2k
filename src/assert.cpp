@@ -30,9 +30,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/config.hpp"
+#include <libed2k/config.hpp>
 
-#if defined TORRENT_DEBUG || defined TORRENT_ASIO_DEBUGGING || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || defined LIBED2K_ASIO_DEBUGGING || LIBED2K_RELEASE_ASSERTS
 
 #ifdef __APPLE__
 #include <AvailabilityMacros.h>
@@ -108,7 +108,7 @@ std::string demangle(char const* name) { return name; }
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
-#include "libtorrent/version.hpp"
+#include <libed2k/version.hpp>
 
 // execinfo.h is available in the MacOS X 10.5 SDK.
 #if (defined __linux__ || (defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050))
@@ -138,7 +138,7 @@ void print_backtrace(char* out, int len, int max_depth)
 #define _WIN32_WINNT 0x0501 // XP
 
 #include "windows.h"
-#include "libtorrent/utf8.hpp"
+#include <libtorrent/utf8.hpp>
 
 #include "winbase.h"
 #include "dbghelp.h"
@@ -201,14 +201,14 @@ void print_backtrace(char* out, int len, int max_depth) {}
 
 #endif
 
-#if TORRENT_PRODUCTION_ASSERTS
+#if LIBED2K_PRODUCTION_ASSERTS
 char const* libtorrent_assert_log = "asserts.log";
 #endif
 
-TORRENT_EXPORT void assert_fail(char const* expr, int line, char const* file
+LIBED2K_EXPORT void assert_fail(char const* expr, int line, char const* file
 	, char const* function, char const* value)
 {
-#if TORRENT_PRODUCTION_ASSERTS
+#if LIBED2K_PRODUCTION_ASSERTS
 	FILE* out = fopen(libtorrent_assert_log, "a+");
 	if (out == 0) out = stderr;
 #else
@@ -221,7 +221,7 @@ TORRENT_EXPORT void assert_fail(char const* expr, int line, char const* file
 	fprintf(out, "assertion failed. Please file a bugreport at "
 		"http://code.rasterbar.com/libtorrent/newticket\n"
 		"Please include the following information:\n\n"
-		"version: " LIBTORRENT_VERSION "\n"
+		"version: " LIBED2K_VERSION "\n"
 		"%s\n"
 		"file: '%s'\n"
 		"line: %d\n"
@@ -230,12 +230,12 @@ TORRENT_EXPORT void assert_fail(char const* expr, int line, char const* file
 		"%s%s\n"
 		"stack:\n"
 		"%s\n"
-		, LIBTORRENT_REVISION, file, line, function, expr
+		, LIBED2K_REVISION, file, line, function, expr
 		, value ? value : "", value ? "\n" : ""
 		, stack);
 
 	// if production asserts are defined, don't abort, just print the error
-#if TORRENT_PRODUCTION_ASSERTS
+#if LIBED2K_PRODUCTION_ASSERTS
 	if (out != stderr) fclose(out);
 #else
  	// send SIGINT to the current process
@@ -247,7 +247,7 @@ TORRENT_EXPORT void assert_fail(char const* expr, int line, char const* file
 
 #else
 
-TORRENT_EXPORT void assert_fail(char const* expr, int line, char const* file, char const* function) {}
+LIBED2K_EXPORT void assert_fail(char const* expr, int line, char const* file, char const* function) {}
 
 #endif
 
