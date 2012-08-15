@@ -34,23 +34,23 @@ POSSIBILITY OF SUCH DAMAGE.
 	Physical file offset patch by Morten Husveit
 */
 
-#include "libtorrent/pch.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/alloca.hpp"
-#include "libtorrent/allocator.hpp" // page_size
-#include "libtorrent/escape_string.hpp" // for string conversion
+#include <libtorrent/pch.hpp>
+#include <libed2k/config.hpp>
+#include <libed2k/alloca.hpp>
+#include <libed2k/allocator.hpp> // page_size
+#include <libtorrent/escape_string.hpp> // for string conversion
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/static_assert.hpp>
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 // windows part
 
 #ifndef PtrToPtr64
 #define PtrToPtr64(x) (x)
 #endif
 
-#include "libtorrent/utf8.hpp"
+#include <libtorrent/utf8.hpp>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <errno.h>
 #include <dirent.h>
 
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 // linux specifics
 
 #include <sys/ioctl.h>
@@ -116,31 +116,31 @@ BOOST_STATIC_ASSERT(sizeof(lseek(0, 0, 0)) >= 8);
 
 #endif // posix part
 
-#include "libtorrent/file.hpp"
+#include <libed2k/file_util.hpp>
 #include <cstring>
 #include <vector>
 
 // for convert_to_wstring and convert_to_native
-#include "libtorrent/escape_string.hpp"
+#include <libtorrent/escape_string.hpp>
 #include <stdio.h>
-#include "libtorrent/assert.hpp"
+#include <libed2k/assert.hpp>
 
-#ifdef TORRENT_DEBUG
-BOOST_STATIC_ASSERT((libtorrent::file::rw_mask & libtorrent::file::no_buffer) == 0);
-BOOST_STATIC_ASSERT((libtorrent::file::rw_mask & libtorrent::file::attribute_mask) == 0);
-BOOST_STATIC_ASSERT((libtorrent::file::no_buffer & libtorrent::file::attribute_mask) == 0);
+#ifdef LIBED2K_DEBUG
+BOOST_STATIC_ASSERT((libed2k::file::rw_mask & libed2k::file::no_buffer) == 0);
+BOOST_STATIC_ASSERT((libed2k::file::rw_mask & libed2k::file::attribute_mask) == 0);
+BOOST_STATIC_ASSERT((libed2k::file::no_buffer & libed2k::file::attribute_mask) == 0);
 #endif
 
-#ifdef TORRENT_WINDOWS
-#if defined UNICODE && !TORRENT_USE_WSTRING
+#ifdef LIBED2K_WINDOWS
+#if defined UNICODE && !LIBED2K_USE_WSTRING
 #warning wide character support not available. Files will be saved using narrow string names
 #endif
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 
-namespace libtorrent
+namespace libed2k
 {
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 	std::string convert_separators(std::string p)
 	{
 		for (int i = 0; i < p.size(); ++i)
@@ -153,7 +153,7 @@ namespace libtorrent
 		, error_code& ec, int flags)
 	{
 		ec.clear();
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		// apparently windows doesn't expect paths
 		// to directories to ever end with a \ or /
 		if (!inf.empty() && (inf[inf.size() - 1] == '\\'
@@ -161,15 +161,15 @@ namespace libtorrent
 			inf.resize(inf.size() - 1);
 #endif
 
-#if TORRENT_USE_WSTRING && defined TORRENT_WINDOWS
+#if LIBED2K_USE_WSTRING && defined LIBED2K_WINDOWS
 		std::wstring f = convert_to_wstring(inf);
 #else
-		std::string f = convert_to_native(inf);
+		std::string f = libtorrent::convert_to_native(inf);
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		struct _stati64 ret;
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 		if (_wstati64(f.c_str(), &ret) < 0)
 #else
 		if (_stati64(f.c_str(), &ret) < 0)
@@ -190,7 +190,7 @@ namespace libtorrent
 			ec.assign(errno, boost::system::get_generic_category());
 			return;
 		}
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 
 		s->file_size = ret.st_size;
 		s->atime = ret.st_atime;
@@ -203,13 +203,13 @@ namespace libtorrent
 	{
 		ec.clear();
 
-#if TORRENT_USE_WSTRING && defined TORRENT_WINDOWS
+#if LIBED2K_USE_WSTRING && defined LIBED2K_WINDOWS
 		std::wstring f1 = convert_to_wstring(inf);
 		std::wstring f2 = convert_to_wstring(newf);
 		if (_wrename(f1.c_str(), f2.c_str()) < 0)
 #else
-		std::string f1 = convert_to_native(inf);
-		std::string f2 = convert_to_native(newf);
+        std::string f1 = libtorrent::convert_to_native(inf);
+		std::string f2 = libtorrent::convert_to_native(newf);
 		if (::rename(f1.c_str(), f2.c_str()) < 0)
 #endif
 		{
@@ -238,15 +238,15 @@ namespace libtorrent
 	{
 		ec.clear();
 
-#if defined TORRENT_WINDOWS && TORRENT_USE_WSTRING
+#if defined LIBED2K_WINDOWS && LIBED2K_USE_WSTRING
 #define CreateDirectory_ CreateDirectoryW
 		std::wstring n = convert_to_wstring(f);
 #else
 #define CreateDirectory_ CreateDirectoryA
-		std::string n = convert_to_native(f);
+		std::string n = libtorrent::convert_to_native(f);
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		if (CreateDirectory_(n.c_str(), 0) == 0
 			&& GetLastError() != ERROR_ALREADY_EXISTS)
 			ec.assign(GetLastError(), boost::system::get_system_category());
@@ -270,7 +270,7 @@ namespace libtorrent
 
 	void recursive_copy(std::string const& old_path, std::string const& new_path, error_code& ec)
 	{
-		TORRENT_ASSERT(!ec);
+		LIBED2K_ASSERT(!ec);
 		if (is_directory(old_path, ec))
 		{
 			create_directory(new_path, ec);
@@ -292,17 +292,17 @@ namespace libtorrent
 	void copy_file(std::string const& inf, std::string const& newf, error_code& ec)
 	{
 		ec.clear();
-#if TORRENT_USE_WSTRING && defined TORRENT_WINDOWS
+#if LIBED2K_USE_WSTRING && defined LIBED2K_WINDOWS
 #define CopyFile_ CopyFileW
 		std::wstring f1 = convert_to_wstring(inf);
 		std::wstring f2 = convert_to_wstring(newf);
 #else
 #define CopyFile_ CopyFileA
-		std::string f1 = convert_to_native(inf);
-		std::string f2 = convert_to_native(newf);
+		std::string f1 = libtorrent::convert_to_native(inf);
+		std::string f2 = libtorrent::convert_to_native(newf);
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		if (CopyFile_(f1.c_str(), f2.c_str(), false) == 0)
 			ec.assign(GetLastError(), boost::system::get_system_category());
 #elif defined __APPLE__ && defined __MACH__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050
@@ -353,7 +353,7 @@ namespace libtorrent
 		}
 		close(infd);
 		close(outfd);
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 	}
 
 	std::string split_path(std::string const& f)
@@ -367,7 +367,7 @@ namespace libtorrent
 		{
 			while (*p != '/'
 				&& *p != '\0'
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 				&& *p != '\\'
 #endif
 				) ++p;
@@ -409,7 +409,7 @@ namespace libtorrent
 	{
 		if (f.empty()) return false;
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		// match \\ form
 		if (f == "\\\\") return true;
 		int i = 0;
@@ -462,7 +462,7 @@ namespace libtorrent
 	{
 		if (f.empty()) return f;
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		if (f == "\\\\") return "";
 #endif
 		if (f == "/") return "";
@@ -486,7 +486,7 @@ namespace libtorrent
 		if (f.empty()) return "";
 		char const* first = f.c_str();
 		char const* sep = strrchr(first, '/');
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		char const* altsep = strrchr(first, '\\');
 		if (sep == 0 || altsep > sep) sep = altsep;
 #endif
@@ -501,7 +501,7 @@ namespace libtorrent
 			{
 				--sep;
 				if (*sep == '/'
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 					|| *sep == '\\'
 #endif
 					)
@@ -516,48 +516,48 @@ namespace libtorrent
 
 	std::string combine_path(std::string const& lhs, std::string const& rhs)
 	{
-		TORRENT_ASSERT(!is_complete(rhs));
+		LIBED2K_ASSERT(!is_complete(rhs));
 		if (lhs.empty() || lhs == ".") return rhs;
 		if (rhs.empty() || rhs == ".") return lhs;
 
-#ifdef TORRENT_WINDOWS
-#define TORRENT_SEPARATOR "\\"
+#ifdef LIBED2K_WINDOWS
+#define LIBED2K_SEPARATOR "\\"
 		bool need_sep = lhs[lhs.size()-1] != '\\' && lhs[lhs.size()-1] != '/';
 #else
-#define TORRENT_SEPARATOR "/"
+#define LIBED2K_SEPARATOR "/"
 		bool need_sep = lhs[lhs.size()-1] != '/';
 #endif
 		std::string ret;
 		int target_size = lhs.size() + rhs.size() + 2;
 		ret.resize(target_size);
 		target_size = snprintf(&ret[0], target_size, "%s%s%s", lhs.c_str()
-			, (need_sep?TORRENT_SEPARATOR:""), rhs.c_str());
+			, (need_sep?LIBED2K_SEPARATOR:""), rhs.c_str());
 		ret.resize(target_size);
 		return ret;
 	}
 
 	std::string current_working_directory()
 	{
-#ifdef TORRENT_WINDOWS
-#if TORRENT_USE_WSTRING
-		wchar_t cwd[TORRENT_MAX_PATH];
+#ifdef LIBED2K_WINDOWS
+#if LIBED2K_USE_WSTRING
+		wchar_t cwd[LIBED2K_MAX_PATH];
 		_wgetcwd(cwd, sizeof(cwd) / sizeof(wchar_t));
 #else
-		char cwd[TORRENT_MAX_PATH];
+		char cwd[LIBED2K_MAX_PATH];
 		_getcwd(cwd, sizeof(cwd));
-#endif // TORRENT_USE_WSTRING
+#endif // LIBED2K_USE_WSTRING
 #else
-		char cwd[TORRENT_MAX_PATH];
+		char cwd[LIBED2K_MAX_PATH];
 		if (getcwd(cwd, sizeof(cwd)) == 0) return "/";
 #endif
-#if defined TORRENT_WINDOWS && TORRENT_USE_WSTRING
+#if defined LIBED2K_WINDOWS && LIBED2K_USE_WSTRING
 		return convert_from_wstring(cwd);
 #else
 		return convert_from_native(cwd);
 #endif
 	}
 
-#if TORRENT_USE_UNC_PATHS
+#if LIBED2K_USE_UNC_PATHS
 	std::string canonicalize_path(std::string const& f)
 	{
 		std::string ret;
@@ -642,7 +642,7 @@ namespace libtorrent
 	{
 		ec.clear();
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		// windows does not allow trailing / or \ in
 		// the path when removing files
 		std::string pruned;
@@ -651,7 +651,7 @@ namespace libtorrent
 			pruned = inf.substr(0, inf.size() - 1);
 		else
 			pruned = inf;
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 #define DeleteFile_ DeleteFileW
 #define RemoveDirectory_ RemoveDirectoryW
 		std::wstring f = convert_to_wstring(pruned);
@@ -670,14 +670,14 @@ namespace libtorrent
 			ec.assign(GetLastError(), boost::system::get_system_category());
 			return;
 		}
-#else // TORRENT_WINDOWS
-		std::string f = convert_to_native(inf);
+#else // LIBED2K_WINDOWS
+		std::string f = libtorrent::convert_to_native(inf);
 		if (::remove(f.c_str()) < 0)
 		{
 			ec.assign(errno, boost::system::get_generic_category());
 			return;
 		}
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 	}
 
 	void remove_all(std::string const& f, error_code& ec)
@@ -711,7 +711,7 @@ namespace libtorrent
 	bool is_complete(std::string const& f)
 	{
 		if (f.empty()) return false;
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		int i = 0;
 		// match the xx:\ or xx:/ form
 		while (f[i] && is_alpha(f[i])) ++i;
@@ -732,13 +732,13 @@ namespace libtorrent
 		: m_done(false)
 	{
 		ec.clear();
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		// the path passed to FindFirstFile() must be
 		// a pattern
 		std::string f = convert_separators(path);
 		if (!f.empty() && f[f.size()-1] != '\\') f += "\\*";
 		else f += "*";
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 #define FindFirstFile_ FindFirstFileW
 		std::wstring p = convert_to_wstring(f);
 #else
@@ -763,7 +763,7 @@ namespace libtorrent
 		if (!path.empty() && path[path.size()-1] == '/')
 			p.resize(path.size()-1);
 
-		p = convert_to_native(p);
+		p = libtorrent::convert_to_native(p);
 		m_handle = opendir(p.c_str());
 		if (m_handle == 0)
 		{
@@ -778,7 +778,7 @@ namespace libtorrent
 
 	directory::~directory()
 	{
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		if (m_handle != INVALID_HANDLE_VALUE)
 			FindClose(m_handle);
 #else
@@ -788,11 +788,11 @@ namespace libtorrent
 
 	std::string directory::file() const
 	{
-#ifdef TORRENT_WINDOWS
-#if TORRENT_USE_WSTRING
+#ifdef LIBED2K_WINDOWS
+#if LIBED2K_USE_WSTRING
 		return convert_from_wstring(m_fd.cFileName);
 #else
-		return convert_from_native(m_fd.cFileName);
+		return libtorrent::convert_from_native(m_fd.cFileName);
 #endif
 #else
 		return convert_from_native(m_dirent.d_name);
@@ -802,8 +802,8 @@ namespace libtorrent
 	void directory::next(error_code& ec)
 	{
 		ec.clear();
-#ifdef TORRENT_WINDOWS
-#if TORRENT_USE_WSTRING
+#ifdef LIBED2K_WINDOWS
+#if LIBED2K_USE_WSTRING
 #define FindNextFile_ FindNextFileW
 #else
 #define FindNextFile_ FindNextFileA
@@ -827,19 +827,19 @@ namespace libtorrent
 	}
 
 	file::file()
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		: m_file_handle(INVALID_HANDLE_VALUE)
 #else
 		: m_fd(-1)
 #endif
 		, m_open_mode(0)
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX
 		, m_sector_size(0)
 #endif
 	{}
 
 	file::file(std::string const& path, int mode, error_code& ec)
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		: m_file_handle(INVALID_HANDLE_VALUE)
 #else
 		: m_fd(-1)
@@ -859,7 +859,7 @@ namespace libtorrent
 	bool file::open(std::string const& path, int mode, error_code& ec)
 	{
 		close();
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 
 		struct open_mode_t
 		{
@@ -896,14 +896,14 @@ namespace libtorrent
 		};
 
 		std::string p = convert_separators(path);
-#if TORRENT_USE_UNC_PATHS
+#if LIBED2K_USE_UNC_PATHS
 		// UNC paths must be absolute
 		// network paths are already UNC paths
 		if (path.substr(0,2) == "\\\\") p = path;
 		else p = "\\\\?\\" + (is_complete(p) ? p : combine_path(current_working_directory(), p));
 #endif
 
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 #define CreateFile_ CreateFileW
 		m_path = convert_to_wstring(p);
 #else
@@ -911,7 +911,7 @@ namespace libtorrent
 		m_path = convert_to_native(p);
 #endif
 
-		TORRENT_ASSERT((mode & rw_mask) < sizeof(mode_array)/sizeof(mode_array[0]));
+		LIBED2K_ASSERT((mode & rw_mask) < sizeof(mode_array)/sizeof(mode_array[0]));
 		open_mode_t const& m = mode_array[mode & rw_mask];
 		DWORD a = attrib_array[(mode & attribute_mask) >> 12];
 
@@ -931,7 +931,7 @@ namespace libtorrent
 		if (m_file_handle == INVALID_HANDLE_VALUE)
 		{
 			ec.assign(GetLastError(), get_system_category());
-			TORRENT_ASSERT(ec);
+			LIBED2K_ASSERT(ec);
 			return false;
 		}
 
@@ -943,7 +943,7 @@ namespace libtorrent
 			::DeviceIoControl(m_file_handle, FSCTL_SET_SPARSE, 0, 0
 				, 0, 0, &temp, 0);
 		}
-#else // TORRENT_WINDOWS
+#else // LIBED2K_WINDOWS
 
 		// rely on default umask to filter x and w permissions
 		// for group and others
@@ -965,7 +965,7 @@ namespace libtorrent
 		static const int no_atime_flag[] = {0, O_NOATIME};
 #endif
 
- 		m_fd = ::open(convert_to_native(path).c_str()
+ 		m_fd = ::open(libtorrent::convert_to_native(path).c_str()
  			, mode_array[mode & rw_mask]
 			| no_buffer_flag[(mode & no_buffer) >> 2]
 #ifdef O_NOATIME
@@ -973,7 +973,7 @@ namespace libtorrent
 #endif
 			, permissions);
 
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 		// workaround for linux bug
 		// https://bugs.launchpad.net/ubuntu/+source/linux/+bug/269946
 		if (m_fd == -1 && (mode & no_buffer) && errno == EINVAL)
@@ -1005,7 +1005,7 @@ namespace libtorrent
 		if (m_fd == -1)
 		{
 			ec.assign(errno, get_posix_category());
-			TORRENT_ASSERT(ec);
+			LIBED2K_ASSERT(ec);
 			return false;
 		}
 
@@ -1057,13 +1057,13 @@ namespace libtorrent
 #endif
 		m_open_mode = mode;
 
-		TORRENT_ASSERT(is_open());
+		LIBED2K_ASSERT(is_open());
 		return true;
 	}
 
 	bool file::is_open() const
 	{
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		return m_file_handle != INVALID_HANDLE_VALUE;
 #else
 		return m_fd != -1;
@@ -1074,7 +1074,7 @@ namespace libtorrent
 	{
 		// on linux and windows, file offsets needs
 		// to be aligned to the disk sector size
-#if defined TORRENT_LINUX
+#if defined LIBED2K_LINUX
 		if (m_sector_size == 0)
 		{
 			struct statvfs fs;
@@ -1084,14 +1084,14 @@ namespace libtorrent
 				m_sector_size = 4096;
 		}	
 		return m_sector_size;
-#elif defined TORRENT_WINDOWS
+#elif defined LIBED2K_WINDOWS
 		if (m_sector_size == 0)
 		{
 			DWORD sectors_per_cluster;
 			DWORD bytes_per_sector;
 			DWORD free_clusters;
 			DWORD total_clusters;
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 #define GetDiskFreeSpace_ GetDiskFreeSpaceW
 			wchar_t backslash = L'\\';
 #else
@@ -1120,7 +1120,7 @@ namespace libtorrent
 
 	int file::buf_alignment() const
 	{
-#if defined TORRENT_WINDOWS
+#if defined LIBED2K_WINDOWS
 		init_file();
 		return m_page_size;
 #else
@@ -1130,7 +1130,7 @@ namespace libtorrent
 
 	int file::size_alignment() const
 	{
-#if defined TORRENT_WINDOWS
+#if defined LIBED2K_WINDOWS
 		init_file();
 		return m_page_size;
 #else
@@ -1140,11 +1140,11 @@ namespace libtorrent
 
 	void file::close()
 	{
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX
 		m_sector_size = 0;
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		if (m_file_handle == INVALID_HANDLE_VALUE) return;
 		CloseHandle(m_file_handle);
 		m_file_handle = INVALID_HANDLE_VALUE;
@@ -1160,7 +1160,7 @@ namespace libtorrent
 	// defined in storage.cpp
 	int bufs_size(file::iovec_t const* bufs, int num_bufs);
 	
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX || defined TORRENT_DEBUG
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX || defined LIBED2K_DEBUG
 
 	int file::m_page_size = 0;
 
@@ -1189,30 +1189,30 @@ namespace libtorrent
 
 	size_type file::readv(size_type file_offset, iovec_t const* bufs, int num_bufs, error_code& ec)
 	{
-		TORRENT_ASSERT((m_open_mode & rw_mask) == read_only || (m_open_mode & rw_mask) == read_write);
-		TORRENT_ASSERT(bufs);
-		TORRENT_ASSERT(num_bufs > 0);
-		TORRENT_ASSERT(is_open());
+		LIBED2K_ASSERT((m_open_mode & rw_mask) == read_only || (m_open_mode & rw_mask) == read_write);
+		LIBED2K_ASSERT(bufs);
+		LIBED2K_ASSERT(num_bufs > 0);
+		LIBED2K_ASSERT(is_open());
 
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX || defined TORRENT_DEBUG
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX || defined LIBED2K_DEBUG
 		// make sure m_page_size is initialized
 		init_file();
 #endif
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		if (m_open_mode & no_buffer)
 		{
 			bool eof = false;
 			int size = 0;
 			// when opened in no_buffer mode, the file_offset must
 			// be aligned to pos_alignment()
-			TORRENT_ASSERT((file_offset & (pos_alignment()-1)) == 0);
+			LIBED2K_ASSERT((file_offset & (pos_alignment()-1)) == 0);
 			for (file::iovec_t const* i = bufs, *end(bufs + num_bufs); i < end; ++i)
 			{
-				TORRENT_ASSERT((uintptr_t(i->iov_base) & (buf_alignment()-1)) == 0);
+				LIBED2K_ASSERT((uintptr_t(i->iov_base) & (buf_alignment()-1)) == 0);
 				// every buffer must be a multiple of the page size
 				// except for the last one
-				TORRENT_ASSERT((i->iov_len & (size_alignment()-1)) == 0 || i == end-1);
+				LIBED2K_ASSERT((i->iov_len & (size_alignment()-1)) == 0 || i == end-1);
 				if ((i->iov_len & (size_alignment()-1)) != 0) eof = true;
 				size += i->iov_len;
 			}
@@ -1224,13 +1224,13 @@ namespace libtorrent
 				if (file_offset + size < fsize)
 				{
 					printf("offset: %d size: %d get_size: %d\n", int(file_offset), int(size), int(fsize));
-					TORRENT_ASSERT(false);
+					LIBED2K_ASSERT(false);
 				}
 			}
 		}
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 
 		DWORD ret = 0;
 
@@ -1271,7 +1271,7 @@ namespace libtorrent
 		// number of pages for the read. round up
 		int num_pages = (size + m_page_size - 1) / m_page_size;
 		// allocate array of FILE_SEGMENT_ELEMENT for ReadFileScatter
-		FILE_SEGMENT_ELEMENT* segment_array = TORRENT_ALLOCA(FILE_SEGMENT_ELEMENT, num_pages + 1);
+		FILE_SEGMENT_ELEMENT* segment_array = LIBED2K_ALLOCA(FILE_SEGMENT_ELEMENT, num_pages + 1);
 		FILE_SEGMENT_ELEMENT* cur_seg = segment_array;
 
 		for (file::iovec_t const* i = bufs, *end(bufs + num_bufs); i < end; ++i)
@@ -1318,7 +1318,7 @@ namespace libtorrent
 		CloseHandle(ol.hEvent);
 		return ret;
 
-#else // TORRENT_WINDOWS
+#else // LIBED2K_WINDOWS
 
 		size_type ret = lseek(m_fd, file_offset, SEEK_SET);
 		if (ret < 0)
@@ -1326,14 +1326,14 @@ namespace libtorrent
 			ec.assign(errno, get_posix_category());
 			return -1;
 		}
-#if TORRENT_USE_READV
+#if LIBED2K_USE_READV
 
 		ret = 0;
 		while (num_bufs > 0)
 		{
-			int nbufs = (std::min)(num_bufs, TORRENT_IOV_MAX);
+			int nbufs = (std::min)(num_bufs, LIBED2K_IOV_MAX);
 			int tmp_ret = 0;
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 			bool aligned = false;
 			int size = 0;
 			// if we're not opened in no-buffer mode, we don't need alignment
@@ -1344,7 +1344,7 @@ namespace libtorrent
 				if ((size & (size_alignment()-1)) == 0) aligned = true;
 			}
 			if (aligned)
-#endif // TORRENT_LINUX
+#endif // LIBED2K_LINUX
 			{
 				tmp_ret = ::readv(m_fd, bufs, nbufs);
 				if (tmp_ret < 0)
@@ -1354,10 +1354,10 @@ namespace libtorrent
 				}
 				ret += tmp_ret;
 			}
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 			else
 			{
-				file::iovec_t* temp_bufs = TORRENT_ALLOCA(file::iovec_t, nbufs);
+				file::iovec_t* temp_bufs = LIBED2K_ALLOCA(file::iovec_t, nbufs);
 				memcpy(temp_bufs, bufs, sizeof(file::iovec_t) * nbufs);
 				iovec_t& last = temp_bufs[nbufs-1];
 				last.iov_len = (last.iov_len & ~(size_alignment()-1)) + m_page_size;
@@ -1369,7 +1369,7 @@ namespace libtorrent
 				}
 				ret += (std::min)(tmp_ret, size);
 			}
-#endif // TORRENT_LINUX
+#endif // LIBED2K_LINUX
 
 			num_bufs -= nbufs;
 			bufs += nbufs;
@@ -1377,7 +1377,7 @@ namespace libtorrent
 
 		return ret;
 
-#else // TORRENT_USE_READV
+#else // LIBED2K_USE_READV
 
 		ret = 0;
 		for (file::iovec_t const* i = bufs, *end(bufs + num_bufs); i < end; ++i)
@@ -1393,46 +1393,46 @@ namespace libtorrent
 		}
 		return ret;
 
-#endif // TORRENT_USE_READV
+#endif // LIBED2K_USE_READV
 
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 	}
 
 	size_type file::writev(size_type file_offset, iovec_t const* bufs, int num_bufs, error_code& ec)
 	{
-		TORRENT_ASSERT((m_open_mode & rw_mask) == write_only || (m_open_mode & rw_mask) == read_write);
-		TORRENT_ASSERT(bufs);
-		TORRENT_ASSERT(num_bufs > 0);
-		TORRENT_ASSERT(is_open());
+		LIBED2K_ASSERT((m_open_mode & rw_mask) == write_only || (m_open_mode & rw_mask) == read_write);
+		LIBED2K_ASSERT(bufs);
+		LIBED2K_ASSERT(num_bufs > 0);
+		LIBED2K_ASSERT(is_open());
 
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX || defined TORRENT_DEBUG
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX || defined LIBED2K_DEBUG
 		// make sure m_page_size is initialized
 		init_file();
 #endif
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		if (m_open_mode & no_buffer)
 		{
 			bool eof = false;
 			int size = 0;
 			// when opened in no_buffer mode, the file_offset must
 			// be aligned to pos_alignment()
-			TORRENT_ASSERT((file_offset & (pos_alignment()-1)) == 0);
+			LIBED2K_ASSERT((file_offset & (pos_alignment()-1)) == 0);
 			for (file::iovec_t const* i = bufs, *end(bufs + num_bufs); i < end; ++i)
 			{
-				TORRENT_ASSERT((uintptr_t(i->iov_base) & (buf_alignment()-1)) == 0);
+				LIBED2K_ASSERT((uintptr_t(i->iov_base) & (buf_alignment()-1)) == 0);
 				// every buffer must be a multiple of the page size
 				// except for the last one
-				TORRENT_ASSERT((i->iov_len & (size_alignment()-1)) == 0 || i == end-1);
+				LIBED2K_ASSERT((i->iov_len & (size_alignment()-1)) == 0 || i == end-1);
 				if ((i->iov_len & (size_alignment()-1)) != 0) eof = true;
 				size += i->iov_len;
 			}
 			error_code code;
-			if (eof) TORRENT_ASSERT(file_offset + size >= get_size(code));
+			if (eof) LIBED2K_ASSERT(file_offset + size >= get_size(code));
 		}
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 
 		DWORD ret = 0;
 
@@ -1473,7 +1473,7 @@ namespace libtorrent
 		// number of pages for the write. round up
 		int num_pages = (size + m_page_size - 1) / m_page_size;
 		// allocate array of FILE_SEGMENT_ELEMENT for WriteFileGather
-		FILE_SEGMENT_ELEMENT* segment_array = TORRENT_ALLOCA(FILE_SEGMENT_ELEMENT, num_pages + 1);
+		FILE_SEGMENT_ELEMENT* segment_array = LIBED2K_ALLOCA(FILE_SEGMENT_ELEMENT, num_pages + 1);
 		FILE_SEGMENT_ELEMENT* cur_seg = segment_array;
 
 		for (file::iovec_t const* i = bufs, *end(bufs + num_bufs); i < end; ++i)
@@ -1510,7 +1510,7 @@ namespace libtorrent
 		{
 			if (GetLastError() != ERROR_IO_PENDING)
 			{
-				TORRENT_ASSERT(GetLastError() != ERROR_BAD_ARGUMENTS);
+				LIBED2K_ASSERT(GetLastError() != ERROR_BAD_ARGUMENTS);
 				ec.assign(GetLastError(), get_system_category());
 				CloseHandle(ol.hEvent);
 				return -1;
@@ -1535,14 +1535,14 @@ namespace libtorrent
 			return -1;
 		}
 
-#if TORRENT_USE_WRITEV
+#if LIBED2K_USE_WRITEV
 
 		ret = 0;
 		while (num_bufs > 0)
 		{
-			int nbufs = (std::min)(num_bufs, TORRENT_IOV_MAX);
+			int nbufs = (std::min)(num_bufs, LIBED2K_IOV_MAX);
 			int tmp_ret = 0;
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 			bool aligned = false;
 			int size = 0;
 			// if we're not opened in no-buffer mode, we don't need alignment
@@ -1563,10 +1563,10 @@ namespace libtorrent
 				}
 				ret += tmp_ret;
 			}
-#ifdef TORRENT_LINUX
+#ifdef LIBED2K_LINUX
 			else
 			{
-				file::iovec_t* temp_bufs = TORRENT_ALLOCA(file::iovec_t, nbufs);
+				file::iovec_t* temp_bufs = LIBED2K_ALLOCA(file::iovec_t, nbufs);
 				memcpy(temp_bufs, bufs, sizeof(file::iovec_t) * nbufs);
 				iovec_t& last = temp_bufs[nbufs-1];
 				last.iov_len = (last.iov_len & ~(size_alignment()-1)) + size_alignment();
@@ -1583,7 +1583,7 @@ namespace libtorrent
 				}
 				ret += (std::min)(tmp_ret, size);
 			}
-#endif // TORRENT_LINUX
+#endif // LIBED2K_LINUX
 
 			num_bufs -= nbufs;
 			bufs += nbufs;
@@ -1591,7 +1591,7 @@ namespace libtorrent
 
 		return ret;
 
-#else // TORRENT_USE_WRITEV
+#else // LIBED2K_USE_WRITEV
 
 		ret = 0;
 		for (file::iovec_t const* i = bufs, *end(bufs + num_bufs); i < end; ++i)
@@ -1607,9 +1607,9 @@ namespace libtorrent
 		}
 		return ret;
 
-#endif // TORRENT_USE_WRITEV
+#endif // LIBED2K_USE_WRITEV
 
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 	}
 
 	size_type file::phys_offset(size_type offset)
@@ -1639,7 +1639,7 @@ namespace libtorrent
 		// the returned extent is not guaranteed to start
 		// at the requested offset, adjust for that in
 		// case they differ
-		TORRENT_ASSERT(offset >= fm.fiemap.fm_extents[0].fe_logical);
+		LIBED2K_ASSERT(offset >= fm.fiemap.fm_extents[0].fe_logical);
 		return fm.fiemap.fm_extents[0].fe_physical + (offset - fm.fiemap.fm_extents[0].fe_logical);
 
 #elif defined F_LOG2PHYS
@@ -1651,7 +1651,7 @@ namespace libtorrent
 		if (ret < 0) return 0;
 		if (fcntl(m_fd, F_LOG2PHYS, &l) == -1) return 0;
 		return l.l2p_devoffset;
-#elif defined TORRENT_WINDOWS
+#elif defined LIBED2K_WINDOWS
 		// for documentation of this feature
 		// http://msdn.microsoft.com/en-us/library/aa364572(VS.85).aspx
 		STARTING_VCN_INPUT_BUFFER in;
@@ -1667,7 +1667,7 @@ namespace libtorrent
 			, sizeof(in), &out, sizeof(out), &out_bytes, 0) == 0)
 		{
 			DWORD error = GetLastError();
-			TORRENT_ASSERT(error != ERROR_INVALID_PARAMETER);
+			LIBED2K_ASSERT(error != ERROR_INVALID_PARAMETER);
 
 			// insufficient buffer error is expected, but we're
 			// only interested in the first extent anyway
@@ -1676,7 +1676,7 @@ namespace libtorrent
 		if (out_bytes < sizeof(out)) return 0;
 		if (out.ExtentCount == 0) return 0;
 		if (out.Extents[0].Lcn.QuadPart == (LONGLONG)-1) return 0;
-		TORRENT_ASSERT(in.StartingVcn.QuadPart >= out.StartingVcn.QuadPart);
+		LIBED2K_ASSERT(in.StartingVcn.QuadPart >= out.StartingVcn.QuadPart);
 		return (out.Extents[0].Lcn.QuadPart
 			+ (in.StartingVcn.QuadPart - out.StartingVcn.QuadPart))
 			* m_cluster_size + cluster_offset;
@@ -1686,10 +1686,10 @@ namespace libtorrent
 
   	bool file::set_size(size_type s, error_code& ec)
   	{
-  		TORRENT_ASSERT(is_open());
-  		TORRENT_ASSERT(s >= 0);
+  		LIBED2K_ASSERT(is_open());
+  		LIBED2K_ASSERT(s >= 0);
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 
 		if ((m_open_mode & no_buffer) && (s & (size_alignment()-1)) != 0)
 		{
@@ -1846,11 +1846,11 @@ namespace libtorrent
 
 #endif // F_ALLOCSP64
 
-#if defined TORRENT_LINUX || TORRENT_HAS_FALLOCATE
+#if defined LIBED2K_LINUX || LIBED2K_HAS_FALLOCATE
 			int ret;
 #endif
 
-#if defined TORRENT_LINUX
+#if defined LIBED2K_LINUX
 			ret = my_fallocate(m_fd, 0, 0, s);
 			// if we return 0, everything went fine
 			// the fallocate call succeeded
@@ -1865,13 +1865,13 @@ namespace libtorrent
 				ec.assign(errno, get_posix_category());
 				return false;
 			}
-#endif // TORRENT_LINUX
+#endif // LIBED2K_LINUX
 
-#if TORRENT_HAS_FALLOCATE
+#if LIBED2K_HAS_FALLOCATE
 			// if fallocate failed, we have to use posix_fallocate
 			// which can be painfully slow
 			// if you get a compile error here, you might want to
-			// define TORRENT_HAS_FALLOCATE to 0.
+			// define LIBED2K_HAS_FALLOCATE to 0.
 			ret = posix_fallocate(m_fd, 0, s);
 			// posix_allocate fails with EINVAL in case the underlying
 			// filesystem does bot support this operation
@@ -1880,18 +1880,18 @@ namespace libtorrent
 				ec.assign(ret, get_posix_category());
 				return false;
 			}
-#endif // TORRENT_HAS_FALLOCATE
+#endif // LIBED2K_HAS_FALLOCATE
 		}
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 		return true;
 	}
 
 	void file::finalize()
 	{
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		// according to MSDN, clearing the sparse flag of a file only
 		// works on windows vista and later
-#ifdef TORRENT_MINGW
+#ifdef LIBED2K_MINGW
 typedef struct _FILE_SET_SPARSE_BUFFER {
 	    BOOLEAN SetSparse;
 } FILE_SET_SPARSE_BUFFER, *PFILE_SET_SPARSE_BUFFER;
@@ -1906,7 +1906,7 @@ typedef struct _FILE_SET_SPARSE_BUFFER {
 
 	size_type file::get_size(error_code& ec) const
 	{
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		LARGE_INTEGER file_size;
 		if (!GetFileSizeEx(m_file_handle, &file_size))
 		{
@@ -1927,8 +1927,8 @@ typedef struct _FILE_SET_SPARSE_BUFFER {
 
 	size_type file::sparse_end(size_type start) const
 	{
-#ifdef TORRENT_WINDOWS
-#ifdef TORRENT_MINGW
+#ifdef LIBED2K_WINDOWS
+#ifdef LIBED2K_MINGW
 typedef struct _FILE_ALLOCATED_RANGE_BUFFER {
 	LARGE_INTEGER FileOffset;
 	LARGE_INTEGER Length;
@@ -1947,7 +1947,7 @@ typedef struct _FILE_ALLOCATED_RANGE_BUFFER {
 			boost::uint64_t mask = size_alignment()-1;
 			in.FileOffset.QuadPart = start & (~mask);
 			in.Length.QuadPart = ((file_size + mask) & ~mask) - in.FileOffset.QuadPart;
-			TORRENT_ASSERT((in.Length.QuadPart & mask) == 0);
+			LIBED2K_ASSERT((in.Length.QuadPart & mask) == 0);
 		}
 		else
 		{

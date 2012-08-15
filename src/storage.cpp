@@ -59,7 +59,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/hasher.hpp>
 #include <libtorrent/session.hpp>
 #include <libtorrent/peer_id.hpp>
-#include <libtorrent/file.hpp>
+#include <libtorrent/file_util.hpp>
 #include <libtorrent/invariant_check.hpp>
 #include <libtorrent/file_pool.hpp>
 #include <libed2k/session_impl.hpp>

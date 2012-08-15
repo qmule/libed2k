@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/peer_request.hpp>
 #include <libtorrent/hasher.hpp>
 #include <libed2k/config.hpp>
-#include <libtorrent/file.hpp>
+#include <libed2k/file_util.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/storage_defs.hpp>
@@ -78,7 +78,6 @@ namespace libed2k
 
     typedef libtorrent::size_type size_type;
     typedef libtorrent::hasher hasher;
-    typedef libtorrent::file file;
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
     typedef libtorrent::error_code error_code;

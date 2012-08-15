@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_FILE_HPP_INCLUDED
-#define TORRENT_FILE_HPP_INCLUDED
+#ifndef LIBED2K_FILE_UTIL_HPP_INCLUDED
+#define LIBED2K_FILE_UTIL_HPP_INCLUDED
 
 #include <memory>
 #include <string>
@@ -46,12 +46,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include "libtorrent/error_code.hpp"
-#include "libtorrent/size_type.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/intrusive_ptr_base.hpp"
+#include <libed2k/error_code.hpp>
+#include <libtorrent/size_type.hpp>
+#include <libed2k/config.hpp>
+#include <libtorrent/intrusive_ptr_base.hpp>
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 // windows part
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -83,8 +83,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
+    typedef libtorrent::size_type size_type;
+
 	struct file_status
 	{
 		size_type file_size;
@@ -92,7 +94,7 @@ namespace libtorrent
 		time_t mtime;
 		time_t ctime;
 		enum {
-#if defined TORRENT_WINDOWS
+#if defined LIBED2K_WINDOWS
 			directory = _S_IFDIR,
 			regular_file = _S_IFREG
 #else
@@ -109,44 +111,44 @@ namespace libtorrent
 	};
 
 	enum stat_flags_t { dont_follow_links = 1 };
-	TORRENT_EXPORT void stat_file(std::string f, file_status* s
+	LIBED2K_EXPORT void stat_file(std::string f, file_status* s
 		, error_code& ec, int flags = 0);
-	TORRENT_EXPORT void rename(std::string const& f
+	LIBED2K_EXPORT void rename(std::string const& f
 		, std::string const& newf, error_code& ec);
-	TORRENT_EXPORT void create_directories(std::string const& f
+	LIBED2K_EXPORT void create_directories(std::string const& f
 		, error_code& ec);
-	TORRENT_EXPORT void create_directory(std::string const& f
+	LIBED2K_EXPORT void create_directory(std::string const& f
 		, error_code& ec);
-	TORRENT_EXPORT void remove_all(std::string const& f
+	LIBED2K_EXPORT void remove_all(std::string const& f
 		, error_code& ec);
-	TORRENT_EXPORT void remove(std::string const& f, error_code& ec);
-	TORRENT_EXPORT bool exists(std::string const& f);
-	TORRENT_EXPORT size_type file_size(std::string const& f);
-	TORRENT_EXPORT bool is_directory(std::string const& f
+	LIBED2K_EXPORT void remove(std::string const& f, error_code& ec);
+	LIBED2K_EXPORT bool exists(std::string const& f);
+	LIBED2K_EXPORT size_type file_size(std::string const& f);
+	LIBED2K_EXPORT bool is_directory(std::string const& f
 		, error_code& ec);
-	TORRENT_EXPORT void recursive_copy(std::string const& old_path
+	LIBED2K_EXPORT void recursive_copy(std::string const& old_path
 		, std::string const& new_path, error_code& ec);
-	TORRENT_EXPORT void copy_file(std::string const& f
+	LIBED2K_EXPORT void copy_file(std::string const& f
 		, std::string const& newf, error_code& ec);
 
-	TORRENT_EXPORT std::string split_path(std::string const& f);
-	TORRENT_EXPORT char const* next_path_element(char const* p);
-	TORRENT_EXPORT std::string extension(std::string const& f);
-	TORRENT_EXPORT void replace_extension(std::string& f, std::string const& ext);
-	TORRENT_EXPORT bool is_root_path(std::string const& f);
-	TORRENT_EXPORT std::string parent_path(std::string const& f);
-	TORRENT_EXPORT bool has_parent_path(std::string const& f);
-	TORRENT_EXPORT std::string filename(std::string const& f);
-	TORRENT_EXPORT std::string combine_path(std::string const& lhs
+	LIBED2K_EXPORT std::string split_path(std::string const& f);
+	LIBED2K_EXPORT char const* next_path_element(char const* p);
+	LIBED2K_EXPORT std::string extension(std::string const& f);
+	LIBED2K_EXPORT void replace_extension(std::string& f, std::string const& ext);
+	LIBED2K_EXPORT bool is_root_path(std::string const& f);
+	LIBED2K_EXPORT std::string parent_path(std::string const& f);
+	LIBED2K_EXPORT bool has_parent_path(std::string const& f);
+	LIBED2K_EXPORT std::string filename(std::string const& f);
+	LIBED2K_EXPORT std::string combine_path(std::string const& lhs
 		, std::string const& rhs);
-	TORRENT_EXPORT std::string complete(std::string const& f);
-	TORRENT_EXPORT bool is_complete(std::string const& f);
-	TORRENT_EXPORT std::string current_working_directory();
-#if TORRENT_USE_UNC_PATHS
-	TORRENT_EXTRA_EXPORT std::string canonicalize_path(std::string const& f);
+	LIBED2K_EXPORT std::string complete(std::string const& f);
+	LIBED2K_EXPORT bool is_complete(std::string const& f);
+	LIBED2K_EXPORT std::string current_working_directory();
+#if LIBED2K_USE_UNC_PATHS
+	LIBED2K_EXTRA_EXPORT std::string canonicalize_path(std::string const& f);
 #endif
 
-	class TORRENT_EXPORT directory : public boost::noncopyable
+	class LIBED2K_EXPORT directory : public boost::noncopyable
 	{
 	public:
 		directory(std::string const& path, error_code& ec);
@@ -155,9 +157,9 @@ namespace libtorrent
 		std::string file() const;
 		bool done() const { return m_done; }
 	private:
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		HANDLE m_handle;
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 		WIN32_FIND_DATAW m_fd;
 #else
 		WIN32_FIND_DATAA m_fd;
@@ -168,12 +170,12 @@ namespace libtorrent
 		// array at the end, it will end up referring
 		// to the m_name field
 		struct dirent m_dirent;
-		char m_name[TORRENT_MAX_PATH + 1]; // +1 to make room for null
+		char m_name[LIBED2K_MAX_PATH + 1]; // +1 to make room for null
 #endif
 		bool m_done;
 	};
 
-	struct TORRENT_EXPORT file: boost::noncopyable, intrusive_ptr_base<file>
+	struct LIBED2K_EXPORT file: boost::noncopyable, libtorrent::intrusive_ptr_base<file>
 	{
 		enum
 		{
@@ -197,7 +199,7 @@ namespace libtorrent
 			attribute_mask = attribute_hidden | attribute_executable
 		};
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		struct iovec_t
 		{
 			void* iov_base;
@@ -209,7 +211,7 @@ namespace libtorrent
 
 		// use a typedef for the type of iovec_t::iov_base
 		// since it may differ
-#ifdef TORRENT_SOLARIS
+#ifdef LIBED2K_SOLARIS
 		typedef char* iovec_base_t;
 #else
 		typedef void* iovec_base_t;
@@ -256,7 +258,7 @@ namespace libtorrent
 
 		size_type phys_offset(size_type offset);
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		HANDLE native_handle() const { return m_file_handle; }
 #else
 		int native_handle() const { return m_fd; }
@@ -264,31 +266,31 @@ namespace libtorrent
 
 	private:
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		HANDLE m_file_handle;
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 		std::wstring m_path;
 #else
 		std::string m_path;
-#endif // TORRENT_USE_WSTRING
-#else // TORRENT_WINDOWS
+#endif // LIBED2K_USE_WSTRING
+#else // LIBED2K_WINDOWS
 		int m_fd;
-#endif // TORRENT_WINDOWS
+#endif // LIBED2K_WINDOWS
 
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX || defined TORRENT_DEBUG
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX || defined LIBED2K_DEBUG
 		static void init_file();
 		static int m_page_size;
 #endif
 		int m_open_mode;
-#if defined TORRENT_WINDOWS || defined TORRENT_LINUX
+#if defined LIBED2K_WINDOWS || defined LIBED2K_LINUX
 		mutable int m_sector_size;
 #endif
-#if defined TORRENT_WINDOWS
+#if defined LIBED2K_WINDOWS
 		mutable int m_cluster_size;
 #endif
 	};
 
 }
 
-#endif // TORRENT_FILE_HPP_INCLUDED
+#endif // LIBED2K_FILE_UTIL_HPP_INCLUDED
 
