@@ -30,17 +30,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_THREAD_HPP_INCLUDED
-#define TORRENT_THREAD_HPP_INCLUDED
+#ifndef LIBED2K_THREAD_HPP_INCLUDED
+#define LIBED2K_THREAD_HPP_INCLUDED
 
-#include "libtorrent/config.hpp"
+#include <libed2k/config.hpp>
 
-#if defined TORRENT_WINDOWS || defined TORRENT_CYGWIN
+#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
 // asio assumes that the windows error codes are defined already
 #include <winsock2.h>
 #endif
 
-#if defined TORRENT_BEOS
+#if defined LIBED2K_BEOS
 #include <kernel/OS.h>
 #endif
 
@@ -50,15 +50,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio/detail/mutex.hpp>
 #include <boost/asio/detail/event.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 	typedef boost::asio::detail::thread thread;
 	typedef boost::asio::detail::mutex mutex;
 	typedef boost::asio::detail::event event;
 
-	TORRENT_EXPORT void sleep(int milliseconds);
+	LIBED2K_EXPORT void sleep(int milliseconds);
 
-	struct TORRENT_EXTRA_EXPORT condition
+	struct LIBED2K_EXTRA_EXPORT condition
 	{
 		condition();
 		~condition();
@@ -67,11 +67,11 @@ namespace libtorrent
 	private:
 #ifdef BOOST_HAS_PTHREADS
 		pthread_cond_t m_cond;
-#elif defined TORRENT_WINDOWS || defined TORRENT_CYGWIN
+#elif defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
 		HANDLE m_sem;
 		mutex m_mutex;
 		int m_num_waiters;
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 		sem_id m_sem;
 		mutex m_mutex;
 		int m_num_waiters;

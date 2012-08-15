@@ -40,12 +40,15 @@ POSSIBILITY OF SUCH DAMAGE.
 namespace libtorrent
 {
 	struct file_pool;
+	class file_storage;
 }
 
 namespace libed2k
 {
 	struct storage_interface;
-	class file_storage;
+
+    typedef libtorrent::file_pool file_pool;
+    typedef libtorrent::file_storage file_storage;
 
 	enum storage_mode_t
 	{

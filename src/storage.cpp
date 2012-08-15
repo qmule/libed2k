@@ -64,8 +64,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/file_pool.hpp>
 #include <libed2k/session_impl.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
-#include <libed2k/alloca.hpp"
-#include <libtorrent/allocator.hpp> // page_size
+#include <libed2k/alloca.hpp>
+#include <libed2k/allocator.hpp> // page_size
 
 #include <cstdio>
 

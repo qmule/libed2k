@@ -30,20 +30,20 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/thread.hpp"
-#include "libtorrent/assert.hpp"
+#include <libed2k/thread.hpp>
+#include <libed2k/assert.hpp>
 
-#ifdef TORRENT_BEOS
+#ifdef LIBED2K_BEOS
 #include <kernel/OS.h>
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 	void sleep(int milliseconds)
 	{
-#if defined TORRENT_WINDOWS || defined TORRENT_CYGWIN
+#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
 		Sleep(milliseconds);
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 		snooze_until(system_time() + boost::int64_t(milliseconds) * 1000, B_SYSTEM_TIMEBASE);
 #else
 		usleep(milliseconds * 1000);
@@ -64,17 +64,17 @@ namespace libtorrent
 
 	void condition::wait(mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(l.locked());
+		LIBED2K_ASSERT(l.locked());
 		// wow, this is quite a hack
 		pthread_cond_wait(&m_cond, (::pthread_mutex_t*)&l.mutex());
 	}
 
 	void condition::signal_all(mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(l.locked());
+		LIBED2K_ASSERT(l.locked());
 		pthread_cond_broadcast(&m_cond);
 	}
-#elif defined TORRENT_WINDOWS || defined TORRENT_CYGWIN
+#elif defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
 	condition::condition()
 		: m_num_waiters(0)
 	{
@@ -88,7 +88,7 @@ namespace libtorrent
 
 	void condition::wait(mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(l.locked());
+		LIBED2K_ASSERT(l.locked());
 		++m_num_waiters;
 		l.unlock();
 		WaitForSingleObject(m_sem, INFINITE);
@@ -98,10 +98,10 @@ namespace libtorrent
 
 	void condition::signal_all(mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(l.locked());
+		LIBED2K_ASSERT(l.locked());
 		ReleaseSemaphore(m_sem, m_num_waiters, 0);
 	}
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 	condition::condition()
 		: m_num_waiters(0)
 	{
@@ -115,7 +115,7 @@ namespace libtorrent
 
 	void condition::wait(mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(l.locked());
+		LIBED2K_ASSERT(l.locked());
 		++m_num_waiters;
 		l.unlock();
 		acquire_sem(m_sem);
@@ -125,7 +125,7 @@ namespace libtorrent
 
 	void condition::signal_all(mutex::scoped_lock& l)
 	{
-		TORRENT_ASSERT(l.locked());
+		LIBED2K_ASSERT(l.locked());
 		release_sem_etc(m_sem, m_num_waiters, 0);
 	}
 #else

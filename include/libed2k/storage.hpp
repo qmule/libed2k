@@ -60,9 +60,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libtorrent/file.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
-//#include <libtorrent/thread.hpp>
+#include <libed2k/thread.hpp>
 #include <libed2k/storage_defs.hpp>
-#include <libtorrent/allocator.hpp>
+#include <libed2k/allocator.hpp>
 
 namespace libtorrent
 {
@@ -75,6 +75,16 @@ namespace libed2k
 {
 	struct disk_io_job;
 	struct disk_buffer_pool;
+
+    typedef libtorrent::size_type size_type;
+    typedef libtorrent::hasher hasher;
+    typedef libtorrent::file file;
+    typedef libtorrent::entry entry;
+    typedef libtorrent::lazy_entry lazy_entry;
+    typedef libtorrent::error_code error_code;
+    typedef libtorrent::torrent_info torrent_info;
+    typedef libtorrent::peer_request peer_request;
+    typedef libtorrent::sha1_hash sha1_hash;
 
 	LIBED2K_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
 		file_storage const& t
@@ -101,7 +111,7 @@ namespace libed2k
 		// the number of bytes in the piece that has been hashed
 		int offset;
 		// the sha-1 context
-		hasher h;
+        hasher h;
 	};
 
 	struct LIBED2K_EXPORT storage_interface
@@ -168,7 +178,7 @@ namespace libed2k
 		virtual void finalize_file(int file) {}
 
 		disk_buffer_pool* disk_pool() { return m_disk_pool; }
-		session_settings const& settings() const { return *m_settings; }
+        libtorrent::session_settings const& settings() const { return *m_settings; }
 
 		void set_error(std::string const& file, error_code const& ec) const;
 
@@ -182,7 +192,7 @@ namespace libed2k
 		virtual ~storage_interface() {}
 
 		disk_buffer_pool* m_disk_pool;
-		session_settings* m_settings;
+        libtorrent::session_settings* m_settings;
 	};
 
 	class LIBED2K_EXPORT default_storage : public storage_interface, boost::noncopyable
@@ -290,7 +300,7 @@ namespace libed2k
 	struct disk_io_thread;
 
 	class LIBED2K_EXTRA_EXPORT piece_manager
-		: public intrusive_ptr_base<piece_manager>
+		: public libtorrent::intrusive_ptr_base<piece_manager>
 		, boost::noncopyable
 	{
 	friend class invariant_access;

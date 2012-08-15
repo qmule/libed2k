@@ -34,9 +34,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_DISK_IO_THREAD
 
 #include <libed2k/storage.hpp>
-#include <libtorrent/allocator.hpp>
+#include <libed2k/allocator.hpp>
 #include <libed2k/io_service.hpp>
-#include <libtorrent/sliding_average.hpp>
+#include <libed2k/sliding_average.hpp>
 
 #include <boost/function/function0.hpp>
 #include <boost/function/function2.hpp>
@@ -44,7 +44,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/shared_array.hpp>
 #include <deque>
 #include <libed2k/config.hpp>
-#include <libtorrent/thread.hpp>
+#include <libed2k/thread.hpp>
 #include <libed2k/disk_buffer_pool.hpp>
 
 #include <boost/multi_index_container.hpp>

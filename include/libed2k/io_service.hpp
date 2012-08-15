@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_IO_SERVICE_HPP_INCLUDED
-#define TORRENT_IO_SERVICE_HPP_INCLUDED
+#ifndef LIBED2K_IO_SERVICE_HPP_INCLUDED
+#define LIBED2K_IO_SERVICE_HPP_INCLUDED
 
 #ifdef __OBJC__
 #define Protocol Protocol_
@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/version.hpp>
 
-#if defined TORRENT_WINDOWS || defined TORRENT_CYGWIN
+#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
 // asio assumes that the windows error codes are defined already
 #include <winsock2.h>
 #endif
@@ -62,7 +62,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #undef Protocol
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 
 #if BOOST_VERSION < 103500

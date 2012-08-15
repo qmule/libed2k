@@ -30,10 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_SLIDING_AVERAGE_HPP_INCLUDED
-#define TORRENT_SLIDING_AVERAGE_HPP_INCLUDED
+#ifndef LIBED2K_SLIDING_AVERAGE_HPP_INCLUDED
+#define LIBED2K_SLIDING_AVERAGE_HPP_INCLUDED
 
-namespace libtorrent
+namespace libed2k
 {
 // a sliding average accumulator. Add samples to it and it
 // keeps track of a sliding mean value and an average deviation
@@ -101,4 +101,3 @@ struct average_accumulator
 }
 
 #endif
-
