@@ -96,6 +96,7 @@ using namespace libed2k;
 enum CONN_CMD
 {
     cc_search,
+    cc_simplesearch,
     cc_download,
     cc_download_all,
     cc_save_fast_resume,
@@ -137,6 +138,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     if (strCommand == "search")
     {
         return cc_search;
+    }
+    if (strCommand == "simplesearch")
+    {
+        return cc_simplesearch;
     }
     else if (strCommand == "load")
     {
@@ -455,6 +460,13 @@ int main(int argc, char* argv[])
                 search_request sr = libed2k::generateSearchRequest(1000000000,0,100,0, "", "", "", 0, 0, strArg);
                 ses.post_search_request(sr);
                 break;
+            }
+            case cc_simplesearch:
+            {
+                DBG("Execute simple search request: " << strArg);
+                search_request sr = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, strArg);
+                ses.post_search_request(sr);
+                break;    
             }
             case cc_download:
             {
