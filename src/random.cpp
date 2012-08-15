@@ -1,6 +1,6 @@
-#include "libtorrent/random.hpp"
+#include <libed2k/random.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 
 	namespace

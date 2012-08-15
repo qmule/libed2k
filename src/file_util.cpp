@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libed2k/alloca.hpp>
 #include <libed2k/allocator.hpp> // page_size
-#include <libtorrent/escape_string.hpp> // for string conversion
+#include <libed2k/escape_string.hpp> // for string conversion
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/static_assert.hpp>
@@ -164,7 +164,7 @@ namespace libed2k
 #if LIBED2K_USE_WSTRING && defined LIBED2K_WINDOWS
 		std::wstring f = convert_to_wstring(inf);
 #else
-		std::string f = libtorrent::convert_to_native(inf);
+		std::string f = convert_to_native(inf);
 #endif
 
 #ifdef LIBED2K_WINDOWS
@@ -208,8 +208,8 @@ namespace libed2k
 		std::wstring f2 = convert_to_wstring(newf);
 		if (_wrename(f1.c_str(), f2.c_str()) < 0)
 #else
-        std::string f1 = libtorrent::convert_to_native(inf);
-		std::string f2 = libtorrent::convert_to_native(newf);
+        std::string f1 = convert_to_native(inf);
+		std::string f2 = convert_to_native(newf);
 		if (::rename(f1.c_str(), f2.c_str()) < 0)
 #endif
 		{
@@ -243,7 +243,7 @@ namespace libed2k
 		std::wstring n = convert_to_wstring(f);
 #else
 #define CreateDirectory_ CreateDirectoryA
-		std::string n = libtorrent::convert_to_native(f);
+		std::string n = convert_to_native(f);
 #endif
 
 #ifdef LIBED2K_WINDOWS
@@ -298,8 +298,8 @@ namespace libed2k
 		std::wstring f2 = convert_to_wstring(newf);
 #else
 #define CopyFile_ CopyFileA
-		std::string f1 = libtorrent::convert_to_native(inf);
-		std::string f2 = libtorrent::convert_to_native(newf);
+		std::string f1 = convert_to_native(inf);
+		std::string f2 = convert_to_native(newf);
 #endif
 
 #ifdef LIBED2K_WINDOWS
@@ -671,7 +671,7 @@ namespace libed2k
 			return;
 		}
 #else // LIBED2K_WINDOWS
-		std::string f = libtorrent::convert_to_native(inf);
+		std::string f = convert_to_native(inf);
 		if (::remove(f.c_str()) < 0)
 		{
 			ec.assign(errno, boost::system::get_generic_category());
@@ -763,7 +763,7 @@ namespace libed2k
 		if (!path.empty() && path[path.size()-1] == '/')
 			p.resize(path.size()-1);
 
-		p = libtorrent::convert_to_native(p);
+		p = convert_to_native(p);
 		m_handle = opendir(p.c_str());
 		if (m_handle == 0)
 		{
@@ -792,7 +792,7 @@ namespace libed2k
 #if LIBED2K_USE_WSTRING
 		return convert_from_wstring(m_fd.cFileName);
 #else
-		return libtorrent::convert_from_native(m_fd.cFileName);
+		return convert_from_native(m_fd.cFileName);
 #endif
 #else
 		return convert_from_native(m_dirent.d_name);
@@ -965,7 +965,7 @@ namespace libed2k
 		static const int no_atime_flag[] = {0, O_NOATIME};
 #endif
 
- 		m_fd = ::open(libtorrent::convert_to_native(path).c_str()
+ 		m_fd = ::open(convert_to_native(path).c_str()
  			, mode_array[mode & rw_mask]
 			| no_buffer_flag[(mode & no_buffer) >> 2]
 #ifdef O_NOATIME

@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include <libtorrent/pch.hpp>
 
 #include <string>
 #include <cctype>
@@ -42,29 +42,31 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/array.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "libtorrent/config.hpp"
-#include "libtorrent/assert.hpp"
-#include "libtorrent/escape_string.hpp"
-#include "libtorrent/parse_url.hpp"
-#include "libtorrent/random.hpp"
+#include <libed2k/config.hpp>
+#include <libed2k/assert.hpp>
+#include <libed2k/escape_string.hpp>
+#include <libtorrent/parse_url.hpp>
+#include <libed2k/random.hpp>
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #endif
 
-#include "libtorrent/utf8.hpp"
-#include "libtorrent/thread.hpp"
+#include <libtorrent/utf8.hpp>
+#include <libed2k/thread.hpp>
 
-#if TORRENT_USE_ICONV
+#if LIBED2K_USE_ICONV
 #include <iconv.h>
 #include <locale.h>
 #endif 
 
-namespace libtorrent
+namespace libed2k
 {
+    typedef libtorrent::size_type size_type;
+    typedef libtorrent::unsigned_size_type unsigned_size_type;
 
 	// lexical_cast's result depends on the locale. We need
 	// a well defined result
@@ -240,10 +242,10 @@ namespace libtorrent
 	// the offset is used to ignore the first characters in the unreserved_chars table.
 	static std::string escape_string_impl(const char* str, int len, int offset)
 	{
-		TORRENT_ASSERT(str != 0);
-		TORRENT_ASSERT(len >= 0);
-		TORRENT_ASSERT(offset >= 0);
-		TORRENT_ASSERT(offset < int(sizeof(unreserved_chars))-1);
+		LIBED2K_ASSERT(str != 0);
+		LIBED2K_ASSERT(len >= 0);
+		LIBED2K_ASSERT(offset >= 0);
+		LIBED2K_ASSERT(offset < int(sizeof(unreserved_chars))-1);
 
 		std::string ret;
 		for (int i = 0; i < len; ++i)
@@ -293,7 +295,7 @@ namespace libtorrent
 
 	std::string read_until(char const*& str, char delim, char const* end)
 	{
-		TORRENT_ASSERT(str <= end);
+		LIBED2K_ASSERT(str <= end);
 
 		std::string ret;
 		while (str != end && *str != delim)
@@ -318,7 +320,7 @@ namespace libtorrent
 		if (!need_encoding(path.c_str(), path.size()))
 			return url;
 
-		char msg[TORRENT_MAX_PATH*4];
+		char msg[LIBED2K_MAX_PATH*4];
 		snprintf(msg, sizeof(msg), "%s://%s%s%s:%d%s", protocol.c_str(), auth.c_str()
 			, auth.empty()?"":"@", host.c_str(), port
 			, escape_path(path.c_str(), path.size()).c_str());
@@ -461,7 +463,7 @@ namespace libtorrent
 					inbuf[j] = 'I' - 'A';
 				else
 					return std::string();
-				TORRENT_ASSERT(inbuf[j] == (inbuf[j] & 0x1f));
+				LIBED2K_ASSERT(inbuf[j] == (inbuf[j] & 0x1f));
 			}
 
 			// decode inbuf to outbuf
@@ -510,7 +512,7 @@ namespace libtorrent
 		return url.substr(pos, url.find('&', pos) - pos);
 	}
 
-	TORRENT_EXTRA_EXPORT std::string to_hex(std::string const& s)
+	LIBED2K_EXTRA_EXPORT std::string to_hex(std::string const& s)
 	{
 		std::string ret;
 		for (std::string::const_iterator i = s.begin(); i != s.end(); ++i)
@@ -521,7 +523,7 @@ namespace libtorrent
 		return ret;
 	}
 
-	TORRENT_EXTRA_EXPORT void to_hex(char const *in, int len, char* out)
+	LIBED2K_EXTRA_EXPORT void to_hex(char const *in, int len, char* out)
 	{
 		for (char const* end = in + len; in < end; ++in)
 		{
@@ -539,7 +541,7 @@ namespace libtorrent
 		return -1;
 	}
 
-	TORRENT_EXTRA_EXPORT bool is_hex(char const *in, int len)
+	LIBED2K_EXTRA_EXPORT bool is_hex(char const *in, int len)
 	{
 		for (char const* end = in + len; in < end; ++in)
 		{
@@ -549,7 +551,7 @@ namespace libtorrent
 		return true;
 	}
 
-	TORRENT_EXTRA_EXPORT bool from_hex(char const *in, int len, char* out)
+	LIBED2K_EXTRA_EXPORT bool from_hex(char const *in, int len, char* out)
 	{
 		for (char const* end = in + len; in < end; ++in, ++out)
 		{
@@ -564,7 +566,7 @@ namespace libtorrent
 		return true;
 	}
 
-#if defined TORRENT_WINDOWS && TORRENT_USE_WSTRING
+#if defined LIBED2K_WINDOWS && LIBED2K_USE_WSTRING
 	std::wstring convert_to_wstring(std::string const& s)
 	{
 		std::wstring ret;
@@ -595,7 +597,7 @@ namespace libtorrent
 		for (const wchar_t* i = &s[0]; i < end;)
 		{
 			char c[10];
-			TORRENT_ASSERT(sizeof(c) >= MB_CUR_MAX);
+			LIBED2K_ASSERT(sizeof(c) >= MB_CUR_MAX);
 			result = std::wctomb(c, *i);
 			if (result > 0)
 			{
@@ -612,7 +614,7 @@ namespace libtorrent
 	}
 #endif
 
-#if TORRENT_USE_ICONV
+#if LIBED2K_USE_ICONV
 	std::string iconv_convert_impl(std::string const& s, iconv_t h)
 	{
 		std::string ret;
@@ -624,7 +626,7 @@ namespace libtorrent
 		// posix has a weird iconv signature. implementations
 		// differ on what this signature should be, so we use
 		// a macro to let config.hpp determine it
-		size_t retval = iconv(h, TORRENT_ICONV_ARG &in, &insize,
+		size_t retval = iconv(h, LIBED2K_ICONV_ARG &in, &insize,
 			&out, &outsize);
 		if (retval == (size_t)-1) return s;
 		// if this string has an invalid utf-8 sequence in it, don't touch it
@@ -632,7 +634,7 @@ namespace libtorrent
 		// not sure why this would happen, but it seems to be possible
 		if (outsize > s.size() * 4) return s;
 		// outsize is the number of bytes unused of the out-buffer
-		TORRENT_ASSERT(ret.size() >= outsize);
+		LIBED2K_ASSERT(ret.size() >= outsize);
 		ret.resize(ret.size() - outsize);
 		return ret;
 	}
@@ -661,7 +663,7 @@ namespace libtorrent
 		return iconv_convert_impl(s, iconv_handle);
 	}
 
-#elif TORRENT_USE_LOCALE
+#elif LIBED2K_USE_LOCALE
 
 	std::string convert_to_native(std::string const& s)
 	{
