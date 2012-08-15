@@ -55,6 +55,7 @@ namespace libed2k
             // service errors
             filesize_is_zero,
             file_unavaliable,
+            file_too_short,
             unclosed_quotation_mark,
             operator_incorrect_place,
             known_file_invalid_header,
@@ -66,6 +67,7 @@ namespace libed2k
             missing_transfer_hash,
             mismatching_transfer_hash,
             hashes_dont_match_pieces,
+            failed_hash_check,
             num_errors
         };
     }

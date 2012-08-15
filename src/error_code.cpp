@@ -49,6 +49,7 @@ namespace libed2k
             // service errors
             "file size is zero",
             "file not exists or is not regular file",
+            "file is too short",
             "unclosed quotation mark",
             "operator incorrect place",
             "known file has invalid header on save/load",
@@ -59,7 +60,8 @@ namespace libed2k
             "invalid file tag",
             "missing transfer hash",
             "mismatching transfer hash",
-            "hashes dont match pieces"
+            "hashes dont match pieces",
+            "failed hash check"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

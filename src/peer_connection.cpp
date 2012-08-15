@@ -411,8 +411,7 @@ void peer_connection::do_read()
     {
         boost::shared_ptr<transfer> t = m_transfer.lock();
 
-        DBG((boost::format("cannot read: {disk_queue: %1%, disk_queue_limit: %2%}")
-             % ((t && t->get_storage()) ? t->filesystem().queued_bytes() : 0)
+        DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
              % m_ses.settings().max_queued_disk_bytes).str());
 
         // if we block reading, waiting for the disk, we will wake up
@@ -848,9 +847,7 @@ bool peer_connection::can_read(char* state) const
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    bool disk = m_ses.settings().max_queued_disk_bytes == 0 ||
-        !t || t->get_storage() == 0 ||
-        t->filesystem().queued_bytes() < m_ses.settings().max_queued_disk_bytes;
+    bool disk = m_ses.settings().max_queued_disk_bytes == 0 || m_ses.can_write_to_disk();
 
     if (!disk)
     {

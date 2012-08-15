@@ -232,6 +232,7 @@ namespace libed2k {
 
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
+            bool can_write_to_disk() const { return m_disk_thread.can_write(); }
 
             std::string buffer_usage();
 
