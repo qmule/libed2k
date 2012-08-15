@@ -65,7 +65,7 @@ namespace libed2k
 	{
 		int piece;
 		std::vector<bool> blocks;
-		ptime last_use;
+        libtorrent::ptime last_use;
 		int next_to_hash;
 		enum kind_t { read_cache = 0, write_cache = 1 };
 		kind_t kind;
@@ -138,7 +138,7 @@ namespace libed2k
 
 		// the time when this job was issued. This is used to
 		// keep track of disk I/O congestion
-		ptime start_time;
+        libtorrent::ptime start_time;
 	};
 
 	// returns true if the fundamental operation
@@ -282,7 +282,7 @@ namespace libed2k
 			// the last time a block was writting to this piece
 			// plus the minimum amount of time the block is guaranteed
 			// to stay in the cache
-			ptime expire;
+			libtorrent::ptime expire;
 			// the number of blocks in the cache for this piece
 			int num_blocks;
 			// used to determine if this piece should be flushed
@@ -301,7 +301,7 @@ namespace libed2k
 			cached_piece_entry, indexed_by<
 				ordered_unique<const_mem_fun<cached_piece_entry, std::pair<void*, int>
 				, &cached_piece_entry::storage_piece_pair> >
-				, ordered_non_unique<member<cached_piece_entry, ptime
+				, ordered_non_unique<member<cached_piece_entry, libtorrent::ptime
 					, &cached_piece_entry::expire> >
 				> 
 			> cache_t;
@@ -376,7 +376,7 @@ namespace libed2k
 		std::deque<disk_io_job> m_jobs;
 		size_type m_queue_buffer_size;
 
-		ptime m_last_file_check;
+        libtorrent::ptime m_last_file_check;
 
 		// this protects the piece cache and related members
 		mutable mutex m_piece_mutex;
@@ -386,7 +386,7 @@ namespace libed2k
 		// read cache
 		cache_t m_read_pieces;
 
-		void flip_stats(ptime now);
+		void flip_stats(libtorrent::ptime now);
 
 		// total number of blocks in use by both the read
 		// and the write cache. This is not supposed to
@@ -414,7 +414,7 @@ namespace libed2k
 
 		// the last time we reset the average time and store the
 		// latest value in m_cache_stats
-		ptime m_last_stats_flip;
+        libtorrent::ptime m_last_stats_flip;
 
 		typedef std::multimap<size_type, disk_io_job> read_jobs_t;
 		read_jobs_t m_sorted_read_jobs;

@@ -8,13 +8,11 @@
 #include <map>
 #include <set>
 
-#include "libtorrent/torrent_handle.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/peer_connection.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/assert.hpp"
-#include "libtorrent/identify_client.hpp"
-#include "libtorrent/stat.hpp"
+#include <libtorrent/torrent_handle.hpp>
+#include <libtorrent/socket.hpp>
+#include <libtorrent/peer_connection.hpp>
+#include <libtorrent/identify_client.hpp>
+#include <libtorrent/stat.hpp>
 
 #include "libed2k/fingerprint.hpp"
 #include "libed2k/md4_hash.hpp"
@@ -26,6 +24,7 @@
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/disk_io_thread.hpp"
 
 namespace libed2k {
 
@@ -314,7 +313,7 @@ namespace libed2k {
             // file pool must be destructed after the torrents
             // since they will still have references to it
             // when they are destructed.
-            libtorrent::file_pool m_filepool;
+            file_pool m_filepool;
 
             // handles disk io requests asynchronously
             // peers have pointers into the disk buffer
@@ -324,7 +323,7 @@ namespace libed2k {
             // m_files. The disk io thread posts completion
             // events to the io service, and needs to be
             // constructed after it.
-            libtorrent::disk_io_thread m_disk_thread;
+            disk_io_thread m_disk_thread;
 
             // this is a list of half-open tcp connections
             // (only outgoing connections)

@@ -459,12 +459,18 @@ namespace libed2k
         return 0;
     }
 
+    storage_interface* transfer::get_storage()
+    {
+        if (!m_owning_storage) return 0;
+        return m_owning_storage->get_storage_impl();
+    }
+
     void transfer::move_storage(const fs::path& save_path)
     {
         if (m_owning_storage.get())
         {
             m_owning_storage->async_move_storage(
-                save_path, boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
+                save_path.string(), boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
         }
         else
         {
@@ -797,12 +803,15 @@ namespace libed2k
         files.set_piece_length(PIECE_SIZE);
         files.add_file(m_filepath.filename(), m_filesize);
 
+        // we have only one file with normal priority
+        std::vector<boost::uint8_t> file_prio;
+        file_prio.push_back(1);
+
         // the shared_from_this() will create an intentional
         // cycle of ownership, see the hpp file for description.
         m_owning_storage = new piece_manager(
-            shared_from_this(), m_info, m_filepath.parent_path(), m_ses.m_filepool,
-            m_ses.m_disk_thread, libtorrent::default_storage_constructor,
-            static_cast<libtorrent::storage_mode_t>(m_storage_mode));
+            shared_from_this(), m_info, m_filepath.parent_path().string(), m_ses.m_filepool,
+            m_ses.m_disk_thread, default_storage_constructor, m_storage_mode, file_prio);
         m_storage = m_owning_storage.get();
 
         if (has_picker())

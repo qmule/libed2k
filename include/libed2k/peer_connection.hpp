@@ -8,12 +8,12 @@
 #include <boost/aligned_storage.hpp>
 
 #include <libtorrent/error_code.hpp>
-#include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
 #include <libtorrent/piece_block_progress.hpp>
 
+#include "libed2k/disk_buffer_holder.hpp"
 #include "libed2k/base_connection.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/error_code.hpp"
@@ -63,6 +63,7 @@ namespace libed2k
     namespace aux{
         class session_impl;
     }
+    struct disk_io_job;
 
     struct pending_block
     {

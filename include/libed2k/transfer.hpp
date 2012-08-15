@@ -29,6 +29,8 @@ namespace libed2k {
     class peer;
     class server_request;
     class server_response;
+    class piece_manager;
+    struct disk_io_job;
 
     // a transfer is a class that holds information
     // for a specific download. It updates itself against
@@ -209,12 +211,7 @@ namespace libed2k {
         size_t num_free_blocks() const;
 
         piece_manager& filesystem() { return *m_storage; }
-        storage_interface* get_storage()
-        {
-            if (!m_owning_storage) return 0;
-            return m_owning_storage->get_storage_impl();
-        }
-
+        storage_interface* get_storage();
         void move_storage(const fs::path& save_path);
         bool rename_file(const std::string& name);
         void delete_files();
@@ -377,13 +374,13 @@ namespace libed2k {
         // the piece_manager, and stored in the
         // torrent, so the torrent cannot destruct
         // before the piece_manager.
-        boost::intrusive_ptr<libtorrent::piece_manager> m_owning_storage;
+        boost::intrusive_ptr<piece_manager> m_owning_storage;
 
         // this is a weak (non owninig) pointer to
         // the piece_manager. This is used after the torrent
         // has been aborted, and it can no longer own
         // the object.
-        libtorrent::piece_manager* m_storage;
+        piece_manager* m_storage;
 
         duration_timer m_minute_timer;
 

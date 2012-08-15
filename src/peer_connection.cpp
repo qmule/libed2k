@@ -2,8 +2,8 @@
 #include <boost/format.hpp>
 
 #include <libtorrent/piece_picker.hpp>
-#include <libtorrent/storage.hpp>
 
+#include "libed2k/storage.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/session.hpp"

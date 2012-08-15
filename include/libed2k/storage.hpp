@@ -63,12 +63,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/thread.hpp>
 #include <libed2k/storage_defs.hpp>
 #include <libed2k/allocator.hpp>
+#include <libed2k/session_settings.hpp>
 
 namespace libtorrent
 {
 	class session;
 	struct file_pool;
-	struct session_settings;
 }
 
 namespace libed2k
@@ -178,7 +178,7 @@ namespace libed2k
 		virtual void finalize_file(int file) {}
 
 		disk_buffer_pool* disk_pool() { return m_disk_pool; }
-        libtorrent::session_settings const& settings() const { return *m_settings; }
+        session_settings const& settings() const { return *m_settings; }
 
 		void set_error(std::string const& file, error_code const& ec) const;
 
@@ -192,7 +192,7 @@ namespace libed2k
 		virtual ~storage_interface() {}
 
 		disk_buffer_pool* m_disk_pool;
-        libtorrent::session_settings* m_settings;
+        session_settings* m_settings;
 	};
 
 	class LIBED2K_EXPORT default_storage : public storage_interface, boost::noncopyable

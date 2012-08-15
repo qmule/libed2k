@@ -2,39 +2,46 @@
 #define __LIBED2K_SESSION_SETTINGS__
 
 #include <limits>
+#include <libed2k/md4_hash.hpp>
 
 namespace libed2k
 {
-
     class session_settings
     {
     public:
         typedef std::vector<std::pair<std::string, bool> >  fd_list;
 
         session_settings():
-            server_timeout(220),
-            peer_timeout(120),
-            peer_connect_timeout(7),
-            block_request_timeout(10),
-            allow_multiple_connections_per_ip(false),
-            recv_socket_buffer_size(0),
-            send_socket_buffer_size(0),
-            max_queued_disk_bytes(std::numeric_limits<int>::max()),
-            send_buffer_watermark(100 * 1024),
-            server_port(4661),
-            listen_port(4662),
-            client_name("libed2k"),
-            server_keep_alive_timeout(200),
-            server_reconnect_timeout(5),
-            max_peerlist_size(4000),
-            download_rate_limit(-1),
-            upload_rate_limit(-1),
-            m_version(0x3c),
-            m_max_announces_per_call(100),
-            m_announce_timeout(-1),
-            m_show_shared_catalogs(true),
-            m_show_shared_files(true),
-            user_agent(md4_hash::emule)
+            server_timeout(220)
+            , peer_timeout(120)
+            , peer_connect_timeout(7)
+            , block_request_timeout(10)
+            , allow_multiple_connections_per_ip(false)
+            , recv_socket_buffer_size(0)
+            , send_socket_buffer_size(0)
+            , send_buffer_watermark(100 * 1024)
+            , server_port(4661)
+            , listen_port(4662)
+            , client_name("libed2k")
+            , server_keep_alive_timeout(200)
+            , server_reconnect_timeout(5)
+            , max_peerlist_size(4000)
+            , download_rate_limit(-1)
+            , upload_rate_limit(-1)
+            , m_version(0x3c)
+            , m_max_announces_per_call(100)
+            , m_announce_timeout(-1)
+            , m_show_shared_catalogs(true)
+            , m_show_shared_files(true)
+            , user_agent(md4_hash::emule)
+            // Disk IO settings
+            , max_queued_disk_bytes(std::numeric_limits<int>::max())
+            , cache_buffer_chunk_size(16)
+            , explicit_read_cache(false)
+            , disk_cache_algorithm(avoid_readback)
+#ifndef TORRENT_DISABLE_MLOCK
+            , lock_disk_cache(false)
+#endif
         {
         }
 
@@ -64,17 +71,6 @@ namespace libed2k
         // 0 means OS default
         int recv_socket_buffer_size;
         int send_socket_buffer_size;
-
-        // the maximum number of bytes a connection may have
-        // pending in the disk write queue before its download
-        // rate is being throttled. This prevents fast downloads
-        // to slow medias to allocate more and more memory
-        // indefinitely. This should be set to at least 16 kB
-        // to not completely disrupt normal downloads. If it's
-        // set to 0, you will be starving the disk thread and
-        // nothing will be written to disk.
-        // this is a per session setting.
-        int max_queued_disk_bytes;
 
         // if the send buffer has fewer bytes than this, we'll
         // read another 16kB block onto it. If set too small,
@@ -131,6 +127,44 @@ namespace libed2k
           * collection will create when we share some folder
          */
         std::string m_collections_directory;
+
+        /********************
+         * Disk IO settings *
+         ********************/
+
+        // the maximum number of bytes a connection may have
+        // pending in the disk write queue before its download
+        // rate is being throttled. This prevents fast downloads
+        // to slow medias to allocate more and more memory
+        // indefinitely. This should be set to at least 16 kB
+        // to not completely disrupt normal downloads. If it's
+        // set to 0, you will be starving the disk thread and
+        // nothing will be written to disk.
+        // this is a per session setting.
+        int max_queued_disk_bytes;
+
+        // this is the number of disk buffer blocks (16 kiB)
+        // that should be allocated at a time. It must be
+        // at least 1. Lower number saves memory at the expense
+        // of more heap allocations
+        int cache_buffer_chunk_size;
+
+        // don't implicitly cache pieces in the read cache,
+        // only cache pieces that are explicitly asked to be
+        // cached.
+        bool explicit_read_cache;
+
+        enum disk_cache_algo_t
+        { lru, largest_contiguous, avoid_readback };
+
+        disk_cache_algo_t disk_cache_algorithm;
+
+#ifndef TORRENT_DISABLE_MLOCK
+        // if this is set to true, the memory allocated for the
+        // disk cache will be locked in physical RAM, never to
+        // be swapped out
+        bool lock_disk_cache;
+#endif
 
     };
 

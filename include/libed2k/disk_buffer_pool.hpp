@@ -36,7 +36,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libed2k/thread.hpp>
 #include <libtorrent/socket.hpp>
-#include <libtorrent/session_settings.hpp>
+#include <libed2k/session_settings.hpp>
 #include <libed2k/allocator.hpp>
 
 #ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
@@ -96,7 +96,7 @@ namespace libed2k
 		// number of disk buffers currently allocated
 		int m_in_use;
 
-        libtorrent::session_settings m_settings;
+        session_settings m_settings;
 
 	private:
 
@@ -105,7 +105,7 @@ namespace libed2k
 #ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
 		// memory pool for read and write operations
 		// and disk cache
-		boost::pool<libtorrent::page_aligned_allocator> m_pool;
+		boost::pool<page_aligned_allocator> m_pool;
 #endif
 
 #if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS

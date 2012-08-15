@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #ifndef _MSC_VER
+#undef  __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS 1
 #define __STDC_LIMIT_MACROS 1
 #include <inttypes.h> // for PRId64 et.al.
