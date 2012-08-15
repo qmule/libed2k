@@ -30,27 +30,25 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_ALLOCA
+#ifndef LIBED2K_ALLOCA
 
-#include "libtorrent/config.hpp"
+#include <libed2k/config.hpp>
 
-#if defined TORRENT_WINDOWS
+#if defined LIBED2K_WINDOWS
 
 #include <malloc.h>
-#define TORRENT_ALLOCA(t, n) static_cast<t*>(_alloca(sizeof(t) * (n)))
+#define LIBED2K_ALLOCA(t, n) static_cast<t*>(_alloca(sizeof(t) * (n)))
 
-#elif defined TORRENT_BSD
+#elif defined LIBED2K_BSD
 
 #include <stdlib.h>
-#define TORRENT_ALLOCA(t, n) static_cast<t*>(alloca(sizeof(t) * (n)))
+#define LIBED2K_ALLOCA(t, n) static_cast<t*>(alloca(sizeof(t) * (n)))
 
 #else
 
 #include <alloca.h>
-#define TORRENT_ALLOCA(t, n) static_cast<t*>(alloca(sizeof(t) * (n)))
+#define LIBED2K_ALLOCA(t, n) static_cast<t*>(alloca(sizeof(t) * (n)))
 
 #endif
 
 #endif
-
-

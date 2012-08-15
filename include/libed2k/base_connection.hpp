@@ -207,8 +207,8 @@ namespace libed2k{
             boost::aligned_storage<Size> bytes;
         };
 
-        handler_storage<READ_HANDLER_MAX_SIZE> m_read_handler_storage;
-        handler_storage<WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
+        handler_storage<LIBED2K_READ_HANDLER_MAX_SIZE> m_read_handler_storage;
+        handler_storage<LIBED2K_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
 
         template <class Handler, std::size_t Size>
         class allocating_handler
@@ -252,18 +252,18 @@ namespace libed2k{
         };
 
         template <class Handler>
-        allocating_handler<Handler, READ_HANDLER_MAX_SIZE>
+        allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>
         make_read_handler(Handler const& handler)
         {
-            return allocating_handler<Handler, READ_HANDLER_MAX_SIZE>(
+            return allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>(
                 handler, m_read_handler_storage);
         }
 
         template <class Handler>
-        allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>
+        allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>
         make_write_handler(Handler const& handler)
         {
-            return allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>(
+            return allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>(
                 handler, m_write_handler_storage);
         }
     };

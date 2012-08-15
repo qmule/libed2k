@@ -30,17 +30,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_ASSERT
+#ifndef LIBED2K_ASSERT
 
-#include "libtorrent/config.hpp"
+#include <libed2k/config.hpp>
 
-#if (!defined TORRENT_DEBUG && !TORRENT_RELEASE_ASSERTS) \
-	|| TORRENT_NO_ASSERTS
-#define TORRENT_ASSERT(a) do {} while(false)
-#define TORRENT_ASSERT_VAL(a, b) do {} while(false)
+#if (!defined LIBED2K_DEBUG && !LIBED2K_RELEASE_ASSERTS) \
+	|| LIBED2K_NO_ASSERTS
+#define LIBED2K_ASSERT(a) do {} while(false)
+#define LIBED2K_ASSERT_VAL(a, b) do {} while(false)
 #else
 
-#if TORRENT_PRODUCTION_ASSERTS
+#if LIBED2K_PRODUCTION_ASSERTS
 extern char const* libtorrent_assert_log;
 #endif
 
@@ -49,29 +49,28 @@ extern char const* libtorrent_assert_log;
 std::string demangle(char const* name);
 void print_backtrace(char* out, int len, int max_depth = 0);
 
-#if (defined __linux__ || defined __MACH__) && defined __GNUC__ && !TORRENT_USE_SYSTEM_ASSERT
+#if (defined __linux__ || defined __MACH__) && defined __GNUC__ && !LIBED2K_USE_SYSTEM_ASSERT
 
-#if TORRENT_USE_IOSTREAM
+#if LIBED2K_USE_IOSTREAM
 #include <sstream>
 #endif
 
-TORRENT_EXPORT void assert_fail(const char* expr, int line, char const* file
+LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
 	, char const* function, char const* val);
 
-#define TORRENT_ASSERT(x) do { if (x) {} else assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
-#if TORRENT_USE_IOSTREAM
-#define TORRENT_ASSERT_VAL(x, y) do { if (x) {} else { std::stringstream __s__; __s__ << #y ": " << y; assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, __s__.str().c_str()); } } while (false)
+#define LIBED2K_ASSERT(x) do { if (x) {} else assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
+#if LIBED2K_USE_IOSTREAM
+#define LIBED2K_ASSERT_VAL(x, y) do { if (x) {} else { std::stringstream __s__; __s__ << #y ": " << y; assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, __s__.str().c_str()); } } while (false)
 #else
-#define TORRENT_ASSERT_VAL(x, y) TORRENT_ASSERT(x)
+#define LIBED2K_ASSERT_VAL(x, y) LIBED2K_ASSERT(x)
 #endif
 
 #else
 #include <cassert>
-#define TORRENT_ASSERT(x) assert(x)
-#define TORRENT_ASSERT_VAL(x, y) assert(x)
+#define LIBED2K_ASSERT(x) assert(x)
+#define LIBED2K_ASSERT_VAL(x, y) assert(x)
 #endif
 
 #endif
 
 #endif
-
