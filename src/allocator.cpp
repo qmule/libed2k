@@ -30,13 +30,13 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/allocator.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/assert.hpp"
+#include <libed2k/allocator.hpp>
+#include <libed2k/config.hpp>
+#include <libed2k/assert.hpp>
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 #include <windows.h>
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 #include <kernel/OS.h>
 #include <stdlib.h> // malloc/free
 #else
@@ -44,13 +44,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h> // _SC_PAGESIZE
 #endif
 
-#if TORRENT_USE_MEMALIGN || TORRENT_USE_POSIX_MEMALIGN
+#if LIBED2K_USE_MEMALIGN || LIBED2K_USE_POSIX_MEMALIGN
 #include <malloc.h> // memalign
 #endif
 
-#ifdef TORRENT_DEBUG_BUFFERS
+#ifdef LIBED2K_DEBUG_BUFFERS
 #include <sys/mman.h>
-#include "libtorrent/size_type.hpp"
+#include <libtorrent/size_type.hpp>
 
 struct alloc_header
 {
@@ -61,11 +61,11 @@ struct alloc_header
 
 #endif
 
-#if defined TORRENT_DEBUG_BUFFERS && (defined __linux__ || (defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050))
+#if defined LIBED2K_DEBUG_BUFFERS && (defined __linux__ || (defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050))
 	void print_backtrace(char* out, int len);
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 
 	int page_size()
@@ -73,11 +73,11 @@ namespace libtorrent
 		static int s = 0;
 		if (s != 0) return s;
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		SYSTEM_INFO si;
 		GetSystemInfo(&si);
 		s = si.dwPageSize;
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 		s = B_PAGE_SIZE;
 #else
 		s = sysconf(_SC_PAGESIZE);
@@ -90,7 +90,7 @@ namespace libtorrent
 
 	char* page_aligned_allocator::malloc(size_type bytes)
 	{
-#ifdef TORRENT_DEBUG_BUFFERS
+#ifdef LIBED2K_DEBUG_BUFFERS
 		int page = page_size();
 		int num_pages = (bytes + (page-1)) / page + 2;
 		char* ret = (char*)valloc(num_pages * page);
@@ -108,15 +108,15 @@ namespace libtorrent
 		return ret + page;
 #endif
 
-#if TORRENT_USE_POSIX_MEMALIGN
+#if LIBED2K_USE_POSIX_MEMALIGN
 		void* ret;
 		if (posix_memalign(&ret, page_size(), bytes) != 0) ret = 0;
 		return (char*)ret;
-#elif TORRENT_USE_MEMALIGN
+#elif LIBED2K_USE_MEMALIGN
 		return (char*)memalign(page_size(), bytes);
-#elif defined TORRENT_WINDOWS
+#elif defined LIBED2K_WINDOWS
 		return (char*)VirtualAlloc(0, bytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 		void* ret = 0;
 		area_id id = create_area("", &ret, B_ANY_ADDRESS
 			, (bytes + page_size() - 1) & (page_size()-1), B_NO_LOCK, B_READ_AREA | B_WRITE_AREA);
@@ -130,13 +130,13 @@ namespace libtorrent
 	void page_aligned_allocator::free(char* const block)
 	{
 
-#ifdef TORRENT_DEBUG_BUFFERS
+#ifdef LIBED2K_DEBUG_BUFFERS
 		int page = page_size();
 		// make the two surrounding pages non-readable and -writable
 		mprotect(block - page, page, PROT_READ | PROT_WRITE);
 		alloc_header* h = (alloc_header*)(block - page);
 		int num_pages = (h->size + (page-1)) / page + 2;
-		TORRENT_ASSERT(h->magic == 0x1337);
+		LIBED2K_ASSERT(h->magic == 0x1337);
 		mprotect(block + (num_pages-2) * page, page, PROT_READ | PROT_WRITE);
 //		fprintf(stderr, "free: %p head: %p tail: %p size: %d\n", block, block - page, block + h->size, int(h->size));
 		h->magic = 0;
@@ -148,9 +148,9 @@ namespace libtorrent
 		return;
 #endif
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
 		VirtualFree(block, 0, MEM_RELEASE);
-#elif defined TORRENT_BEOS
+#elif defined LIBED2K_BEOS
 		area_id id = area_for(block);
 		if (id < B_OK) return;
 		delete_area(id);

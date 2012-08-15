@@ -30,18 +30,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_ALLOCATOR_HPP_INCLUDED
-#define TORRENT_ALLOCATOR_HPP_INCLUDED
+#ifndef LIBED2K_ALLOCATOR_HPP_INCLUDED
+#define LIBED2K_ALLOCATOR_HPP_INCLUDED
 
 #include <cstddef>
-#include "libtorrent/config.hpp"
+#include <libed2k/config.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 
-	TORRENT_EXTRA_EXPORT int page_size();
+	LIBED2K_EXTRA_EXPORT int page_size();
 
-	struct TORRENT_EXTRA_EXPORT page_aligned_allocator
+	struct LIBED2K_EXTRA_EXPORT page_aligned_allocator
 	{
 		typedef std::size_t size_type;
 		typedef std::ptrdiff_t difference_type;
@@ -50,7 +50,7 @@ namespace libtorrent
 		static void free(char* const block);
 	};
 
-	struct TORRENT_EXTRA_EXPORT aligned_holder
+	struct LIBED2K_EXTRA_EXPORT aligned_holder
 	{
 		aligned_holder(): m_buf(0) {}
 		aligned_holder(int size): m_buf(page_aligned_allocator::malloc(size)) {}
