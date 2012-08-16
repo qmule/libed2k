@@ -61,7 +61,8 @@ namespace libed2k
             "missing transfer hash",
             "mismatching transfer hash",
             "hashes dont match pieces",
-            "failed hash check"
+            "failed hash check",
+            "invalid escaped string"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

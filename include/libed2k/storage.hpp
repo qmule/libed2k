@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/peer_request.hpp>
 #include <libtorrent/hasher.hpp>
 #include <libed2k/config.hpp>
-#include <libed2k/file_util.hpp>
+#include <libed2k/filesystem.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/storage_defs.hpp>

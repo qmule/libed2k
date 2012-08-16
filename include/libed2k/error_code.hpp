@@ -68,6 +68,7 @@ namespace libed2k
             mismatching_transfer_hash,
             hashes_dont_match_pieces,
             failed_hash_check,
+            invalid_escaped_string,
             num_errors
         };
     }

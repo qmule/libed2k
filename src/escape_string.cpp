@@ -313,7 +313,7 @@ namespace libed2k
 		std::string protocol, host, auth, path;
 		int port;
 		error_code ec;
-		boost::tie(protocol, auth, host, port, path) = parse_url_components(url, ec);
+		boost::tie(protocol, auth, host, port, path) = libtorrent::parse_url_components(url, ec);
 		if (ec) return url;
 		
 		// first figure out if this url contains unencoded characters

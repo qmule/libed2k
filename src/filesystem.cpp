@@ -116,7 +116,7 @@ BOOST_STATIC_ASSERT(sizeof(lseek(0, 0, 0)) >= 8);
 
 #endif // posix part
 
-#include <libed2k/file_util.hpp>
+#include <libed2k/filesystem.hpp>
 #include <cstring>
 #include <vector>
 
