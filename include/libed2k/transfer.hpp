@@ -16,12 +16,10 @@
 #include "libed2k/session.hpp"
 #include "libed2k/packet_struct.hpp"
 
-namespace libtorrent {
-    class torrent_info;
-}
 
 namespace libed2k {
 
+    class torrent_info;
     class add_transfer_params;
     namespace aux{
         class session_impl;
@@ -346,7 +344,7 @@ namespace libed2k {
         // used for compatibility with piece_manager,
         // may store invalid data
         // should store valid file path
-        boost::intrusive_ptr<libtorrent::torrent_info> m_info;
+        boost::intrusive_ptr<torrent_info> m_info;
 
         boost::uint32_t m_accepted;
         boost::uint32_t m_requested;

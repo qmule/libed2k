@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_TORRENT_INFO_HPP_INCLUDED
-#define TORRENT_TORRENT_INFO_HPP_INCLUDED
+#ifndef LIBED2K_TORRENT_INFO_HPP_INCLUDED
+#define LIBED2K_TORRENT_INFO_HPP_INCLUDED
 
 #include <string>
 #include <vector>
@@ -47,23 +47,26 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include "libtorrent/config.hpp"
-#include "libtorrent/entry.hpp"
-#include "libtorrent/lazy_entry.hpp"
-#include "libtorrent/peer_id.hpp"
-#include "libtorrent/size_type.hpp"
-#include "libtorrent/ptime.hpp"
-#include "libtorrent/intrusive_ptr_base.hpp"
-#include "libtorrent/assert.hpp"
-#include "libtorrent/file_storage.hpp"
-#include "libtorrent/copy_ptr.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/policy.hpp" // for policy::peer
+#include <libed2k/config.hpp>
+#include <libtorrent/entry.hpp>
+#include <libtorrent/lazy_entry.hpp>
+#include <libtorrent/peer_id.hpp>
+#include <libed2k/size_type.hpp>
+#include <libtorrent/time.hpp>
+#include <libtorrent/intrusive_ptr_base.hpp>
+#include <libed2k/assert.hpp>
+#include <libed2k/file_storage.hpp>
+#include <libed2k/copy_ptr.hpp>
+#include <libtorrent/socket.hpp>
+#include <libtorrent/policy.hpp> // for policy::peer
+#include <libtorrent/error_code.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
-	class peer_connection;
 	struct session_settings;
+
+    typedef libtorrent::entry entry;
+    typedef libtorrent::lazy_entry lazy_entry;
 
 	enum
 	{
@@ -74,7 +77,7 @@ namespace libtorrent
 		, tracker_retry_delay_max = 60 * 60
 	};
 
-	struct TORRENT_EXPORT announce_entry
+	struct LIBED2K_EXPORT announce_entry
 	{
 		announce_entry(std::string const& u);
 		~announce_entry();
@@ -89,16 +92,16 @@ namespace libtorrent
 
 		// if this tracker failed the last time it was contacted
 		// this error code specifies what error occurred
-		error_code last_error;
+		libtorrent::error_code last_error;
 
 		int next_announce_in() const;
 		int min_announce_in() const;
 
 		// the time of next tracker announce
-		ptime next_announce;
+        libtorrent::ptime next_announce;
 
 		// no announces before this time
-		ptime min_announce;
+		libtorrent::ptime min_announce;
 
 		// the tier this tracker belongs to
 		boost::uint8_t tier;
@@ -141,20 +144,20 @@ namespace libtorrent
 		void reset()
 		{
 			start_sent = false;
-			next_announce = min_time();
-			min_announce = min_time();
+			next_announce = libtorrent::min_time();
+			min_announce = libtorrent::min_time();
 		}
 
 		void failed(session_settings const& sett, int retry_interval = 0);
 
-		bool will_announce(ptime now) const
+		bool will_announce(libtorrent::ptime now) const
 		{
 			return now <= next_announce
 				&& (fails < fail_limit || fail_limit == 0)
 				&& !updating;
 		}
 
-		bool can_announce(ptime now, bool is_seed) const;
+		bool can_announce(libtorrent::ptime now, bool is_seed) const;
 
 		bool is_working() const
 		{ return fails == 0; }
@@ -191,7 +194,7 @@ namespace libtorrent
 		headers_t extra_headers;
 
 		// if this is > now, we can't reconnect yet
-		ptime retry;
+		libtorrent::ptime retry;
 
 		// this indicates whether or not we're resolving the
 		// hostname of this URL
@@ -203,28 +206,28 @@ namespace libtorrent
 		// callback remove it
 		bool removed;
 
-		tcp::endpoint endpoint;
+		libtorrent::tcp::endpoint endpoint;
 
 		// this is the peer_info field used for the
 		// connection, just to count hash failures
 		// it's also used to hold the peer_connection
 		// pointer, when the web seed is connected
-		policy::peer peer_info;
+		libtorrent::policy::peer peer_info;
 	};
 
 #ifndef BOOST_NO_EXCEPTIONS
 	// for backwards compatibility with 0.14
-	typedef libtorrent_exception invalid_torrent_file;
+	typedef libtorrent::libtorrent_exception invalid_torrent_file;
 #endif
 
-	int TORRENT_EXPORT load_file(std::string const& filename
-		, std::vector<char>& v, error_code& ec, int limit = 8000000);
+	int LIBED2K_EXPORT load_file(std::string const& filename
+		, std::vector<char>& v, libtorrent::error_code& ec, int limit = 8000000);
 
-	class TORRENT_EXPORT torrent_info : public intrusive_ptr_base<torrent_info>
+	class LIBED2K_EXPORT torrent_info : public libtorrent::intrusive_ptr_base<torrent_info>
 	{
 	public:
 
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		void check_invariant() const;
 #endif
 
@@ -232,19 +235,19 @@ namespace libtorrent
 		torrent_info(lazy_entry const& torrent_file, int flags = 0);
 		torrent_info(char const* buffer, int size, int flags = 0);
 		torrent_info(std::string const& filename, int flags = 0);
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 		torrent_info(std::wstring const& filename, int flags = 0);
-#endif // TORRENT_USE_WSTRING
+#endif // LIBED2K_USE_WSTRING
 #endif
 
 		torrent_info(torrent_info const& t, int flags = 0);
 		torrent_info(sha1_hash const& info_hash, int flags = 0);
-		torrent_info(lazy_entry const& torrent_file, error_code& ec, int flags = 0);
-		torrent_info(char const* buffer, int size, error_code& ec, int flags = 0);
-		torrent_info(std::string const& filename, error_code& ec, int flags = 0);
-#if TORRENT_USE_WSTRING
-		torrent_info(std::wstring const& filename, error_code& ec, int flags = 0);
-#endif // TORRENT_USE_WSTRING
+		torrent_info(lazy_entry const& torrent_file, libtorrent::error_code& ec, int flags = 0);
+		torrent_info(char const* buffer, int size, libtorrent::error_code& ec, int flags = 0);
+		torrent_info(std::string const& filename, libtorrent::error_code& ec, int flags = 0);
+#if LIBED2K_USE_WSTRING
+		torrent_info(std::wstring const& filename, libtorrent::error_code& ec, int flags = 0);
+#endif // LIBED2K_USE_WSTRING
 
 		~torrent_info();
 
@@ -257,26 +260,26 @@ namespace libtorrent
 			m_files.rename_file(index, new_filename);
 		}
 
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 		void rename_file(int index, std::wstring const& new_filename)
 		{
 			copy_on_write();
 			m_files.rename_file(index, new_filename);
 		}
-#endif // TORRENT_USE_WSTRING
+#endif // LIBED2K_USE_WSTRING
 
 		void remap_files(file_storage const& f);
 
 		void add_tracker(std::string const& url, int tier = 0);
 		std::vector<announce_entry> const& trackers() const { return m_urls; }
 
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
 		// deprecated in 0.16. Use web_seeds() instead
-		TORRENT_DEPRECATED_PREFIX
-		std::vector<std::string> url_seeds() const TORRENT_DEPRECATED;
-		TORRENT_DEPRECATED_PREFIX
-		std::vector<std::string> http_seeds() const TORRENT_DEPRECATED;
-#endif // TORRENT_NO_DEPRECATE
+		LIBED2K_DEPRECATED_PREFIX
+		std::vector<std::string> url_seeds() const LIBED2K_DEPRECATED;
+		LIBED2K_DEPRECATED_PREFIX
+		std::vector<std::string> http_seeds() const LIBED2K_DEPRECATED;
+#endif // LIBED2K_NO_DEPRECATE
 
 		void add_url_seed(std::string const& url
 			, std::string const& extern_auth = std::string()
@@ -312,17 +315,17 @@ namespace libtorrent
 		peer_request map_file(int file, size_type offset, int size) const
 		{ return m_files.map_file(file, offset, size); }
 		
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
 // ------- start deprecation -------
 // these functions will be removed in a future version
-		TORRENT_DEPRECATED_PREFIX
-		torrent_info(entry const& torrent_file) TORRENT_DEPRECATED;
-		TORRENT_DEPRECATED_PREFIX
-		void print(std::ostream& os) const TORRENT_DEPRECATED;
+		LIBED2K_DEPRECATED_PREFIX
+		torrent_info(entry const& torrent_file) LIBED2K_DEPRECATED;
+		LIBED2K_DEPRECATED_PREFIX
+		void print(std::ostream& os) const LIBED2K_DEPRECATED;
 // ------- end deprecation -------
 #endif
 
-#ifdef TORRENT_USE_OPENSSL
+#ifdef LIBED2K_USE_OPENSSL
 		std::string const& ssl_cert() const { return m_ssl_root_cert; }
 #endif
 
@@ -339,23 +342,23 @@ namespace libtorrent
 
 		std::vector<sha1_hash> const& merkle_tree() const { return m_merkle_tree; }
 		void set_merkle_tree(std::vector<sha1_hash>& h)
-		{ TORRENT_ASSERT(h.size() == m_merkle_tree.size() ); m_merkle_tree.swap(h); }
+		{ LIBED2K_ASSERT(h.size() == m_merkle_tree.size() ); m_merkle_tree.swap(h); }
 
 		char const* hash_for_piece_ptr(int index) const
 		{
-			TORRENT_ASSERT(index >= 0);
-			TORRENT_ASSERT(index < m_files.num_pieces());
+			LIBED2K_ASSERT(index >= 0);
+			LIBED2K_ASSERT(index < m_files.num_pieces());
 			if (is_merkle_torrent())
 			{
-				TORRENT_ASSERT(index < int(m_merkle_tree.size() - m_merkle_first_leaf));
+				LIBED2K_ASSERT(index < int(m_merkle_tree.size() - m_merkle_first_leaf));
 				return (const char*)&m_merkle_tree[m_merkle_first_leaf + index][0];
 			}
 			else
 			{
-				TORRENT_ASSERT(m_piece_hashes);
-				TORRENT_ASSERT(m_piece_hashes >= m_info_section.get());
-				TORRENT_ASSERT(m_piece_hashes < m_info_section.get() + m_info_section_size);
-				TORRENT_ASSERT(index < int(m_info_section_size / 20));
+				LIBED2K_ASSERT(m_piece_hashes);
+				LIBED2K_ASSERT(m_piece_hashes >= m_info_section.get());
+				LIBED2K_ASSERT(m_piece_hashes < m_info_section.get() + m_info_section_size);
+				LIBED2K_ASSERT(index < int(m_info_section_size / 20));
 				return &m_piece_hashes[index*20];
 			}
 		}
@@ -376,15 +379,15 @@ namespace libtorrent
 		void add_node(std::pair<std::string, int> const& node)
 		{ m_nodes.push_back(node); }
 		
-		bool parse_info_section(lazy_entry const& e, error_code& ec, int flags);
+		bool parse_info_section(lazy_entry const& e, libtorrent::error_code& ec, int flags);
 
 		lazy_entry const* info(char const* key) const
 		{
 			if (m_info_dict.type() == lazy_entry::none_t)
 			{
-				error_code ec;
+				//libtorrent::error_code ec;
 				lazy_bdecode(m_info_section.get(), m_info_section.get()
-					+ m_info_section_size, m_info_dict, ec);
+                             + m_info_section_size, m_info_dict/*, ec*/);
 			}
 			return m_info_dict.dict_find(key);
 		}
@@ -402,10 +405,10 @@ namespace libtorrent
 		bool is_merkle_torrent() const { return !m_merkle_tree.empty(); }
 
 		// if we're logging member offsets, we need access to them
-#if defined TORRENT_DEBUG \
-		&& !defined TORRENT_LOGGING \
-		&& !defined TORRENT_VERBOSE_LOGGING \
-		&& !defined TORRENT_ERROR_LOGGING
+#if defined LIBED2K_DEBUG \
+		&& !defined LIBED2K_LOGGING \
+		&& !defined LIBED2K_VERBOSE_LOGGING \
+		&& !defined LIBED2K_ERROR_LOGGING
 	private:
 #endif
 
@@ -413,7 +416,7 @@ namespace libtorrent
 		torrent_info const& operator=(torrent_info const&);
 
 		void copy_on_write();
-		bool parse_torrent_file(lazy_entry const& libtorrent, error_code& ec, int flags);
+		bool parse_torrent_file(lazy_entry const& libtorrent, libtorrent::error_code& ec, int flags);
 
 		// the index to the first leaf. This is where the hash for the
 		// first piece is stored
@@ -455,7 +458,7 @@ namespace libtorrent
 		// to create the torrent file
 		std::string m_created_by;
 
-#ifdef TORRENT_USE_OPENSSL
+#ifdef LIBED2K_USE_OPENSSL
 		// for ssl-torrens, this contains the root
 		// certificate, in .pem format (i.e. ascii
 		// base64 encoded with head and tails)
@@ -497,5 +500,4 @@ namespace libtorrent
 
 }
 
-#endif // TORRENT_TORRENT_INFO_HPP_INCLUDED
-
+#endif // LIBED2K_TORRENT_INFO_HPP_INCLUDED

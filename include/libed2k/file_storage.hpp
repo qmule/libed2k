@@ -77,7 +77,7 @@ namespace libed2k
 		friend class file_storage;
 #ifdef LIBED2K_DEBUG
 		// for torrent_info::invariant_check
-		//friend class torrent_info;
+		friend class torrent_info;
 #endif
 		internal_file_entry()
 			: name(0)

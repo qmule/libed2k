@@ -52,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-#include <libtorrent/torrent_info.hpp>
+#include <libed2k/torrent_info.hpp>
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libed2k/peer_request.hpp>
@@ -81,7 +81,6 @@ namespace libed2k
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
     typedef libtorrent::error_code error_code;
-    typedef libtorrent::torrent_info torrent_info;
     typedef libtorrent::sha1_hash sha1_hash;
 
 	LIBED2K_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
