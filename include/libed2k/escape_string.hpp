@@ -37,13 +37,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/limits.hpp>
 #include <boost/array.hpp>
 #include <libed2k/config.hpp>
-#include <libtorrent/size_type.hpp>
+#include <libed2k/size_type.hpp>
 #include <libed2k/error_code.hpp>
 
 namespace libed2k
 {
-    typedef libtorrent::size_type size_type;
-
 	LIBED2K_EXTRA_EXPORT boost::array<char, 4 + std::numeric_limits<size_type>::digits10> to_string(size_type n);
 	LIBED2K_EXTRA_EXPORT bool is_alpha(char c);
 	LIBED2K_EXPORT bool is_digit(char c);

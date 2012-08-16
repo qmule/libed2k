@@ -47,7 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include <libed2k/error_code.hpp>
-#include <libtorrent/size_type.hpp>
+#include <libed2k/size_type.hpp>
 #include <libed2k/config.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 
@@ -85,8 +85,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-    typedef libtorrent::size_type size_type;
-
 	struct file_status
 	{
 		size_type file_size;

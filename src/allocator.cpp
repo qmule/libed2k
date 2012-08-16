@@ -50,11 +50,11 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef LIBED2K_DEBUG_BUFFERS
 #include <sys/mman.h>
-#include <libtorrent/size_type.hpp>
+#include <libed2k/size_type.hpp>
 
 struct alloc_header
 {
-	libtorrent::size_type size;
+	size_type size;
 	int magic;
 	char stack[3072];
 };

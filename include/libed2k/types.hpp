@@ -14,13 +14,11 @@ namespace boost{
 namespace libtorrent {
     class piece_picker;
     struct piece_block;
-    struct peer_request;
     class buffer;
     struct logger;
     struct ptime;
     class listen_failed_alert;
     struct bitfield;
-    class file_storage;
     struct torrent_status;
     struct session_status;
     struct piece_block_progress;
@@ -49,12 +47,10 @@ namespace libed2k
     typedef libtorrent::piece_picker piece_picker;
     typedef libtorrent::piece_block piece_block;
     typedef libtorrent::buffer buffer;
-    typedef libtorrent::peer_request peer_request;
     typedef libtorrent::logger logger;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
-    typedef libtorrent::file_storage file_storage;
     typedef libtorrent::torrent_status transfer_status;
     typedef libtorrent::session_status session_status;
     typedef libtorrent::piece_block_progress piece_block_progress;

@@ -14,17 +14,17 @@
 #include <libtorrent/identify_client.hpp>
 #include <libtorrent/stat.hpp>
 
-#include "libed2k/fingerprint.hpp"
-#include "libed2k/md4_hash.hpp"
-#include "libed2k/transfer_handle.hpp"
-#include "libed2k/peer_connection_handle.hpp"
-#include "libed2k/session_settings.hpp"
-#include "libed2k/types.hpp"
-#include "libed2k/util.hpp"
-#include "libed2k/alert.hpp"
-#include "libed2k/packet_struct.hpp"
-#include "libed2k/file.hpp"
-#include "libed2k/disk_io_thread.hpp"
+#include <libed2k/fingerprint.hpp>
+#include <libed2k/md4_hash.hpp>
+#include <libed2k/transfer_handle.hpp>
+#include <libed2k/peer_connection_handle.hpp>
+#include <libed2k/session_settings.hpp>
+#include <libed2k/types.hpp>
+#include <libed2k/util.hpp>
+#include <libed2k/alert.hpp>
+#include <libed2k/packet_struct.hpp>
+#include <libed2k/file.hpp>
+#include <libed2k/disk_io_thread.hpp>
 
 namespace libed2k {
 

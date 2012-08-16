@@ -30,49 +30,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_STORAGE_DEFS_HPP_INCLUDE
-#define LIBED2K_STORAGE_DEFS_HPP_INCLUDE
+#ifndef LIBED2K_SIZE_TYPE_HPP_INCLUDED
+#define LIBED2K_SIZE_TYPE_HPP_INCLUDED
 
-#include <libed2k/config.hpp>
-#include <boost/function.hpp>
-#include <string>
-#include <vector>
+#ifdef _MSC_VER
+#pragma warning(push, 1)
+#endif
 
-namespace libtorrent
-{
-	struct file_pool;
-}
+#include <boost/cstdint.hpp>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace libed2k
 {
-	struct storage_interface;
-    class file_storage;
-
-    typedef libtorrent::file_pool file_pool;
-
-	enum storage_mode_t
-	{
-		storage_mode_allocate = 0,
-		storage_mode_sparse,
-		// this is here for internal use
-		internal_storage_mode_compact_deprecated,
-#ifndef LIBED2K_NO_DEPRECATE
-		storage_mode_compact = internal_storage_mode_compact_deprecated
-#endif
-	};
-
-	typedef boost::function<storage_interface*(file_storage const&, file_storage const*
-		, std::string const&, file_pool&, std::vector<boost::uint8_t> const&)> storage_constructor_type;
-
-	LIBED2K_EXPORT storage_interface* default_storage_constructor(
-		file_storage const&, file_storage const* mapped, std::string const&, file_pool&
-		, std::vector<boost::uint8_t> const&);
-
-	LIBED2K_EXPORT storage_interface* disabled_storage_constructor(
-		file_storage const&, file_storage const* mapped, std::string const&, file_pool&
-		, std::vector<boost::uint8_t> const&);
-
+	typedef boost::int64_t size_type;
+	typedef boost::uint64_t unsigned_size_type;
 }
 
-#endif
 
+#endif

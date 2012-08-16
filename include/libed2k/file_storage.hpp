@@ -30,23 +30,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_FILE_STORAGE_HPP_INCLUDED
-#define TORRENT_FILE_STORAGE_HPP_INCLUDED
+#ifndef LIBED2K_FILE_STORAGE_HPP_INCLUDED
+#define LIBED2K_FILE_STORAGE_HPP_INCLUDED
 
 #include <string>
 #include <vector>
 #include <ctime>
 
-#include "libtorrent/size_type.hpp"
-#include "libtorrent/assert.hpp"
-#include "libtorrent/peer_request.hpp"
-#include "libtorrent/peer_id.hpp"
+#include <libed2k/size_type.hpp>
+#include <libed2k/assert.hpp>
+#include <libed2k/peer_request.hpp>
+#include <libtorrent/peer_id.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 	struct file;
+    typedef libtorrent::sha1_hash sha1_hash;
 
-	struct TORRENT_EXPORT file_entry
+	struct LIBED2K_EXPORT file_entry
 	{
 		file_entry();
 		~file_entry();
@@ -71,12 +72,12 @@ namespace libtorrent
 	// it's smaller and optimized for smaller memory
 	// footprint, as opposed to file_entry, which is
 	// optimized for convenience
-	struct TORRENT_EXPORT internal_file_entry
+	struct LIBED2K_EXPORT internal_file_entry
 	{
 		friend class file_storage;
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 		// for torrent_info::invariant_check
-		friend class torrent_info;
+		//friend class torrent_info;
 #endif
 		internal_file_entry()
 			: name(0)
@@ -115,9 +116,9 @@ namespace libtorrent
 		std::string filename() const;
 
 		// make it available for logging
-#if !defined TORRENT_VERBOSE_LOGGING \
-	&& !defined TORRENT_LOGGING \
-	&& !defined TORRENT_ERROR_LOGGING
+#if !defined LIBED2K_VERBOSE_LOGGING \
+	&& !defined LIBED2K_LOGGING \
+	&& !defined LIBED2K_ERROR_LOGGING
 	private:
 #endif
 		// This string is not necessarily null terminated!
@@ -152,16 +153,16 @@ namespace libtorrent
 		int path_index;
 	};
 
-	struct TORRENT_EXPORT file_slice
+	struct LIBED2K_EXPORT file_slice
 	{
 		int file_index;
 		size_type offset;
 		size_type size;
 	};
 
-	class TORRENT_EXPORT file_storage
+	class LIBED2K_EXPORT file_storage
 	{
-	friend class torrent_info;
+    //friend class torrent_info;
 	public:
 		file_storage();
 		~file_storage() {}
@@ -185,7 +186,7 @@ namespace libtorrent
 
 		void rename_file(int index, std::string const& new_filename);
 
-#if TORRENT_USE_WSTRING
+#if LIBED2K_USE_WSTRING
 		void add_file(std::wstring const& p, size_type size, int flags = 0
 			, std::time_t mtime = 0, std::string const& s_p = "");
 		void rename_file(int index, std::wstring const& new_filename);
@@ -211,16 +212,16 @@ namespace libtorrent
 		file_entry at(iterator i) const;
 		internal_file_entry const& internal_at(int index) const
 		{
-			TORRENT_ASSERT(index >= 0);
-			TORRENT_ASSERT(index < int(m_files.size()));
+			LIBED2K_ASSERT(index >= 0);
+			LIBED2K_ASSERT(index < int(m_files.size()));
 			return m_files[index];
 		}
 
 		size_type total_size() const { return m_total_size; }
 		void set_num_pieces(int n) { m_num_pieces = n; }
-		int num_pieces() const { TORRENT_ASSERT(m_piece_length > 0); return m_num_pieces; }
+		int num_pieces() const { LIBED2K_ASSERT(m_piece_length > 0); return m_num_pieces; }
 		void set_piece_length(int l)  { m_piece_length = l; }
-		int piece_length() const { TORRENT_ASSERT(m_piece_length > 0); return m_piece_length; }
+		int piece_length() const { LIBED2K_ASSERT(m_piece_length > 0); return m_piece_length; }
 		int piece_size(int index) const;
 
 		void set_name(std::string const& n) { m_name = n; }
@@ -264,9 +265,9 @@ namespace libtorrent
 		std::string file_path(internal_file_entry const& fe) const;
 		size_type file_size(internal_file_entry const& fe) const;
 
-#if !defined TORRENT_VERBOSE_LOGGING \
-	&& !defined TORRENT_LOGGING \
-	&& !defined TORRENT_ERROR_LOGGING
+#if !defined LIBED2K_VERBOSE_LOGGING \
+	&& !defined LIBED2K_LOGGING \
+	&& !defined LIBED2K_ERROR_LOGGING
 	private:
 #endif
 
@@ -318,5 +319,5 @@ namespace libtorrent
 	};
 }
 
-#endif // TORRENT_FILE_STORAGE_HPP_INCLUDED
+#endif // LIBED2K_FILE_STORAGE_HPP_INCLUDED
 

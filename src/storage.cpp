@@ -97,7 +97,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 // for convert_to_wstring and convert_to_native
-#include <libtorrent/escape_string.hpp>
+#include <libed2k/escape_string.hpp>
 
 #if defined LIBED2K_DEBUG && defined LIBED2K_STORAGE_DEBUG && LIBED2K_USE_IOSTREAM
 namespace

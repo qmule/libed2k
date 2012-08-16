@@ -65,9 +65,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-    typedef libtorrent::size_type size_type;
-    typedef libtorrent::unsigned_size_type unsigned_size_type;
-
 	// lexical_cast's result depends on the locale. We need
 	// a well defined result
 	boost::array<char, 4 + std::numeric_limits<size_type>::digits10> to_string(size_type n)

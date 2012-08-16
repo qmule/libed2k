@@ -55,13 +55,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/torrent_info.hpp>
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
-#include <libtorrent/peer_request.hpp>
+#include <libed2k/peer_request.hpp>
 #include <libtorrent/hasher.hpp>
 #include <libed2k/config.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/storage_defs.hpp>
+#include <libed2k/file_storage.hpp>
 #include <libed2k/allocator.hpp>
 #include <libed2k/session_settings.hpp>
 
@@ -76,13 +77,11 @@ namespace libed2k
 	struct disk_io_job;
 	struct disk_buffer_pool;
 
-    typedef libtorrent::size_type size_type;
     typedef libtorrent::hasher hasher;
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
     typedef libtorrent::error_code error_code;
     typedef libtorrent::torrent_info torrent_info;
-    typedef libtorrent::peer_request peer_request;
     typedef libtorrent::sha1_hash sha1_hash;
 
 	LIBED2K_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
