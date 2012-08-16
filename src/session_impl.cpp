@@ -492,12 +492,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
 
 session_impl::~session_impl()
 {
-    boost::mutex::scoped_lock l(m_mutex);
-
     DBG("*** shutting down session ***");
-    abort();
+    m_io_service.post(boost::bind(&session_impl::abort, this));
 
-    l.unlock();
     // we need to wait for the disk-io thread to
     // die first, to make sure it won't post any
     // more messages to the io_service containing references
@@ -1126,6 +1123,8 @@ void session_impl::abort()
     }
 
     DBG("connection queue: " << m_half_open.size());
+
+    m_disk_thread.abort();
 }
 
 void session_impl::pause()
