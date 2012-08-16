@@ -41,7 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/invariant_check.hpp>
 #include <libtorrent/error_code.hpp>
 //#include <libtorrent/error.hpp>
-#include <libtorrent/file_pool.hpp>
+#include <libed2k/file_pool.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/bind.hpp>
 

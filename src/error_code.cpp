@@ -50,6 +50,7 @@ namespace libed2k
             "file size is zero",
             "file not exists or is not regular file",
             "file is too short",
+            "file collision",
             "mismatching number of files",
             "mismatching file size",
             "mismatching file timestamp",

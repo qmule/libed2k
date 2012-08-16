@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2003, Arvid Norberg
+Copyright (c) 2006, Arvid Norberg
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,43 +30,73 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_STORAGE_DEFS_HPP_INCLUDE
-#define LIBED2K_STORAGE_DEFS_HPP_INCLUDE
+#ifndef LIBED2K_FILE_POOL_HPP
+#define LIBED2K_FILE_POOL_HPP
 
-#include <libed2k/config.hpp>
-#include <boost/function.hpp>
-#include <string>
-#include <vector>
+#ifdef _MSC_VER
+#pragma warning(push, 1)
+#endif
+
+#include <boost/intrusive_ptr.hpp>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+#include <map>
+#include <libed2k/filesystem.hpp>
+#include <libtorrent/time.hpp>
+#include <libed2k/thread.hpp>
+#include <libed2k/file_storage.hpp>
 
 namespace libed2k
 {
-	struct storage_interface;
-    class file_storage;
-	struct file_pool;
-
-	enum storage_mode_t
+	struct LIBED2K_EXPORT file_pool : boost::noncopyable
 	{
-		storage_mode_allocate = 0,
-		storage_mode_sparse,
-		// this is here for internal use
-		internal_storage_mode_compact_deprecated,
-#ifndef LIBED2K_NO_DEPRECATE
-		storage_mode_compact = internal_storage_mode_compact_deprecated
+		file_pool(int size = 40);
+		~file_pool();
+
+		boost::intrusive_ptr<file> open_file(void* st, std::string const& p
+			, file_storage::iterator fe, file_storage const& fs, int m, error_code& ec);
+		void release(void* st);
+		void release(void* st, int file_index);
+		void resize(int size);
+		int size_limit() const { return m_size; }
+		void set_low_prio_io(bool b) { m_low_prio_io = b; }
+
+	private:
+
+		void remove_oldest();
+
+		int m_size;
+		bool m_low_prio_io;
+
+		struct lru_file_entry
+		{
+			lru_file_entry(): key(0), last_use(libtorrent::time_now()), mode(0) {}
+			mutable boost::intrusive_ptr<file> file_ptr;
+			void* key;
+			libtorrent::ptime last_use;
+			int mode;
+		};
+
+		// maps storage pointer, file index pairs to the
+		// lru entry for the file
+		typedef std::map<std::pair<void*, int>, lru_file_entry> file_set;
+
+		file_set m_files;
+		mutex m_mutex;
+
+#if LIBED2K_CLOSE_MAY_BLOCK
+		void closer_thread_fun();
+		mutex m_closer_mutex;
+		std::vector<boost::intrusive_ptr<file> > m_queued_for_close;
+		bool m_stop_thread;
+
+		// used to close files
+		thread m_closer_thread;
 #endif
 	};
-
-	typedef boost::function<storage_interface*(file_storage const&, file_storage const*
-		, std::string const&, file_pool&, std::vector<boost::uint8_t> const&)> storage_constructor_type;
-
-	LIBED2K_EXPORT storage_interface* default_storage_constructor(
-		file_storage const&, file_storage const* mapped, std::string const&, file_pool&
-		, std::vector<boost::uint8_t> const&);
-
-	LIBED2K_EXPORT storage_interface* disabled_storage_constructor(
-		file_storage const&, file_storage const* mapped, std::string const&, file_pool&
-		, std::vector<boost::uint8_t> const&);
-
 }
 
 #endif
-

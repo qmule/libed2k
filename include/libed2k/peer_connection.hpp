@@ -7,18 +7,17 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/aligned_storage.hpp>
 
-#include <libtorrent/error_code.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
 #include <libtorrent/piece_block_progress.hpp>
 
-#include "libed2k/disk_buffer_holder.hpp"
-#include "libed2k/base_connection.hpp"
-#include "libed2k/types.hpp"
-#include "libed2k/error_code.hpp"
-#include "libed2k/packet_struct.hpp"
-
+#include <libed2k/disk_buffer_holder.hpp>
+#include <libed2k/base_connection.hpp>
+#include <libed2k/types.hpp>
+#include <libed2k/error_code.hpp>
+#include <libed2k/packet_struct.hpp>
+#include <libed2k/peer_request.hpp>
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \

@@ -56,6 +56,7 @@ namespace libed2k
             filesize_is_zero,
             file_unavaliable,
             file_too_short,
+            file_collision,
             mismatching_number_of_files,
             mismatching_file_size,
             mismatching_file_timestamp,

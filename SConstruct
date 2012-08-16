@@ -26,7 +26,7 @@ args = {
     'ENV'     : os.environ,
     'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot, libtorrentRoot]],
     'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g',
-                 '-DBOOST_FILESYSTEM_VERSION=2', '-DBOOST_ASIO_DYN_LINK'],
+                 '-DBOOST_FILESYSTEM_VERSION=2'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot, libtorrentRoot]],
     'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
                  'boost_thread', 'boost_signals', 'boost_filesystem',

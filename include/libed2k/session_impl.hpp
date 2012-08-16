@@ -25,6 +25,7 @@
 #include <libed2k/packet_struct.hpp>
 #include <libed2k/file.hpp>
 #include <libed2k/disk_io_thread.hpp>
+#include <libed2k/file_pool.hpp>
 
 namespace libed2k {
 
@@ -115,7 +116,6 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
-            libtorrent::session_settings m_disk_thread_settings;
             transfer_map m_transfers;
 
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;

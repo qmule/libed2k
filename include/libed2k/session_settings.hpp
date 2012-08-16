@@ -36,12 +36,13 @@ namespace libed2k
             , m_show_shared_files(true)
             , user_agent(md4_hash::emule)
             , ignore_resume_timestamps(false)
+            , no_recheck_incomplete_resume(false)
             // Disk IO settings
             , file_pool_size(40)
             , max_queued_disk_bytes(16*1024*1024)
             , max_queued_disk_bytes_low_watermark(0)
-            , cache_size(128)
-            , cache_buffer_chunk_size(2)
+            , cache_size(1024)
+            , cache_buffer_chunk_size(16)
             , cache_expiry(5*60)
             , use_read_cache(true)
             , explicit_read_cache(false)
@@ -52,8 +53,8 @@ namespace libed2k
             , optimize_hashing_for_speed(true)
             , file_checks_delay_per_block(0)
             , disk_cache_algorithm(avoid_readback)
-            , read_cache_line_size(4)
-            , write_cache_line_size(4)
+            , read_cache_line_size(32)
+            , write_cache_line_size(32)
             , disable_hash_checks(false)
             , allow_reordered_disk_operations(true)
 #ifndef TORRENT_DISABLE_MLOCK
@@ -161,6 +162,12 @@ namespace libed2k
         // file and is typically compared to make sure the files haven't changed
         // since the last session
         bool ignore_resume_timestamps;
+
+        // normally, if a resume file is incomplete (typically there's no
+        // "file sizes" field) the transfer is queued for a full check. If
+        // this settings is set to true, instead libed2k will assume
+        // we have none of the files and go straight to download
+        bool no_recheck_incomplete_resume;
 
         /********************
          * Disk IO settings *
