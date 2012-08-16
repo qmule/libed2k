@@ -68,8 +68,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libtorrent
 {
-	class session;
 	struct file_pool;
+	//class session;
 }
 
 namespace libed2k

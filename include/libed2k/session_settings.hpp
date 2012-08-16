@@ -35,6 +35,7 @@ namespace libed2k
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)
             , user_agent(md4_hash::emule)
+            , ignore_resume_timestamps(false)
             // Disk IO settings
             , file_pool_size(40)
             , max_queued_disk_bytes(16*1024*1024)
@@ -44,8 +45,11 @@ namespace libed2k
             , cache_expiry(5*60)
             , use_read_cache(true)
             , explicit_read_cache(false)
+            , disk_io_write_mode(0)
+            , disk_io_read_mode(0)
             , coalesce_reads(false)
             , coalesce_writes(false)
+            , optimize_hashing_for_speed(true)
             , file_checks_delay_per_block(0)
             , disk_cache_algorithm(avoid_readback)
             , read_cache_line_size(4)
@@ -57,8 +61,10 @@ namespace libed2k
 #endif
             , volatile_read_cache(false)
             , default_cache_min_age(1)
+            , no_atime_storage(true)
             , read_job_every(10)
             , use_disk_read_ahead(true)
+            , lock_files(false)
         {
         }
 
@@ -150,6 +156,12 @@ namespace libed2k
          */
         std::string m_collections_directory;
 
+        // when set to true, the file modification time is ignored when loading
+        // resume data. The resume data includes the expected timestamp of each
+        // file and is typically compared to make sure the files haven't changed
+        // since the last session
+        bool ignore_resume_timestamps;
+
         /********************
          * Disk IO settings *
          ********************/
@@ -213,8 +225,22 @@ namespace libed2k
         // cached.
         bool explicit_read_cache;
 
+        enum io_buffer_mode_t
+        {
+            enable_os_cache = 0,
+            disable_os_cache_for_aligned_files = 1,
+            disable_os_cache = 2
+        };
+        int disk_io_write_mode;
+        int disk_io_read_mode;
+
         bool coalesce_reads;
         bool coalesce_writes;
+
+        // if this is set to false, the hashing will be
+        // optimized for memory usage instead of the
+        // number of read operations
+        bool optimize_hashing_for_speed;
 
         // if > 0, file checks will have a short
         // delay between disk operations, to make it 
@@ -275,6 +301,10 @@ namespace libed2k
         // is kept in the cache.
         int default_cache_min_age;
 
+        // if set to true, files won't have their atime updated
+        // on disk reads. This works on linux
+        bool no_atime_storage;
+
         // to avoid write jobs starving read jobs, if this many
         // write jobs have been taking priority in a row, service
         // one read job
@@ -283,6 +313,10 @@ namespace libed2k
         // issue posix_fadvise() or fcntl(F_RDADVISE) for disk reads
         // ahead of time
         bool use_disk_read_ahead;
+
+        // if set to true, files will be locked when opened.
+        // preventing any other process from modifying them
+        bool lock_files;
 
     };
 
