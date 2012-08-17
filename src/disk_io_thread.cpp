@@ -410,7 +410,8 @@ namespace libed2k
     {
         int ret = 0;
         int current = 0;
-        int blocks_in_piece = (b.storage->info()->piece_size(b.piece) + 16 * 1024 - 1) / (16 * 1024);
+        int block_size = b.storage->get_storage_impl()->disk_pool()->block_size();
+        int blocks_in_piece = (b.storage->info()->piece_size(b.piece) + block_size - 1) / block_size;
         for (int i = 0; i < blocks_in_piece; ++i)
         {
             if (b.blocks[i].buf) ++current;
@@ -1789,9 +1790,9 @@ namespace libed2k
                         // the cache size is set to automatic. Make it
                         // depend on the amount of physical RAM
                         // if we don't know how much RAM we have, just set the
-                        // cache size to 16 MiB (1024 blocks)
+                        // cache size to 16 MiB (16 MiB / BLOCK_SIZE)
                         if (m_physical_ram == 0)
-                            m_settings.cache_size = 1024;
+                            m_settings.cache_size = (16*1024*1024) / m_block_size;
                         else
                             m_settings.cache_size = m_physical_ram / 8 / m_block_size;
                     }
@@ -2379,7 +2380,7 @@ namespace libed2k
                         if (now - m_last_file_check < libtorrent::milliseconds(m_settings.file_checks_delay_per_block))
                         {
                             int sleep_time = m_settings.file_checks_delay_per_block
-                                * (piece_size / (16 * 1024))
+                                * (piece_size / m_block_size)
                                 - total_milliseconds(now - m_last_file_check);
                             if (sleep_time < 0) sleep_time = 0;
                             LIBED2K_ASSERT(sleep_time < 5 * 1000);

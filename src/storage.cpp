@@ -319,7 +319,7 @@ namespace libed2k
         int slot_size = piece_size - ph.offset;
         if (slot_size > 0)
         {
-            int block_size = 16 * 1024;
+            int block_size = BLOCK_SIZE;
             if (m_storage->disk_pool()) block_size = m_storage->disk_pool()->block_size();
             int size = slot_size;
             int num_blocks = (size + block_size - 1) / block_size;
@@ -1586,7 +1586,7 @@ ret:
         j.buffer_size = r.length;
         j.buffer = 0;
         j.cache_min_time = cache_expiry;
-        LIBED2K_ASSERT(r.length <= 16 * 1024);
+        LIBED2K_ASSERT(r.length <= m_storage->disk_pool()->block_size());
         m_io_thread.add_job(j, handler);
 #ifdef LIBED2K_DEBUG
         mutex::scoped_lock l(m_mutex);
@@ -1629,7 +1629,7 @@ ret:
 
         // if a buffer is not specified, only one block can be read
         // since that is the size of the pool allocator's buffers
-        LIBED2K_ASSERT(r.length <= 16 * 1024);
+        LIBED2K_ASSERT(r.length <= m_storage->disk_pool()->block_size());
         m_io_thread.add_job(j, handler);
 #ifdef LIBED2K_DEBUG
         mutex::scoped_lock l(m_mutex);
@@ -1644,7 +1644,7 @@ ret:
         , disk_buffer_holder& buffer
         , boost::function<void(int, disk_io_job const&)> const& handler)
     {
-        LIBED2K_ASSERT(r.length <= 16 * 1024);
+        LIBED2K_ASSERT(r.length <= m_storage->disk_pool()->block_size());
         // the buffer needs to be allocated through the io_thread
         LIBED2K_ASSERT(m_io_thread.is_disk_buffer(buffer.get()));
 
@@ -2092,7 +2092,7 @@ ret:
             return check_no_fastresume(error);
         }
 
-        int block_size = (std::min)(16 * 1024, m_files.piece_length());
+        int block_size = (std::min)(m_storage->disk_pool()->block_size(), m_files.piece_length());
         int blocks_per_piece = int(rd.dict_find_int_value("blocks per piece", -1));
         if (blocks_per_piece != -1
             && blocks_per_piece != m_files.piece_length() / block_size)

@@ -89,8 +89,8 @@ namespace libed2k
 
         void free_buffer_impl(char* buf, mutex::scoped_lock& l);
 
-        // number of bytes per block. The BitTorrent
-        // protocol defines the block size to 16 KiB.
+        // number of bytes per block. The ED2K
+        // protocol defines the block size to BLOCK_SIZE.
         const int m_block_size;
 
         // number of disk buffers currently allocated

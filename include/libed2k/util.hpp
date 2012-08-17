@@ -8,7 +8,6 @@
 namespace libed2k
 {
     #define CHECK_BOM(size, x) ((size >= 3)  && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
-    #define MAX_SERVICE_PACKET_LEN 65535
 
     template <typename A, typename B>
     inline A div_ceil(A a, B b)
