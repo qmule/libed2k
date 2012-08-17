@@ -37,34 +37,34 @@ POSSIBILITY OF SUCH DAMAGE.
 namespace libed2k
 {
 
-	disk_buffer_holder::disk_buffer_holder(aux::session_impl& ses, char* buf)
-		: m_disk_pool(ses.m_disk_thread), m_buf(buf)
-	{
-		LIBED2K_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
-	}
+    disk_buffer_holder::disk_buffer_holder(aux::session_impl& ses, char* buf)
+        : m_disk_pool(ses.m_disk_thread), m_buf(buf)
+    {
+        LIBED2K_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
+    }
 
-	disk_buffer_holder::disk_buffer_holder(disk_buffer_pool& iothread, char* buf)
-		: m_disk_pool(iothread), m_buf(buf)
-	{
-		LIBED2K_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
-	}
+    disk_buffer_holder::disk_buffer_holder(disk_buffer_pool& iothread, char* buf)
+        : m_disk_pool(iothread), m_buf(buf)
+    {
+        LIBED2K_ASSERT(buf == 0 || m_disk_pool.is_disk_buffer(buf));
+    }
 
-	void disk_buffer_holder::reset(char* buf)
-	{
-		if (m_buf) m_disk_pool.free_buffer(m_buf);
-		m_buf = buf;
-	}
+    void disk_buffer_holder::reset(char* buf)
+    {
+        if (m_buf) m_disk_pool.free_buffer(m_buf);
+        m_buf = buf;
+    }
 
-	char* disk_buffer_holder::release()
-	{
-		char* ret = m_buf;
-		m_buf = 0;
-		return ret;
-	}
+    char* disk_buffer_holder::release()
+    {
+        char* ret = m_buf;
+        m_buf = 0;
+        return ret;
+    }
 
-	disk_buffer_holder::~disk_buffer_holder()
-	{
-		if (m_buf) m_disk_pool.free_buffer(m_buf);
-	}
+    disk_buffer_holder::~disk_buffer_holder()
+    {
+        if (m_buf) m_disk_pool.free_buffer(m_buf);
+    }
 }
 

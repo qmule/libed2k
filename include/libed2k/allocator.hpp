@@ -39,37 +39,37 @@ POSSIBILITY OF SUCH DAMAGE.
 namespace libed2k
 {
 
-	LIBED2K_EXTRA_EXPORT int page_size();
+    LIBED2K_EXTRA_EXPORT int page_size();
 
-	struct LIBED2K_EXTRA_EXPORT page_aligned_allocator
-	{
-		typedef std::size_t size_type;
-		typedef std::ptrdiff_t difference_type;
+    struct LIBED2K_EXTRA_EXPORT page_aligned_allocator
+    {
+        typedef std::size_t size_type;
+        typedef std::ptrdiff_t difference_type;
 
-		static char* malloc(const size_type bytes);
-		static void free(char* const block);
-	};
+        static char* malloc(const size_type bytes);
+        static void free(char* const block);
+    };
 
-	struct LIBED2K_EXTRA_EXPORT aligned_holder
-	{
-		aligned_holder(): m_buf(0) {}
-		aligned_holder(int size): m_buf(page_aligned_allocator::malloc(size)) {}
-		~aligned_holder() { if (m_buf) page_aligned_allocator::free(m_buf); }
-		char* get() const { return m_buf; }
-		void reset(char* buf = 0)
-		{
-			if (m_buf) page_aligned_allocator::free(m_buf);
-			m_buf = buf;
-		}
-		void swap(aligned_holder& h)
-		{
-			char* tmp = m_buf;
-			m_buf = h.m_buf;
-			h.m_buf =  tmp;
-		}
-	private:
-		char* m_buf;
-	};
+    struct LIBED2K_EXTRA_EXPORT aligned_holder
+    {
+        aligned_holder(): m_buf(0) {}
+        aligned_holder(int size): m_buf(page_aligned_allocator::malloc(size)) {}
+        ~aligned_holder() { if (m_buf) page_aligned_allocator::free(m_buf); }
+        char* get() const { return m_buf; }
+        void reset(char* buf = 0)
+        {
+            if (m_buf) page_aligned_allocator::free(m_buf);
+            m_buf = buf;
+        }
+        void swap(aligned_holder& h)
+        {
+            char* tmp = m_buf;
+            m_buf = h.m_buf;
+            h.m_buf =  tmp;
+        }
+    private:
+        char* m_buf;
+    };
 
 }
 

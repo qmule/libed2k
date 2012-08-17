@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#ifdef __OBJC__ 
+#ifdef __OBJC__
 #undef Protocol
 #endif
 
@@ -66,9 +66,9 @@ namespace libed2k
 {
 
 #if BOOST_VERSION < 103500
-	typedef ::asio::io_service io_service;
+    typedef ::asio::io_service io_service;
 #else
-	typedef boost::asio::io_service io_service;
+    typedef boost::asio::io_service io_service;
 #endif
 }
 

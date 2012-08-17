@@ -52,33 +52,33 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-	typedef boost::asio::detail::thread thread;
-	typedef boost::asio::detail::mutex mutex;
-	typedef boost::asio::detail::event event;
+    typedef boost::asio::detail::thread thread;
+    typedef boost::asio::detail::mutex mutex;
+    typedef boost::asio::detail::event event;
 
-	LIBED2K_EXPORT void sleep(int milliseconds);
+    LIBED2K_EXPORT void sleep(int milliseconds);
 
-	struct LIBED2K_EXTRA_EXPORT condition
-	{
-		condition();
-		~condition();
-		void wait(mutex::scoped_lock& l);
-		void signal_all(mutex::scoped_lock& l);
-	private:
+    struct LIBED2K_EXTRA_EXPORT condition
+    {
+        condition();
+        ~condition();
+        void wait(mutex::scoped_lock& l);
+        void signal_all(mutex::scoped_lock& l);
+    private:
 #ifdef BOOST_HAS_PTHREADS
-		pthread_cond_t m_cond;
+        pthread_cond_t m_cond;
 #elif defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
-		HANDLE m_sem;
-		mutex m_mutex;
-		int m_num_waiters;
+        HANDLE m_sem;
+        mutex m_mutex;
+        int m_num_waiters;
 #elif defined LIBED2K_BEOS
-		sem_id m_sem;
-		mutex m_mutex;
-		int m_num_waiters;
+        sem_id m_sem;
+        mutex m_mutex;
+        int m_num_waiters;
 #else
 #error not implemented
 #endif
-	};
+    };
 }
 
 #endif

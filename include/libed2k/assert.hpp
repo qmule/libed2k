@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 
 #if (!defined LIBED2K_DEBUG && !LIBED2K_RELEASE_ASSERTS) \
-	|| LIBED2K_NO_ASSERTS
+    || LIBED2K_NO_ASSERTS
 #define LIBED2K_ASSERT(a) do {} while(false)
 #define LIBED2K_ASSERT_VAL(a, b) do {} while(false)
 #else
@@ -56,7 +56,7 @@ void print_backtrace(char* out, int len, int max_depth = 0);
 #endif
 
 LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
-	, char const* function, char const* val);
+    , char const* function, char const* val);
 
 #define LIBED2K_ASSERT(x) do { if (x) {} else assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
 #if LIBED2K_USE_IOSTREAM

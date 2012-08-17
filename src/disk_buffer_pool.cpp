@@ -44,174 +44,174 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-	disk_buffer_pool::disk_buffer_pool(int block_size)
-		: m_block_size(block_size)
-		, m_in_use(0)
+    disk_buffer_pool::disk_buffer_pool(int block_size)
+        : m_block_size(block_size)
+        , m_in_use(0)
 #ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
-		, m_pool(block_size, m_settings.cache_buffer_chunk_size)
+        , m_pool(block_size, m_settings.cache_buffer_chunk_size)
 #endif
-	{
+    {
 #if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
-		m_allocations = 0;
+        m_allocations = 0;
 #endif
 #ifdef LIBED2K_DISK_STATS
-		m_log.open("disk_buffers.log", std::ios::trunc);
-		m_categories["read cache"] = 0;
-		m_categories["write cache"] = 0;
+        m_log.open("disk_buffers.log", std::ios::trunc);
+        m_categories["read cache"] = 0;
+        m_categories["write cache"] = 0;
 
-		m_disk_access_log.open("disk_access.log", std::ios::trunc);
+        m_disk_access_log.open("disk_access.log", std::ios::trunc);
 #endif
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-		m_magic = 0x1337;
+        m_magic = 0x1337;
 #endif
-	}
+    }
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-	disk_buffer_pool::~disk_buffer_pool()
-	{
-		LIBED2K_ASSERT(m_magic == 0x1337);
-		m_magic = 0;
-	}
+    disk_buffer_pool::~disk_buffer_pool()
+    {
+        LIBED2K_ASSERT(m_magic == 0x1337);
+        m_magic = 0;
+    }
 #endif
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS || defined LIBED2K_DISK_STATS
-	bool disk_buffer_pool::is_disk_buffer(char* buffer
-		, mutex::scoped_lock& l) const
-	{
-		LIBED2K_ASSERT(m_magic == 0x1337);
+    bool disk_buffer_pool::is_disk_buffer(char* buffer
+        , mutex::scoped_lock& l) const
+    {
+        LIBED2K_ASSERT(m_magic == 0x1337);
 #ifdef LIBED2K_DISK_STATS
-		if (m_buf_to_category.find(buffer)
-			== m_buf_to_category.end()) return false;
+        if (m_buf_to_category.find(buffer)
+            == m_buf_to_category.end()) return false;
 #endif
 #ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
-		return true;
+        return true;
 #else
-		return m_pool.is_from(buffer);
+        return m_pool.is_from(buffer);
 #endif
-	}
+    }
 
-	bool disk_buffer_pool::is_disk_buffer(char* buffer) const
-	{
-		mutex::scoped_lock l(m_pool_mutex);
-		return is_disk_buffer(buffer, l);
-	}
+    bool disk_buffer_pool::is_disk_buffer(char* buffer) const
+    {
+        mutex::scoped_lock l(m_pool_mutex);
+        return is_disk_buffer(buffer, l);
+    }
 #endif
 
-	char* disk_buffer_pool::allocate_buffer(char const* category)
-	{
-		mutex::scoped_lock l(m_pool_mutex);
-		LIBED2K_ASSERT(m_magic == 0x1337);
+    char* disk_buffer_pool::allocate_buffer(char const* category)
+    {
+        mutex::scoped_lock l(m_pool_mutex);
+        LIBED2K_ASSERT(m_magic == 0x1337);
 #ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
-		char* ret = page_aligned_allocator::malloc(m_block_size);
+        char* ret = page_aligned_allocator::malloc(m_block_size);
 #else
-		char* ret = (char*)m_pool.malloc();
-		m_pool.set_next_size(m_settings.cache_buffer_chunk_size);
+        char* ret = (char*)m_pool.malloc();
+        m_pool.set_next_size(m_settings.cache_buffer_chunk_size);
 #endif
-		++m_in_use;
+        ++m_in_use;
 #if LIBED2K_USE_MLOCK
-		if (m_settings.lock_disk_cache)
-		{
+        if (m_settings.lock_disk_cache)
+        {
 #ifdef LIBED2K_WINDOWS
-			VirtualLock(ret, m_block_size);
+            VirtualLock(ret, m_block_size);
 #else
-			mlock(ret, m_block_size);
-#endif		
-		}
+            mlock(ret, m_block_size);
+#endif
+        }
 #endif
 
 #if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
-		++m_allocations;
+        ++m_allocations;
 #endif
 #ifdef LIBED2K_DISK_STATS
-		++m_categories[category];
-		m_buf_to_category[ret] = category;
-		m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
+        ++m_categories[category];
+        m_buf_to_category[ret] = category;
+        m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
 #endif
-		LIBED2K_ASSERT(ret == 0 || is_disk_buffer(ret, l));
-		return ret;
-	}
+        LIBED2K_ASSERT(ret == 0 || is_disk_buffer(ret, l));
+        return ret;
+    }
 
 #ifdef LIBED2K_DISK_STATS
-	void disk_buffer_pool::rename_buffer(char* buf, char const* category)
-	{
-		mutex::scoped_lock l(m_pool_mutex);
-		LIBED2K_ASSERT(is_disk_buffer(buf, l));
-		LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
-			!= m_categories.end());
-		std::string const& prev_category = m_buf_to_category[buf];
-		--m_categories[prev_category];
-		m_log << log_time() << " " << prev_category << ": " << m_categories[prev_category] << "\n";
+    void disk_buffer_pool::rename_buffer(char* buf, char const* category)
+    {
+        mutex::scoped_lock l(m_pool_mutex);
+        LIBED2K_ASSERT(is_disk_buffer(buf, l));
+        LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
+            != m_categories.end());
+        std::string const& prev_category = m_buf_to_category[buf];
+        --m_categories[prev_category];
+        m_log << log_time() << " " << prev_category << ": " << m_categories[prev_category] << "\n";
 
-		++m_categories[category];
-		m_buf_to_category[buf] = category;
-		m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
-		LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
-			!= m_categories.end());
-	}
+        ++m_categories[category];
+        m_buf_to_category[buf] = category;
+        m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
+        LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
+            != m_categories.end());
+    }
 #endif
 
-	void disk_buffer_pool::free_multiple_buffers(char** bufvec, int numbufs)
-	{
-		char** end = bufvec + numbufs;
-		// sort the pointers in order to maximize cache hits
-		std::sort(bufvec, end);
+    void disk_buffer_pool::free_multiple_buffers(char** bufvec, int numbufs)
+    {
+        char** end = bufvec + numbufs;
+        // sort the pointers in order to maximize cache hits
+        std::sort(bufvec, end);
 
-		mutex::scoped_lock l(m_pool_mutex);
-		for (; bufvec != end; ++bufvec)
-		{
-			char* buf = *bufvec;
-			LIBED2K_ASSERT(buf);
-			free_buffer_impl(buf, l);;
-		}
-	}
+        mutex::scoped_lock l(m_pool_mutex);
+        for (; bufvec != end; ++bufvec)
+        {
+            char* buf = *bufvec;
+            LIBED2K_ASSERT(buf);
+            free_buffer_impl(buf, l);;
+        }
+    }
 
-	void disk_buffer_pool::free_buffer(char* buf)
-	{
-		mutex::scoped_lock l(m_pool_mutex);
-		free_buffer_impl(buf, l);
-	}
+    void disk_buffer_pool::free_buffer(char* buf)
+    {
+        mutex::scoped_lock l(m_pool_mutex);
+        free_buffer_impl(buf, l);
+    }
 
-	void disk_buffer_pool::free_buffer_impl(char* buf, mutex::scoped_lock& l)
-	{
-		LIBED2K_ASSERT(buf);
-		LIBED2K_ASSERT(m_magic == 0x1337);
-		LIBED2K_ASSERT(is_disk_buffer(buf, l));
+    void disk_buffer_pool::free_buffer_impl(char* buf, mutex::scoped_lock& l)
+    {
+        LIBED2K_ASSERT(buf);
+        LIBED2K_ASSERT(m_magic == 0x1337);
+        LIBED2K_ASSERT(is_disk_buffer(buf, l));
 #if defined LIBED2K_DISK_STATS || defined LIBED2K_STATS
-		--m_allocations;
+        --m_allocations;
 #endif
 #ifdef LIBED2K_DISK_STATS
-		LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
-			!= m_categories.end());
-		std::string const& category = m_buf_to_category[buf];
-		--m_categories[category];
-		m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
-		m_buf_to_category.erase(buf);
+        LIBED2K_ASSERT(m_categories.find(m_buf_to_category[buf])
+            != m_categories.end());
+        std::string const& category = m_buf_to_category[buf];
+        --m_categories[category];
+        m_log << log_time() << " " << category << ": " << m_categories[category] << "\n";
+        m_buf_to_category.erase(buf);
 #endif
 #if LIBED2K_USE_MLOCK
-		if (m_settings.lock_disk_cache)
-		{
+        if (m_settings.lock_disk_cache)
+        {
 #ifdef LIBED2K_WINDOWS
-			VirtualUnlock(buf, m_block_size);
+            VirtualUnlock(buf, m_block_size);
 #else
-			munlock(buf, m_block_size);
-#endif		
-		}
+            munlock(buf, m_block_size);
+#endif
+        }
 #endif
 #ifdef LIBED2K_DISABLE_POOL_ALLOCATOR
-		page_aligned_allocator::free(buf);
+        page_aligned_allocator::free(buf);
 #else
-		m_pool.free(buf);
+        m_pool.free(buf);
 #endif
-		--m_in_use;
-	}
+        --m_in_use;
+    }
 
-	void disk_buffer_pool::release_memory()
-	{
-		LIBED2K_ASSERT(m_magic == 0x1337);
+    void disk_buffer_pool::release_memory()
+    {
+        LIBED2K_ASSERT(m_magic == 0x1337);
 #ifndef LIBED2K_DISABLE_POOL_ALLOCATOR
-		mutex::scoped_lock l(m_pool_mutex);
-		m_pool.release_memory();
+        mutex::scoped_lock l(m_pool_mutex);
+        m_pool.release_memory();
 #endif
-	}
+    }
 }
 

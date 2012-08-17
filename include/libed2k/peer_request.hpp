@@ -37,14 +37,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-	struct LIBED2K_EXTRA_EXPORT peer_request
-	{
-		int piece;
-		int start;
-		int length;
-		bool operator==(peer_request const& r) const
-		{ return piece == r.piece && start == r.start && length == r.length; }
-	};
+    struct LIBED2K_EXTRA_EXPORT peer_request
+    {
+        int piece;
+        int start;
+        int length;
+        bool operator==(peer_request const& r) const
+        { return piece == r.piece && start == r.start && length == r.length; }
+    };
 }
 
 #endif // LIBED2K_PEER_REQUEST_HPP_INCLUDED

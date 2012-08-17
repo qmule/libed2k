@@ -307,10 +307,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\peer_id.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\include\libed2k\policy.hpp"
 				>
 			</File>

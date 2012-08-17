@@ -161,8 +161,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 // ==== Darwin/BSD ===
 #elif (defined __APPLE__ && defined __MACH__) || defined __FreeBSD__ || defined __NetBSD__ \
-	|| defined __OpenBSD__ || defined __bsdi__ || defined __DragonFly__ \
-	|| defined __FreeBSD_kernel__
+    || defined __OpenBSD__ || defined __bsdi__ || defined __DragonFly__ \
+    || defined __FreeBSD_kernel__
 #define LIBED2K_BSD
 // we don't need iconv on mac, because
 // the locale is always utf-8
@@ -227,7 +227,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 // ==== SOLARIS ===
-#elif defined sun || defined __sun 
+#elif defined sun || defined __sun
 #define LIBED2K_SOLARIS
 #define LIBED2K_COMPLETE_TYPES_REQUIRED 1
 #define LIBED2K_USE_IFCONF 1
@@ -289,12 +289,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 inline int snprintf(char* buf, int len, char const* fmt, ...)
 {
-	va_list lp;
-	va_start(lp, fmt);
-	int ret = _vsnprintf(buf, len, fmt, lp);
-	va_end(lp);
-	if (ret < 0) { buf[len-1] = 0; ret = len-1; }
-	return ret;
+    va_list lp;
+    va_start(lp, fmt);
+    int ret = _vsnprintf(buf, len, fmt, lp);
+    va_end(lp);
+    if (ret < 0) { buf[len-1] = 0; ret = len-1; }
+    return ret;
 }
 
 #define strtoll _strtoi64
@@ -303,7 +303,7 @@ inline int snprintf(char* buf, int len, char const* fmt, ...)
 #endif
 
 #if (defined(LIBED2K_LOGGING) || defined(LIBED2K_VERBOSE_LOGGING)) \
-	&& !defined (LIBED2K_UPNP_LOGGING) && LIBED2K_USE_IOSTREAM
+    && !defined (LIBED2K_UPNP_LOGGING) && LIBED2K_USE_IOSTREAM
 #define LIBED2K_UPNP_LOGGING
 #endif
 
@@ -465,11 +465,11 @@ inline int snprintf(char* buf, int len, char const* fmt, ...)
 // autmatically. This lets the user control this
 // from the Jamfile
 #if !defined LIBED2K_USE_ABSOLUTE_TIME \
-	&& !defined LIBED2K_USE_QUERY_PERFORMANCE_TIMER \
-	&& !defined LIBED2K_USE_CLOCK_GETTIME \
-	&& !defined LIBED2K_USE_BOOST_DATE_TIME \
-	&& !defined LIBED2K_USE_ECLOCK \
-	&& !defined LIBED2K_USE_SYSTEM_TIME
+    && !defined LIBED2K_USE_QUERY_PERFORMANCE_TIMER \
+    && !defined LIBED2K_USE_CLOCK_GETTIME \
+    && !defined LIBED2K_USE_BOOST_DATE_TIME \
+    && !defined LIBED2K_USE_ECLOCK \
+    && !defined LIBED2K_USE_SYSTEM_TIME
 
 #if defined __APPLE__ && defined __MACH__
 #define LIBED2K_USE_ABSOLUTE_TIME 1
@@ -490,11 +490,11 @@ inline int snprintf(char* buf, int len, char const* fmt, ...)
 #if !LIBED2K_HAS_STRDUP
 inline char* strdup(char const* str)
 {
-	if (str == 0) return 0;
-	char* tmp = (char*)malloc(strlen(str) + 1);
-	if (tmp == 0) return 0;
-	strcpy(tmp, str);
-	return tmp;
+    if (str == 0) return 0;
+    char* tmp = (char*)malloc(strlen(str) + 1);
+    if (tmp == 0) return 0;
+    strcpy(tmp, str);
+    return tmp;
 }
 #endif
 
