@@ -261,7 +261,7 @@ namespace libed2k
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void receive_data(const peer_request& r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
-                                    peer_request r, peer_request left, boost::shared_ptr<transfer> t);
+                                    peer_request req, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
         void on_skip_data(const error_code& error, peer_request r);
