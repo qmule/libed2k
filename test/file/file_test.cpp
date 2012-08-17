@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
         {            
             std::cout << "x\n";
             std::string strUTF8;
-            libtorrent::wchar_utf8(itr->filename(), strUTF8);
+            //libtorrent::wchar_utf8(itr->filename(), strUTF8);
             std::cout << strUTF8 << std::endl;
         }
     }    
