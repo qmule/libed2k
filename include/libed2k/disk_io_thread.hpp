@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/disk_buffer_pool.hpp>
+#include <libed2k/constants.hpp>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/member.hpp>
@@ -177,7 +178,7 @@ namespace libed2k
             , read_queue_size(0)
         {}
 
-        // the number of 16kB blocks written
+        // the number of blocks written
         size_type blocks_written;
         // the number of write operations used
         size_type writes;
@@ -229,7 +230,7 @@ namespace libed2k
         disk_io_thread(io_service& ios
             , boost::function<void()> const& queue_callback
             , file_pool& fp
-            , int block_size = 16 * 1024);
+            , int block_size = BLOCK_SIZE);
         ~disk_io_thread();
 
         void abort();
