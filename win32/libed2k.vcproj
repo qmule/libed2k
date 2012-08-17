@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG"
+				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -85,7 +85,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -108,7 +108,8 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -157,6 +158,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\allocator.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\assert.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\base_connection.cpp"
 				>
 			</File>
@@ -165,11 +174,39 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\disk_buffer_holder.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\disk_buffer_pool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\disk_io_thread.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\error_code.cpp"
 				>
 			</File>
 			<File
+				RelativePath="..\src\escape_string.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file_pool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file_storage.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\filesystem.cpp"
 				>
 			</File>
 			<File
@@ -209,6 +246,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\random.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\search.cpp"
 				>
 			</File>
@@ -222,6 +263,18 @@
 			</File>
 			<File
 				RelativePath="..\src\session_impl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\storage.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\thread.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\torrent_info.cpp"
 				>
 			</File>
 			<File
@@ -251,7 +304,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\alloca.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\allocator.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\archive.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\assert.hpp"
 				>
 			</File>
 			<File
@@ -259,7 +324,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\config.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\constants.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\copy_ptr.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\ctag.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\disk_buffer_holder.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\disk_buffer_pool.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\disk_io_thread.hpp"
 				>
 			</File>
 			<File
@@ -267,11 +356,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\escape_string.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\file.hpp"
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\file_pool.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\file_storage.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\filesystem.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\fingerprint.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\io_service.hpp"
 				>
 			</File>
 			<File
@@ -307,7 +416,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\peer_request.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\policy.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\random.hpp"
 				>
 			</File>
 			<File
@@ -328,6 +445,30 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\session_settings.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\size_type.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\sliding_average.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\storage.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\storage_defs.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\thread.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\torrent_info.hpp"
 				>
 			</File>
 			<File

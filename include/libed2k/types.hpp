@@ -69,19 +69,10 @@ namespace libed2k
     typedef time::ptime ptime;
     typedef boost::uint64_t fsize_t;
 
-    // we work in UTF-16 on windows and UTF-8 on linux
-#ifdef _WIN32
-    typedef fs::wpath fpath;
-    typedef fs::wrecursive_directory_iterator r_dir_itr;
-    typedef fs::wdirectory_iterator dir_itr;
-    typedef std::wstring str_path;
-#else
     typedef fs::path fpath;
     typedef fs::recursive_directory_iterator r_dir_itr;
     typedef fs::directory_iterator dir_itr;
     typedef std::string  str_path;
-#endif
-
 }
 
 #endif

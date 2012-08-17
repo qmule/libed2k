@@ -66,6 +66,7 @@ namespace libed2k
             , read_job_every(10)
             , use_disk_read_ahead(true)
             , lock_files(false)
+            , low_prio_disk(true)
         {
         }
 
@@ -324,6 +325,13 @@ namespace libed2k
         // if set to true, files will be locked when opened.
         // preventing any other process from modifying them
         bool lock_files;
+
+        // if this is set to true, the disk I/O will be
+		// run at lower-than-normal priority. This is
+		// intended to make the machine more responsive
+		// to foreground tasks, while bittorrent runs
+		// in the background
+        bool low_prio_disk;
 
     };
 

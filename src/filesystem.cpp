@@ -133,7 +133,7 @@ BOOST_STATIC_ASSERT((libed2k::file::no_buffer & libed2k::file::attribute_mask) =
 
 #ifdef LIBED2K_WINDOWS
 #if defined UNICODE && !LIBED2K_USE_WSTRING
-#warning wide character support not available. Files will be saved using narrow string names
+#pragma message ("Wide character support not available. Files will be saved using narrow string names")
 #endif
 #endif // LIBED2K_WINDOWS
 
