@@ -79,7 +79,7 @@ std::pair<peer_request, peer_request> split_request(const peer_request& req)
 {
     peer_request r = req;
     peer_request left = req;
-    r.length = std::min(req.length, int(DISK_BLOCK_SIZE));
+    r.length = std::min(req.length, int(BLOCK_SIZE));
     left.start = r.start + r.length;
     left.length = req.length - r.length;
 
@@ -160,7 +160,7 @@ void peer_connection::reset()
     m_disconnecting = false;
     m_connection_ticket = -1;
     m_speed = slow;
-    m_desired_queue_size = 32;
+    m_desired_queue_size = (3*STANDARD_BLOCK_SIZE) / BLOCK_SIZE;
     m_max_busy_blocks = 1;
 
     m_channel_state[upload_channel] = bw_idle;
@@ -1060,7 +1060,7 @@ void peer_connection::receive_data(const peer_request& req)
         if (!b->buffer)
         {
             if (!allocate_disk_receive_buffer(
-                    std::min<size_t>(block_size(block, t->filesize()), DISK_BLOCK_SIZE)))
+                    std::min<size_t>(block_size(block, t->filesize()), BLOCK_SIZE)))
             {
                 ERR("cannot allocate disk receive buffer " << r.length);
                 return;

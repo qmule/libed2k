@@ -8,8 +8,9 @@
 
 #include <libtorrent/bitfield.hpp>
 
-#include "libed2k/ctag.hpp"
-#include "libed2k/util.hpp"
+#include <libed2k/ctag.hpp>
+#include <libed2k/util.hpp>
+#include <libed2k/assert.hpp>
 
 namespace libed2k
 {
@@ -262,7 +263,7 @@ namespace libed2k
             ar & m_size;
 
             // avoid huge memory allocation
-            if (m_size > MAX_SERVICE_PACKET_LEN)
+            if (m_size > MAX_ED2K_PACKET_LEN)
             {
                 throw libed2k::libed2k_exception(libed2k::errors::decode_packet_error);
             }
@@ -331,9 +332,9 @@ namespace libed2k
                 return errors::invalid_protocol_type;
             }
 
-            assert(m_size > 0 && m_size < MAX_SERVICE_PACKET_LEN);
+            LIBED2K_ASSERT(m_size > 0 && m_size < MAX_ED2K_PACKET_LEN);
 
-            if ((m_size < 1) || (m_size > MAX_SERVICE_PACKET_LEN))
+            if ((m_size < 1) || (m_size > MAX_ED2K_PACKET_LEN))
             {
                 return errors::invalid_packet_size;
             }

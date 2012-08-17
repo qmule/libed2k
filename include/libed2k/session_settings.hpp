@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <libed2k/md4_hash.hpp>
+#include <libed2k/constants.hpp>
 
 namespace libed2k
 {
@@ -15,7 +16,7 @@ namespace libed2k
             server_timeout(220)
             , peer_timeout(120)
             , peer_connect_timeout(7)
-            , block_request_timeout(10)
+            , block_request_timeout(BLOCK_SIZE / 1024)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
@@ -41,8 +42,8 @@ namespace libed2k
             , file_pool_size(40)
             , max_queued_disk_bytes(16*1024*1024)
             , max_queued_disk_bytes_low_watermark(0)
-            , cache_size(1024)
-            , cache_buffer_chunk_size(16)
+            , cache_size((16*1024*1024) / BLOCK_SIZE)
+            , cache_buffer_chunk_size((16*16*1024) / BLOCK_SIZE)
             , cache_expiry(5*60)
             , use_read_cache(true)
             , explicit_read_cache(false)
@@ -53,8 +54,8 @@ namespace libed2k
             , optimize_hashing_for_speed(true)
             , file_checks_delay_per_block(0)
             , disk_cache_algorithm(avoid_readback)
-            , read_cache_line_size(32)
-            , write_cache_line_size(32)
+            , read_cache_line_size((32*16*1024) / BLOCK_SIZE)
+            , write_cache_line_size((32*16*1024) / BLOCK_SIZE)
             , disable_hash_checks(false)
             , allow_reordered_disk_operations(true)
 #ifndef TORRENT_DISABLE_MLOCK
@@ -207,12 +208,12 @@ namespace libed2k
         int max_queued_disk_bytes_low_watermark;
 
         // the disk write cache, specified in BLOCK_SIZE blocks.
-        // default is 1024 (= 16 MiB). -1 means automatic, which
+        // default is 16 MiB / BLOCK_SIZE. -1 means automatic, which
         // adjusts the cache size depending on the amount
         // of physical RAM in the machine.
         int cache_size;
 
-        // this is the number of disk buffer blocks (16 kiB)
+        // this is the number of disk buffer blocks (BLOCK_SIZE)
         // that should be allocated at a time. It must be
         // at least 1. Lower number saves memory at the expense
         // of more heap allocations
