@@ -462,7 +462,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     }
 #endif
 
-#if defined TORRENT_BSD || defined TORRENT_LINUX
+#if defined LIBED2K_BSD || defined LIBED2K_LINUX
     // ---- auto-cap open files ----
 
     struct rlimit rl;
@@ -482,7 +482,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
         DBG("max connections: " << m_max_connections);
         DBG("max files: " << m_filepool.size_limit());
     }
-#endif // TORRENT_BSD || TORRENT_LINUX
+#endif // LIBED2K_BSD || LIBED2K_LINUX
 
     m_io_service.post(boost::bind(&session_impl::on_tick, this, ec));
 
@@ -662,7 +662,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
             libtorrent::print_endpoint(ep) + "' " + e.message();
         DBG(msg);
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
         // Windows sometimes generates this error. It seems to be
         // non-fatal and we have to do another async_accept.
         if (e.value() == ERROR_SEM_TIMEOUT)
@@ -671,7 +671,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
             return;
         }
 #endif
-#ifdef TORRENT_BSD
+#ifdef LIBED2K_BSD
         // Leopard sometimes generates an "invalid argument" error. It seems to be
         // non-fatal and we have to do another async_accept.
         if (e.value() == EINVAL)

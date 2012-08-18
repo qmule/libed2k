@@ -1244,7 +1244,7 @@ namespace libed2k
                 m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
             }
 
-#if defined TORRENT_VERBOSE_LOGGING || defined TORRENT_LOGGING || defined TORRENT_ERROR_LOGGING
+#if defined LIBED2K_VERBOSE_LOGGING || defined LIBED2K_LOGGING || defined LIBED2K_ERROR_LOGGING
             (*m_ses.m_logger) << time_now_string() << ": fatal disk error ["
                 " error: " << j.error.message() <<
                 " torrent: " << torrent_file().name() <<
@@ -1258,7 +1258,7 @@ namespace libed2k
         // TODO - should i use size_type?
         m_progress_ppm = fsize_t(j.piece) * PIECE_SIZE / num_pieces();
 
-        TORRENT_ASSERT(m_picker);
+        LIBED2K_ASSERT(m_picker);
         if (j.offset >= 0 && !m_picker->have_piece(j.offset))
             we_have(j.offset);
 
@@ -1363,7 +1363,7 @@ namespace libed2k
                         v |= (i->info[j*8+k].state == piece_picker::block_info::state_finished)
                         ? (1 << k) : 0;
                     bitmask.insert(bitmask.end(), v);
-                    TORRENT_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
+                    LIBED2K_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
                 }
                 piece_struct["bitmask"] = bitmask;
                 // push the struct onto the unfinished-piece list
@@ -1453,7 +1453,7 @@ namespace libed2k
         ERR("disk error: '" << j.error.message()
             << " in file " << j.error_file);
 
-        TORRENT_ASSERT(j.piece >= 0);
+        LIBED2K_ASSERT(j.piece >= 0);
 
         piece_block block_finished(j.piece, div_ceil(j.offset, BLOCK_SIZE));
 

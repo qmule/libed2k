@@ -117,7 +117,7 @@ namespace libed2k
 
         if (m_dispatch)
         {
-            //TORRENT_ASSERT(m_alerts.empty());
+            //LIBED2K_ASSERT(m_alerts.empty());
             m_ios.post(boost::bind(&dispatch_alert, m_dispatch, alert_.clone().release()));
             return;
         }
@@ -131,7 +131,7 @@ namespace libed2k
     {
         boost::mutex::scoped_lock lock(m_mutex);
 
-        //TORRENT_ASSERT(!m_alerts.empty());
+        //LIBED2K_ASSERT(!m_alerts.empty());
 
         alert* result = m_alerts.front();
         m_alerts.pop();

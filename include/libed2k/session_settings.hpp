@@ -58,7 +58,7 @@ namespace libed2k
             , write_cache_line_size((32*16*1024) / BLOCK_SIZE)
             , disable_hash_checks(false)
             , allow_reordered_disk_operations(true)
-#ifndef TORRENT_DISABLE_MLOCK
+#ifndef LIBED2K_DISABLE_MLOCK
             , lock_disk_cache(false)
 #endif
             , volatile_read_cache(false)

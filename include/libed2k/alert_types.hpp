@@ -4,12 +4,11 @@
 // for print_endpoint
 #include <libtorrent/socket.hpp>
 
-
-#include "libed2k/alert.hpp"
-#include "libed2k/types.hpp"
-#include "libed2k/error_code.hpp"
-#include "libed2k/packet_struct.hpp"
-#include "libed2k/transfer_handle.hpp"
+#include <libed2k/alert.hpp>
+#include <libed2k/types.hpp>
+#include <libed2k/error_code.hpp>
+#include <libed2k/packet_struct.hpp>
+#include <libed2k/transfer_handle.hpp>
 
 
 namespace libed2k
@@ -676,14 +675,14 @@ namespace libed2k
             : transfer_alert(h)
             , error(e)
         {
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
             msg = error.message();
 #endif
         }
 
         error_code error;
 
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
         std::string msg;
 #endif
 
@@ -700,21 +699,21 @@ namespace libed2k
         }
     };
 
-    struct TORRENT_EXPORT fastresume_rejected_alert: transfer_alert
+    struct LIBED2K_EXPORT fastresume_rejected_alert: transfer_alert
     {
         fastresume_rejected_alert(transfer_handle const& h
             , error_code const& e)
             : transfer_alert(h)
             , error(e)
         {
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
             msg = error.message();
 #endif
         }
 
         error_code error;
 
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
         std::string msg;
 #endif
 
@@ -729,7 +728,7 @@ namespace libed2k
         }
     };
 
-    struct TORRENT_EXPORT file_error_alert: transfer_alert
+    struct LIBED2K_EXPORT file_error_alert: transfer_alert
     {
         file_error_alert(
             std::string const& f
@@ -739,7 +738,7 @@ namespace libed2k
             , file(f)
             , error(e)
         {
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
             msg = error.message();
 #endif
         }
@@ -747,7 +746,7 @@ namespace libed2k
         std::string file;
         error_code error;
 
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
         std::string msg;
 #endif
 
