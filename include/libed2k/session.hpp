@@ -4,32 +4,22 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-#include <libtorrent/storage.hpp>
-
-#include "libed2k/fingerprint.hpp"
-#include "libed2k/md4_hash.hpp"
-#include "libed2k/transfer_handle.hpp"
-#include "libed2k/peer_connection_handle.hpp"
-#include "libed2k/peer.hpp"
-#include "libed2k/alert.hpp"
-#include "libed2k/packet_struct.hpp"
+#include <libed2k/storage_defs.hpp>
+#include <libed2k/fingerprint.hpp>
+#include <libed2k/md4_hash.hpp>
+#include <libed2k/transfer_handle.hpp>
+#include <libed2k/peer_connection_handle.hpp>
+#include <libed2k/peer.hpp>
+#include <libed2k/alert.hpp>
+#include <libed2k/packet_struct.hpp>
 
 namespace libed2k {
-
-    typedef libtorrent::storage_constructor_type storage_constructor_type;
 
     class session_settings;
     struct transfer_handle;
     namespace aux {
         class session_impl;
     }
-
-    enum storage_mode_t
-    {
-        storage_mode_allocate = 0,
-        storage_mode_sparse,
-        storage_mode_compact
-    };
 
     class add_transfer_params
     {

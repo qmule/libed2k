@@ -2,8 +2,8 @@
 #include <boost/format.hpp>
 
 #include <libtorrent/piece_picker.hpp>
-#include <libtorrent/storage.hpp>
 
+#include "libed2k/storage.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/session.hpp"
@@ -57,6 +57,12 @@ peer_request mk_peer_request(fsize_t begin, fsize_t end)
     return r;
 }
 
+peer_request mk_peer_request(const piece_block& b, fsize_t fsize)
+{
+    std::pair<fsize_t, fsize_t> r = block_range(b.piece_index, b.block_index, fsize);
+    return mk_peer_request(r.first, r.second);
+}
+
 std::pair<fsize_t, fsize_t> mk_range(const peer_request& r)
 {
     fsize_t begin = r.piece * PIECE_SIZE + r.start;
@@ -79,7 +85,7 @@ std::pair<peer_request, peer_request> split_request(const peer_request& req)
 {
     peer_request r = req;
     peer_request left = req;
-    r.length = std::min(req.length, int(DISK_BLOCK_SIZE));
+    r.length = std::min(req.length, int(BLOCK_SIZE));
     left.start = r.start + r.length;
     left.length = req.length - r.length;
 
@@ -160,7 +166,7 @@ void peer_connection::reset()
     m_disconnecting = false;
     m_connection_ticket = -1;
     m_speed = slow;
-    m_desired_queue_size = 32;
+    m_desired_queue_size = 3;
     m_max_busy_blocks = 1;
 
     m_channel_state[upload_channel] = bw_idle;
@@ -411,8 +417,7 @@ void peer_connection::do_read()
     {
         boost::shared_ptr<transfer> t = m_transfer.lock();
 
-        DBG((boost::format("cannot read: {disk_queue: %1%, disk_queue_limit: %2%}")
-             % ((t && t->get_storage()) ? t->filesystem().queued_bytes() : 0)
+        DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
              % m_ses.settings().max_queued_disk_bytes).str());
 
         // if we block reading, waiting for the disk, we will wake up
@@ -848,9 +853,7 @@ bool peer_connection::can_read(char* state) const
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    bool disk = m_ses.settings().max_queued_disk_bytes == 0 ||
-        !t || t->get_storage() == 0 ||
-        t->filesystem().queued_bytes() < m_ses.settings().max_queued_disk_bytes;
+    bool disk = m_ses.settings().max_queued_disk_bytes == 0 || m_ses.can_write_to_disk();
 
     if (!disk)
     {
@@ -1063,7 +1066,7 @@ void peer_connection::receive_data(const peer_request& req)
         if (!b->buffer)
         {
             if (!allocate_disk_receive_buffer(
-                    std::min<size_t>(block_size(block, t->filesize()), DISK_BLOCK_SIZE)))
+                    std::min<size_t>(block_size(block, t->filesize()), BLOCK_SIZE)))
             {
                 ERR("cannot allocate disk receive buffer " << r.length);
                 return;
@@ -1097,9 +1100,9 @@ void peer_connection::on_receive_data(
     if (error) disconnect(error);
     if (m_disconnecting || is_closed()) return;
 
-    assert(int(bytes_transferred) == r.length);
-    assert(m_channel_state[download_channel] == bw_network);
-    assert(m_read_in_progress);
+    LIBED2K_ASSERT(int(bytes_transferred) == r.length);
+    LIBED2K_ASSERT(m_channel_state[download_channel] == bw_network);
+    LIBED2K_ASSERT(m_read_in_progress);
 
     m_read_in_progress = false;
     m_last_receive = time_now();
@@ -1144,28 +1147,33 @@ void peer_connection::on_receive_data(
     if (b->completed())
     {
         disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-        fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
-                                              self_as<peer_connection>(), _1, _2, r, left, t));
+        peer_request req = mk_peer_request(b->block, t->filesize());
+        fs.async_write(req, holder,
+                       boost::bind(&peer_connection::on_disk_write_complete,
+                                   self_as<peer_connection>(), _1, _2, req, left, t));
     }
 
     if (left.length > 0)
         receive_data(left);
-    else if (b->completed())
+    else
     {
-        bool was_finished = picker.is_piece_finished(r.piece);
-        picker.mark_as_writing(block_finished, get_peer());
-        m_download_queue.erase(b);
-
-        // did we just finish the piece?
-        // this means all blocks are either written
-        // to disk or are in the disk write cache
-        if (picker.is_piece_finished(r.piece) && !was_finished)
+        if (b->completed())
         {
-            const md4_hash& hash =
-                t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+            bool was_finished = picker.is_piece_finished(r.piece);
+            picker.mark_as_writing(block_finished, get_peer());
+            m_download_queue.erase(b);
 
-            t->async_verify_piece(
-                r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
+            // did we just finish the piece?
+            // this means all blocks are either written
+            // to disk or are in the disk write cache
+            if (picker.is_piece_finished(r.piece) && !was_finished)
+            {
+                const md4_hash& hash =
+                    t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+
+                t->async_verify_piece(
+                    r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
+            }
         }
 
         m_channel_state[download_channel] = bw_idle;
@@ -1188,12 +1196,12 @@ void peer_connection::on_skip_data(const error_code& error, peer_request r)
 }
 
 void peer_connection::on_disk_write_complete(
-    int ret, disk_io_job const& j, peer_request r, peer_request left, boost::shared_ptr<transfer> t)
+    int ret, disk_io_job const& j, peer_request req, peer_request left, boost::shared_ptr<transfer> t)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
-    assert(r.piece == j.piece);
-    assert(r.start == j.offset);
+    LIBED2K_ASSERT(req.piece == j.piece);
+    LIBED2K_ASSERT(req.start == j.offset);
 
     if (left.length == 0)
     {
@@ -1203,7 +1211,7 @@ void peer_connection::on_disk_write_complete(
 
         if (t->is_seed()) return;
 
-        piece_block block_finished(mk_block(r));
+        piece_block block_finished(mk_block(req));
         piece_picker& picker = t->picker();
         picker.mark_as_finished(block_finished, get_peer());
     }

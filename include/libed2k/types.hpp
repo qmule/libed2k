@@ -12,19 +12,13 @@ namespace boost{
 }
 
 namespace libtorrent {
-    class piece_manager;
     class piece_picker;
     struct piece_block;
-    struct peer_request;
-    struct disk_io_job;
-    struct disk_buffer_holder;
     class buffer;
     struct logger;
     struct ptime;
     class listen_failed_alert;
     struct bitfield;
-    class file_storage;
-    class storage_interface;
     struct torrent_status;
     struct session_status;
     struct piece_block_progress;
@@ -50,19 +44,13 @@ namespace libed2k
     typedef boost::asio::deadline_timer dtimer;
     typedef boost::posix_time::time_duration time_duration;
 
-    typedef libtorrent::piece_manager piece_manager;
     typedef libtorrent::piece_picker piece_picker;
     typedef libtorrent::piece_block piece_block;
-    typedef libtorrent::disk_io_job disk_io_job;
-    typedef libtorrent::disk_buffer_holder disk_buffer_holder;
     typedef libtorrent::buffer buffer;
-    typedef libtorrent::peer_request peer_request;
     typedef libtorrent::logger logger;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::bitfield bitfield;
-    typedef libtorrent::file_storage file_storage;
-    typedef libtorrent::storage_interface storage_interface;
     typedef libtorrent::torrent_status transfer_status;
     typedef libtorrent::session_status session_status;
     typedef libtorrent::piece_block_progress piece_block_progress;
@@ -81,19 +69,10 @@ namespace libed2k
     typedef time::ptime ptime;
     typedef boost::uint64_t fsize_t;
 
-    // we work in UTF-16 on windows and UTF-8 on linux
-#ifdef _WIN32
-    typedef fs::wpath fpath;
-    typedef fs::wrecursive_directory_iterator r_dir_itr;
-    typedef fs::wdirectory_iterator dir_itr;
-    typedef std::wstring str_path;
-#else
     typedef fs::path fpath;
     typedef fs::recursive_directory_iterator r_dir_itr;
     typedef fs::directory_iterator dir_itr;
     typedef std::string  str_path;
-#endif
-
 }
 
 #endif

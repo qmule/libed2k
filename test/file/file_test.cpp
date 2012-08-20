@@ -22,18 +22,18 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::wstring strPath = L"C:/work";
+    std::string strPath = "C:/work";
 
-    fs::wpath wp(strPath);
+    fs::path p(strPath);
 
-    if ( fs::exists( wp ) )
+    if ( fs::exists( p ) )
     {
-        fs::wrecursive_directory_iterator end_itr; // default construction yields past-the-end
-        for ( fs::wrecursive_directory_iterator itr( wp );  itr != end_itr;  ++itr )
+        fs::recursive_directory_iterator end_itr; // default construction yields past-the-end
+        for ( fs::recursive_directory_iterator itr( p );  itr != end_itr;  ++itr )
         {            
             std::cout << "x\n";
             std::string strUTF8;
-            libtorrent::wchar_utf8(itr->filename(), strUTF8);
+            //libtorrent::wchar_utf8(itr->filename(), strUTF8);
             std::cout << strUTF8 << std::endl;
         }
     }    

@@ -7,18 +7,17 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/aligned_storage.hpp>
 
-#include <libtorrent/error_code.hpp>
-#include <libtorrent/disk_buffer_holder.hpp>
 #include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
 #include <libtorrent/piece_block_progress.hpp>
 
-#include "libed2k/base_connection.hpp"
-#include "libed2k/types.hpp"
-#include "libed2k/error_code.hpp"
-#include "libed2k/packet_struct.hpp"
-
+#include <libed2k/disk_buffer_holder.hpp>
+#include <libed2k/base_connection.hpp>
+#include <libed2k/types.hpp>
+#include <libed2k/error_code.hpp>
+#include <libed2k/packet_struct.hpp>
+#include <libed2k/peer_request.hpp>
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \
@@ -63,6 +62,7 @@ namespace libed2k
     namespace aux{
         class session_impl;
     }
+    struct disk_io_job;
 
     struct pending_block
     {
@@ -261,7 +261,7 @@ namespace libed2k
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void receive_data(const peer_request& r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
-                                    peer_request r, peer_request left, boost::shared_ptr<transfer> t);
+                                    peer_request req, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
         void on_skip_data(const error_code& error, peer_request r);

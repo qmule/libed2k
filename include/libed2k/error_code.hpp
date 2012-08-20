@@ -55,6 +55,21 @@ namespace libed2k
             // service errors
             filesize_is_zero,
             file_unavaliable,
+            file_too_short,
+            file_collision,
+            mismatching_number_of_files,
+            mismatching_file_size,
+            mismatching_file_timestamp,
+            missing_file_sizes,
+            missing_pieces,
+            not_a_dictionary,
+            invalid_blocks_per_piece,
+            missing_slots,
+            too_many_slots,
+            invalid_slot_list,
+            invalid_piece_index,
+            pieces_need_reorder,
+            no_files_in_resume_data,
             unclosed_quotation_mark,
             operator_incorrect_place,
             known_file_invalid_header,
@@ -66,6 +81,8 @@ namespace libed2k
             missing_transfer_hash,
             mismatching_transfer_hash,
             hashes_dont_match_pieces,
+            failed_hash_check,
+            invalid_escaped_string,
             num_errors
         };
     }

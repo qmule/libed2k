@@ -25,7 +25,8 @@ libtorrentRoot = os.getenv('LIBTORRENT_ROOT')
 args = {
     'ENV'     : os.environ,
     'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot, libtorrentRoot]],
-    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-DBOOST_FILESYSTEM_VERSION=2', '-Wall', '-g'],
+    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
+                 '-DBOOST_FILESYSTEM_VERSION=2'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot, libtorrentRoot]],
     'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
                  'boost_thread', 'boost_signals', 'boost_filesystem',

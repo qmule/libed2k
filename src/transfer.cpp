@@ -49,7 +49,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
-        m_info(new libtorrent::torrent_info(libtorrent::sha1_hash())),
+        m_info(new torrent_info(libtorrent::sha1_hash())),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),
@@ -459,12 +459,18 @@ namespace libed2k
         return 0;
     }
 
+    storage_interface* transfer::get_storage()
+    {
+        if (!m_owning_storage) return 0;
+        return m_owning_storage->get_storage_impl();
+    }
+
     void transfer::move_storage(const fs::path& save_path)
     {
         if (m_owning_storage.get())
         {
             m_owning_storage->async_move_storage(
-                save_path, boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
+                save_path.string(), boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
         }
         else
         {
@@ -797,12 +803,15 @@ namespace libed2k
         files.set_piece_length(PIECE_SIZE);
         files.add_file(m_filepath.filename(), m_filesize);
 
+        // we have only one file with normal priority
+        std::vector<boost::uint8_t> file_prio;
+        file_prio.push_back(1);
+
         // the shared_from_this() will create an intentional
         // cycle of ownership, see the hpp file for description.
         m_owning_storage = new piece_manager(
-            shared_from_this(), m_info, m_filepath.parent_path(), m_ses.m_filepool,
-            m_ses.m_disk_thread, libtorrent::default_storage_constructor,
-            static_cast<libtorrent::storage_mode_t>(m_storage_mode));
+            shared_from_this(), m_info, m_filepath.parent_path().string(), m_ses.m_filepool,
+            m_ses.m_disk_thread, default_storage_constructor, m_storage_mode, file_prio);
         m_storage = m_owning_storage.get();
 
         if (has_picker())
@@ -1235,7 +1244,7 @@ namespace libed2k
                 m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
             }
 
-#if defined TORRENT_VERBOSE_LOGGING || defined TORRENT_LOGGING || defined TORRENT_ERROR_LOGGING
+#if defined LIBED2K_VERBOSE_LOGGING || defined LIBED2K_LOGGING || defined LIBED2K_ERROR_LOGGING
             (*m_ses.m_logger) << time_now_string() << ": fatal disk error ["
                 " error: " << j.error.message() <<
                 " torrent: " << torrent_file().name() <<
@@ -1249,7 +1258,7 @@ namespace libed2k
         // TODO - should i use size_type?
         m_progress_ppm = fsize_t(j.piece) * PIECE_SIZE / num_pieces();
 
-        TORRENT_ASSERT(m_picker);
+        LIBED2K_ASSERT(m_picker);
         if (j.offset >= 0 && !m_picker->have_piece(j.offset))
             we_have(j.offset);
 
@@ -1354,7 +1363,7 @@ namespace libed2k
                         v |= (i->info[j*8+k].state == piece_picker::block_info::state_finished)
                         ? (1 << k) : 0;
                     bitmask.insert(bitmask.end(), v);
-                    TORRENT_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
+                    LIBED2K_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
                 }
                 piece_struct["bitmask"] = bitmask;
                 // push the struct onto the unfinished-piece list
@@ -1444,7 +1453,7 @@ namespace libed2k
         ERR("disk error: '" << j.error.message()
             << " in file " << j.error_file);
 
-        TORRENT_ASSERT(j.piece >= 0);
+        LIBED2K_ASSERT(j.piece >= 0);
 
         piece_block block_finished(j.piece, div_ceil(j.offset, BLOCK_SIZE));
 

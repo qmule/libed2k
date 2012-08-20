@@ -368,8 +368,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
-    m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool, DISK_BLOCK_SIZE),
+    m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), m_filepool, BLOCK_SIZE),
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
@@ -463,7 +462,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     }
 #endif
 
-#if defined TORRENT_BSD || defined TORRENT_LINUX
+#if defined LIBED2K_BSD || defined LIBED2K_LINUX
     // ---- auto-cap open files ----
 
     struct rlimit rl;
@@ -483,7 +482,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
         DBG("max connections: " << m_max_connections);
         DBG("max files: " << m_filepool.size_limit());
     }
-#endif // TORRENT_BSD || TORRENT_LINUX
+#endif // LIBED2K_BSD || LIBED2K_LINUX
 
     m_io_service.post(boost::bind(&session_impl::on_tick, this, ec));
 
@@ -492,12 +491,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
 
 session_impl::~session_impl()
 {
-    boost::mutex::scoped_lock l(m_mutex);
-
     DBG("*** shutting down session ***");
-    abort();
+    m_io_service.post(boost::bind(&session_impl::abort, this));
 
-    l.unlock();
     // we need to wait for the disk-io thread to
     // die first, to make sure it won't post any
     // more messages to the io_service containing references
@@ -623,7 +619,7 @@ char session_impl::server_connection_state() const
 void session_impl::update_disk_thread_settings()
 {
     disk_io_job j;
-    j.buffer = (char*)&m_disk_thread_settings;
+    j.buffer = (char*) new session_settings(m_settings);
     j.action = disk_io_job::update_settings;
     m_disk_thread.add_job(j);
 }
@@ -666,7 +662,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
             libtorrent::print_endpoint(ep) + "' " + e.message();
         DBG(msg);
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
         // Windows sometimes generates this error. It seems to be
         // non-fatal and we have to do another async_accept.
         if (e.value() == ERROR_SEM_TIMEOUT)
@@ -675,7 +671,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
             return;
         }
 #endif
-#ifdef TORRENT_BSD
+#ifdef LIBED2K_BSD
         // Leopard sometimes generates an "invalid argument" error. It seems to be
         // non-fatal and we have to do another async_accept.
         if (e.value() == EINVAL)
@@ -1126,6 +1122,8 @@ void session_impl::abort()
     }
 
     DBG("connection queue: " << m_half_open.size());
+
+    m_disk_thread.abort();
 }
 
 void session_impl::pause()
