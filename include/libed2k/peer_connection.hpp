@@ -7,7 +7,6 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/aligned_storage.hpp>
 
-#include <libtorrent/time.hpp>
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
 #include <libtorrent/piece_block_progress.hpp>

@@ -40,7 +40,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/alloca.hpp>
 #include <libtorrent/invariant_check.hpp>
 #include <libtorrent/error_code.hpp>
-//#include <libtorrent/error.hpp>
 #include <libed2k/file_pool.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/bind.hpp>
