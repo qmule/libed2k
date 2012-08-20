@@ -908,6 +908,7 @@ namespace libed2k
         m_path = convert_to_wstring(p);
 #else
 #define CreateFile_ CreateFileA
+#define GetCompressedFileSize_ GetCompressedFileSizeA
         m_path = convert_to_native(p);
 #endif
 
@@ -1773,7 +1774,7 @@ namespace libed2k
             // only allocate the space if the file
             // is not fully allocated
             DWORD high_dword = 0;
-            offs.LowPart = GetCompressedFileSize(m_path.c_str(), &high_dword);
+            offs.LowPart = GetCompressedFileSize_(m_path.c_str(), &high_dword);
             offs.HighPart = high_dword;
             ec.assign(GetLastError(), get_system_category());
             if (ec) return false;

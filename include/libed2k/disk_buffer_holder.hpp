@@ -40,7 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 namespace libed2k
 {
 
-    namespace aux { struct session_impl; }
+    namespace aux { class session_impl; }
     struct disk_buffer_pool;
 
     struct LIBED2K_EXTRA_EXPORT disk_buffer_holder

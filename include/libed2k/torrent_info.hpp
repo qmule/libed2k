@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-    struct session_settings;
+    class session_settings;
 
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
