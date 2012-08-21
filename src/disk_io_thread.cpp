@@ -39,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/disk_buffer_holder.hpp>
 #include <libed2k/alloca.hpp>
 #include <libtorrent/invariant_check.hpp>
+#include <libtorrent/entry.hpp>
 #include <libed2k/file_pool.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/bind.hpp>
@@ -135,7 +136,7 @@ namespace libed2k
         m_last_stats_flip = now;
     }
 
-    void disk_io_thread::get_cache_info(sha1_hash const& ih, std::vector<cached_piece_info>& ret) const
+    void disk_io_thread::get_cache_info(md4_hash const& ih, std::vector<cached_piece_info>& ret) const
     {
         mutex::scoped_lock l(m_piece_mutex);
         ret.clear();
@@ -1048,7 +1049,7 @@ namespace libed2k
     }
 
     // cache the entire piece and hash it
-    int disk_io_thread::read_piece_from_cache_and_hash(disk_io_job const& j, sha1_hash& h)
+    int disk_io_thread::read_piece_from_cache_and_hash(disk_io_job const& j, md4_hash& h)
     {
         LIBED2K_ASSERT(j.buffer);
 
@@ -1934,7 +1935,7 @@ namespace libed2k
                     // since we need to check the hash, this function
                     // will ignore the cache size limit (at least for
                     // reading and hashing, not for keeping it around)
-                    sha1_hash h;
+                    md4_hash h;
                     ret = read_piece_from_cache_and_hash(j, h);
 
                     // -2 means there's no space in the read cache
@@ -2217,7 +2218,7 @@ namespace libed2k
                     libtorrent::ptime hash_start = libtorrent::time_now_hires();
 
                     int readback = 0;
-                    sha1_hash h = j.storage->hash_for_piece_impl(j.piece, &readback);
+                    md4_hash h = j.storage->hash_for_piece_impl(j.piece, &readback);
                     if (test_error(j))
                     {
                         ret = -1;

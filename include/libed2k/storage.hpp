@@ -56,7 +56,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libed2k/peer_request.hpp>
-#include <libtorrent/hasher.hpp>
+#include <libed2k/hasher.hpp>
 #include <libed2k/config.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
@@ -77,11 +77,9 @@ namespace libed2k
     struct disk_io_job;
     struct disk_buffer_pool;
 
-    typedef libtorrent::hasher hasher;
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
     typedef libtorrent::error_code error_code;
-    typedef libtorrent::sha1_hash sha1_hash;
 
     LIBED2K_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
         file_storage const& t
@@ -431,7 +429,7 @@ namespace libed2k
         // and optionally a 'small hash' as well, the hash for
         // the partial slot. Returns the number of bytes read
         int hash_for_slot(int slot, partial_hash& h, int piece_size
-            , int small_piece_size = 0, sha1_hash* small_hash = 0);
+            , int small_piece_size = 0, md4_hash* small_hash = 0);
 
         void hint_read_impl(int piece_index, int offset, int size);
 
@@ -457,12 +455,12 @@ namespace libed2k
         // -1=error 0=ok >0=skip this many pieces
         int check_one_piece(int& have_piece);
         int identify_data(
-            sha1_hash const& large_hash
-            , sha1_hash const& small_hash
+            md4_hash const& large_hash
+            , md4_hash const& small_hash
             , int current_slot);
 
         void switch_to_full_mode();
-        sha1_hash hash_for_piece_impl(int piece, int* readback = 0);
+        md4_hash hash_for_piece_impl(int piece, int* readback = 0);
 
         int release_files_impl() { return m_storage->release_files(); }
         int delete_files_impl() { return m_storage->delete_files(); }
@@ -546,7 +544,7 @@ namespace libed2k
         // this maps a piece hash to piece index. It will be
         // build the first time it is used (to save time if it
         // isn't needed)
-        std::multimap<sha1_hash, int> m_hash_to_piece;
+        std::multimap<md4_hash, int> m_hash_to_piece;
 
         // this map contains partial hashes for downloading
         // pieces. This is only accessed from within the

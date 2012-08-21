@@ -43,6 +43,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/noncopyable.hpp>
 #include <boost/shared_array.hpp>
 #include <deque>
+#include <list>
+
 #include <libed2k/config.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/disk_buffer_pool.hpp>
@@ -251,7 +253,7 @@ namespace libed2k
         size_type queue_buffer_size() const;
         bool can_write() const;
 
-        void get_cache_info(sha1_hash const& ih
+        void get_cache_info(md4_hash const& ih
             , std::vector<cached_piece_info>& ret) const;
 
         cache_status status() const;
@@ -364,7 +366,7 @@ namespace libed2k
             cache_only = 1
         };
         int try_read_from_cache(disk_io_job const& j, bool& hit, int flags = 0);
-        int read_piece_from_cache_and_hash(disk_io_job const& j, sha1_hash& h);
+        int read_piece_from_cache_and_hash(disk_io_job const& j, md4_hash& h);
         int cache_piece(disk_io_job const& j, cache_piece_index_t::iterator& p
             , bool& hit, int options, mutex::scoped_lock& l);
 

@@ -312,7 +312,7 @@ namespace libed2k
 #endif
 
     int piece_manager::hash_for_slot(int slot, partial_hash& ph, int piece_size
-        , int small_piece_size, sha1_hash* small_hash)
+        , int small_piece_size, md4_hash* small_hash)
     {
         LIBED2K_ASSERT_VAL(!error(), error());
         int num_read = 0;
@@ -1678,7 +1678,7 @@ ret:
         return m_save_path;
     }
 
-    sha1_hash piece_manager::hash_for_piece_impl(int piece, int* readback)
+    md4_hash piece_manager::hash_for_piece_impl(int piece, int* readback)
     {
         LIBED2K_ASSERT(!m_storage->error());
 
@@ -1695,7 +1695,7 @@ ret:
         LIBED2K_ASSERT(slot != has_no_slot);
         int read = hash_for_slot(slot, ph, m_files.piece_size(piece));
         if (readback) *readback = read;
-        if (m_storage->error()) return sha1_hash(0);
+        if (m_storage->error()) return md4_hash();
         return ph.h.final();
     }
 
@@ -1897,12 +1897,12 @@ ret:
     }
 
     int piece_manager::identify_data(
-        sha1_hash const& large_hash
-        , sha1_hash const& small_hash
+        md4_hash const& large_hash
+        , md4_hash const& small_hash
         , int current_slot)
     {
 //      INVARIANT_CHECK;
-        typedef std::multimap<sha1_hash, int>::const_iterator map_iter;
+        typedef std::multimap<md4_hash, int>::const_iterator map_iter;
         map_iter begin1;
         map_iter end1;
         map_iter begin2;
@@ -2427,7 +2427,7 @@ ret:
             LIBED2K_ASSERT(m_current_slot == m_files.num_pieces());
 
             // clear the memory we've been using
-            std::multimap<sha1_hash, int>().swap(m_hash_to_piece);
+            std::multimap<md4_hash, int>().swap(m_hash_to_piece);
 
             if (m_storage_mode != internal_storage_mode_compact_deprecated)
             {
@@ -2497,7 +2497,7 @@ ret:
         if (m_hash_to_piece.empty())
         {
             for (int i = 0; i < m_files.num_pieces(); ++i)
-                m_hash_to_piece.insert(std::pair<const sha1_hash, int>(m_info->hash_for_piece(i), i));
+                m_hash_to_piece.insert(std::pair<const md4_hash, int>(m_info->hash_for_piece(i), i));
         }
 
         partial_hash ph;
@@ -2505,7 +2505,7 @@ ret:
         int piece_size = m_files.piece_size(m_current_slot);
         int small_piece_size = m_files.piece_size(m_files.num_pieces() - 1);
         bool read_short = true;
-        sha1_hash small_hash;
+        md4_hash small_hash;
         if (piece_size == small_piece_size)
         {
             num_read = hash_for_slot(m_current_slot, ph, piece_size, 0, 0);
@@ -2535,7 +2535,7 @@ ret:
             return skip_file();
         }
 
-        sha1_hash large_hash = ph.h.final();
+        md4_hash large_hash = ph.h.final();
         int piece_index = identify_data(large_hash, small_hash, m_current_slot);
 
         if (piece_index >= 0) have_piece = piece_index;

@@ -49,7 +49,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
-        m_info(new transfer_info(libtorrent::sha1_hash())),
+        m_info(new transfer_info(p.file_hash)),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),
