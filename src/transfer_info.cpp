@@ -55,7 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include <libed2k/config.hpp>
-#include <libed2k/torrent_info.hpp>
+#include <libed2k/transfer_info.hpp>
 #include <libed2k/escape_string.hpp> // is_space
 #include <libtorrent/bencode.hpp>
 #include <libtorrent/hasher.hpp>
@@ -515,7 +515,7 @@ namespace libed2k
         //peer_info.web_seed = true;
     }
 
-    torrent_info::torrent_info(torrent_info const& t, int flags)
+    transfer_info::transfer_info(transfer_info const& t, int flags)
         : m_merkle_first_leaf(t.m_merkle_first_leaf)
         , m_files(t.m_files)
         , m_orig_files(t.m_orig_files)
@@ -557,7 +557,7 @@ namespace libed2k
         INVARIANT_CHECK;
     }
 
-    void torrent_info::remap_files(file_storage const& f)
+    void transfer_info::remap_files(file_storage const& f)
     {
         INVARIANT_CHECK;
 
@@ -574,7 +574,7 @@ namespace libed2k
 
 #ifndef LIBED2K_NO_DEPRECATE
     // standard constructor that parses a torrent file
-    torrent_info::torrent_info(entry const& torrent_file)
+    transfer_info::transfer_info(entry const& torrent_file)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -607,7 +607,7 @@ namespace libed2k
 #endif
 
 #ifndef BOOST_NO_EXCEPTIONS
-    torrent_info::torrent_info(lazy_entry const& torrent_file, int flags)
+    transfer_info::transfer_info(lazy_entry const& torrent_file, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -623,7 +623,7 @@ namespace libed2k
         INVARIANT_CHECK;
     }
 
-    torrent_info::torrent_info(char const* buffer, int size, int flags)
+    transfer_info::transfer_info(char const* buffer, int size, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -643,7 +643,7 @@ namespace libed2k
         INVARIANT_CHECK;
     }
 
-    torrent_info::torrent_info(std::string const& filename, int flags)
+    transfer_info::transfer_info(std::string const& filename, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -668,7 +668,7 @@ namespace libed2k
     }
 
 #if LIBED2K_USE_WSTRING
-    torrent_info::torrent_info(std::wstring const& filename, int flags)
+    transfer_info::transfer_info(std::wstring const& filename, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -696,7 +696,7 @@ namespace libed2k
 #endif
 #endif
 
-    torrent_info::torrent_info(lazy_entry const& torrent_file, error_code& ec, int flags)
+    transfer_info::transfer_info(lazy_entry const& torrent_file, error_code& ec, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -710,7 +710,7 @@ namespace libed2k
         INVARIANT_CHECK;
     }
 
-    torrent_info::torrent_info(char const* buffer, int size, error_code& ec, int flags)
+    transfer_info::transfer_info(char const* buffer, int size, error_code& ec, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -727,7 +727,7 @@ namespace libed2k
         INVARIANT_CHECK;
     }
 
-    torrent_info::torrent_info(std::string const& filename, error_code& ec, int flags)
+    transfer_info::transfer_info(std::string const& filename, error_code& ec, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -749,7 +749,7 @@ namespace libed2k
     }
 
 #if LIBED2K_USE_WSTRING
-    torrent_info::torrent_info(std::wstring const& filename, error_code& ec, int flags)
+    transfer_info::transfer_info(std::wstring const& filename, error_code& ec, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(0)
@@ -777,7 +777,7 @@ namespace libed2k
     // will not contain any hashes, comments, creation date
     // just the necessary to use it with piece manager
     // used for torrents with no metadata
-    torrent_info::torrent_info(sha1_hash const& info_hash, int flags)
+    transfer_info::transfer_info(sha1_hash const& info_hash, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
         , m_creation_date(time(0))
@@ -788,10 +788,10 @@ namespace libed2k
         , m_i2p(false)
     {}
 
-    torrent_info::~torrent_info()
+    transfer_info::~transfer_info()
     {}
 
-    void torrent_info::copy_on_write()
+    void transfer_info::copy_on_write()
     {
         INVARIANT_CHECK;
 
@@ -804,7 +804,7 @@ namespace libed2k
         a = b; \
         b = tmp;
 
-    void torrent_info::swap(torrent_info& ti)
+    void transfer_info::swap(transfer_info& ti)
     {
         INVARIANT_CHECK;
 
@@ -835,7 +835,7 @@ namespace libed2k
 
 #undef SWAP
 
-    bool torrent_info::parse_info_section(lazy_entry const& info, error_code& ec, int flags)
+    bool transfer_info::parse_info_section(lazy_entry const& info, error_code& ec, int flags)
     {
         if (info.type() != lazy_entry::dict_t)
         {
@@ -1006,7 +1006,7 @@ namespace libed2k
         return true;
     }
 
-    bool torrent_info::add_merkle_nodes(std::map<int, sha1_hash> const& subtree
+    bool transfer_info::add_merkle_nodes(std::map<int, sha1_hash> const& subtree
         , int piece)
     {
         INVARIANT_CHECK;
@@ -1059,7 +1059,7 @@ namespace libed2k
 
     // builds a list of nodes that are required to verify
     // the given piece
-    std::map<int, sha1_hash> torrent_info::build_merkle_list(int piece) const
+    std::map<int, sha1_hash> transfer_info::build_merkle_list(int piece) const
     {
         INVARIANT_CHECK;
 
@@ -1093,7 +1093,7 @@ namespace libed2k
     }
 #endif
 
-    bool torrent_info::parse_torrent_file(lazy_entry const& torrent_file, error_code& ec, int flags)
+    bool transfer_info::parse_torrent_file(lazy_entry const& torrent_file, error_code& ec, int flags)
     {
         if (torrent_file.type() != lazy_entry::dict_t)
         {
@@ -1235,7 +1235,7 @@ namespace libed2k
     }
 
     boost::optional<time_t>
-    torrent_info::creation_date() const
+    transfer_info::creation_date() const
     {
         if (m_creation_date != 0)
         {
@@ -1244,7 +1244,7 @@ namespace libed2k
         return boost::optional<time_t>();
     }
 
-    void torrent_info::add_tracker(std::string const& url, int tier)
+    void transfer_info::add_tracker(std::string const& url, int tier)
     {
         announce_entry e(url);
         e.tier = tier;
@@ -1268,13 +1268,13 @@ namespace libed2k
         };
     }
 
-    std::vector<std::string> torrent_info::url_seeds() const
+    std::vector<std::string> transfer_info::url_seeds() const
     {
         return std::for_each(m_web_seeds.begin(), m_web_seeds.end()
             , filter_web_seed_type(web_seed_entry::url_seed)).urls;
     }
 
-    std::vector<std::string> torrent_info::http_seeds() const
+    std::vector<std::string> transfer_info::http_seeds() const
     {
         return std::for_each(m_web_seeds.begin(), m_web_seeds.end()
             , filter_web_seed_type(web_seed_entry::http_seed)).urls;
@@ -1282,7 +1282,7 @@ namespace libed2k
 
 #endif // LIBED2K_NO_DEPRECATE
 
-    void torrent_info::add_url_seed(std::string const& url
+    void transfer_info::add_url_seed(std::string const& url
             , std::string const& ext_auth
             , web_seed_entry::headers_t const& ext_headers)
     {
@@ -1290,7 +1290,7 @@ namespace libed2k
             , ext_auth, ext_headers));
     }
 
-    void torrent_info::add_http_seed(std::string const& url
+    void transfer_info::add_http_seed(std::string const& url
             , std::string const& auth
             , web_seed_entry::headers_t const& extra_headers)
     {
@@ -1302,7 +1302,7 @@ namespace libed2k
 #if !defined LIBED2K_NO_DEPRECATE && LIBED2K_USE_IOSTREAM
 // ------- start deprecation -------
 
-    void torrent_info::print(std::ostream& os) const
+    void transfer_info::print(std::ostream& os) const
     {
         INVARIANT_CHECK;
 
@@ -1326,7 +1326,7 @@ namespace libed2k
 #endif
 
 #ifdef LIBED2K_DEBUG
-    void torrent_info::check_invariant() const
+    void transfer_info::check_invariant() const
     {
         for (file_storage::iterator i = m_files.begin()
             , end(m_files.end()); i != end; ++i)

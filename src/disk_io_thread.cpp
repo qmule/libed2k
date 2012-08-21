@@ -143,7 +143,7 @@ namespace libed2k
         for (cache_t::const_iterator i = m_pieces.begin()
             , end(m_pieces.end()); i != end; ++i)
         {
-            torrent_info const& ti = *i->storage->info();
+            transfer_info const& ti = *i->storage->info();
             if (ti.info_hash() != ih) continue;
             cached_piece_info info;
             info.next_to_hash = i->next_block_to_hash;
@@ -159,7 +159,7 @@ namespace libed2k
         for (cache_t::const_iterator i = m_read_pieces.begin()
             , end(m_read_pieces.end()); i != end; ++i)
         {
-            torrent_info const& ti = *i->storage->info();
+            transfer_info const& ti = *i->storage->info();
             if (ti.info_hash() != ih) continue;
             cached_piece_info info;
             info.next_to_hash = i->next_block_to_hash;
@@ -2325,7 +2325,7 @@ namespace libed2k
                     // build a vector of all the buffers we need to free
                     // and free them all in one go
                     std::vector<char*> buffers;
-                    torrent_info const& ti = *j.storage->info();
+                    transfer_info const& ti = *j.storage->info();
                     for (cache_piece_index_t::iterator i = start; i != end; ++i)
                     {
                         int blocks_in_piece = (ti.piece_size(i->piece) + m_block_size - 1) / m_block_size;

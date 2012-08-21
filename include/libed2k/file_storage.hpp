@@ -76,8 +76,8 @@ namespace libed2k
     {
         friend class file_storage;
 #ifdef LIBED2K_DEBUG
-        // for torrent_info::invariant_check
-        friend class torrent_info;
+        // for transfer_info::invariant_check
+        friend class transfer_info;
 #endif
         internal_file_entry()
             : name(0)
@@ -162,7 +162,7 @@ namespace libed2k
 
     class LIBED2K_EXPORT file_storage
     {
-    //friend class torrent_info;
+    //friend class transfer_info;
     public:
         file_storage();
         ~file_storage() {}

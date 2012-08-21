@@ -19,7 +19,7 @@
 
 namespace libed2k {
 
-    class torrent_info;
+    class transfer_info;
     class add_transfer_params;
     namespace aux{
         class session_impl;
@@ -344,7 +344,7 @@ namespace libed2k {
         // used for compatibility with piece_manager,
         // may store invalid data
         // should store valid file path
-        boost::intrusive_ptr<torrent_info> m_info;
+        boost::intrusive_ptr<transfer_info> m_info;
 
         boost::uint32_t m_accepted;
         boost::uint32_t m_requested;
@@ -368,7 +368,7 @@ namespace libed2k {
         // outstanding disk io jobs (that keeps
         // the piece_manager alive) it will destruct
         // and release the transfer file. The reason for
-        // this is that the torrent_info is used by
+        // this is that the transfer_info is used by
         // the piece_manager, and stored in the
         // torrent, so the torrent cannot destruct
         // before the piece_manager.

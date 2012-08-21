@@ -638,7 +638,7 @@ namespace libed2k
     {
         // TODO: make this more generic to not just work if files have been
         // renamed, but also if they have been merged into a single file for instance
-        // maybe use the same format as .torrent files and reuse some code from torrent_info
+        // maybe use the same format as .torrent files and reuse some code from transfer_info
         lazy_entry const* mapped_files = rd.dict_find_list("mapped_files");
         if (mapped_files && mapped_files->list_size() == m_files.num_files())
         {
@@ -1449,7 +1449,7 @@ ret:
 
     piece_manager::piece_manager(
         boost::shared_ptr<void> const& torrent
-        , boost::intrusive_ptr<torrent_info const> info
+        , boost::intrusive_ptr<transfer_info const> info
         , std::string const& save_path
         , file_pool& fp
         , disk_io_thread& io

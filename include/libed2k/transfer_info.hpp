@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_TORRENT_INFO_HPP_INCLUDED
-#define LIBED2K_TORRENT_INFO_HPP_INCLUDED
+#ifndef LIBED2K_TRANSFER_INFO_HPP_INCLUDED
+#define LIBED2K_TRANSFER_INFO_HPP_INCLUDED
 
 #include <string>
 #include <vector>
@@ -223,7 +223,7 @@ namespace libed2k
     int LIBED2K_EXPORT load_file(std::string const& filename
         , std::vector<char>& v, libtorrent::error_code& ec, int limit = 8000000);
 
-    class LIBED2K_EXPORT torrent_info : public libtorrent::intrusive_ptr_base<torrent_info>
+    class LIBED2K_EXPORT transfer_info : public libtorrent::intrusive_ptr_base<transfer_info>
     {
     public:
 
@@ -232,24 +232,24 @@ namespace libed2k
 #endif
 
 #ifndef BOOST_NO_EXCEPTIONS
-        torrent_info(lazy_entry const& torrent_file, int flags = 0);
-        torrent_info(char const* buffer, int size, int flags = 0);
-        torrent_info(std::string const& filename, int flags = 0);
+        transfer_info(lazy_entry const& torrent_file, int flags = 0);
+        transfer_info(char const* buffer, int size, int flags = 0);
+        transfer_info(std::string const& filename, int flags = 0);
 #if LIBED2K_USE_WSTRING
-        torrent_info(std::wstring const& filename, int flags = 0);
+        transfer_info(std::wstring const& filename, int flags = 0);
 #endif // LIBED2K_USE_WSTRING
 #endif
 
-        torrent_info(torrent_info const& t, int flags = 0);
-        torrent_info(sha1_hash const& info_hash, int flags = 0);
-        torrent_info(lazy_entry const& torrent_file, libtorrent::error_code& ec, int flags = 0);
-        torrent_info(char const* buffer, int size, libtorrent::error_code& ec, int flags = 0);
-        torrent_info(std::string const& filename, libtorrent::error_code& ec, int flags = 0);
+        transfer_info(transfer_info const& t, int flags = 0);
+        transfer_info(sha1_hash const& info_hash, int flags = 0);
+        transfer_info(lazy_entry const& torrent_file, libtorrent::error_code& ec, int flags = 0);
+        transfer_info(char const* buffer, int size, libtorrent::error_code& ec, int flags = 0);
+        transfer_info(std::string const& filename, libtorrent::error_code& ec, int flags = 0);
 #if LIBED2K_USE_WSTRING
-        torrent_info(std::wstring const& filename, libtorrent::error_code& ec, int flags = 0);
+        transfer_info(std::wstring const& filename, libtorrent::error_code& ec, int flags = 0);
 #endif // LIBED2K_USE_WSTRING
 
-        ~torrent_info();
+        ~transfer_info();
 
         file_storage const& files() const { return m_files; }
         file_storage const& orig_files() const { return m_orig_files ? *m_orig_files : m_files; }
@@ -319,7 +319,7 @@ namespace libed2k
 // ------- start deprecation -------
 // these functions will be removed in a future version
         LIBED2K_DEPRECATED_PREFIX
-        torrent_info(entry const& torrent_file) LIBED2K_DEPRECATED;
+        transfer_info(entry const& torrent_file) LIBED2K_DEPRECATED;
         LIBED2K_DEPRECATED_PREFIX
         void print(std::ostream& os) const LIBED2K_DEPRECATED;
 // ------- end deprecation -------
@@ -392,7 +392,7 @@ namespace libed2k
             return m_info_dict.dict_find(key);
         }
 
-        void swap(torrent_info& ti);
+        void swap(transfer_info& ti);
 
         boost::shared_array<char> metadata() const
         { return m_info_section; }
@@ -413,7 +413,7 @@ namespace libed2k
 #endif
 
         // not assignable
-        torrent_info const& operator=(torrent_info const&);
+        transfer_info const& operator=(transfer_info const&);
 
         void copy_on_write();
         bool parse_torrent_file(lazy_entry const& libtorrent, libtorrent::error_code& ec, int flags);
@@ -500,4 +500,4 @@ namespace libed2k
 
 }
 
-#endif // LIBED2K_TORRENT_INFO_HPP_INCLUDED
+#endif // LIBED2K_TRANSFER_INFO_HPP_INCLUDED

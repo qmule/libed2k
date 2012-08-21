@@ -52,7 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-#include <libed2k/torrent_info.hpp>
+#include <libed2k/transfer_info.hpp>
 #include <libtorrent/piece_picker.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libed2k/peer_request.hpp>
@@ -306,7 +306,7 @@ namespace libed2k
 
         piece_manager(
             boost::shared_ptr<void> const& torrent
-            , boost::intrusive_ptr<torrent_info const> info
+            , boost::intrusive_ptr<transfer_info const> info
             , std::string const& path
             , file_pool& fp
             , disk_io_thread& io
@@ -316,7 +316,7 @@ namespace libed2k
 
         ~piece_manager();
 
-        boost::intrusive_ptr<torrent_info const> info() const { return m_info; }
+        boost::intrusive_ptr<transfer_info const> info() const { return m_info; }
         void write_resume_data(entry& rd) const;
 
         void async_finalize_file(int file);
@@ -478,7 +478,7 @@ namespace libed2k
         void debug_log() const;
 #endif
 #endif
-        boost::intrusive_ptr<torrent_info const> m_info;
+        boost::intrusive_ptr<transfer_info const> m_info;
         file_storage const& m_files;
 
         boost::scoped_ptr<storage_interface> m_storage;
@@ -560,7 +560,7 @@ namespace libed2k
         // torrent. This shared_ptr is here only
         // to keep the torrent object alive until
         // the piece_manager destructs. This is because
-        // the torrent_info object is owned by the torrent.
+        // the transfer_info object is owned by the torrent.
         boost::shared_ptr<void> m_torrent;
     };
 
