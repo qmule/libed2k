@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/filesystem.hpp>
 #include <libtorrent/utf8.hpp>
 #include <libtorrent/time.hpp>
-#include <libtorrent/invariant_check.hpp>
+#include <libed2k/invariant_check.hpp>
 #include <libtorrent/session_settings.hpp>
 
 #if LIBED2K_USE_I2P

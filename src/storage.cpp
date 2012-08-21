@@ -60,7 +60,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libtorrent/session.hpp>
 #include <libtorrent/peer_id.hpp>
 #include <libed2k/filesystem.hpp>
-#include <libtorrent/invariant_check.hpp>
+#include <libed2k/invariant_check.hpp>
 #include <libed2k/file_pool.hpp>
 #include <libed2k/session_impl.hpp>
 #include <libed2k/disk_buffer_holder.hpp>

@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/disk_io_thread.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
 #include <libed2k/alloca.hpp>
-#include <libtorrent/invariant_check.hpp>
+#include <libed2k/invariant_check.hpp>
 #include <libed2k/file_pool.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/bind.hpp>
