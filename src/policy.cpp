@@ -41,19 +41,43 @@ policy::policy(transfer* t, const std::vector<peer_entry>& peer_list):
 
 peer* policy::add_peer(const tcp::endpoint& ep)
 {
-    peers_t::iterator pe = std::find_if(m_peers.begin(), m_peers.end(), match_peer_endpoint(ep));
-    peer* p;
+    aux::session_impl& ses = m_transfer->session();
 
-    if (pe == m_peers.end())
+    peers_t::iterator iter;
+    bool found = false;
+
+    if (ses.settings().allow_multiple_connections_per_ip)
     {
-        p = (peer*)m_transfer->session().m_peer_pool.malloc();
-        new (p) peer(ep, true);
-        m_peers.push_back(p);
+        std::pair<peers_t::iterator, peers_t::iterator> range =
+            find_peers(ep.address());
+        iter = std::find_if(range.first, range.second, match_peer_endpoint(ep));
+
+        if (iter != range.second) found = true;
     }
     else
-        p = *pe;
+    {
+        iter = std::lower_bound(m_peers.begin(), m_peers.end(),
+                                ep.address(), peer_address_compare());
 
-    return p;
+        if (iter != m_peers.end() && (*iter)->address() == ep.address())
+            found = true;
+    }
+
+    if (!found)
+    {
+        // we don't have any info about this peer.
+        // add a new entry
+
+        peer* p = (peer*)ses.m_peer_pool.malloc();
+        if (p == 0) return NULL;
+        ses.m_peer_pool.set_next_size(500);
+        new (p) peer(ep, false);
+
+        iter = m_peers.insert(iter, p);
+        //if (m_round_robin >= iter - m_peers.begin()) ++m_round_robin;
+    }
+
+    return *iter;
 }
 
 bool policy::new_connection(peer_connection& c)
