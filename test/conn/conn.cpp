@@ -245,6 +245,7 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
             {
                 boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
                 boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
+                boost::shared_ptr<base_tag> src = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_SOURCES);
 
                 if (low.get())
                 {
@@ -258,7 +259,8 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
 
                 DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
                         << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                        << " size: " << nSize);
+                        << " size: " << nSize
+                        << " src: " << src->asInt());
             }
         }
         else if(dynamic_cast<peer_message_alert*>(a.get()))
