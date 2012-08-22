@@ -36,7 +36,7 @@ namespace libed2k {
             collection_path = cpath;
             file_size = nSize;
             pieces = ps;
-            hashset = hset;
+            piece_hashses = hset;
             seed_mode = true;
         }
 
@@ -45,7 +45,7 @@ namespace libed2k {
         fs::path collection_path;
         fsize_t  file_size;
         bitfield pieces;
-        std::vector<md4_hash> hashset;
+        std::vector<md4_hash> piece_hashses;
         std::vector<peer_entry> peer_list;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
@@ -65,7 +65,7 @@ namespace libed2k {
                     file_path == t.file_path &&
                     file_size == t.file_size &&
                     //pieces == t.pieces &&
-                    hashset == t.hashset &&
+                    piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&
                     requested == t.requested &&
                     transferred == t.transferred &&

@@ -722,11 +722,11 @@ namespace libed2k
                         if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
                         {
                             // when file contain only one hash - we save main hash directly into container
-                            atp.hashset.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
+                            atp.piece_hashses.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
                         }
                         else
                         {
-                            atp.hashset = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
+                            atp.piece_hashses = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
                         }
 
                         for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
@@ -835,7 +835,7 @@ namespace libed2k
                                 md4_hasher.CalculateDigest(
                                     hash.getContainer(),
                                     reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                                atp.hashset.push_back(hash);
+                                atp.piece_hashses.push_back(hash);
                                 // generate hash
                                 nLocalOffset    += nLength;
                                 nCurrentOffset  += nLength;
@@ -853,19 +853,19 @@ namespace libed2k
                         // when we don't have last partial piece - add special hash
                         if (!bPartial)
                         {
-                            atp.hashset.push_back(md4_hash::terminal);
+                            atp.piece_hashses.push_back(md4_hash::terminal);
                         }
 
-                        if (atp.hashset.size() > 1)
+                        if (atp.piece_hashses.size() > 1)
                         {
                             md4_hasher.CalculateDigest(
                                 atp.file_hash.getContainer(),
-                                reinterpret_cast<const unsigned char*>(&atp.hashset[0]),
-                                atp.hashset.size()*libed2k::MD4_HASH_SIZE);
+                                reinterpret_cast<const unsigned char*>(&atp.piece_hashses[0]),
+                                atp.piece_hashses.size()*libed2k::MD4_HASH_SIZE);
                         }
                         else
                         {
-                            atp.file_hash = atp.hashset[0];
+                            atp.file_hash = atp.piece_hashses[0];
                         }
                     }
 

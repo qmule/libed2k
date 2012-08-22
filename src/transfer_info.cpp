@@ -35,10 +35,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/transfer_info.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libtorrent/invariant_check.hpp>
+#include <libed2k/util.hpp>
 
 namespace libed2k
 {
-    transfer_info::transfer_info(transfer_info const& t, int flags)
+    transfer_info::transfer_info(transfer_info const& t)
         : m_files(t.m_files)
         , m_orig_files(t.m_orig_files)
         , m_piece_hashes(t.m_piece_hashes)
@@ -69,9 +70,15 @@ namespace libed2k
     // will not contain any hashes
     // just the necessary to use it with piece manager
     // used for transfers with no metadata
-    transfer_info::transfer_info(md4_hash const& info_hash, int flags)
-        : m_info_hash(info_hash)
-    {}
+    transfer_info::transfer_info(
+        md4_hash const& info_hash, const std::string& filename,
+        size_type filesize, const std::vector<md4_hash>& piece_hashses)
+        : m_info_hash(info_hash), m_piece_hashes(piece_hashses)
+    {
+        m_files.set_num_pieces(div_ceil(filesize, PIECE_SIZE));
+        m_files.set_piece_length(PIECE_SIZE);
+        m_files.add_file(filename, filesize);
+    }
 
     transfer_info::~transfer_info()
     {}

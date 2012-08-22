@@ -3,15 +3,15 @@
 
 #include <libtorrent/piece_picker.hpp>
 
-#include "libed2k/storage.hpp"
-#include "libed2k/peer_connection.hpp"
-#include "libed2k/session_impl.hpp"
-#include "libed2k/session.hpp"
-#include "libed2k/transfer.hpp"
-#include "libed2k/file.hpp"
-#include "libed2k/util.hpp"
-#include "libed2k/alert_types.hpp"
-#include "libed2k/server_connection.hpp"
+#include <libed2k/storage.hpp>
+#include <libed2k/peer_connection.hpp>
+#include <libed2k/session_impl.hpp>
+#include <libed2k/session.hpp>
+#include <libed2k/transfer.hpp>
+#include <libed2k/file.hpp>
+#include <libed2k/util.hpp>
+#include <libed2k/alert_types.hpp>
+#include <libed2k/server_connection.hpp>
 
 namespace libed2k
 {
@@ -1169,7 +1169,7 @@ void peer_connection::on_receive_data(
             if (picker.is_piece_finished(r.piece) && !was_finished)
             {
                 const md4_hash& hash =
-                    t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+                    t->filesize() < PIECE_SIZE ? t->hash() : t->hash_for_piece(r.piece);
 
                 t->async_verify_piece(
                     r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
@@ -1704,7 +1704,7 @@ void peer_connection::on_hashset_request(const error_code& error)
 
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset());
+            write_hashset_answer(t->hash(), t->piece_hashses());
         }
         else
         {
@@ -1732,7 +1732,7 @@ void peer_connection::on_hashset_answer(const error_code& error)
 
         if (t->hash() == ha.m_hFile && hashes.size() > 0)
         {
-            t->hashset(hashes);
+            t->piece_hashses(hashes);
             write_start_upload(t->hash());
         }
         else

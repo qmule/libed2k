@@ -5,7 +5,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/aligned_storage.hpp>
 
 #include <libtorrent/io.hpp>
 #include <libtorrent/bitfield.hpp>
