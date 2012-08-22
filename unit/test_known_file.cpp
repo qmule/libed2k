@@ -162,7 +162,7 @@ namespace libed2k
             {
                 itr->dump();
                 kfc.m_known_file_list.add(known_file_entry(itr->file_hash,
-                        itr->hashset,
+                        itr->piece_hashses,
                         itr->file_path,
                         itr->file_size,
                         itr->accepted,

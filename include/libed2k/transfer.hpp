@@ -11,10 +11,10 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include "libed2k/policy.hpp"
-#include "libed2k/types.hpp"
-#include "libed2k/session.hpp"
-#include "libed2k/packet_struct.hpp"
+#include <libed2k/policy.hpp>
+#include <libed2k/types.hpp>
+#include <libed2k/session.hpp>
+#include <libed2k/packet_struct.hpp>
 
 
 namespace libed2k {
@@ -47,18 +47,15 @@ namespace libed2k {
                  int seq, add_transfer_params const& p);
         ~transfer();
 
-        const md4_hash& hash() const { return m_filehash; }
+        const md4_hash& hash() const;
         fsize_t filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
         const bitfield& verified_pieces() const { return m_verified; }
-        const std::vector<md4_hash>& hashset() const { return m_hashset; }
-        void hashset(const std::vector<md4_hash>& hs) {
-            assert(hs.size() > 0);
-            m_hashset = hs;
-        }
-        const md4_hash& hash(size_t piece) const { return m_hashset.at(piece); }
+        const std::vector<md4_hash>& piece_hashses() const;
+        void piece_hashses(const std::vector<md4_hash>& hs);
+        const md4_hash& hash_for_piece(size_t piece) const;
 
         transfer_handle handle();
         void start();
@@ -318,14 +315,12 @@ namespace libed2k {
         // are opened through
         tcp::endpoint m_net_interface;
 
-        md4_hash m_filehash;
         fs::path m_filepath;
         fs::path m_collectionpath;
         fsize_t m_filesize;
         boost::uint32_t m_file_type;
 
         bitfield m_verified;
-        std::vector<md4_hash> m_hashset;
 
         // determines the storage state for this transfer.
         storage_mode_t m_storage_mode;

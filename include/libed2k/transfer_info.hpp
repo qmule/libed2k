@@ -54,8 +54,9 @@ namespace libed2k
         void check_invariant() const;
 #endif
 
-        transfer_info(transfer_info const& t, int flags = 0);
-        transfer_info(md4_hash const& info_hash, int flags = 0);
+        transfer_info(transfer_info const& t);
+        transfer_info(md4_hash const& info_hash, const std::string& filename,
+                      size_type filesize, const std::vector<md4_hash>& piece_hashses = std::vector<md4_hash>());
 
         ~transfer_info();
 
@@ -101,12 +102,13 @@ namespace libed2k
         peer_request map_file(int file, size_type offset, int size) const
         { return m_files.map_file(file, offset, size); }
 
-        bool is_valid() const { return m_files.is_valid(); }
+        bool is_valid() const { return m_files.is_valid() && m_piece_hashes.size() >= num_pieces(); }
 
         int piece_size(int index) const { return m_files.piece_size(index); }
-
+        const std::vector<md4_hash>& piece_hashses() const { return m_piece_hashes; }
         const md4_hash& hash_for_piece(int index) const { return m_piece_hashes.at(index); }
 
+        void piece_hashses(const std::vector<md4_hash>& hs) { m_piece_hashes = hs; }
         void swap(transfer_info& ti);
 
         // if we're logging member offsets, we need access to them
@@ -129,11 +131,10 @@ namespace libed2k
         // filenames are preserved.
         copy_ptr<const file_storage> m_orig_files;
 
-        // hashes of the pieces
-        std::vector<md4_hash> m_piece_hashes;
-
         // the hash that identifies this transfer
         md4_hash m_info_hash;
+        // hashes of the pieces
+        std::vector<md4_hash> m_piece_hashes;
     };
 }
 
