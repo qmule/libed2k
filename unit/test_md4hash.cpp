@@ -13,6 +13,7 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 #include <libtorrent/piece_picker.hpp>
 #include "libed2k/peer_connection.hpp"
 
@@ -160,6 +161,49 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
             part_hashset.push_back(libed2k::md4_hash::terminal);
         }
 
+        if (part_hashset.size() > 1)
+        {
+            md4_hasher.CalculateDigest(hash.getContainer(),
+                           reinterpret_cast<const unsigned char*>(&part_hashset[0]), part_hashset.size()*libed2k::MD4_HASH_SIZE);
+        }
+        else
+        {
+            hash = part_hashset[0];
+        }
+
+        BOOST_CHECK_EQUAL(hashset.size(), part_hashset.size());
+        BOOST_CHECK_EQUAL(hash, itr->second);
+
+
+        // clear all hashes for clean experiment
+        part_hashset.clear();
+        part_hashset.resize(pieces);
+        capacity = itr->first;
+
+        // use hasher
+        libed2k::hasher ih;
+
+        for (int i = 0; i < pieces; ++i)
+        {
+            libed2k::fsize_t in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
+
+            while(in_piece_capacity > 0)
+            {
+                ih.update((chFullBuffer + (itr->first - capacity)), std::min(libed2k::BLOCK_SIZE, in_piece_capacity));
+                capacity -= std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
+                in_piece_capacity -= std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
+            }
+
+            part_hashset[i] = ih.final();
+            ih.reset();
+        }
+
+        if (pieces*libed2k::PIECE_SIZE == itr->first)
+        {
+            part_hashset.push_back(libed2k::md4_hash::terminal);
+        }
+
+        // calculate completed hash
         if (part_hashset.size() > 1)
         {
             md4_hasher.CalculateDigest(hash.getContainer(),

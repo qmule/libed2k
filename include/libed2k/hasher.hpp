@@ -38,6 +38,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libed2k/assert.hpp>
 
+#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
+#include <cryptopp/md4.h>
+
 namespace libed2k
 {
 	class hasher
@@ -52,14 +55,16 @@ namespace libed2k
 		{
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
+			update(data, len);
 		}
 
-		hasher(hasher const& h)
+		hasher(hasher const& h) : m_hasher(h.m_hasher)
 		{
 		}
 
 		hasher& operator=(hasher const& h)
 		{
+		    m_hasher = h.m_hasher;
 			return *this;
 		}
 
@@ -68,16 +73,20 @@ namespace libed2k
 		{
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
+			m_hasher.Update((const unsigned char*)data, len);
 		}
 
 		md4_hash final()
 		{
+		    LIBED2K_ASSERT(m_hasher.DigestSize() == 16);
 			md4_hash digest;
+			m_hasher.Final(digest.getContainer());
 			return digest;
 		}
 
 		void reset()
 		{
+		    m_hasher.Restart();
 		}
 
 		~hasher()
@@ -85,7 +94,7 @@ namespace libed2k
 		}
 
 	private:
-
+		CryptoPP::Weak1::MD4 m_hasher;
 	};
 }
 
