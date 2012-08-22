@@ -43,6 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/file_storage.hpp>
 #include <libed2k/copy_ptr.hpp>
 #include <libed2k/md4_hash.hpp>
+#include <libed2k/constants.hpp>
 
 namespace libed2k
 {
@@ -102,7 +103,11 @@ namespace libed2k
         peer_request map_file(int file, size_type offset, int size) const
         { return m_files.map_file(file, offset, size); }
 
-        bool is_valid() const { return m_files.is_valid() && m_piece_hashes.size() >= num_pieces(); }
+        bool is_valid() const
+        {
+            return m_files.is_valid() &&
+                int(m_piece_hashes.size()) == num_pieces() + (file_at(0).size % PIECE_SIZE == 0);
+        }
 
         int piece_size(int index) const { return m_files.piece_size(index); }
         const std::vector<md4_hash>& piece_hashses() const { return m_piece_hashes; }

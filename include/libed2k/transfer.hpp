@@ -48,7 +48,7 @@ namespace libed2k {
         ~transfer();
 
         const md4_hash& hash() const;
-        fsize_t filesize() const { return m_filesize; }
+        fsize_t filesize() const;
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
@@ -317,7 +317,6 @@ namespace libed2k {
 
         fs::path m_filepath;
         fs::path m_collectionpath;
-        fsize_t m_filesize;
         boost::uint32_t m_file_type;
 
         bitfield m_verified;

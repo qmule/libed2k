@@ -20,7 +20,6 @@ namespace libed2k
                        const md4_hash& hash, const fs::path p, fsize_t size):
         m_ses(ses),
         m_filepath(p),
-        m_filesize(size),
         m_complete(-1),
         m_incomplete(-1),
         m_policy(this, pl),
@@ -39,7 +38,6 @@ namespace libed2k
         m_net_interface(net_interface.address(), 0),
         m_filepath(p.file_path),
         m_collectionpath(p.collection_path),
-        m_filesize(p.file_size),
         m_verified(p.pieces),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -58,9 +56,9 @@ namespace libed2k
         m_progress_ppm(0),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
-        DBG("transfer file size: " << m_filesize);
+        DBG("transfer file size: " << filesize());
         if (m_verified.size() == 0)
-            m_verified.resize(piece_count(m_filesize), 0);
+            m_verified.resize(piece_count(filesize()), 0);
 
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
 
@@ -74,6 +72,7 @@ namespace libed2k
     }
 
     const md4_hash& transfer::hash() const { return m_info->info_hash(); }
+    fsize_t transfer::filesize() const { return m_info->file_at(0).size; }
     const std::vector<md4_hash>& transfer::piece_hashses() const { return m_info->piece_hashses(); }
     void transfer::piece_hashses(const std::vector<md4_hash>& hs) {
         LIBED2K_ASSERT(hs.size() > 0);
@@ -156,8 +155,8 @@ namespace libed2k
 
     void transfer::request_peers()
     {
-        APP("request peers by hash: " << hash() << ", size: " << m_filesize);
-        m_ses.m_server_connection->post_sources_request(hash(), m_filesize);
+        APP("request peers by hash: " << hash() << ", size: " << filesize());
+        m_ses.m_server_connection->post_sources_request(hash(), filesize());
     }
 
     void transfer::add_peer(const tcp::endpoint& peer)
@@ -819,7 +818,7 @@ namespace libed2k
         if (has_picker())
         {
             int blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
-            int blocks_in_last_piece = div_ceil(m_filesize % PIECE_SIZE, BLOCK_SIZE);
+            int blocks_in_last_piece = div_ceil(filesize() % PIECE_SIZE, BLOCK_SIZE);
             m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
         }
 
@@ -1087,7 +1086,7 @@ namespace libed2k
         entry.m_list.add_tag(make_string_tag(m_filepath.filename(), FT_FILENAME, true));
 
         __file_size fs;
-        fs.nQuadPart = m_filesize;
+        fs.nQuadPart = filesize();
         entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
 
         if (fs.nHighPart > 0)

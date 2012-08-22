@@ -42,8 +42,8 @@ namespace libed2k
     transfer_info::transfer_info(transfer_info const& t)
         : m_files(t.m_files)
         , m_orig_files(t.m_orig_files)
-        , m_piece_hashes(t.m_piece_hashes)
         , m_info_hash(t.m_info_hash)
+        , m_piece_hashes(t.m_piece_hashes)
     {
 #if defined LIBED2K_DEBUG && !defined LIBED2K_DISABLE_INVARIANT_CHECKS
         t.check_invariant();
