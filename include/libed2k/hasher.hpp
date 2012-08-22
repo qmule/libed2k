@@ -73,7 +73,7 @@ namespace libed2k
 		{
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
-			m_hasher.Update((const unsigned char*)data, len);
+			m_hasher.Update(reinterpret_cast<const unsigned char*>(data), len);
 		}
 
 		md4_hash final()
