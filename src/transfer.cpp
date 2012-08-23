@@ -56,7 +56,6 @@ namespace libed2k
         m_progress_ppm(0),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
-        DBG("transfer file size: " << filesize());
         if (m_verified.size() == 0)
             m_verified.resize(piece_count(filesize()), 0);
 
@@ -87,6 +86,8 @@ namespace libed2k
 
     void transfer::start()
     {
+        LIBED2K_ASSERT(!m_picker);
+
         if (!m_seed_mode)
         {
             DBG("transfer::start: prepare picker");
@@ -1202,9 +1203,10 @@ namespace libed2k
     {
         return (m_state == transfer_status::checking_files
             || m_state == transfer_status::queued_for_checking)
-            //&& (!m_paused /*|| m_auto_managed*/)
+            //&& (m_allow_peers || m_auto_managed)
             && !has_error()
-            && !m_abort;
+            && !m_abort
+            && !m_ses.is_paused();
     }
 
     void transfer::file_checked()
@@ -1250,7 +1252,7 @@ namespace libed2k
     void transfer::start_checking()
     {
         DBG("transfer::start_checking");
-        BOOST_ASSERT(should_check_file());
+        LIBED2K_ASSERT(should_check_file());
         set_state(transfer_status::checking_files);
 
         //dequeue_transfer_check();

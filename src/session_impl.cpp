@@ -805,21 +805,15 @@ std::vector<transfer_handle> session_impl::get_transfers()
 void session_impl::queue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
-    BOOST_ASSERT(t->should_check_file());
-    BOOST_ASSERT(t->state() != transfer_status::checking_files);
-    if (m_queued_for_checking.empty())
-    {
-        m_queued_for_checking.push_back(t);
-        t->start_checking();
-    }
-    else
-    {
-        t->set_state(transfer_status::queued_for_checking);
-        m_queued_for_checking.push_back(t);
-    }
+    LIBED2K_ASSERT(t->should_check_file());
+    LIBED2K_ASSERT(t->state() != transfer_status::checking_files);
+    if (m_queued_for_checking.empty()) t->start_checking();
+    else t->set_state(transfer_status::queued_for_checking);
 
-    BOOST_ASSERT(std::find(m_queued_for_checking.begin()
-        , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
+    LIBED2K_ASSERT(
+        std::find(m_queued_for_checking.begin(), m_queued_for_checking.end(), t) ==
+        m_queued_for_checking.end());
+    m_queued_for_checking.push_back(t);
 }
 
 void session_impl::dequeue_check_transfer(boost::shared_ptr<transfer> const& t)
