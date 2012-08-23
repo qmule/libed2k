@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2kd.lib libtorrent.lib libeay32MDd.lib ssleay32MDd.lib"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2kd.lib libtorrentd.lib libeay32MDd.lib ssleay32MDd.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\Debug&quot;; &quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\debug&quot;;&quot;$(LIBTORRENT_ROOT)\lib&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
