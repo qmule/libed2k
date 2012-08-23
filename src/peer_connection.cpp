@@ -1168,9 +1168,7 @@ void peer_connection::on_receive_data(
             // to disk or are in the disk write cache
             if (picker.is_piece_finished(r.piece) && !was_finished)
             {
-                const md4_hash& hash =
-                    t->filesize() < PIECE_SIZE ? t->hash() : t->hash_for_piece(r.piece);
-
+                const md4_hash& hash = t->hash_for_piece(r.piece);
                 t->async_verify_piece(
                     r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
             }

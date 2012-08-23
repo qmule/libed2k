@@ -78,6 +78,9 @@ namespace libed2k
         m_files.set_num_pieces(div_ceil(filesize, PIECE_SIZE));
         m_files.set_piece_length(PIECE_SIZE);
         m_files.add_file(filename, filesize);
+
+        if (m_piece_hashes.empty() && filesize < PIECE_SIZE)
+            m_piece_hashes.push_back(info_hash);
     }
 
     transfer_info::~transfer_info()

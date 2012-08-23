@@ -48,7 +48,7 @@ namespace libed2k {
         ~transfer();
 
         const md4_hash& hash() const;
-        fsize_t filesize() const;
+        size_type filesize() const;
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
@@ -147,7 +147,7 @@ namespace libed2k {
         // PIECE MANAGEMENT
         // --------------------------------------------
         void async_verify_piece(int piece_index, const md4_hash& hash,
-                                const boost::function<void(int)>& fun);
+                                const boost::function<void(int)>& f);
 
         // this is called from the peer_connection
         // each time a piece has failed the hash test
@@ -282,6 +282,7 @@ namespace libed2k {
         void on_resume_data_checked(int ret, disk_io_job const& j);
         void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
         void on_piece_checked(int ret, disk_io_job const& j);
+        void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
 
     private:
         // will initialize the storage and the piece-picker

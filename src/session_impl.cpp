@@ -802,7 +802,7 @@ std::vector<transfer_handle> session_impl::get_transfers()
     return ret;
 }
 
-void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
+void session_impl::queue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
     BOOST_ASSERT(t->should_check_file());
@@ -822,7 +822,7 @@ void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
         , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
 }
 
-void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
+void session_impl::dequeue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
     BOOST_ASSERT(t->state() == transfer_status::checking_files
         || t->state() == transfer_status::queued_for_checking);

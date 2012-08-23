@@ -809,7 +809,7 @@ namespace libed2k
                             mf_param.length = nMapLength;
                             fsource.open(mf_param);
 
-                            uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
+                            size_type nLocalOffset = nDataCorrection; // start from data correction offset
 
                             DBG("{mpos: " << nMapPosition << "} {dt corr: "
                                     << nDataCorrection << "} {map len: "

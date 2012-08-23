@@ -85,13 +85,13 @@ BOOST_AUTO_TEST_CASE(test_user_agent)
 
 BOOST_AUTO_TEST_CASE(test_partial_hashing)
 {
-    std::vector<std::pair<libed2k::fsize_t, libed2k::md4_hash> > vtf;
+    std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> > vtf;
     vtf.push_back(std::make_pair(100, libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5")));
     vtf.push_back(std::make_pair(libed2k::PIECE_SIZE, libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9")));
     vtf.push_back(std::make_pair(libed2k::PIECE_SIZE+1, libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE")));
     vtf.push_back(std::make_pair(libed2k::PIECE_SIZE*4, libed2k::md4_hash::fromString("9385DCEF4CB89FD5A4334F5034C28893")));
 
-    for (std::vector<std::pair<libed2k::fsize_t, libed2k::md4_hash> >::const_iterator itr = vtf.begin(); itr != vtf.end(); ++itr)
+    for (std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> >::const_iterator itr = vtf.begin(); itr != vtf.end(); ++itr)
     {
         generate_test_file(itr->first, "./thfile.bin");
         char* chFullBuffer = new char[itr->first];  // allocate buffer for file data
@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         int pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);
         std::vector<libed2k::md4_hash> hashset;
         hashset.resize(pieces);
-        libed2k::fsize_t capacity = itr->first;
+        libed2k::size_type capacity = itr->first;
 
         std::vector<libed2k::hasher> vlh;
         CryptoPP::Weak1::MD4 md4_hasher;
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         for (int i = 0; i < pieces; ++i)
         {
             CryptoPP::Weak1::MD4 partial_hasher;
-            libed2k::fsize_t in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
+            libed2k::size_type in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
 
             while(in_piece_capacity > 0)
             {
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
 
         for (int i = 0; i < pieces; ++i)
         {
-            libed2k::fsize_t in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
+            libed2k::size_type in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
 
             while(in_piece_capacity > 0)
             {

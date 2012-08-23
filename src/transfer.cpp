@@ -72,7 +72,7 @@ namespace libed2k
     }
 
     const md4_hash& transfer::hash() const { return m_info->info_hash(); }
-    fsize_t transfer::filesize() const { return m_info->file_at(0).size; }
+    size_type transfer::filesize() const { return m_info->file_at(0).size; }
     const std::vector<md4_hash>& transfer::piece_hashses() const { return m_info->piece_hashses(); }
     void transfer::piece_hashses(const std::vector<md4_hash>& hs) {
         LIBED2K_ASSERT(hs.size() > 0);
@@ -858,7 +858,6 @@ namespace libed2k
 
     void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
     {
-        DBG("transfer::on_resume_data_checked");
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         if (ret == piece_manager::fatal_disk_error)
@@ -1006,10 +1005,43 @@ namespace libed2k
     }
 
     void transfer::async_verify_piece(
-        int piece_index, const md4_hash& hash, const boost::function<void(int)>& fun)
+        int piece_index, const md4_hash& hash, const boost::function<void(int)>& f)
     {
-        //TODO: piece verification
-        m_ses.m_io_service.post(boost::bind(fun, 0));
+        TORRENT_ASSERT(m_storage);
+        TORRENT_ASSERT(m_storage->refcount() > 0);
+        TORRENT_ASSERT(piece_index >= 0);
+        TORRENT_ASSERT(piece_index < m_info->num_pieces());
+        TORRENT_ASSERT(piece_index < (int)m_picker->num_pieces());
+        TORRENT_ASSERT(!m_picker || !m_picker->have_piece(piece_index));
+#ifdef LIBED2K_DEBUG
+        if (m_picker)
+        {
+            int blocks_in_piece = m_picker->blocks_in_piece(piece_index);
+            for (int i = 0; i < blocks_in_piece; ++i)
+            {
+                LIBED2K_ASSERT(m_picker->num_peers(piece_block(piece_index, i)) == 0);
+            }
+        }
+#endif
+
+        m_storage->async_hash(
+            piece_index, boost::bind(&transfer::on_piece_verified, shared_from_this(), _1, _2, f));
+    }
+
+    void transfer::on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f)
+    {
+        //TORRENT_ASSERT(m_ses.is_network_thread());
+        boost::mutex::scoped_lock l(m_ses.m_mutex);
+
+        // return value:
+        // 0: success, piece passed hash check
+        // -1: disk failure
+        // -2: hash check failed
+
+        //state_updated();
+
+        if (ret == -1) handle_disk_error(j);
+        f(ret);
     }
 
     // passed_hash_check
@@ -1178,7 +1210,7 @@ namespace libed2k
     void transfer::file_checked()
     {
         DBG("transfer::file_checked");
-        //BOOST_ASSERT(m_torrent_file->is_valid());
+        LIBED2K_ASSERT(m_info->is_valid());
 
         if (m_abort) return;
 
@@ -1221,12 +1253,10 @@ namespace libed2k
         BOOST_ASSERT(should_check_file());
         set_state(transfer_status::checking_files);
 
-        dequeue_transfer_check();
-        file_checked();
-        // TODO - activate real checking!
-        //m_storage->async_check_files(boost::bind(
-        //            &transfer::on_piece_checked
-        //            , shared_from_this(), _1, _2));
+        //dequeue_transfer_check();
+        //file_checked();
+        m_storage->async_check_files(
+            boost::bind(&transfer::on_piece_checked, shared_from_this(), _1, _2));
     }
 
     void transfer::on_piece_checked(int ret, disk_io_job const& j)
@@ -1276,21 +1306,19 @@ namespace libed2k
         file_checked();
     }
 
-
     void transfer::queue_transfer_check()
     {
-        DBG("transfer::queue_transfer_check");
         if (m_queued_for_checking) return;
         DBG("transfer::queue_transfer_check: start");
         m_queued_for_checking = true;
-        m_ses.queue_check_torrent(shared_from_this());
+        m_ses.queue_check_transfer(shared_from_this());
     }
 
     void transfer::dequeue_transfer_check()
     {
         if (!m_queued_for_checking) return;
         m_queued_for_checking = false;
-        m_ses.dequeue_check_torrent(shared_from_this());
+        m_ses.dequeue_check_transfer(shared_from_this());
     }
 
     void transfer::set_error(error_code const& ec)
@@ -1453,8 +1481,7 @@ namespace libed2k
     {
         if (!j.error) return;
 
-        ERR("disk error: '" << j.error.message()
-            << " in file " << j.error_file);
+        ERR("disk error: '" << j.error.message() << " in file " << j.error_file);
 
         LIBED2K_ASSERT(j.piece >= 0);
 
