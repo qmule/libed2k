@@ -267,6 +267,7 @@ namespace libed2k
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xls"),   ED2KFT_DOCUMENT));   // Microsoft Excel Spreadsheet
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xlt"),   ED2KFT_DOCUMENT));   // Microsoft Excel Template
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xml"),   ED2KFT_DOCUMENT));   // XML File
+            ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".emulecollection"), ED2KFT_EMULECOLLECTION));   // emulecollection
         }
     };
 
