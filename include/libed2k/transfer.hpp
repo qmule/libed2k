@@ -52,7 +52,6 @@ namespace libed2k {
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
-        const bitfield& verified_pieces() const { return m_verified; }
         const std::vector<md4_hash>& piece_hashses() const;
         void piece_hashses(const std::vector<md4_hash>& hs);
         const md4_hash& hash_for_piece(size_t piece) const;
@@ -179,6 +178,7 @@ namespace libed2k {
         {
             return has_picker() ? m_picker->have_piece(index) : true;
         }
+        bitfield have_pieces() const;
 
         // called when we learn that we have a piece
         // only once per piece
@@ -224,21 +224,6 @@ namespace libed2k {
           * async generate fast resume data and emit alert
          */
         void save_resume_data();
-
-        bool verified_piece(int piece) const
-        {
-            BOOST_ASSERT(piece < int(m_verified.size()));
-            BOOST_ASSERT(piece >= 0);
-            return m_verified.get_bit(piece);
-        }
-
-        void verified(int piece)
-        {
-            BOOST_ASSERT(piece < int(m_verified.size()));
-            BOOST_ASSERT(piece >= 0);
-            BOOST_ASSERT(m_verified.get_bit(piece) == false);
-            m_verified.set_bit(piece);
-        }
 
         bool should_check_file() const;
 
@@ -320,16 +305,11 @@ namespace libed2k {
         fs::path m_collectionpath;
         boost::uint32_t m_file_type;
 
-        bitfield m_verified;
-
         // determines the storage state for this transfer.
         storage_mode_t m_storage_mode;
 
         // the state of this transfer (queued, checking, downloading, etc.)
         transfer_status::state_t m_state;
-
-        // Indicates whether transfer will download anything
-        bool m_seed_mode;
 
         int m_complete;
         int m_incomplete;

@@ -1640,7 +1640,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 
         if (t->hash() == fr.m_hFile)
         {
-            write_file_status(t->hash(), t->verified_pieces());
+            write_file_status(t->hash(), t->have_pieces());
         }
         else
         {

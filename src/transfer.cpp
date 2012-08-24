@@ -38,10 +38,8 @@ namespace libed2k
         m_net_interface(net_interface.address(), 0),
         m_filepath(p.file_path),
         m_collectionpath(p.collection_path),
-        m_verified(p.pieces),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
-        m_seed_mode(p.seed_mode),
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
@@ -56,12 +54,7 @@ namespace libed2k
         m_progress_ppm(0),
         m_minute_timer(time::minutes(1), time::min_date_time)
     {
-        if (m_verified.size() == 0)
-            m_verified.resize(piece_count(filesize()), 0);
-
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
-
-        LIBED2K_ASSERT(m_verified.size() == num_pieces());
     }
 
     transfer::~transfer()
@@ -77,8 +70,10 @@ namespace libed2k
         LIBED2K_ASSERT(hs.size() > 0);
         m_info->piece_hashses(hs);
     }
-    const md4_hash& transfer::hash_for_piece(size_t piece) const { return m_info->hash_for_piece(piece); }
-
+    const md4_hash& transfer::hash_for_piece(size_t piece) const
+    {
+        return m_info->hash_for_piece(piece);
+    }
     transfer_handle transfer::handle()
     {
         return transfer_handle(shared_from_this());
@@ -88,21 +83,18 @@ namespace libed2k
     {
         LIBED2K_ASSERT(!m_picker);
 
-        if (!m_seed_mode)
-        {
-            DBG("transfer::start: prepare picker");
-            m_picker.reset(new libtorrent::piece_picker());
-            // TODO: file progress
+        m_picker.reset(new libtorrent::piece_picker());
+        // TODO: file progress
 
-            if (!m_resume_data.empty())
+        if (!m_resume_data.empty())
+        {
+            if (libtorrent::lazy_bdecode(&m_resume_data[0], &m_resume_data[0]
+                                         + m_resume_data.size(), m_resume_entry) != 0)
             {
-                if (libtorrent::lazy_bdecode(&m_resume_data[0], &m_resume_data[0]
-                    + m_resume_data.size(), m_resume_entry) != 0)
-                {
-                    ERR("fast resume parse error");
-                    std::vector<char>().swap(m_resume_data);
-                    m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
-                }
+                ERR("fast resume parse error: {file: " << m_filepath.filename() << "}");
+                std::vector<char>().swap(m_resume_data);
+                m_ses.m_alerts.post_alert_should(
+                    fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
             }
         }
 
@@ -315,7 +307,6 @@ namespace libed2k
     {
         bool was_finished = (num_have() == num_pieces());
         we_have(index);
-        verified(index);
 
         if (!was_finished && is_finished())
         {
@@ -327,6 +318,18 @@ namespace libed2k
             // if we just became a seed, picker is now invalid, since it
             // is deallocated by the torrent once it starts seeding
         }
+    }
+
+    bitfield transfer::have_pieces() const
+    {
+        int nPieces = num_pieces();
+        bitfield res(nPieces, false);
+
+        for (int p = 0; p < nPieces; ++p)
+            if (have_piece(p))
+                res.set_bit(p);
+
+        return res;
     }
 
     void transfer::we_have(int index)
@@ -575,7 +578,7 @@ namespace libed2k
     {
         transfer_status st;
 
-        st.seed_mode = m_seed_mode;
+        st.seed_mode = false;
         st.paused = m_paused;
 
         bytes_done(st);
@@ -803,7 +806,7 @@ namespace libed2k
 
     void transfer::init()
     {
-        DBG("transfer::init: " << convert_to_native(m_filepath.filename()));
+        DBG("init transfer: {file: " << m_filepath.filename() << "}");
 
         // we have only one file with normal priority
         std::vector<boost::uint8_t> file_prio;
@@ -844,7 +847,8 @@ namespace libed2k
             {
                 std::vector<char>().swap(m_resume_data);
                 lazy_entry().swap(m_resume_entry);
-                m_ses.m_alerts.post_alert_should(fastresume_rejected_alert(handle(), error_code(ev,  get_libed2k_category())));
+                m_ses.m_alerts.post_alert_should(
+                    fastresume_rejected_alert(handle(), error_code(ev,  get_libed2k_category())));
             }
             else
             {
@@ -852,9 +856,9 @@ namespace libed2k
             }
         }
 
-        m_storage->async_check_fastresume(&m_resume_entry
-                    , boost::bind(&transfer::on_resume_data_checked
-                    , shared_from_this(), _1, _2));
+        m_storage->async_check_fastresume(
+            &m_resume_entry,
+            boost::bind(&transfer::on_resume_data_checked, shared_from_this(), _1, _2));
     }
 
     void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
@@ -905,7 +909,6 @@ namespace libed2k
                     for (int i = 0, end(pieces->string_length()); i < end; ++i)
                     {
                         if (pieces_str[i] & 1) m_picker->we_have(i);
-                        if (m_seed_mode && (pieces_str[i] & 2)) m_verified.set_bit(i);
                     }
                 }
 
@@ -1024,7 +1027,6 @@ namespace libed2k
             }
         }
 #endif
-
         m_storage->async_hash(
             piece_index, boost::bind(&transfer::on_piece_verified, shared_from_this(), _1, _2, f));
     }
@@ -1354,8 +1356,6 @@ namespace libed2k
 
         ret["sequential_download"] = m_sequential_download;
 
-        ret["seed_mode"] = m_seed_mode;
-
         ret["transfer-hash"] = hash().toString();
 
         // blocks per piece
@@ -1422,13 +1422,6 @@ namespace libed2k
                 pieces[i] = m_picker->have_piece(i) ? 1 : 0;
         }
 
-        if (m_seed_mode)
-        {
-            BOOST_ASSERT(m_verified.size() == pieces.size());
-            for (int i = 0, end(pieces.size()); i < end; ++i)
-                pieces[i] |= m_verified[i] ? 2 : 0;
-        }
-
         // store current hashset
         ret["hashset-values"]  = entry::list_type();
         entry::list_type& hv = ret["hashset-values"].list();
@@ -1468,7 +1461,6 @@ namespace libed2k
         m_total_downloaded = rd.dict_find_int_value("total_downloaded");
         set_upload_limit(rd.dict_find_int_value("upload_rate_limit", -1));
         set_download_limit(rd.dict_find_int_value("download_rate_limit", -1));
-        m_seed_mode = rd.dict_find_int_value("seed_mode", 0);
         m_complete = rd.dict_find_int_value("num_seeds", -1);
         m_incomplete = rd.dict_find_int_value("num_downloaders", -1);
 
