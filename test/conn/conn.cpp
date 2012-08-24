@@ -262,8 +262,8 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                 }
 
                 DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                        << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                        << " size: " << nSize);
+                    << " name: " << libed2k::conver_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
+                    << " size: " << nSize);
             }
         }
         else if(dynamic_cast<peer_message_alert*>(a.get()))
@@ -457,7 +457,7 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(1000000000,0,100,0, "", "", "", 0, 0, strArg);
+                search_request sr = libed2k::generateSearchRequest(1000000000,0,100,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }
