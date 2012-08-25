@@ -9,6 +9,7 @@
 #include "libed2k/ctag.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/util.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(simple_exception_test)
@@ -100,6 +101,16 @@ BOOST_AUTO_TEST_CASE(check_error_codes_msg_ranges)
     // check error msgs contain appropriate messages count
     libed2k::error_code e = libed2k::error_code(libed2k::errors::num_errors - 1,  libed2k::get_libed2k_category());
     BOOST_CHECK(!e.message().empty());
+}
+
+BOOST_AUTO_TEST_CASE(check_url_decode)
+{
+    BOOST_CHECK_EQUAL(libed2k::url_decode("%20"), " ");
+    BOOST_CHECK_EQUAL(libed2k::url_decode("05%20-%20"), "05 - ");
+    BOOST_CHECK_EQUAL(libed2k::url_decode(""), "");
+    BOOST_CHECK_EQUAL(libed2k::url_decode("xlc"), "xlc");
+    BOOST_CHECK_EQUAL(libed2k::url_decode("%20%20xlc"), "  xlc");
+    BOOST_CHECK_EQUAL(libed2k::url_decode("%20A"), " A");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
