@@ -262,7 +262,7 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                 }
 
                 DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                    << " name: " << libed2k::conver_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
+                    << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
                     << " size: " << nSize);
             }
         }
