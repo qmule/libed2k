@@ -289,6 +289,10 @@
 				RelativePath="..\src\util.cpp"
 				>
 			</File>
+            <File
+                RelativePath="..\src\chained_buffer.cpp"
+                >
+            </File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -495,6 +499,10 @@
 				RelativePath="..\include\libed2k\version.hpp"
 				>
 			</File>
+            <File
+                RelativePath="..\include\libed2k\chained_buffer.hpp"
+                >
+            </File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
