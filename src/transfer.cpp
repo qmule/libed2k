@@ -85,7 +85,7 @@ namespace libed2k
         if (!m_seed_mode)
         {
             DBG("transfer::start: prepare picker");
-            m_picker.reset(new libtorrent::piece_picker());
+            m_picker.reset(new piece_picker());
             // TODO: file progress
 
             if (!m_resume_data.empty())

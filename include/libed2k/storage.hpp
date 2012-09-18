@@ -53,7 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <libed2k/torrent_info.hpp>
-#include <libtorrent/piece_picker.hpp>
+#include <libed2k/piece_picker.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libed2k/peer_request.hpp>
 #include <libtorrent/hasher.hpp>

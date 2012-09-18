@@ -11,10 +11,15 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include <libtorrent/lazy_entry.hpp>
 #include "libed2k/policy.hpp"
 #include "libed2k/types.hpp"
+#include "libed2k/piece_picker.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/peer_info.hpp"
+#include "libed2k/types.hpp"
+#include "libed2k/storage_defs.hpp"
 
 
 namespace libed2k {

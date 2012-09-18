@@ -6,8 +6,7 @@
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
-#include <libtorrent/bitfield.hpp>
-
+#include <libed2k/bitfield.hpp>
 #include <libed2k/ctag.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/assert.hpp>

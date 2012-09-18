@@ -44,18 +44,13 @@ namespace libed2k
     typedef boost::asio::deadline_timer dtimer;
     typedef boost::posix_time::time_duration time_duration;
 
-    typedef libtorrent::piece_picker piece_picker;
-    typedef libtorrent::piece_block piece_block;
     typedef libtorrent::buffer buffer;
     typedef libtorrent::logger logger;
     typedef libtorrent::listen_failed_alert listen_failed_alert;
     typedef libtorrent::aux::eh_initializer eh_initializer;
-    typedef libtorrent::bitfield bitfield;
-    typedef libtorrent::torrent_status transfer_status;
     typedef libtorrent::session_status session_status;
     typedef libtorrent::piece_block_progress piece_block_progress;
     typedef libtorrent::stat stat;
-    typedef libtorrent::peer_info peer_info;
     typedef libtorrent::entry entry;
     typedef libtorrent::lazy_entry lazy_entry;
 
@@ -67,6 +62,8 @@ namespace libed2k
     namespace time = boost::posix_time;
     typedef time::ptime ptime;
     typedef boost::uint64_t fsize_t;
+    typedef boost::int64_t size_type;
+    typedef boost::uint64_t unsigned_size_type;
 
     typedef fs::path fpath;
     typedef fs::recursive_directory_iterator r_dir_itr;

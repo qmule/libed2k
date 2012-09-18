@@ -1,8 +1,6 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
-#include <libtorrent/piece_picker.hpp>
-
 #include "libed2k/storage.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/session_impl.hpp"
@@ -12,6 +10,7 @@
 #include "libed2k/util.hpp"
 #include "libed2k/alert_types.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/peer_info.hpp"
 
 namespace libed2k
 {
@@ -458,7 +457,7 @@ void peer_connection::request_block()
 
     p.pick_pieces(m_remote_pieces, interesting_pieces,
                   num_requests, prefer_whole_pieces, m_peer,
-                  state, picker_options(), std::vector<int>());
+                  state, picker_options(), std::vector<int>(), t->num_peers());
 
     // if the number of pieces we have + the number of pieces
     // we're requesting from is less than the number of pieces

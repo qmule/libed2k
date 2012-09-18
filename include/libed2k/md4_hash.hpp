@@ -13,7 +13,7 @@
 #include <boost/assert.hpp>
 #include <boost/optional.hpp>
 
-#include <libtorrent/bitfield.hpp>
+#include <libed2k/bitfield.hpp>
 #include <libtorrent/escape_string.hpp>
 
 #include "libed2k/log.hpp"

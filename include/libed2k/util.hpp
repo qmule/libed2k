@@ -2,7 +2,7 @@
 #ifndef __LIBED2K_UTIL__
 #define __LIBED2K_UTIL__
 
-#include "libed2k/types.hpp"
+#include "libed2k/bitfield.hpp"
 #include "libed2k/constants.hpp"
 
 namespace libed2k
