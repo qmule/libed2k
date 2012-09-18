@@ -16,11 +16,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include <libtorrent/assert.hpp>
-#include <libtorrent/chained_buffer.hpp>
 #include <libtorrent/intrusive_ptr_base.hpp>
 #include <libtorrent/stat.hpp>
 
+#include <libed2k/assert.hpp>
+#include <libed2k/chained_buffer.hpp>
 #include "libed2k/types.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
