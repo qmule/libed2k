@@ -13,6 +13,7 @@
 #include "libed2k/base_connection.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/session_impl.hpp"
+#include "libed2k/deadline_timer.hpp"
 
 namespace libed2k
 {
@@ -112,7 +113,7 @@ namespace libed2k
         bool                            m_bInitialization;  //!< set true when we wait for connect
         md4_hash                        m_hServer;
         tcp::socket                     m_socket;
-        dtimer                          m_deadline;         //!< deadline timer for reading operations
+        deadline_timer                  m_deadline;         //!< deadline timer for reading operations
 
         libed2k_header                  m_in_header;            //!< incoming message header
         socket_buffer                   m_in_container;         //!< buffer for incoming messages

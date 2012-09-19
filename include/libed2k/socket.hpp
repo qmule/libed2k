@@ -72,7 +72,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 
 #if BOOST_VERSION < 103500

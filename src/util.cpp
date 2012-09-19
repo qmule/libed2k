@@ -1,6 +1,6 @@
 
 #include <algorithm>
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 
 #ifndef WIN32
 #include <iconv.h>

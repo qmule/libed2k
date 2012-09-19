@@ -8,7 +8,8 @@
 #include <libed2k/error_code.hpp>
 #include <libed2k/packet_struct.hpp>
 #include <libed2k/transfer_handle.hpp>
-
+#include "libed2k/socket_io.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k
 {
@@ -173,7 +174,7 @@ namespace libed2k
         {
             char ret[200];
             snprintf(ret, sizeof(ret), "mule listening on %s failed: %s"
-                , libtorrent::print_endpoint(endpoint).c_str(), error.message().c_str());
+                , libed2k::print_endpoint(endpoint).c_str(), error.message().c_str());
             return ret;
         }
 

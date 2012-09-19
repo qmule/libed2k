@@ -90,16 +90,16 @@ namespace libed2k
 
         // if this tracker failed the last time it was contacted
         // this error code specifies what error occurred
-        libtorrent::error_code last_error;
+        libed2k::error_code last_error;
 
         int next_announce_in() const;
         int min_announce_in() const;
 
         // the time of next tracker announce
-        libtorrent::ptime next_announce;
+        libed2k::ptime next_announce;
 
         // no announces before this time
-        libtorrent::ptime min_announce;
+        libed2k::ptime min_announce;
 
         // the tier this tracker belongs to
         boost::uint8_t tier;
@@ -142,20 +142,20 @@ namespace libed2k
         void reset()
         {
             start_sent = false;
-            next_announce = libtorrent::min_time();
-            min_announce = libtorrent::min_time();
+            next_announce = libed2k::min_time();
+            min_announce = libed2k::min_time();
         }
 
         void failed(session_settings const& sett, int retry_interval = 0);
 
-        bool will_announce(libtorrent::ptime now) const
+        bool will_announce(libed2k::ptime now) const
         {
             return now <= next_announce
                 && (fails < fail_limit || fail_limit == 0)
                 && !updating;
         }
 
-        bool can_announce(libtorrent::ptime now, bool is_seed) const;
+        bool can_announce(libed2k::ptime now, bool is_seed) const;
 
         bool is_working() const
         { return fails == 0; }
@@ -192,7 +192,7 @@ namespace libed2k
         headers_t extra_headers;
 
         // if this is > now, we can't reconnect yet
-        libtorrent::ptime retry;
+        libed2k::ptime retry;
 
         // this indicates whether or not we're resolving the
         // hostname of this URL
@@ -204,22 +204,22 @@ namespace libed2k
         // callback remove it
         bool removed;
 
-        libtorrent::tcp::endpoint endpoint;
+        libed2k::tcp::endpoint endpoint;
 
         // this is the peer_info field used for the
         // connection, just to count hash failures
         // it's also used to hold the peer_connection
         // pointer, when the web seed is connected
-        //libtorrent::policy::peer peer_info;
+        //libed2k::policy::peer peer_info;
     };
 
 #ifndef BOOST_NO_EXCEPTIONS
     // for backwards compatibility with 0.14
-    typedef libtorrent::libtorrent_exception invalid_torrent_file;
+    typedef libed2k::libed2k_exception invalid_torrent_file;
 #endif
 
     int LIBED2K_EXPORT load_file(std::string const& filename
-        , std::vector<char>& v, libtorrent::error_code& ec, int limit = 8000000);
+        , std::vector<char>& v, libed2k::error_code& ec, int limit = 8000000);
 
     class LIBED2K_EXPORT torrent_info : public intrusive_ptr_base<torrent_info>
     {
@@ -240,11 +240,11 @@ namespace libed2k
 
         torrent_info(torrent_info const& t, int flags = 0);
         torrent_info(sha1_hash const& info_hash, int flags = 0);
-        torrent_info(lazy_entry const& torrent_file, libtorrent::error_code& ec, int flags = 0);
-        torrent_info(char const* buffer, int size, libtorrent::error_code& ec, int flags = 0);
-        torrent_info(std::string const& filename, libtorrent::error_code& ec, int flags = 0);
+        torrent_info(lazy_entry const& torrent_file, libed2k::error_code& ec, int flags = 0);
+        torrent_info(char const* buffer, int size, libed2k::error_code& ec, int flags = 0);
+        torrent_info(std::string const& filename, libed2k::error_code& ec, int flags = 0);
 #if LIBED2K_USE_WSTRING
-        torrent_info(std::wstring const& filename, libtorrent::error_code& ec, int flags = 0);
+        torrent_info(std::wstring const& filename, libed2k::error_code& ec, int flags = 0);
 #endif // LIBED2K_USE_WSTRING
 
         ~torrent_info();
@@ -377,13 +377,13 @@ namespace libed2k
         void add_node(std::pair<std::string, int> const& node)
         { m_nodes.push_back(node); }
 
-        bool parse_info_section(lazy_entry const& e, libtorrent::error_code& ec, int flags);
+        bool parse_info_section(lazy_entry const& e, libed2k::error_code& ec, int flags);
 
         lazy_entry const* info(char const* key) const
         {
             if (m_info_dict.type() == lazy_entry::none_t)
             {
-                //libtorrent::error_code ec;
+                //libed2k::error_code ec;
                 lazy_bdecode(m_info_section.get(), m_info_section.get()
                              + m_info_section_size, m_info_dict/*, ec*/);
             }
@@ -414,7 +414,7 @@ namespace libed2k
         torrent_info const& operator=(torrent_info const&);
 
         void copy_on_write();
-        bool parse_torrent_file(lazy_entry const& libtorrent, libtorrent::error_code& ec, int flags);
+        bool parse_torrent_file(lazy_entry const& libtorrent, libed2k::error_code& ec, int flags);
 
         // the index to the first leaf. This is where the hash for the
         // first piece is stored

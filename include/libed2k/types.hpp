@@ -41,14 +41,14 @@ namespace libed2k
     //typedef boost::asio::deadline_timer dtimer;
     //typedef boost::posix_time::time_duration time_duration;
 
-    typedef libtorrent::buffer buffer;
-    typedef libtorrent::logger logger;
-    typedef libtorrent::listen_failed_alert listen_failed_alert;
-    typedef libtorrent::aux::eh_initializer eh_initializer;
-    typedef libtorrent::session_status session_status;
-    typedef libtorrent::piece_block_progress piece_block_progress;
+    //typedef libed2k::buffer buffer;
+    //typedef libed2k::logger logger;
+    //typedef libed2k::listen_failed_alert listen_failed_alert;
+    //typedef libed2k::aux::eh_initializer eh_initializer;
+    //typedef libed2k::session_status session_status;
+    //typedef libed2k::piece_block_progress piece_block_progress;
 
-    namespace detail = libtorrent::detail;
+    //namespace detail = libed2k::detail;
 
     namespace ip = boost::asio::ip;
     namespace fs = boost::filesystem;

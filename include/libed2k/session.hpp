@@ -12,6 +12,7 @@
 #include <libed2k/peer.hpp>
 #include <libed2k/alert.hpp>
 #include <libed2k/packet_struct.hpp>
+#include "libed2k/session_status.hpp"
 
 namespace libed2k {
 

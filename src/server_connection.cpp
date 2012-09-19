@@ -151,8 +151,8 @@ namespace libed2k
 
         m_target = *i;
 
-        DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
-        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libtorrent::print_endpoint(m_target)));
+        DBG("server name resolved: " << libed2k::print_endpoint(m_target));
+        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libed2k::print_endpoint(m_target)));
 
         // prepare for connect
         // set timeout
@@ -170,7 +170,7 @@ namespace libed2k
 
         if (error)
         {
-            ERR("connection to: " << libtorrent::print_endpoint(m_target)
+            ERR("connection to: " << libed2k::print_endpoint(m_target)
                 << ", failed: " << error);
             close(error);
             return;
@@ -452,7 +452,7 @@ namespace libed2k
        // the current time since a new asynchronous operation may have moved the
        // deadline before this actor had a chance to run.
 
-       if (m_deadline.expires_at() <= dtimer::traits_type::now())
+       if (m_deadline.expires_at() <= deadline_timer::traits_type::now())
        {
            DBG("server_connection::check_deadline(): deadline timer expired");
 

@@ -257,7 +257,7 @@ namespace libed2k
         // the current time since a new asynchronous operation may have moved the
         // deadline before this actor had a chance to run.
 
-        if (m_deadline.expires_at() <= dtimer::traits_type::now())
+        if (m_deadline.expires_at() <= deadline_timer::traits_type::now())
         {
             DBG("server_connection::check_deadline(): deadline timer expired");
 

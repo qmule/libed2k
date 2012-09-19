@@ -38,10 +38,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #endif
 #include <boost/bind.hpp>
-#include "libtorrent/entry.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/escape_string.hpp"
-#include "libtorrent/lazy_entry.hpp"
+#include "libed2k/entry.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/escape_string.hpp"
+#include "libed2k/lazy_entry.hpp"
 
 #if defined(_MSC_VER)
 #define for if (false) {} else for
@@ -57,7 +57,7 @@ namespace
 	}
 }
 
-namespace libtorrent
+namespace libed2k
 {
 	namespace detail
 	{

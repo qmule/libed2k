@@ -513,7 +513,7 @@ void session_impl::operator()()
 {
     // main session thread
 
-    eh_initializer();
+    //eh_initializer();
 
     if (m_listen_interface.port() != 0)
     {
@@ -659,7 +659,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
 
         std::string msg =
             "error accepting connection on '" +
-            libtorrent::print_endpoint(ep) + "' " + e.message();
+            libed2k::print_endpoint(ep) + "' " + e.message();
         DBG(msg);
 
 #ifdef LIBED2K_WINDOWS
@@ -967,7 +967,7 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
 
     m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
                         boost::bind(&peer_connection::on_timeout, c),
-                        libtorrent::seconds(m_settings.peer_connect_timeout));
+                        libed2k::seconds(m_settings.peer_connect_timeout));
 
     return (peer_connection_handle(c, this));
 }
@@ -1110,7 +1110,7 @@ void session_impl::abort()
 
     // closing all the connections needs to be done from a callback,
     // when the session mutex is not held
-    m_io_service.post(boost::bind(&libtorrent::connection_queue::close, &m_half_open));
+    m_io_service.post(boost::bind(&libed2k::connection_queue::close, &m_half_open));
 
     DBG("connection queue: " << m_half_open.size());
     DBG("without transfers connections size: " << m_connections.size());
@@ -1351,7 +1351,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //ERR("failed to open socket: " << libtorrent::print_endpoint(ep)
+        //ERR("failed to open socket: " << libed2k::print_endpoint(ep)
         //    << ": " << ec.message().c_str());
     }
 
@@ -1363,7 +1363,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
         char msg[200];
         snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
-                 libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
+                 libed2k::print_endpoint(ep).c_str(), ec.message().c_str());
         ERR(msg);
 
         return listen_socket_t();
@@ -1378,7 +1378,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
         char msg[200];
         snprintf(msg, 200, "cannot listen on interface \"%s\": %s",
-                 libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
+                 libed2k::print_endpoint(ep).c_str(), ec.message().c_str());
         ERR(msg);
 
         return listen_socket_t();

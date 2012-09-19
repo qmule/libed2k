@@ -19,6 +19,7 @@
 #include <libed2k/peer_request.hpp>
 #include <libed2k/piece_picker.hpp>
 #include <libed2k/peer_info.hpp>
+#include "libed2k/piece_block_progress.hpp"
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \

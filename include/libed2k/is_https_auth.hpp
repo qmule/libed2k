@@ -16,6 +16,7 @@
 
 #include "libed2k/error_code.hpp"
 #include "libed2k/types.hpp"
+#include "libed2k/deadline_timer.hpp"
 
 
 namespace libed2k
@@ -120,7 +121,7 @@ namespace libed2k
 
         bool                        m_stopped;
         boost::asio::io_service&    m_service;
-        dtimer                      m_deadline;
+        deadline_timer              m_deadline;
         ssl::context				m_context;  //!< openssl context
         ssl::stream<tcp::socket>	m_ssec;     //!< secure socket
         tcp::resolver				m_resolver; //!< tcp resolver

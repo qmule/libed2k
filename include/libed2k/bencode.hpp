@@ -41,21 +41,21 @@ POSSIBILITY OF SUCH DAMAGE.
  *
  *----------------------------------
  * template<class OutIt>
- * void libtorrent::bencode(OutIt out, const libtorrent::entry& e);
+ * void libed2k::bencode(OutIt out, const libed2k::entry& e);
  *
  * Encodes a message entry with bencoding into the output
  * iterator given. The bencoding is described in the BitTorrent
  * protocol description document OutIt must be an OutputIterator
- * of type char. This may throw libtorrent::invalid_encoding if
+ * of type char. This may throw libed2k::invalid_encoding if
  * the entry contains invalid nodes (undefined_t for example).
  *
  *----------------------------------
  * template<class InIt>
- * libtorrent::entry libtorrent::bdecode(InIt start, InIt end);
+ * libed2k::entry libed2k::bdecode(InIt start, InIt end);
  *
  * Decodes the buffer given by the start and end iterators
  * and returns the decoded entry. InIt must be an InputIterator
- * of type char. May throw libtorrent::invalid_encoding if
+ * of type char. May throw libed2k::invalid_encoding if
  * the string is not correctly bencoded.
  *
  */

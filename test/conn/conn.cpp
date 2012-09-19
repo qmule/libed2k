@@ -7,8 +7,7 @@
 #include <boost/thread.hpp>
 #include <boost/asio/error.hpp>
 
-#include <libtorrent/torrent_handle.hpp>
-#include <libtorrent/bencode.hpp>
+#include <libed2k/bencode.hpp>
 
 #include "libed2k/log.hpp"
 #include "libed2k/session.hpp"
@@ -610,7 +609,7 @@ int main(int argc, char* argv[])
                     DBG("Saving fast resume data was succesfull");
                     // write fast resume data
                     std::vector<char> vFastResumeData;
-                    libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
+                    libed2k::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
                     DBG("save data size: " << vFastResumeData.size());
 
                     // Saving fast resume data was successful

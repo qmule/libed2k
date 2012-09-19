@@ -62,7 +62,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/entry.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libed2k/utf8.hpp>
-#include <libtorrent/time.hpp>
+#include <libed2k/time.hpp>
 #include <libed2k/invariant_check.hpp>
 
 #if LIBED2K_USE_I2P
@@ -71,7 +71,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-    typedef libtorrent::hasher hasher;
+    typedef libed2k::hasher hasher;
 
     void convert_to_utf8(std::string& str, unsigned char chr)
     {
@@ -436,7 +436,7 @@ namespace libed2k
         if (ec) return -1;
         if (s > limit)
         {
-            ec = libtorrent::error_code(libtorrent::errors::metadata_too_large, libtorrent::get_libtorrent_category());
+            ec = libed2k::error_code(libed2k::errors::metadata_too_large, libed2k::get_libed2k_category());
             return -2;
         }
         v.resize(s);
@@ -450,8 +450,8 @@ namespace libed2k
 
     announce_entry::announce_entry(std::string const& u)
         : url(u)
-        , next_announce(libtorrent::min_time())
-        , min_announce(libtorrent::min_time())
+        , next_announce(libed2k::min_time())
+        , min_announce(libed2k::min_time())
         , tier(0)
         , fail_limit(0)
         , fails(0)
@@ -466,10 +466,10 @@ namespace libed2k
     announce_entry::~announce_entry() {}
 
     int announce_entry::next_announce_in() const
-    { return total_seconds(next_announce - libtorrent::time_now()); }
+    { return total_seconds(next_announce - libed2k::time_now()); }
 
     int announce_entry::min_announce_in() const
-    { return total_seconds(min_announce - libtorrent::time_now()); }
+    { return total_seconds(min_announce - libed2k::time_now()); }
 
     void announce_entry::failed(session_settings const& sett, int retry_interval)
     {
@@ -481,11 +481,11 @@ namespace libed2k
                                * tracker_retry_delay_min * 250/*sett.tracker_backoff*/ / 100
             , int(tracker_retry_delay_max));
         delay = (std::max)(delay, retry_interval);
-        next_announce = libtorrent::time_now() + libtorrent::seconds(delay);
+        next_announce = libed2k::time_now() + libed2k::seconds(delay);
         updating = false;
     }
 
-    bool announce_entry::can_announce(libtorrent::ptime now, bool is_seed) const
+    bool announce_entry::can_announce(libed2k::ptime now, bool is_seed) const
     {
         // if we're a seed and we haven't sent a completed
         // event, we need to let this announce through
@@ -508,7 +508,7 @@ namespace libed2k
         , headers_t const& extra_headers_)
         : url(url_), type(type_)
         , auth(auth_), extra_headers(extra_headers_)
-        , retry(libtorrent::time_now()), resolving(false), removed(false)
+        , retry(libed2k::time_now()), resolving(false), removed(false)
         //, peer_info(0, true, 0)
     {
         //peer_info.web_seed = true;
@@ -591,7 +591,7 @@ namespace libed2k
         if (tmp.size() == 0 || lazy_bdecode(&tmp[0], &tmp[0] + tmp.size(), e/*, ec*/) != 0)
         {
 #ifndef BOOST_NO_EXCEPTIONS
-            throw invalid_torrent_file(libtorrent::errors::invalid_bencoding);
+            throw invalid_torrent_file(libed2k::errors::invalid_bencoding);
 #endif
             return;
         }
@@ -779,7 +779,7 @@ namespace libed2k
     torrent_info::torrent_info(sha1_hash const& info_hash, int flags)
         : m_merkle_first_leaf(0)
         , m_piece_hashes(0)
-        , m_creation_date(time(0))
+        //, m_creation_date(time(0))
         , m_info_hash(info_hash)
         , m_info_section_size(0)
         , m_multifile(false)
@@ -838,7 +838,7 @@ namespace libed2k
     {
         if (info.type() != lazy_entry::dict_t)
         {
-            ec = libtorrent::errors::torrent_info_no_dict;
+            ec = libed2k::errors::torrent_info_no_dict;
             return false;
         }
 
@@ -864,7 +864,7 @@ namespace libed2k
         int piece_length = info.dict_find_int_value("piece length", -1);
         if (piece_length <= 0)
         {
-            ec = libtorrent::errors::torrent_missing_piece_length;
+            ec = libed2k::errors::torrent_missing_piece_length;
             return false;
         }
         m_files.set_piece_length(piece_length);
@@ -874,7 +874,7 @@ namespace libed2k
         if (name_ent == 0) name_ent = info.dict_find_string("name");
         if (name_ent == 0)
         {
-            ec = libtorrent::errors::torrent_missing_name;
+            ec = libed2k::errors::torrent_missing_name;
             return false;
         }
 
@@ -884,7 +884,7 @@ namespace libed2k
 
         if (!valid_path_element(name))
         {
-            ec = libtorrent::errors::torrent_invalid_name;
+            ec = libed2k::errors::torrent_invalid_name;
             return false;
         }
 
@@ -935,7 +935,7 @@ namespace libed2k
                 e.pad_file = true;
             if (e.size < 0)
             {
-                ec = libtorrent::errors::torrent_invalid_length;
+                ec = libed2k::errors::torrent_invalid_length;
                 return false;
             }
             m_files.add_file(e, fh ? fh->string_ptr() + info_ptr_diff : 0);
@@ -945,7 +945,7 @@ namespace libed2k
         {
             if (!extract_files(*i, m_files, name, info_ptr_diff))
             {
-                ec = libtorrent::errors::torrent_file_parse_failed;
+                ec = libed2k::errors::torrent_file_parse_failed;
                 return false;
             }
             m_multifile = true;
@@ -964,7 +964,7 @@ namespace libed2k
         if ((pieces == 0 || pieces->type() != lazy_entry::string_t)
             && (root_hash == 0 || root_hash->type() != lazy_entry::string_t))
         {
-            ec = libtorrent::errors::torrent_missing_pieces;
+            ec = libed2k::errors::torrent_missing_pieces;
             return false;
         }
 
@@ -972,7 +972,7 @@ namespace libed2k
         {
             if (pieces->string_length() != m_files.num_pieces() * 20)
             {
-                ec = libtorrent::errors::torrent_invalid_hashes;
+                ec = libed2k::errors::torrent_invalid_hashes;
                 return false;
             }
 
@@ -985,7 +985,7 @@ namespace libed2k
             LIBED2K_ASSERT(root_hash);
             if (root_hash->string_length() != 20)
             {
-                ec = libtorrent::errors::torrent_invalid_hashes;
+                ec = libed2k::errors::torrent_invalid_hashes;
                 return false;
             }
             int num_leafs = merkle_num_leafs(m_files.num_pieces());
@@ -1096,7 +1096,7 @@ namespace libed2k
     {
         if (torrent_file.type() != lazy_entry::dict_t)
         {
-            ec = libtorrent::errors::torrent_is_no_dict;
+            ec = libed2k::errors::torrent_is_no_dict;
             return false;
         }
 
@@ -1227,7 +1227,7 @@ namespace libed2k
         lazy_entry const* info = torrent_file.dict_find_dict("info");
         if (info == 0)
         {
-            ec = libtorrent::errors::torrent_missing_info;
+            ec = libed2k::errors::torrent_missing_info;
             return false;
         }
         return parse_info_section(*info, ec, flags);

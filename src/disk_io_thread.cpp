@@ -77,8 +77,8 @@ namespace libed2k
         , m_abort(false)
         , m_waiting_to_shutdown(false)
         , m_queue_buffer_size(0)
-        , m_last_file_check(libtorrent::time_now_hires())
-        , m_last_stats_flip(libtorrent::time_now())
+        , m_last_file_check(libed2k::time_now_hires())
+        , m_last_stats_flip(libed2k::time_now())
         , m_physical_ram(0)
         , m_exceeded_write_queue(false)
         , m_ios(ios)
@@ -103,7 +103,7 @@ namespace libed2k
         disk_io_job j;
         m_waiting_to_shutdown = true;
         j.action = disk_io_job::abort_thread;
-        j.start_time = libtorrent::time_now_hires();
+        j.start_time = libed2k::time_now_hires();
         m_jobs.insert(m_jobs.begin(), j);
         m_signal.signal(l);
     }
@@ -122,7 +122,7 @@ namespace libed2k
         return !m_exceeded_write_queue;
     }
 
-    void disk_io_thread::flip_stats(libtorrent::ptime now)
+    void disk_io_thread::flip_stats(libed2k::ptime now)
     {
         // calling mean() will actually reset the accumulators
         m_cache_stats.average_queue_time = m_queue_time.mean();
@@ -226,7 +226,7 @@ namespace libed2k
         void operator()(disk_io_thread::cached_piece_entry& p)
         {
             LIBED2K_ASSERT(p.storage);
-            p.expire = libtorrent::time_now() + libtorrent::seconds(expire);
+            p.expire = libed2k::time_now() + libed2k::seconds(expire);
         }
         int expire;
     };
@@ -244,7 +244,7 @@ namespace libed2k
 
     void disk_io_thread::flush_expired_pieces()
     {
-        libtorrent::ptime now = libtorrent::time_now();
+        libed2k::ptime now = libed2k::time_now();
 
         mutex::scoped_lock l(m_piece_mutex);
 
@@ -252,7 +252,7 @@ namespace libed2k
         // flush write cache
         cache_lru_index_t& widx = m_pieces.get<1>();
         cache_lru_index_t::iterator i = widx.begin();
-        libtorrent::time_duration cut_off = libtorrent::seconds(m_settings.cache_expiry);
+        libed2k::time_duration cut_off = libed2k::seconds(m_settings.cache_expiry);
         while (i != widx.end() && now - i->expire > cut_off)
         {
             LIBED2K_ASSERT(i->storage);
@@ -351,7 +351,7 @@ namespace libed2k
         }
 
         // don't replace an entry that hasn't expired yet
-        if (libtorrent::time_now() < i->expire) return 0;
+        if (libed2k::time_now() < i->expire) return 0;
         int blocks = 0;
 
         // build a vector of all the buffers we need to free
@@ -591,7 +591,7 @@ namespace libed2k
 
         end = (std::min)(end, blocks_in_piece);
         int num_write_calls = 0;
-        libtorrent::ptime write_start = libtorrent::time_now_hires();
+        libed2k::ptime write_start = libed2k::time_now_hires();
         for (int i = start; i <= end; ++i)
         {
             if (i == end || p.blocks[i].buf == 0)
@@ -647,7 +647,7 @@ namespace libed2k
             if (i == p.next_block_to_hash) ++p.next_block_to_hash;
         }
 
-        libtorrent::ptime done = libtorrent::time_now_hires();
+        libed2k::ptime done = libed2k::time_now_hires();
 
         int ret = 0;
         disk_io_job j;
@@ -713,7 +713,7 @@ namespace libed2k
 
         p.piece = j.piece;
         p.storage = j.storage;
-        p.expire = libtorrent::time_now() + libtorrent::seconds(j.cache_min_time);
+        p.expire = libed2k::time_now() + libed2k::seconds(j.cache_min_time);
         p.num_blocks = 1;
         p.num_contiguous_blocks = 1;
         p.next_block_to_hash = 0;
@@ -900,7 +900,7 @@ namespace libed2k
         cached_piece_entry p;
         p.piece = j.piece;
         p.storage = j.storage;
-        p.expire = libtorrent::time_now() + libtorrent::seconds(j.cache_min_time);
+        p.expire = libed2k::time_now() + libed2k::seconds(j.cache_min_time);
         p.num_blocks = 0;
         p.num_contiguous_blocks = 0;
         p.next_block_to_hash = 0;
@@ -1024,7 +1024,7 @@ namespace libed2k
             cached_piece_entry pe;
             pe.piece = j.piece;
             pe.storage = j.storage;
-            pe.expire = libtorrent::time_now() + libtorrent::seconds(j.cache_min_time);
+            pe.expire = libed2k::time_now() + libed2k::seconds(j.cache_min_time);
             pe.num_blocks = 0;
             pe.num_contiguous_blocks = 0;
             pe.next_block_to_hash = 0;
@@ -1313,7 +1313,7 @@ namespace libed2k
         , mutex::scoped_lock& l
         , boost::function<void(int, disk_io_job const&)> const& f)
     {
-        const_cast<disk_io_job&>(j).start_time = libtorrent::time_now_hires();
+        const_cast<disk_io_job&>(j).start_time = libed2k::time_now_hires();
 
         if (j.action == disk_io_job::write)
         {
@@ -1512,7 +1512,7 @@ namespace libed2k
             }
 
 
-            libtorrent::ptime job_start;
+            libed2k::ptime job_start;
             while (m_jobs.empty() && m_sorted_read_jobs.empty() && !m_abort)
             {
                 // if there hasn't been an event in one second
@@ -1522,8 +1522,8 @@ namespace libed2k
                 m_signal.wait(jl);
                 m_signal.clear(jl);
 
-                job_start = libtorrent::time_now();
-                if (job_start >= m_last_stats_flip + libtorrent::seconds(1)) flip_stats(job_start);
+                job_start = libed2k::time_now();
+                if (job_start >= m_last_stats_flip + libed2k::seconds(1)) flip_stats(job_start);
             }
 
             if (m_abort && m_jobs.empty())
@@ -1559,8 +1559,8 @@ namespace libed2k
 
             disk_io_job j;
 
-            libtorrent::ptime now = libtorrent::time_now_hires();
-            libtorrent::ptime operation_start = now;
+            libed2k::ptime now = libed2k::time_now_hires();
+            libed2k::ptime operation_start = now;
 
             // make sure we don't starve out the read queue by just issuing
             // write jobs constantly, mix in a read job every now and then
@@ -1660,13 +1660,13 @@ namespace libed2k
 #ifdef LIBED2K_DISK_STATS
                     m_log << log_time() << " sorting_job" << std::endl;
 #endif
-                    libtorrent::ptime sort_start = libtorrent::time_now_hires();
+                    libed2k::ptime sort_start = libed2k::time_now_hires();
 
                     size_type phys_off = j.storage->physical_offset(j.piece, j.offset);
                     need_update_elevator_pos = need_update_elevator_pos || m_sorted_read_jobs.empty();
                     m_sorted_read_jobs.insert(std::pair<size_type, disk_io_job>(phys_off, j));
 
-                    libtorrent::ptime now = libtorrent::time_now_hires();
+                    libed2k::ptime now = libed2k::time_now_hires();
                     m_sort_time.add_sample(total_microseconds(now - sort_start));
                     m_job_time.add_sample(total_microseconds(now - operation_start));
                     m_cache_stats.cumulative_sort_time += total_milliseconds(now - sort_start);
@@ -1738,7 +1738,7 @@ namespace libed2k
                 || j.action == disk_io_job::abort_thread
                 || j.action == disk_io_job::update_settings);
 #ifdef LIBED2K_DISK_STATS
-            libtorrent::ptime start = time_now();
+            libed2k::ptime start = time_now();
 #endif
 
             if (j.cache_min_time < 0)
@@ -2042,7 +2042,7 @@ namespace libed2k
                     }
                     if (!hit)
                     {
-                        libtorrent::ptime now = libtorrent::time_now_hires();
+                        libed2k::ptime now = libed2k::time_now_hires();
                         m_read_time.add_sample(total_microseconds(now - operation_start));
                         m_cache_stats.cumulative_read_time += total_milliseconds(now - operation_start);
                     }
@@ -2129,7 +2129,7 @@ namespace libed2k
                         if (cache_block(j, j.callback, j.cache_min_time, l) < 0)
                         {
                             l.unlock();
-                            libtorrent::ptime start = libtorrent::time_now_hires();
+                            libed2k::ptime start = libed2k::time_now_hires();
                             file::iovec_t iov = {j.buffer, j.buffer_size};
                             ret = j.storage->write_impl(&iov, j.piece, j.offset, 1);
                             l.lock();
@@ -2138,7 +2138,7 @@ namespace libed2k
                                 test_error(j);
                                 break;
                             }
-                            libtorrent::ptime done = libtorrent::time_now_hires();
+                            libed2k::ptime done = libed2k::time_now_hires();
                             m_write_time.add_sample(total_microseconds(done - start));
                             m_cache_stats.cumulative_write_time += total_milliseconds(done - start);
                             // we successfully wrote the block. Ignore previous errors
@@ -2214,7 +2214,7 @@ namespace libed2k
                         break;
                     }
 
-                    libtorrent::ptime hash_start = libtorrent::time_now_hires();
+                    libed2k::ptime hash_start = libed2k::time_now_hires();
 
                     int readback = 0;
                     sha1_hash h = j.storage->hash_for_piece_impl(j.piece, &readback);
@@ -2230,7 +2230,7 @@ namespace libed2k
                     ret = (j.storage->info()->hash_for_piece(j.piece) == h)?0:-2;
                     if (ret == -2) j.storage->mark_failed(j.piece);
 
-                    libtorrent::ptime done = libtorrent::time_now_hires();
+                    libed2k::ptime done = libed2k::time_now_hires();
                     m_hash_time.add_sample(total_microseconds(done - hash_start));
                     m_cache_stats.cumulative_hash_time += total_milliseconds(done - hash_start);
                     break;
@@ -2369,13 +2369,13 @@ namespace libed2k
                     int piece_size = j.storage->info()->piece_length();
                     for (int processed = 0; processed < 4 * 1024 * 1024; processed += piece_size)
                     {
-                        libtorrent::ptime now = libtorrent::time_now_hires();
+                        libed2k::ptime now = libed2k::time_now_hires();
                         LIBED2K_ASSERT(now >= m_last_file_check);
                         // this happens sometimes on windows for some reason
                         if (now < m_last_file_check) now = m_last_file_check;
 
 #if BOOST_VERSION > 103600
-                        if (now - m_last_file_check < libtorrent::milliseconds(m_settings.file_checks_delay_per_block))
+                        if (now - m_last_file_check < libed2k::milliseconds(m_settings.file_checks_delay_per_block))
                         {
                             int sleep_time = m_settings.file_checks_delay_per_block
                                 * (piece_size / m_block_size)
@@ -2385,15 +2385,15 @@ namespace libed2k
 
                             sleep(sleep_time);
                         }
-                        m_last_file_check = libtorrent::time_now_hires();
+                        m_last_file_check = libed2k::time_now_hires();
 #endif
 
-                        libtorrent::ptime hash_start = libtorrent::time_now_hires();
+                        libed2k::ptime hash_start = libed2k::time_now_hires();
                         if (m_waiting_to_shutdown) break;
 
                         ret = j.storage->check_files(j.piece, j.offset, j.error);
 
-                        libtorrent::ptime done = libtorrent::time_now_hires();
+                        libed2k::ptime done = libed2k::time_now_hires();
                         m_hash_time.add_sample(total_microseconds(done - hash_start));
                         m_cache_stats.cumulative_hash_time += total_milliseconds(done - hash_start);
 
@@ -2457,7 +2457,7 @@ namespace libed2k
 
             LIBED2K_ASSERT(!j.storage || !j.storage->error());
 
-            libtorrent::ptime done = libtorrent::time_now_hires();
+            libed2k::ptime done = libed2k::time_now_hires();
             m_job_time.add_sample(total_microseconds(done - operation_start));
             m_cache_stats.cumulative_job_time += total_milliseconds(done - operation_start);
 

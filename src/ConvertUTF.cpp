@@ -39,7 +39,7 @@
 ------------------------------------------------------------------------ */
 
 
-#include "libtorrent/ConvertUTF.h"
+#include "libed2k/ConvertUTF.h"
 #ifdef CVTUTF_DEBUG
 #include <stdio.h>
 #endif

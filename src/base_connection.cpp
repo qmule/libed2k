@@ -183,7 +183,7 @@ namespace libed2k
         if (!error)
         {
             m_read_in_progress = false;
-
+/*
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
                 // unzip data
@@ -196,7 +196,7 @@ namespace libed2k
                     return;
                 }
             }
-
+*/
             //!< search appropriate dispatcher
             handler_map::iterator itr = m_handlers.find(std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
 
@@ -248,7 +248,7 @@ namespace libed2k
         // Check whether the deadline has passed. We compare the deadline against
         // the current time since a new asynchronous operation may have moved the
         // deadline before this actor had a chance to run.
-        if (m_deadline.expires_at() <= dtimer::traits_type::now())
+        if (m_deadline.expires_at() <= deadline_timer::traits_type::now())
         {
             DBG("base_connection::check_deadline(): deadline timer expired");
 

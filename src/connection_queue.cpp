@@ -274,7 +274,7 @@ namespace libed2k
 		function_guard guard_(m_in_timeout_function);
 #endif
 
-		LIBED2K_ASSERT(!e || e == error::operation_aborted);
+		LIBED2K_ASSERT(!e || e == boost::asio::error::operation_aborted);
 		if (e) return;
 
 		ptime next_expire = max_time();

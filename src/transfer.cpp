@@ -49,7 +49,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
-        m_info(new torrent_info(libtorrent::sha1_hash())),
+        m_info(new torrent_info(libed2k::sha1_hash())),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),
@@ -90,7 +90,7 @@ namespace libed2k
 
             if (!m_resume_data.empty())
             {
-                if (libtorrent::lazy_bdecode(&m_resume_data[0], &m_resume_data[0]
+                if (libed2k::lazy_bdecode(&m_resume_data[0], &m_resume_data[0]
                     + m_resume_data.size(), m_resume_entry) != 0)
                 {
                     ERR("fast resume parse error");
@@ -186,7 +186,7 @@ namespace libed2k
             m_ses.m_half_open.enqueue(
                 boost::bind(&peer_connection::connect, c, _1),
                 boost::bind(&peer_connection::on_timeout, c),
-                libtorrent::seconds(timeout));
+                libed2k::seconds(timeout));
         }
         catch (std::exception&)
         {
