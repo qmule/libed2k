@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <boost/format.hpp>
 
-#include <libtorrent/peer_connection.hpp>
-#include <libtorrent/socket.hpp>
+#include <libed2k/peer_connection.hpp>
+#include <libed2k/socket.hpp>
 
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"

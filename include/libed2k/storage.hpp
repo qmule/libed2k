@@ -52,11 +52,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
+#include <libed2k/hasher.hpp>
 #include <libed2k/torrent_info.hpp>
 #include <libed2k/piece_picker.hpp>
-#include <libtorrent/intrusive_ptr_base.hpp>
+#include <libed2k/intrusive_ptr_base.hpp>
 #include <libed2k/peer_request.hpp>
-#include <libtorrent/hasher.hpp>
 #include <libed2k/config.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
@@ -76,12 +76,6 @@ namespace libed2k
 {
     struct disk_io_job;
     struct disk_buffer_pool;
-
-    typedef libtorrent::hasher hasher;
-    typedef libtorrent::entry entry;
-    typedef libtorrent::lazy_entry lazy_entry;
-    typedef libtorrent::error_code error_code;
-    typedef libtorrent::sha1_hash sha1_hash;
 
     LIBED2K_EXTRA_EXPORT std::vector<std::pair<size_type, std::time_t> > get_filesizes(
         file_storage const& t
@@ -297,7 +291,7 @@ namespace libed2k
     struct disk_io_thread;
 
     class LIBED2K_EXTRA_EXPORT piece_manager
-        : public libtorrent::intrusive_ptr_base<piece_manager>
+        : public intrusive_ptr_base<piece_manager>
         , boost::noncopyable
     {
     friend class invariant_access;

@@ -2,8 +2,7 @@
 #define __LIBED2K_ALERT_TYPES__
 
 // for print_endpoint
-#include <libtorrent/socket.hpp>
-
+#include <libed2k/socket.hpp>
 #include <libed2k/alert.hpp>
 #include <libed2k/types.hpp>
 #include <libed2k/error_code.hpp>

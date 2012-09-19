@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef LIBED2K_PEER_INFO_HPP_INCLUDED
 #define LIBED2K_PEER_INFO_HPP_INCLUDED
 
-#include "libtorrent/socket.hpp"
+#include "libed2k/socket.hpp"
 #include "libed2k/deadline_timer.hpp"
 #include "libed2k/peer_id.hpp"
 #include "libed2k/config.hpp"

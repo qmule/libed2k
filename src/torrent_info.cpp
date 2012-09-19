@@ -57,14 +57,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libed2k/torrent_info.hpp>
 #include <libed2k/escape_string.hpp> // is_space
-#include <libtorrent/bencode.hpp>
-#include <libtorrent/hasher.hpp>
-#include <libtorrent/entry.hpp>
+#include <libed2k/bencode.hpp>
+#include <libed2k/hasher.hpp>
+#include <libed2k/entry.hpp>
 #include <libed2k/filesystem.hpp>
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 #include <libtorrent/time.hpp>
 #include <libed2k/invariant_check.hpp>
-#include <libtorrent/session_settings.hpp>
 
 #if LIBED2K_USE_I2P
 #include <libtorrent/parse_url.hpp>
@@ -510,7 +509,7 @@ namespace libed2k
         : url(url_), type(type_)
         , auth(auth_), extra_headers(extra_headers_)
         , retry(libtorrent::time_now()), resolving(false), removed(false)
-        , peer_info(0, true, 0)
+        //, peer_info(0, true, 0)
     {
         //peer_info.web_seed = true;
     }

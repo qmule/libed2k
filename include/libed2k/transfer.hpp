@@ -11,7 +11,7 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include <libtorrent/lazy_entry.hpp>
+#include <libed2k/lazy_entry.hpp>
 #include "libed2k/policy.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/piece_picker.hpp"
@@ -20,6 +20,7 @@
 #include "libed2k/peer_info.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/storage_defs.hpp"
+#include "libed2k/entry.hpp"
 
 
 namespace libed2k {

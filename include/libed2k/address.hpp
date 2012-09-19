@@ -30,18 +30,15 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_IO_SERVICE_HPP_INCLUDED
-#define LIBED2K_IO_SERVICE_HPP_INCLUDED
+#ifndef LIBED2K_ADDRESS_HPP_INCLUDED
+#define LIBED2K_ADDRESS_HPP_INCLUDED
+
+#include <boost/version.hpp>
+#include "libed2k/config.hpp"
 
 #ifdef __OBJC__
 #define Protocol Protocol_
 #endif
-
-#ifdef _MSC_VER
-#pragma warning(push, 1)
-#endif
-
-#include <boost/version.hpp>
 
 #if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
 // asio assumes that the windows error codes are defined already
@@ -49,13 +46,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #if BOOST_VERSION < 103500
-#include <asio/io_service.hpp>
+#include <asio/ip/address.hpp>
 #else
-#include <boost/asio/io_service.hpp>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
+#include <boost/asio/ip/address.hpp>
 #endif
 
 #ifdef __OBJC__ 
@@ -66,12 +59,19 @@ namespace libed2k
 {
 
 #if BOOST_VERSION < 103500
-	typedef ::asio::io_service io_service;
+	typedef ::asio::ip::address address;
+	typedef ::asio::ip::address_v4 address_v4;
+#if LIBED2K_USE_IPV6
+	typedef ::asio::ip::address_v6 address_v6;
+#endif
 #else
-	typedef boost::asio::io_service io_service;
+	typedef boost::asio::ip::address address;
+	typedef boost::asio::ip::address_v4 address_v4;
+#if LIBED2K_USE_IPV6
+	typedef boost::asio::ip::address_v6 address_v6;
+#endif
 #endif
 }
 
 #endif
-
 

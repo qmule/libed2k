@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/file_storage.hpp>
 #include <libed2k/filesystem.hpp>
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 #include <boost/bind.hpp>
 #include <cstdio>
 #include <algorithm>

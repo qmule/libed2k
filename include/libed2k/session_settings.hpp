@@ -293,7 +293,7 @@ namespace libed2k
         // doesn't give you an benefits
         bool allow_reordered_disk_operations;
 
-#ifndef TORRENT_DISABLE_MLOCK
+#ifndef LIBED2K_DISABLE_MLOCK
         // if this is set to true, the memory allocated for the
         // disk cache will be locked in physical RAM, never to
         // be swapped out

@@ -16,16 +16,17 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include <libtorrent/intrusive_ptr_base.hpp>
-#include <libtorrent/stat.hpp>
+#include "libed2k/intrusive_ptr_base.hpp"
+#include <libed2k/stat.hpp>
 
-#include <libed2k/assert.hpp>
-#include <libed2k/chained_buffer.hpp>
+#include "libed2k/assert.hpp"
+#include "libed2k/chained_buffer.hpp"
 #include "libed2k/types.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/config.hpp"
+#include "libed2k/deadline_timer.hpp"
 
 namespace libed2k{
 
@@ -33,7 +34,7 @@ namespace libed2k{
 
     namespace aux{ class session_impl; }
 
-    class base_connection: public libtorrent::intrusive_ptr_base<base_connection>,
+    class base_connection: public intrusive_ptr_base<base_connection>,
                            public boost::noncopyable
     {
         friend class aux::session_impl;
@@ -180,7 +181,7 @@ namespace libed2k{
 
         aux::session_impl& m_ses;
         boost::shared_ptr<tcp::socket> m_socket;
-        dtimer m_deadline;     //!< deadline timer for reading operations
+        deadline_timer m_deadline;     //!< deadline timer for reading operations
         libed2k_header m_in_header;    //!< incoming message header
         socket_buffer m_in_container; //!< buffer for incoming messages
         socket_buffer m_in_gzip_container; //!< buffer for compressed data

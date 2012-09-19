@@ -58,7 +58,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #define LIBED2K_USE_BOOST_DATE_TIME 1
-#include "libtorrent/time.hpp"
+#include "libed2k/time.hpp"
 
 // asio time_traits
 #if !LIBED2K_USE_BOOST_DATE_TIME
@@ -68,12 +68,12 @@ namespace boost {
 namespace asio
 {
 	template<>
-	struct time_traits<libtorrent::ptime>
+	struct time_traits<ptime>
 	{
-		typedef libtorrent::ptime time_type;
-		typedef libtorrent::time_duration duration_type;
+		typedef ptime time_type;
+		typedef time_duration duration_type;
 		static time_type now()
-		{ return time_type(libtorrent::time_now_hires()); }
+		{ return time_type(time_now_hires()); }
 		static time_type add(time_type t, duration_type d)
 		{ return time_type(t.time + d.diff);}
 		static duration_type subtract(time_type t1, time_type t2)
@@ -82,7 +82,7 @@ namespace asio
 		{ return t1 < t2; }
 		static boost::posix_time::time_duration to_posix_duration(
 			duration_type d)
-		{ return boost::posix_time::microseconds(libtorrent::total_microseconds(d)); }
+		{ return boost::posix_time::microseconds(total_microseconds(d)); }
 	};
 }
 #if BOOST_VERSION >= 103500
@@ -90,13 +90,13 @@ namespace asio
 #endif
 #endif
 
-namespace libtorrent
+namespace libed2k
 {
 
 #if BOOST_VERSION < 103500
-	typedef ::asio::basic_deadline_timer<libtorrent::ptime> deadline_timer;
+	typedef ::asio::basic_deadline_timer<ptime> deadline_timer;
 #else
-	typedef boost::asio::basic_deadline_timer<libtorrent::ptime> deadline_timer;
+	typedef boost::asio::basic_deadline_timer<ptime> deadline_timer;
 #endif
 }
 

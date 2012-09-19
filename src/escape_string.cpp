@@ -55,7 +55,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>
 #endif
 
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 #include <libed2k/thread.hpp>
 
 #if LIBED2K_USE_ICONV
@@ -567,7 +567,7 @@ namespace libed2k
     std::wstring convert_to_wstring(std::string const& s)
     {
         std::wstring ret;
-        int result = libtorrent::utf8_wchar(s, ret);
+        int result = libed2k::utf8_wchar(s, ret);
         if (result == 0) return ret;
 
         ret.clear();
@@ -586,7 +586,7 @@ namespace libed2k
     std::string convert_from_wstring(std::wstring const& s)
     {
         std::string ret;
-        int result = libtorrent::wchar_utf8(s, ret);
+        int result = libed2k::wchar_utf8(s, ret);
         if (result == 0) return ret;
 
         ret.clear();
@@ -665,7 +665,7 @@ namespace libed2k
     std::string convert_to_native(std::string const& s)
     {
         std::wstring ws;
-        libtorrent::utf8_wchar(s, ws);
+        libed2k::utf8_wchar(s, ws);
         std::size_t size = wcstombs(0, ws.c_str(), 0);
         if (size == std::size_t(-1)) return s;
         std::string ret;
@@ -683,7 +683,7 @@ namespace libed2k
         std::size_t size = mbstowcs(&ws[0], s.c_str(), s.size());
         if (size == std::size_t(-1)) return s;
         std::string ret;
-        libtorrent::wchar_utf8(ws, ret);
+        libed2k::wchar_utf8(ws, ret);
         return ret;
     }
 

@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_TORRENT_INFO_HPP_INCLUDED
-#define LIBED2K_TORRENT_INFO_HPP_INCLUDED
+#ifndef LIBED2K_LIBED2K_INFO_HPP_INCLUDED
+#define LIBED2K_LIBED2K_INFO_HPP_INCLUDED
 
 #include <string>
 #include <vector>
@@ -47,26 +47,24 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
+
+#include <libed2k/socket.hpp>
+//#include <libtorrent/policy.hpp> // for policy::peer
+#include <libed2k/entry.hpp>
+#include <libed2k/lazy_entry.hpp>
+#include <libed2k/time.hpp>
+
 #include <libed2k/config.hpp>
-#include <libtorrent/entry.hpp>
-#include <libtorrent/lazy_entry.hpp>
-#include <libtorrent/peer_id.hpp>
 #include <libed2k/size_type.hpp>
-#include <libtorrent/time.hpp>
-#include <libtorrent/intrusive_ptr_base.hpp>
+#include <libed2k/intrusive_ptr_base.hpp>
 #include <libed2k/assert.hpp>
 #include <libed2k/file_storage.hpp>
 #include <libed2k/copy_ptr.hpp>
-#include <libtorrent/socket.hpp>
-#include <libtorrent/policy.hpp> // for policy::peer
-#include <libtorrent/error_code.hpp>
+
 
 namespace libed2k
 {
     class session_settings;
-
-    typedef libtorrent::entry entry;
-    typedef libtorrent::lazy_entry lazy_entry;
 
     enum
     {
@@ -212,7 +210,7 @@ namespace libed2k
         // connection, just to count hash failures
         // it's also used to hold the peer_connection
         // pointer, when the web seed is connected
-        libtorrent::policy::peer peer_info;
+        //libtorrent::policy::peer peer_info;
     };
 
 #ifndef BOOST_NO_EXCEPTIONS
@@ -223,7 +221,7 @@ namespace libed2k
     int LIBED2K_EXPORT load_file(std::string const& filename
         , std::vector<char>& v, libtorrent::error_code& ec, int limit = 8000000);
 
-    class LIBED2K_EXPORT torrent_info : public libtorrent::intrusive_ptr_base<torrent_info>
+    class LIBED2K_EXPORT torrent_info : public intrusive_ptr_base<torrent_info>
     {
     public:
 
@@ -500,4 +498,4 @@ namespace libed2k
 
 }
 
-#endif // LIBED2K_TORRENT_INFO_HPP_INCLUDED
+#endif // LIBED2K_LIBED2K_INFO_HPP_INCLUDED

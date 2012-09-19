@@ -43,7 +43,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/scoped_array.hpp>
 #include <boost/bind.hpp>
 
-#include <libtorrent/time.hpp>
+#include <libed2k/time.hpp>
 
 #if LIBED2K_USE_MLOCK && !defined LIBED2K_WINDOWS
 #include <sys/mman.h>

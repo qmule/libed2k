@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2009, Arvid Norberg
+Copyright (c) 2007, Arvid Norberg
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,48 +30,62 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_IO_SERVICE_HPP_INCLUDED
-#define LIBED2K_IO_SERVICE_HPP_INCLUDED
+#ifndef LIBED2K_INTRUSIVE_PTR_BASE
+#define LIBED2K_INTRUSIVE_PTR_BASE
 
-#ifdef __OBJC__
-#define Protocol Protocol_
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(push, 1)
-#endif
-
-#include <boost/version.hpp>
-
-#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
-// asio assumes that the windows error codes are defined already
-#include <winsock2.h>
-#endif
-
-#if BOOST_VERSION < 103500
-#include <asio/io_service.hpp>
-#else
-#include <boost/asio/io_service.hpp>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-#ifdef __OBJC__ 
-#undef Protocol
-#endif
+#include <boost/detail/atomic_count.hpp>
+#include <boost/checked_delete.hpp>
+#include <boost/intrusive_ptr.hpp>
+#include "libed2k/config.hpp"
+#include "libed2k/assert.hpp"
 
 namespace libed2k
 {
+	template<class T>
+	struct intrusive_ptr_base
+	{
+		intrusive_ptr_base(intrusive_ptr_base<T> const&)
+			: m_refs(0) {}
 
-#if BOOST_VERSION < 103500
-	typedef ::asio::io_service io_service;
-#else
-	typedef boost::asio::io_service io_service;
+		intrusive_ptr_base& operator=(intrusive_ptr_base const& rhs)
+		{ return *this; }
+
+		friend void intrusive_ptr_add_ref(intrusive_ptr_base<T> const* s)
+		{
+			LIBED2K_ASSERT(s != 0);
+			LIBED2K_ASSERT(s->m_refs >= 0);
+			++s->m_refs;
+		}
+
+		friend void intrusive_ptr_release(intrusive_ptr_base<T> const* s)
+		{
+			LIBED2K_ASSERT(s != 0);
+			LIBED2K_ASSERT(s->m_refs > 0);
+			if (--s->m_refs == 0)
+				boost::checked_delete(static_cast<T const*>(s));
+		}
+
+		boost::intrusive_ptr<T> self()
+		{ return boost::intrusive_ptr<T>((T*)this); }
+
+		boost::intrusive_ptr<const T> self() const
+		{ return boost::intrusive_ptr<const T>((T const*)this); }
+
+		int refcount() const { return m_refs; }
+
+		intrusive_ptr_base(): m_refs(0) {}
+
+		// so that we can access this when logging
+#if !defined LIBED2K_LOGGING \
+		&& !defined LIBED2K_VERBOSE_LOGGING \
+		&& !defined LIBED2K_ERROR_LOGGING
+	private:
 #endif
+		// reference counter for intrusive_ptr
+		mutable boost::detail::atomic_count m_refs;
+	};
+
 }
 
 #endif
-
 

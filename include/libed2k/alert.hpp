@@ -59,6 +59,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "libed2k/types.hpp"
+#include "libed2k/time.hpp"
 
 #ifndef LIBED2K_MAX_ALERT_TYPES
 #define LIBED2K_MAX_ALERT_TYPES 7

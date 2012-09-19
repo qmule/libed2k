@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/config.hpp>
 #include <libed2k/thread.hpp>
-#include <libtorrent/socket.hpp>
+#include <libed2k/socket.hpp>
 #include <libed2k/session_settings.hpp>
 #include <libed2k/allocator.hpp>
 

@@ -55,10 +55,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/config.hpp>
 #include <libed2k/storage.hpp>
-#include <libtorrent/torrent.hpp>
-#include <libtorrent/hasher.hpp>
-#include <libtorrent/session.hpp>
-#include <libtorrent/peer_id.hpp>
+//#include <libtorrent/torrent.hpp>
+//#include <libtorrent/session.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libed2k/invariant_check.hpp>
 #include <libed2k/file_pool.hpp>

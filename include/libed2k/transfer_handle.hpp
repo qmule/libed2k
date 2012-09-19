@@ -7,6 +7,7 @@
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/storage_defs.hpp"
+#include "libed2k/address.hpp"
 
 namespace libed2k
 {
@@ -315,6 +316,63 @@ namespace libed2k
 
         boost::weak_ptr<transfer> m_transfer;
     };
+
+    struct LIBED2K_EXPORT block_info
+    {
+        enum block_state_t
+        { none, requested, writing, finished };
+
+    private:
+        LIBED2K_UNION addr_t
+        {
+            address_v4::bytes_type v4;
+#if LIBED2K_USE_IPV6
+            address_v6::bytes_type v6;
+#endif
+        } addr;
+
+        boost::uint16_t port;
+    public:
+
+        void set_peer(tcp::endpoint const& ep)
+        {
+#if LIBED2K_USE_IPV6
+            is_v6_addr = ep.address().is_v6();
+            if (is_v6_addr)
+                addr.v6 = ep.address().to_v6().to_bytes();
+            else
+#endif
+                addr.v4 = ep.address().to_v4().to_bytes();
+            port = ep.port();
+        }
+
+        tcp::endpoint peer() const
+        {
+#if LIBED2K_USE_IPV6
+            if (is_v6_addr)
+                return tcp::endpoint(address_v6(addr.v6), port);
+            else
+#endif
+                return tcp::endpoint(address_v4(addr.v4), port);
+        }
+
+        // number of bytes downloaded in this block
+        unsigned bytes_progress:15;
+        // the total number of bytes in this block
+        unsigned block_size:15;
+    private:
+        // the type of the addr union
+        unsigned is_v6_addr:1;
+        unsigned unused:1;
+    public:
+        // the state this block is in (see block_state_t)
+        unsigned state:2;
+        // the number of peers that has requested this block
+        // typically 0 or 1. If > 1, this block is in
+        // end game mode
+        unsigned num_peers:14;
+    };
+
 
     extern std::string transfer_status2string(const transfer_status& s);
 }

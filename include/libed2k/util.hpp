@@ -4,6 +4,7 @@
 
 #include "libed2k/bitfield.hpp"
 #include "libed2k/constants.hpp"
+#include "libed2k/ptime.hpp"
 
 namespace libed2k
 {
@@ -56,10 +57,10 @@ namespace libed2k
 
     extern std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size);
 
-    inline ptime time_now()
-    {
-        return time::microsec_clock::universal_time();
-    }
+    //inline ptime time_now()
+    //{
+    //    return time::microsec_clock::universal_time();
+    //}
 
     template<typename Coll1, typename Coll2>
     void appendAll(Coll1& to, const Coll2& from)

@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2009, Arvid Norberg
+Copyright (c) 2003, Arvid Norberg
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,48 +30,23 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_IO_SERVICE_HPP_INCLUDED
-#define LIBED2K_IO_SERVICE_HPP_INCLUDED
+#include "libtorrent/pch.hpp"
 
-#ifdef __OBJC__
-#define Protocol Protocol_
-#endif
+#include <numeric>
+#include <algorithm>
 
-#ifdef _MSC_VER
-#pragma warning(push, 1)
-#endif
+#include "libed2k/stat.hpp"
 
-#include <boost/version.hpp>
+namespace libed2k {
 
-#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
-// asio assumes that the windows error codes are defined already
-#include <winsock2.h>
-#endif
-
-#if BOOST_VERSION < 103500
-#include <asio/io_service.hpp>
-#else
-#include <boost/asio/io_service.hpp>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-#ifdef __OBJC__ 
-#undef Protocol
-#endif
-
-namespace libed2k
+void stat_channel::second_tick(int tick_interval_ms)
 {
-
-#if BOOST_VERSION < 103500
-	typedef ::asio::io_service io_service;
-#else
-	typedef boost::asio::io_service io_service;
-#endif
+	int sample = int(size_type(m_counter) * 1000 / tick_interval_ms);
+	LIBED2K_ASSERT(sample >= 0);
+	m_5_sec_average = size_type(m_5_sec_average) * 4 / 5 + sample / 5;
+	m_30_sec_average = size_type(m_30_sec_average) * 29 / 30 + sample / 30;
+	m_counter = 0;
 }
 
-#endif
-
+}
 

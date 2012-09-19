@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2009, Arvid Norberg
+Copyright (c) 2006, Arvid Norberg
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,48 +30,24 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef LIBED2K_IO_SERVICE_HPP_INCLUDED
-#define LIBED2K_IO_SERVICE_HPP_INCLUDED
+#ifndef LIBED2K_UTF8_HPP_INCLUDED
+#define LIBED2K_UTF8_HPP_INCLUDED
 
-#ifdef __OBJC__
-#define Protocol Protocol_
-#endif
+#include "libed2k/config.hpp"
 
-#ifdef _MSC_VER
-#pragma warning(push, 1)
-#endif
+// on windows we need these functions for
+// convert_to_native and convert_from_native
+#if LIBED2K_USE_WSTRING || defined LIBED2K_WINDOWS
 
-#include <boost/version.hpp>
-
-#if defined LIBED2K_WINDOWS || defined LIBED2K_CYGWIN
-// asio assumes that the windows error codes are defined already
-#include <winsock2.h>
-#endif
-
-#if BOOST_VERSION < 103500
-#include <asio/io_service.hpp>
-#else
-#include <boost/asio/io_service.hpp>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-#ifdef __OBJC__ 
-#undef Protocol
-#endif
+#include <string>
+#include <cwchar>
 
 namespace libed2k
 {
-
-#if BOOST_VERSION < 103500
-	typedef ::asio::io_service io_service;
-#else
-	typedef boost::asio::io_service io_service;
-#endif
+	LIBED2K_EXPORT int utf8_wchar(const std::string &utf8, std::wstring &wide);
+	LIBED2K_EXPORT int wchar_utf8(const std::wstring &wide, std::string &utf8);
 }
+#endif // !BOOST_NO_STD_WSTRING
 
 #endif
-
 

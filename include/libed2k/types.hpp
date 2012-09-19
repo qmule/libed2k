@@ -12,20 +12,17 @@ namespace boost{
 }
 
 namespace libtorrent {
-    class piece_picker;
-    struct piece_block;
+
     class buffer;
     struct logger;
     struct ptime;
     class listen_failed_alert;
-    struct bitfield;
     struct torrent_status;
     struct session_status;
     struct piece_block_progress;
     class stat;
     struct peer_info;
-    class entry;
-    struct lazy_entry;
+
     struct chained_buffer;
 
     namespace aux{
@@ -41,8 +38,8 @@ namespace libed2k
 
     typedef boost::asio::ip::tcp tcp;
     typedef boost::asio::ip::udp udp;
-    typedef boost::asio::deadline_timer dtimer;
-    typedef boost::posix_time::time_duration time_duration;
+    //typedef boost::asio::deadline_timer dtimer;
+    //typedef boost::posix_time::time_duration time_duration;
 
     typedef libtorrent::buffer buffer;
     typedef libtorrent::logger logger;
@@ -50,9 +47,6 @@ namespace libed2k
     typedef libtorrent::aux::eh_initializer eh_initializer;
     typedef libtorrent::session_status session_status;
     typedef libtorrent::piece_block_progress piece_block_progress;
-    typedef libtorrent::stat stat;
-    typedef libtorrent::entry entry;
-    typedef libtorrent::lazy_entry lazy_entry;
 
     namespace detail = libtorrent::detail;
 
@@ -60,7 +54,6 @@ namespace libed2k
     namespace fs = boost::filesystem;
     namespace bio = boost::iostreams;
     namespace time = boost::posix_time;
-    typedef time::ptime ptime;
     typedef boost::uint64_t fsize_t;
     typedef boost::int64_t size_type;
     typedef boost::uint64_t unsigned_size_type;

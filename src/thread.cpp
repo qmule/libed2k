@@ -30,8 +30,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <libed2k/thread.hpp>
-#include <libed2k/assert.hpp>
+#include "libed2k/thread.hpp"
+#include "libed2k/assert.hpp"
 
 #ifdef LIBED2K_BEOS
 #include <kernel/OS.h>

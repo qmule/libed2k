@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/error_code.hpp>
 #include <libed2k/size_type.hpp>
 #include <libed2k/config.hpp>
-#include <libtorrent/intrusive_ptr_base.hpp>
+#include <libed2k/intrusive_ptr_base.hpp>
 
 #ifdef LIBED2K_WINDOWS
 // windows part
@@ -173,7 +173,7 @@ namespace libed2k
         bool m_done;
     };
 
-    struct LIBED2K_EXPORT file: boost::noncopyable, libtorrent::intrusive_ptr_base<file>
+    struct LIBED2K_EXPORT file: boost::noncopyable, intrusive_ptr_base<file>
     {
         enum
         {

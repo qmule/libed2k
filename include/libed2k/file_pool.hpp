@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <map>
 #include <libed2k/filesystem.hpp>
-#include <libtorrent/time.hpp>
+#include <libed2k/time.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/file_storage.hpp>
 

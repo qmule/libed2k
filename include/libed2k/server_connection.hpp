@@ -6,8 +6,7 @@
 #include <boost/intrusive_ptr.hpp>
 #include <boost/asio.hpp>
 
-#include <libtorrent/intrusive_ptr_base.hpp>
-
+#include <libed2k/intrusive_ptr_base.hpp>
 #include "libed2k/types.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/error_code.hpp"
@@ -28,7 +27,7 @@ namespace libed2k
     const char SC_TO_SERVER     = SC_ONLINE;
 
 
-    class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
+    class server_connection: public intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
         friend class aux::session_impl;

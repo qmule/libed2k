@@ -8,11 +8,11 @@
 #include <map>
 #include <set>
 
-#include <libtorrent/torrent_handle.hpp>
-#include <libtorrent/socket.hpp>
-#include <libtorrent/peer_connection.hpp>
-#include <libtorrent/identify_client.hpp>
-#include <libtorrent/stat.hpp>
+//#include <libtorrent/torrent_handle.hpp>
+#include <libed2k/socket.hpp>
+#include "libed2k/stat.hpp"
+//#include <libtorrent/peer_connection.hpp>
+//#include <libtorrent/identify_client.hpp>
 
 #include <libed2k/fingerprint.hpp>
 #include <libed2k/md4_hash.hpp>
@@ -300,7 +300,7 @@ namespace libed2k {
             // this vector is used to store the block_info
             // objects pointed to by partial_piece_info returned
             // by torrent::get_download_queue.
-            std::vector<libtorrent::block_info> m_block_info_storage;
+            std::vector<block_info> m_block_info_storage;
 
             // this pool is used to allocate and recycle send
             // buffers from.

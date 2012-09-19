@@ -252,6 +252,7 @@ namespace libed2k
 	};
 
 	typedef big_number peer_id;
+	typedef big_number sha1_hash;
 
 #if LIBED2K_USE_IOSTREAM
 	inline std::ostream& operator<<(std::ostream& os, big_number const& peer)
