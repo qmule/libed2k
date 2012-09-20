@@ -35,7 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "libed2k/socket.hpp"
 #include "libed2k/address.hpp"
-#include "libtorrent/io.hpp"
+#include "libed2k/io.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/lazy_entry.hpp"
 #include "libed2k/peer_id.hpp" // for sha1_hash
@@ -120,7 +120,7 @@ namespace libed2k
 		template <class EndpointType>
 		void read_endpoint_list(libed2k::lazy_entry const* n, std::vector<EndpointType>& epl)
 		{
-			using namespace libtorrent;
+			using namespace libed2k;
 			if (n->type() != lazy_entry::list_t) return;
 			for (int i = 0; i < n->list_size(); ++i)
 			{

@@ -7,8 +7,8 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/aligned_storage.hpp>
 
-#include <libtorrent/io.hpp>
-#include <libtorrent/piece_block_progress.hpp>
+#include <libed2k/io.hpp>
+#include <libed2k/piece_block_progress.hpp>
 
 #include <libed2k/bitfield.hpp>
 #include <libed2k/disk_buffer_holder.hpp>

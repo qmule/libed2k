@@ -570,7 +570,7 @@ int main(int argc, char* argv[])
                 while (num_resume_data > 0)
                 {
                     DBG("wait for alert");
-                    libed2k::alert const* a = ses.wait_for_alert(boost::posix_time::seconds(30));
+                    libed2k::alert const* a = ses.wait_for_alert(libed2k::seconds(30));
 
                     if (a == 0)
                     {

@@ -66,7 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/allocator.hpp>
 #include <libed2k/session_settings.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
     struct file_pool;
     //class session;

@@ -49,6 +49,8 @@ namespace libed2k
             torrent_is_no_dict,
             torrent_info_no_dict,
             torrent_missing_info,
+            unsupported_url_protocol,
+            expected_close_bracket_in_address,
             // protocol errors
             decode_packet_error,
             invalid_protocol_type,

@@ -9,12 +9,9 @@
 #include <set>
 
 #include <boost/pool/object_pool.hpp>
-//#include <libtorrent/torrent_handle.hpp>
+
 #include <libed2k/socket.hpp>
 #include "libed2k/stat.hpp"
-//#include <libtorrent/peer_connection.hpp>
-//#include <libtorrent/identify_client.hpp>
-
 #include <libed2k/fingerprint.hpp>
 #include <libed2k/md4_hash.hpp>
 #include <libed2k/transfer_handle.hpp>
@@ -401,7 +398,7 @@ namespace libed2k {
             duration_timer m_second_timer;
 
             // the timer used to fire the tick
-            boost::asio::deadline_timer m_timer;
+            deadline_timer m_timer;
 
             int m_last_connect_duration;        //!< duration in milliseconds since last server connection was executed
             int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed

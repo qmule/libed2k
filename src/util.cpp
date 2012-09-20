@@ -39,7 +39,7 @@ namespace libed2k
         return std::make_pair(begin, end);
     }
 
-    duration_timer::duration_timer(const time::time_duration& duration, const ptime& last_tick):
+    duration_timer::duration_timer(const time_duration& duration, const ptime& last_tick):
         m_duration(duration), m_last_tick(last_tick), m_tick_interval()
     {
     }

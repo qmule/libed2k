@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2003, Arvid Norberg
+Copyright (c) 2008, Arvid Norberg
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,23 +30,31 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libed2k/pch.hpp"
+#ifndef LIBED2K_PARSE_URL_HPP_INCLUDED
+#define LIBED2K_PARSE_URL_HPP_INCLUDED
 
-#include <numeric>
-#include <algorithm>
+#ifdef _MSC_VER
+#pragma warning(push, 1)
+#endif
 
-#include "libed2k/stat.hpp"
+#include <boost/tuple/tuple.hpp>
 
-namespace libed2k {
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
-void stat_channel::second_tick(int tick_interval_ms)
+#include <string>
+#include "libed2k/config.hpp"
+#include "libed2k/error_code.hpp"
+
+namespace libed2k
 {
-	int sample = int(size_type(m_counter) * 1000 / tick_interval_ms);
-	LIBED2K_ASSERT(sample >= 0);
-	m_5_sec_average = size_type(m_5_sec_average) * 4 / 5 + sample / 5;
-	m_30_sec_average = size_type(m_30_sec_average) * 29 / 30 + sample / 30;
-	m_counter = 0;
-}
+
+	LIBED2K_EXTRA_EXPORT boost::tuple<std::string, std::string
+		, std::string, int, std::string>
+		parse_url_components(std::string url, error_code& ec);
 
 }
+
+#endif
 

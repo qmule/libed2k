@@ -374,7 +374,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_next_connect_transfer(m_transfers),
     m_paused(false),
     m_max_connections(200),
-    m_second_timer(time::seconds(1)),
+    m_second_timer(seconds(1)),
     m_timer(m_io_service),
     m_last_connect_duration(0),
     m_last_announce_duration(0),
@@ -1170,13 +1170,13 @@ void session_impl::on_tick(error_code const& e)
     }
 
     error_code ec;
-    m_timer.expires_from_now(time::milliseconds(100), ec);
+    m_timer.expires_from_now(milliseconds(100), ec);
     m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
 
     // only tick the following once per second
     if (!m_second_timer.expires()) return;
 
-    int tick_interval_ms = m_second_timer.tick_interval().total_milliseconds();
+    int tick_interval_ms = total_milliseconds(m_second_timer.tick_interval());
 
     // --------------------------------------------------------------
     // check for incoming connections that might have timed out

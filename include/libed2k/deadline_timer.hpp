@@ -57,7 +57,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #undef Protocol
 #endif
 
-#define LIBED2K_USE_BOOST_DATE_TIME 1
 #include "libed2k/time.hpp"
 
 // asio time_traits
@@ -68,12 +67,12 @@ namespace boost {
 namespace asio
 {
 	template<>
-	struct time_traits<ptime>
+	struct time_traits<libed2k::ptime>
 	{
-		typedef ptime time_type;
-		typedef time_duration duration_type;
+		typedef libed2k::ptime time_type;
+		typedef libed2k::time_duration duration_type;
 		static time_type now()
-		{ return time_type(time_now_hires()); }
+		{ return time_type(libed2k::time_now_hires()); }
 		static time_type add(time_type t, duration_type d)
 		{ return time_type(t.time + d.diff);}
 		static duration_type subtract(time_type t1, time_type t2)

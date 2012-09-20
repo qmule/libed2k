@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
     Physical file offset patch by Morten Husveit
 */
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 #include <libed2k/config.hpp>
 #include <libed2k/alloca.hpp>
 #include <libed2k/allocator.hpp> // page_size

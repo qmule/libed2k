@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/version.hpp>
 #include <boost/bind.hpp>
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 #include <libed2k/assert.hpp>
 #include <libed2k/file_pool.hpp>
 #include <libed2k/error_code.hpp>
