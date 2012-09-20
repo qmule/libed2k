@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
+				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG;_WIN32_WINNT=0x0500;LIBED2K_USE_BOOST_DATE_TIME"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -170,6 +170,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\chained_buffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\connection_queue.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ConvertUTF.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ctag.cpp"
 				>
 			</File>
@@ -183,6 +195,10 @@
 			</File>
 			<File
 				RelativePath="..\src\disk_io_thread.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\entry.cpp"
 				>
 			</File>
 			<File
@@ -218,6 +234,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lazy_bdecode.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\log.cpp"
 				>
 			</File>
@@ -239,6 +259,10 @@
 			</File>
 			<File
 				RelativePath="..\src\peer_connection_handle.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\piece_picker.cpp"
 				>
 			</File>
 			<File
@@ -266,11 +290,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\socket_io.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\stat.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\storage.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\thread.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\time.cpp"
 				>
 			</File>
 			<File
@@ -286,19 +322,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\utf8.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\util.cpp"
 				>
 			</File>
-            <File
-                RelativePath="..\src\chained_buffer.cpp"
-                >
-            </File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\include\libed2k\address.hpp"
+				>
+			</File>
 			<File
 				RelativePath="..\include\libed2k\alert.hpp"
 				>
@@ -328,11 +368,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\bencode.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\bitfield.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\chained_buffer.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\config.hpp"
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\connection_queue.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\constants.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\ConvertUTF.h"
 				>
 			</File>
 			<File
@@ -341,6 +401,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\ctag.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\deadline_timer.hpp"
 				>
 			</File>
 			<File
@@ -353,6 +417,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\disk_io_thread.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\entry.hpp"
 				>
 			</File>
 			<File
@@ -384,6 +452,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\hasher.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\intrusive_ptr_base.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\invariant_check.hpp"
 				>
 			</File>
@@ -400,7 +476,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\lazy_entry.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\log.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\max.hpp"
 				>
 			</File>
 			<File
@@ -424,11 +508,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\peer_id.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\peer_info.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\peer_request.hpp"
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\piece_block_progress.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\piece_picker.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\policy.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\ptime.hpp"
 				>
 			</File>
 			<File
@@ -456,11 +560,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\session_status.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\size_type.hpp"
 				>
 			</File>
 			<File
 				RelativePath="..\include\libed2k\sliding_average.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\socket.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\socket_io.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\stat.hpp"
 				>
 			</File>
 			<File
@@ -473,6 +593,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\thread.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\time.hpp"
 				>
 			</File>
 			<File
@@ -492,6 +616,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\utf8.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\util.hpp"
 				>
 			</File>
@@ -499,10 +627,6 @@
 				RelativePath="..\include\libed2k\version.hpp"
 				>
 			</File>
-            <File
-                RelativePath="..\include\libed2k\chained_buffer.hpp"
-                >
-            </File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
