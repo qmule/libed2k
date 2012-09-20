@@ -1,4 +1,3 @@
-#include <zlib.h>
 #include <boost/lexical_cast.hpp>
 
 #include "libed2k/version.hpp"
@@ -314,7 +313,8 @@ namespace libed2k
         if (!error)
         {
             DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
-
+/*
+            // gzip decompressor disabled
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
                 // unzip data
@@ -333,7 +333,7 @@ namespace libed2k
 
                 m_in_container.resize(nSize);
             }
-
+*/
             boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_container.size());
             std::istream in_array_stream(&buffer);
             archive::ed2k_iarchive ia(in_array_stream);

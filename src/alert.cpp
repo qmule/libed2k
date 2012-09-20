@@ -34,8 +34,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
+#include "libed2k/config.hpp"
 #include "libed2k/alert.hpp"
-#include "libed2k/util.hpp"
+#include "libed2k/thread.hpp"
 
 namespace libed2k
 {

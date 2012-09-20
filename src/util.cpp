@@ -1,15 +1,13 @@
-
 #include <algorithm>
-#include <libed2k/utf8.hpp>
+#include <locale.h>
 
 #ifndef WIN32
 #include <iconv.h>
 #endif
-#include <locale.h>
 
+#include <libed2k/utf8.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/file.hpp>
-#include <zlib.h>
 
 namespace libed2k 
 {
@@ -53,6 +51,7 @@ namespace libed2k
         return true;
     }
 
+#if 0
     int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst, int nMaxSize)
     {
         // start off with one kilobyte and grow
@@ -113,4 +112,5 @@ namespace libed2k
         inflateEnd(&str);
         return (ret);
     }
+#endif
 }

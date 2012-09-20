@@ -193,7 +193,7 @@ namespace libed2k
         return pair.first;
     }
 
-
+#if 0
     /**
       * @param vSrc     - incoming data buffer
       * @param vDst     - outgoing data buffer
@@ -201,7 +201,7 @@ namespace libed2k
      */
     extern int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst,
                             int nMaxSize);
-
+#endif
 
     /**
       * truncate BOM header from UTF-8 strings

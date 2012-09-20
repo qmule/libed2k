@@ -41,12 +41,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG;_WIN32_WINNT=0x0500;LIBED2K_USE_BOOST_DATE_TIME"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough="pch.hpp"
 				BrowseInformation="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -107,7 +108,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500"
 				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
@@ -250,6 +251,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\parse_url.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\peer.cpp"
 				>
 			</File>
@@ -287,6 +292,10 @@
 			</File>
 			<File
 				RelativePath="..\src\session_impl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\sha1.cpp"
 				>
 			</File>
 			<File
@@ -464,6 +473,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\io.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\io_service.hpp"
 				>
 			</File>
@@ -493,6 +506,14 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\packet_struct.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\parse_url.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\pch.hpp"
 				>
 			</File>
 			<File
@@ -565,6 +586,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\size_type.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\size_types.hpp"
 				>
 			</File>
 			<File
