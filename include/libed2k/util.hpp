@@ -57,11 +57,6 @@ namespace libed2k
 
     extern std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size);
 
-    //inline ptime time_now()
-    //{
-    //    return time::microsec_clock::universal_time();
-    //}
-
     template<typename Coll1, typename Coll2>
     void appendAll(Coll1& to, const Coll2& from)
     {
@@ -104,13 +99,13 @@ namespace libed2k
     class duration_timer
     {
     public:
-        duration_timer(const time::time_duration& duration, const ptime& last_tick = time_now());
+        duration_timer(const time_duration& duration, const ptime& last_tick = time_now());
         bool expires();
-        const time::time_duration& tick_interval() const { return m_tick_interval; }
+        const time_duration& tick_interval() const { return m_tick_interval; }
     private:
-        time::time_duration m_duration;
+        time_duration m_duration;
         ptime m_last_tick;
-        time::time_duration m_tick_interval;
+        time_duration m_tick_interval;
     };
 
     // set of semi open intervals: [a1, b1), [a2, b2), ...

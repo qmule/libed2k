@@ -43,6 +43,8 @@ namespace libed2k
             "torrent is no dict",
             "torrent info no dict",
             "torrent missing info",
+            "unsupported_url_protocol",
+            "expected_close_bracket_in_address",
             // protocol errors
             "decode packet error",
             "invalid protocol type",

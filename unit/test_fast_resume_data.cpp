@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
 
     while (num_resume_data > 0)
     {
-        libed2k::alert const* a = session.wait_for_alert(boost::posix_time::seconds(30));
+        libed2k::alert const* a = session.wait_for_alert(libed2k::seconds(30));
 
         if (a == 0)
         {

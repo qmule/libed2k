@@ -1,7 +1,6 @@
 #include <zlib.h>
 #include <boost/lexical_cast.hpp>
 
-#include "libtorrent/gzip.hpp"
 #include "libed2k/version.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/transfer.hpp"
@@ -157,7 +156,7 @@ namespace libed2k
         // prepare for connect
         // set timeout
         // execute connect
-        m_deadline.expires_from_now(boost::posix_time::seconds(settings.server_timeout));
+        m_deadline.expires_from_now(seconds(settings.server_timeout));
         m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
     }
 
@@ -177,7 +176,7 @@ namespace libed2k
         }
 
         // stop deadline timer
-        m_deadline.expires_at(boost::posix_time::pos_infin);
+        m_deadline.expires_at(max_time());
         m_deadline.cancel();
 
         DBG("connect to server:" << m_target << ", successfully");
@@ -461,7 +460,7 @@ namespace libed2k
            close(errors::timed_out);
            // There is no longer an active deadline. The expiry is set to positive
            // infinity so that the actor takes no action until a new deadline is set.
-           m_deadline.expires_at(boost::posix_time::pos_infin);
+           m_deadline.expires_at(max_time());
            boost::system::error_code ignored_ec;
        }
 

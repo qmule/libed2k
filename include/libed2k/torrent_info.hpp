@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 #include <libed2k/socket.hpp>
-//#include <libtorrent/policy.hpp> // for policy::peer
+#include <libed2k/policy.hpp> // for policy::peer
 #include <libed2k/entry.hpp>
 #include <libed2k/lazy_entry.hpp>
 #include <libed2k/time.hpp>

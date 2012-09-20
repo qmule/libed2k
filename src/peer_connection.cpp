@@ -160,7 +160,7 @@ void peer_connection::reset()
 {
     m_last_receive = time_now();
     m_last_sent = time_now();
-    m_timeout = time::seconds(m_ses.settings().peer_timeout);
+    m_timeout = seconds(m_ses.settings().peer_timeout);
 
     m_disconnecting = false;
     m_connection_ticket = -1;
@@ -629,7 +629,7 @@ void peer_connection::abort_expired_requests()
 #define ABORT_EXPIRED(reqs)                                             \
     for(std::vector<pending_block>::iterator pi = reqs.begin(); pi != reqs.end();) \
     {                                                                   \
-        if (now - pi->create_time > time::seconds(settings.block_request_timeout)) \
+        if (now - pi->create_time > seconds(settings.block_request_timeout)) \
         {                                                               \
             piece_block& b = pi->block;                                 \
             DBG("abort expired block request: "                         \

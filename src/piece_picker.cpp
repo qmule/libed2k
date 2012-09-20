@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
 #include <vector>
 #include <cmath>

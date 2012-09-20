@@ -18,7 +18,7 @@ namespace libed2k
             m_response(1024), // read only 1024 bytes length,
             m_on_auth(NULL)
     {
-        m_deadline.expires_at(boost::posix_time::pos_infin);
+        m_deadline.expires_at(max_time());
     }
 
     void is_https_auth::start(const std::string& strHost,
@@ -109,7 +109,7 @@ namespace libed2k
 
         m_target = *itr;
 
-        m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
+        m_deadline.expires_from_now(seconds(m_nTimeout));
         m_deadline.async_wait(boost::bind(&is_https_auth::check_deadline, shared_from_this()));
         m_ssec.lowest_layer().async_connect(m_target,
                 boost::bind(&is_https_auth::handle_connect, shared_from_this(), boost::asio::placeholders::error));
@@ -121,7 +121,7 @@ namespace libed2k
 
         if (!error)
         {
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
+            m_deadline.expires_from_now(seconds(m_nTimeout));
             // execute handshake
             m_ssec.lowest_layer().set_option(tcp::no_delay(true));
 
@@ -146,7 +146,7 @@ namespace libed2k
 
         if (!error)
         {
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
+            m_deadline.expires_from_now(seconds(m_nTimeout));
             // read response header at least
             boost::asio::async_read_until(m_ssec, m_response, "\r\n", boost::bind(&is_https_auth::handle_response_header, shared_from_this(),
                 boost::asio::placeholders::error));
@@ -188,7 +188,7 @@ namespace libed2k
                 return;
             }
 
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
+            m_deadline.expires_from_now(seconds(m_nTimeout));
             // read response header at least
             boost::asio::async_read_until(m_ssec, m_response, "\r\n\r\n", boost::bind(&is_https_auth::handle_response_body, shared_from_this(),
                 boost::asio::placeholders::error));
@@ -214,7 +214,7 @@ namespace libed2k
                 //std::cout << header << "\n";
             }
 
-            m_deadline.expires_from_now(boost::posix_time::seconds(m_nTimeout));
+            m_deadline.expires_from_now(seconds(m_nTimeout));
             boost::asio::async_read_until(m_ssec, m_response, "</DATA>",
                 boost::bind(&is_https_auth::handle_data, shared_from_this(), boost::asio::placeholders::error));
         }
@@ -266,7 +266,7 @@ namespace libed2k
             close(errors::timed_out);
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
-            m_deadline.expires_at(boost::posix_time::pos_infin);
+            m_deadline.expires_at(max_time());
             //boost::system::error_code ignored_ec;
 
         }

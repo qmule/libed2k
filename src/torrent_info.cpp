@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 
 #include <ctime>
 
@@ -66,7 +66,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/invariant_check.hpp>
 
 #if LIBED2K_USE_I2P
-#include <libtorrent/parse_url.hpp>
+#include <libed2k/parse_url.hpp>
 #endif
 
 namespace libed2k
@@ -1086,7 +1086,7 @@ namespace libed2k
         std::string hostname;
         error_code ec;
         boost::tie(ignore, ignore, hostname, ignore, ignore)
-            = libtorrent::parse_url_components(url, ec);
+            = libed2k::parse_url_components(url, ec);
         char const* top_domain = strrchr(hostname.c_str(), '.');
         return top_domain && strcmp(top_domain, ".i2p") == 0;
     }

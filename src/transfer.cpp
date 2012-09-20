@@ -25,7 +25,7 @@ namespace libed2k
         m_complete(-1),
         m_incomplete(-1),
         m_policy(this, pl),
-        m_minute_timer(time::minutes(1), time::min_date_time)
+        m_minute_timer(minutes(1), min_time())
     {}
 
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
@@ -58,7 +58,7 @@ namespace libed2k
         m_total_downloaded(0),
         m_queued_for_checking(false),
         m_progress_ppm(0),
-        m_minute_timer(time::minutes(1), time::min_date_time)
+        m_minute_timer(minutes(1), min_time())
     {
         DBG("transfer file size: " << m_filesize);
         if (m_verified.size() == 0)

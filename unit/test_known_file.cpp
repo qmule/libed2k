@@ -49,11 +49,11 @@ namespace libed2k
             std::deque<boost::shared_ptr<transfer> > m_transfers;
             std::vector<peer_entry> m_peers;
             bool                m_bAfterSave;
-            boost::asio::deadline_timer m_timer;
+            deadline_timer      m_timer;
         };
 
         session_impl_test::session_impl_test(const session_settings& settings) : session_impl_base(settings), m_ready(true), m_hash_count(0),
-                m_timer(m_io_service,  boost::posix_time::seconds(5))
+                m_timer(m_io_service,  libed2k::seconds(5))
         {
             m_bAfterSave = false;
             m_file_hasher.start();
@@ -74,7 +74,7 @@ namespace libed2k
                     t.file_hash,
                     t.file_path,
                     t.file_size)));
-            m_timer.expires_from_now(boost::posix_time::seconds(5));
+            m_timer.expires_from_now(libed2k::seconds(5));
             return (transfer_handle(boost::weak_ptr<transfer>()));
         }
 
@@ -190,7 +190,7 @@ namespace libed2k
             }
 
             // restart timer
-            m_timer.expires_from_now(boost::posix_time::seconds(5));
+            m_timer.expires_from_now(libed2k::seconds(5));
             m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
             m_ready = true;
         }
@@ -206,7 +206,7 @@ namespace libed2k
             if (m_timer.expires_at() <= deadline_timer::traits_type::now())
             {
                 DBG("Timer expired");
-                m_timer.expires_at(boost::posix_time::pos_infin);
+                m_timer.expires_at(max_time());
                 m_ready = false;
                 m_signal.notify_all();
                 return;

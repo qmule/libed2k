@@ -51,7 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/peer_id.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/assert.hpp"
-#include "libtorrent/time.hpp"
+#include "libed2k/time.hpp"
 
 namespace libed2k
 {

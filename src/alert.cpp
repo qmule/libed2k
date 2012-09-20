@@ -30,11 +30,12 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libed2k/alert.hpp"
-#include "libed2k/util.hpp"
 #include <boost/thread/xtime.hpp>
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
+
+#include "libed2k/alert.hpp"
+#include "libed2k/util.hpp"
 
 namespace libed2k
 {
@@ -64,26 +65,26 @@ namespace libed2k
 
         if (!m_alerts.empty()) return m_alerts.front();
 
-        int secs = max_wait.total_seconds();
-        max_wait -= boost::posix_time::seconds(secs);
-        boost::xtime xt;
-        boost::xtime_get(&xt, boost::TIME_UTC);
-        xt.sec += secs;
-        boost::int64_t nsec = xt.nsec + max_wait.total_microseconds() * 1000;
+//              system_time end = get_system_time()
+//                      + boost::posix_time::microseconds(total_microseconds(max_wait));
 
-        if (nsec > 1000000000)
-        {
-            nsec -= 1000000000;
-            xt.sec += 1;
-        }
-
-        xt.nsec = boost::xtime::xtime_nsec_t(nsec);
         // apparently this call can be interrupted
         // prematurely if there are other signals
-        while (m_condition.timed_wait(lock, xt))
-            if (!m_alerts.empty()) return m_alerts.front();
+//              while (m_condition.timed_wait(lock, end))
+//                      if (!m_alerts.empty()) return m_alerts.front();
 
-        return 0;
+        ptime start = time_now_hires();
+
+        // TODO: change this to use an asio timer instead
+        while (m_alerts.empty())
+        {
+            lock.unlock();
+            sleep(50);
+            lock.lock();
+            if (time_now_hires() - start >= max_wait) return 0;
+        }
+
+        return m_alerts.front();
     }
 
     void alert_manager::set_dispatch_function(boost::function<void(alert const&)> const& fun)

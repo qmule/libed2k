@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 
 #include <string>
 #include <cctype>
@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/config.hpp>
 #include <libed2k/assert.hpp>
 #include <libed2k/escape_string.hpp>
-#include <libtorrent/parse_url.hpp>
+#include <libed2k/parse_url.hpp>
 #include <libed2k/random.hpp>
 
 #ifdef LIBED2K_WINDOWS
@@ -310,7 +310,7 @@ namespace libed2k
         std::string protocol, host, auth, path;
         int port;
         error_code ec;
-        boost::tie(protocol, auth, host, port, path) = libtorrent::parse_url_components(url, ec);
+        boost::tie(protocol, auth, host, port, path) = libed2k::parse_url_components(url, ec);
         if (ec) return url;
 
         // first figure out if this url contains unencoded characters

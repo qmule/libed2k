@@ -88,7 +88,7 @@
 ------------------------------------------------------------------------ */
 
 #ifdef __cplusplus
-#include "libtorrent/config.hpp"
+#include "libed2k/config.hpp"
 // these are standard C types, but they might
 // not be available in c++
 #include <boost/cstdint.hpp>

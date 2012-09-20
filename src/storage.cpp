@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 
 #include <ctime>
 #include <algorithm>
@@ -55,8 +55,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/config.hpp>
 #include <libed2k/storage.hpp>
-//#include <libtorrent/torrent.hpp>
-//#include <libtorrent/session.hpp>
 #include <libed2k/filesystem.hpp>
 #include <libed2k/invariant_check.hpp>
 #include <libed2k/file_pool.hpp>

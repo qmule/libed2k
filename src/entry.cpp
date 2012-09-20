@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
 #include <algorithm>
 #if (defined LIBED2K_VERBOSE_LOGGING || defined LIBED2K_DEBUG) && LIBED2K_USE_IOSTREAM

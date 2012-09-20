@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 
 #include <libed2k/file_storage.hpp>
 #include <libed2k/filesystem.hpp>
