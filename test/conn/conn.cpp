@@ -109,7 +109,8 @@ enum CONN_CMD
     cc_connect,
     cc_disconnect,
     cc_listen,
-    cc_empty
+    cc_empty,
+    cc_tr
 };
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
@@ -193,6 +194,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "listen")
     {
         return cc_listen;
+    }
+    else if (strCommand == "tr")
+    {
+        return cc_tr;
     }
 
     return cc_empty;
@@ -456,7 +461,7 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(1000000000,0,100,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
+                search_request sr = libed2k::generateSearchRequest(1000000000,0,1,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }
@@ -720,6 +725,18 @@ int main(int argc, char* argv[])
                     DBG("Unable to reset port");
                 }
                 break;
+            case cc_tr:
+            {
+                std::vector<libed2k::transfer_handle> vth = ses.get_transfers();
+                for (size_t i = 0; i < vth.size(); ++i)
+                {
+                    DBG("TR: " << vth[i].hash().toString()
+                            << " valid: " << (vth[i].is_valid()?"valid":"invalid")
+                            << " urate: " << vth[i].status().upload_payload_rate
+                            << " drate: " << vth[i].status().download_payload_rate);
+                }
+                break;
+            }
             default:
                 break;
         }

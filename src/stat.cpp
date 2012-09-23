@@ -30,11 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libed2k/pch.hpp"
-
 #include <numeric>
 #include <algorithm>
 
+#include "libed2k/pch.hpp"
 #include "libed2k/stat.hpp"
 
 namespace libed2k {

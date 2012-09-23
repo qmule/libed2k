@@ -44,7 +44,7 @@ namespace libed2k
 
     bool duration_timer::expires()
     {
-        ptime now = time_now();
+        ptime now = time_now_hires();
         m_tick_interval = now - m_last_tick;
         if (m_tick_interval < m_duration) return false;
         m_last_tick = now;

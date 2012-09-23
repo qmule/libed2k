@@ -396,6 +396,7 @@ namespace libed2k {
             int m_max_connections;
 
             duration_timer m_second_timer;
+            ptime m_last_second_tick;
 
             // the timer used to fire the tick
             deadline_timer m_timer;

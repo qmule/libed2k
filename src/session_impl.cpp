@@ -375,6 +375,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_paused(false),
     m_max_connections(200),
     m_second_timer(seconds(1)),
+    m_last_second_tick(time_now_hires() - milliseconds(900)),
     m_timer(m_io_service),
     m_last_connect_duration(0),
     m_last_announce_duration(0),
@@ -1172,6 +1173,14 @@ void session_impl::on_tick(error_code const& e)
     error_code ec;
     m_timer.expires_from_now(milliseconds(100), ec);
     m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
+
+    // code for remove duration timer
+    //ptime now = time_now_hires();
+    //if (now - m_last_second_tick < seconds(1)) return;
+
+    //int tick_interval_ms = total_milliseconds(now - m_last_second_tick);
+    //m_last_second_tick = now;
+    // end code for remove duration timer
 
     // only tick the following once per second
     if (!m_second_timer.expires()) return;
