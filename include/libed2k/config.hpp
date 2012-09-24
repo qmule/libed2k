@@ -286,17 +286,18 @@ POSSIBILITY OF SUCH DAMAGE.
 #if defined LIBED2K_WINDOWS && !defined LIBED2K_MINGW
 
 #include <stdarg.h>
-
-inline int snprintf(char* buf, int len, char const* fmt, ...)
+namespace libed2k
 {
-    va_list lp;
-    va_start(lp, fmt);
-    int ret = _vsnprintf(buf, len, fmt, lp);
-    va_end(lp);
-    if (ret < 0) { buf[len-1] = 0; ret = len-1; }
-    return ret;
+    inline int snprintf(char* buf, int len, char const* fmt, ...)
+    {
+        va_list lp;
+        va_start(lp, fmt);
+        int ret = _vsnprintf(buf, len, fmt, lp);
+        va_end(lp);
+        if (ret < 0) { buf[len-1] = 0; ret = len-1; }
+        return ret;
+    }
 }
-
 
 #define strtoll _strtoi64
 #else

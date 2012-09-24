@@ -184,9 +184,9 @@ void print_backtrace(char* out, int len, int max_depth)
 	{
 		int ret;
 		if (SymFromAddr(p, uintptr_t(stack[i]), 0, symbol))
-			ret = snprintf(out, len, "%d: %s\n", i, symbol->Name);
+            ret = libed2k::snprintf(out, len, "%d: %s\n", i, symbol->Name);
 		else
-			ret = snprintf(out, len, "%d: <unknown>\n", i);
+            ret = libed2k::snprintf(out, len, "%d: <unknown>\n", i);
 
 		out += ret;
 		len -= ret;
