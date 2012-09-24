@@ -4,15 +4,16 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-#include <libed2k/storage_defs.hpp>
-#include <libed2k/fingerprint.hpp>
-#include <libed2k/md4_hash.hpp>
-#include <libed2k/transfer_handle.hpp>
-#include <libed2k/peer_connection_handle.hpp>
-#include <libed2k/peer.hpp>
-#include <libed2k/alert.hpp>
-#include <libed2k/packet_struct.hpp>
+#include "libed2k/storage_defs.hpp"
+#include "libed2k/fingerprint.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/transfer_handle.hpp"
+#include "libed2k/peer_connection_handle.hpp"
+#include "libed2k/peer.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/packet_struct.hpp"
 #include "libed2k/session_status.hpp"
+#include "libed2k/filesystem.hpp"
 
 namespace libed2k {
 

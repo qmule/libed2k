@@ -8,6 +8,7 @@
 #include "libed2k/config.hpp"
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/address.hpp"
+#include "libed2k/filesystem.hpp"
 
 namespace libed2k
 {

@@ -18,14 +18,14 @@ namespace libed2k
     //typedef boost::asio::ip::tcp tcp;
     //typedef boost::asio::ip::udp udp;
 
-    namespace fs = boost::filesystem;
+    //namespace fs = boost::filesystem;
     //namespace bio = boost::iostreams;
 
     typedef boost::uint64_t fsize_t;
     //typedef boost::int64_t size_type;
     //typedef boost::uint64_t unsigned_size_type;
 
-    typedef fs::path fpath;
+    //typedef fs::path fpath;
 }
 
 #endif

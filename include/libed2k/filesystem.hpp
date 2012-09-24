@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/size_type.hpp>
 #include <libed2k/config.hpp>
 #include <libed2k/intrusive_ptr_base.hpp>
+#include <boost/filesystem.hpp>
 
 #ifdef LIBED2K_WINDOWS
 // windows part
@@ -287,6 +288,8 @@ namespace libed2k
         mutable int m_cluster_size;
 #endif
     };
+
+    namespace fs = boost::filesystem;
 
 }
 
