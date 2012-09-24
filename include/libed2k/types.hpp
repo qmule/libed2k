@@ -13,18 +13,17 @@ namespace boost{
 
 namespace libed2k
 {
-    typedef std::vector<char > socket_buffer; //, boost::pool_allocator<char>
+    //typedef std::vector<char > socket_buffer; //, boost::pool_allocator<char>
 
-    typedef boost::asio::ip::tcp tcp;
-    typedef boost::asio::ip::udp udp;
+    //typedef boost::asio::ip::tcp tcp;
+    //typedef boost::asio::ip::udp udp;
 
-    namespace ip = boost::asio::ip;
     namespace fs = boost::filesystem;
-    namespace bio = boost::iostreams;
+    //namespace bio = boost::iostreams;
 
     typedef boost::uint64_t fsize_t;
-    typedef boost::int64_t size_type;
-    typedef boost::uint64_t unsigned_size_type;
+    //typedef boost::int64_t size_type;
+    //typedef boost::uint64_t unsigned_size_type;
 
     typedef fs::path fpath;
 }

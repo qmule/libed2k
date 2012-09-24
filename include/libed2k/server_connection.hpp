@@ -2,18 +2,9 @@
 #ifndef __LIBED2K_SERVER_CONNECTION__
 #define __LIBED2K_SERVER_CONNECTION__
 
-#include <boost/noncopyable.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/asio.hpp>
-
-#include <libed2k/intrusive_ptr_base.hpp>
-#include "libed2k/types.hpp"
-#include "libed2k/packet_struct.hpp"
-#include "libed2k/error_code.hpp"
 #include "libed2k/base_connection.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/session_impl.hpp"
-#include "libed2k/deadline_timer.hpp"
 
 namespace libed2k
 {

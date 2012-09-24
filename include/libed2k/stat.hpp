@@ -38,10 +38,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <cstring>
 
-#include "libed2k/types.hpp"
-#include "libed2k/invariant_check.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/assert.hpp"
+#include "libed2k/size_type.hpp"
+#include "libed2k/invariant_check.hpp"
 
 #if defined LIBED2K_VERBOSE_LOGGING || defined LIBED2K_LOGGING || defined LIBED2K_ERROR_LOGGING
 #include "libtorrent/debug.hpp" // for logger

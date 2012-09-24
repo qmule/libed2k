@@ -1,8 +1,7 @@
 #ifndef __LIBED2K_PEER__
 #define __LIBED2K_PEER__
 
-#include <boost/asio.hpp>
-#include "libed2k/types.hpp"
+#include "libed2k/socket.hpp"
 
 namespace libed2k {
 

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <map>
 #include <deque>
-#include <boost/cstdint.hpp>
+
 #include <boost/tuple/tuple.hpp>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
@@ -20,12 +20,13 @@
 #include <libed2k/stat.hpp>
 
 #include "libed2k/assert.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/size_type.hpp"
+#include "libed2k/socket.hpp"
 #include "libed2k/chained_buffer.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/packet_struct.hpp"
-#include "libed2k/config.hpp"
 #include "libed2k/deadline_timer.hpp"
 
 namespace libed2k{

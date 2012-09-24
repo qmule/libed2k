@@ -97,6 +97,9 @@ namespace libed2k
 	namespace asio = boost::asio;
 #endif
 
+	namespace ip = boost::asio::ip;
+	typedef std::vector<char > socket_buffer;
+
 #if LIBED2K_USE_IPV6
 	struct v6only
 	{

@@ -155,5 +155,5 @@ namespace libed2k
 #endif
 	}
 
-};
+}
 

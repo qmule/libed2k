@@ -5,6 +5,7 @@
 #include "libed2k/bitfield.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/ptime.hpp"
+#include "libed2k/socket.hpp"
 
 namespace libed2k
 {

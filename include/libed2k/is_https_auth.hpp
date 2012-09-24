@@ -4,10 +4,11 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+
 #include <boost/array.hpp>
-#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
@@ -15,9 +16,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include "libed2k/error_code.hpp"
-#include "libed2k/types.hpp"
+#include "libed2k/socket.hpp"
 #include "libed2k/deadline_timer.hpp"
-
 
 namespace libed2k
 {

@@ -64,9 +64,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <stdexcept>
 
-#include "libed2k/types.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/assert.hpp"
+#include "libed2k/size_type.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/max.hpp"
 

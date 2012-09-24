@@ -770,6 +770,7 @@ namespace libed2k
                     // execute real hashing when migration got nothing
                     if (!atp.file_hash.defined())
                     {
+                        namespace bio = boost::iostreams;
                         bool    bPartial = false; // check last part in file not full
                         bio::mapped_file_params mf_param;
                         mf_param.flags  = bio::mapped_file_base::readonly;

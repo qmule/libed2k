@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
     generate_file(libed2k::PIECE_SIZE+4566, "./test5.bin");
 
 
-
+    namespace bio = boost::iostreams;
     std::vector<libed2k::md4_hash> vH;
     // calculate hash
     bool    bPartial = false;
