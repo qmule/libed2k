@@ -270,7 +270,7 @@ namespace libed2k
 
         md4_hash hash() const;
         fs::path filepath() const;
-        fsize_t filesize() const;
+        size_type filesize() const;
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;

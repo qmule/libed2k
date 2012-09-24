@@ -38,7 +38,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/peer_id.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/bitfield.hpp"
-#include "libed2k/types.hpp"
 
 namespace libed2k
 {

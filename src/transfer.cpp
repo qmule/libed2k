@@ -17,7 +17,7 @@ namespace libed2k
       * fake constructor
      */
     transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                       const md4_hash& hash, const fs::path p, fsize_t size):
+                       const md4_hash& hash, const fs::path p, size_type size):
         m_ses(ses),
         m_filehash(hash),
         m_filepath(p),
@@ -630,7 +630,7 @@ namespace libed2k
     void transfer::bytes_done(transfer_status& st) const
     {
         st.total_wanted = filesize();
-        st.total_done = std::min<fsize_t>(num_have() * PIECE_SIZE, st.total_wanted);
+        st.total_done = std::min<size_type>(num_have() * PIECE_SIZE, st.total_wanted);
         st.total_wanted_done = st.total_done;
 
         if (!m_picker) return;
@@ -1256,7 +1256,7 @@ namespace libed2k
         }
 
         // TODO - should i use size_type?
-        m_progress_ppm = fsize_t(j.piece) * PIECE_SIZE / num_pieces();
+        m_progress_ppm = size_type(j.piece) * PIECE_SIZE / num_pieces();
 
         LIBED2K_ASSERT(m_picker);
         if (j.offset >= 0 && !m_picker->have_piece(j.offset))

@@ -10,6 +10,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+
 #include "libed2k/alert.hpp"
 #include "libed2k/alert_types.hpp"
 
@@ -35,12 +36,12 @@ void empty(const boost::system::error_code& /*e*/)
 
 BOOST_AUTO_TEST_CASE(test_alerts)
 {
-    boost::asio::io_service io;
+    libed2k::io_service io;
     boost::asio::deadline_timer tm(io, boost::posix_time::seconds(5));  // run timer for service work
     libed2k::alert_manager al(io);
 
     tm.async_wait(&empty);
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
+    boost::thread t(boost::bind(&libed2k::io_service::run, &io));
     al.set_alert_mask(0);
 
     al.post_alert(libed2k::server_connection_initialized_alert(1,1,1));

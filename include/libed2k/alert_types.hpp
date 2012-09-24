@@ -4,7 +4,6 @@
 // for print_endpoint
 #include <libed2k/socket.hpp>
 #include <libed2k/alert.hpp>
-#include <libed2k/types.hpp>
 #include <libed2k/error_code.hpp>
 #include <libed2k/packet_struct.hpp>
 #include <libed2k/transfer_handle.hpp>

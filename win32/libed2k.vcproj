@@ -589,10 +589,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\size_types.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\include\libed2k\sliding_average.hpp"
 				>
 			</File>
@@ -634,10 +630,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\transfer_handle.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\types.hpp"
 				>
 			</File>
 			<File

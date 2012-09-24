@@ -18,6 +18,7 @@
 #include "libed2k/error_code.hpp"
 #include "libed2k/socket.hpp"
 #include "libed2k/deadline_timer.hpp"
+#include "libed2k/io_service.hpp"
 
 namespace libed2k
 {
@@ -69,7 +70,7 @@ namespace libed2k
 
         typedef boost::function<void (std::string&, const boost::system::error_code&)> auth_callback;
 
-        explicit is_https_auth(boost::asio::io_service& io);
+        explicit is_https_auth(io_service& io);
 
         void start(const std::string& strHost,
                         const std::string& strPage,
@@ -120,7 +121,7 @@ namespace libed2k
         void check_deadline();
 
         bool                        m_stopped;
-        boost::asio::io_service&    m_service;
+        io_service&                 m_service;
         deadline_timer              m_deadline;
         ssl::context				m_context;  //!< openssl context
         ssl::stream<tcp::socket>	m_ssec;     //!< secure socket
@@ -153,7 +154,7 @@ namespace libed2k
 
         ~auth_runner();
     private:
-        boost::asio::io_service             m_service;
+        io_service                          m_service;
         boost::shared_ptr<is_https_auth>    m_ptr;
         boost::shared_ptr<boost::thread>    m_thread;
     };

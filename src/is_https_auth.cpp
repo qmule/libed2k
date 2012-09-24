@@ -8,7 +8,7 @@
 namespace libed2k
 {
 
-    is_https_auth::is_https_auth(boost::asio::io_service& io) :
+    is_https_auth::is_https_auth(io_service& io) :
             m_stopped(false),
             m_service(io),
             m_deadline(m_service),
@@ -289,7 +289,7 @@ namespace libed2k
         DBG("auth_runner::start: start new session");
         m_ptr.reset(new is_https_auth(m_service));
         m_ptr->start(strHost, strPage, strLogin, strPassword, strVersion, handler);
-        m_thread.reset(new boost::thread(boost::bind(&boost::asio::io_service::run, &m_service)));
+        m_thread.reset(new boost::thread(boost::bind(&io_service::run, &m_service)));
     }
 
     void auth_runner::stop()

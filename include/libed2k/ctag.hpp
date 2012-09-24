@@ -11,6 +11,7 @@
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/md4_hash.hpp"
+#include "libed2k/size_type.hpp"
 
 namespace libed2k{
 

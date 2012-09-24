@@ -17,7 +17,6 @@
 #include <libed2k/transfer_handle.hpp>
 #include <libed2k/peer_connection_handle.hpp>
 #include <libed2k/session_settings.hpp>
-#include <libed2k/types.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/alert.hpp>
 #include <libed2k/packet_struct.hpp>
@@ -26,6 +25,7 @@
 #include <libed2k/file_pool.hpp>
 #include "libed2k/connection_queue.hpp"
 #include "libed2k/session_status.hpp"
+#include "libed2k/io_service.hpp"
 
 namespace libed2k {
 
@@ -132,7 +132,7 @@ namespace libed2k {
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
             // them
-            mutable boost::asio::io_service m_io_service;
+            mutable io_service m_io_service;
 
             // set to true when the session object
             // is being destructed and the thread

@@ -18,6 +18,7 @@
 #include "libed2k/search.hpp"
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/io_service.hpp"
 
 using namespace libed2k;
 
@@ -401,12 +402,12 @@ int main(int argc, char* argv[])
     ses.set_alert_mask(alert::all_categories);
 
 
-    boost::asio::io_service io;
+    libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
     boost::asio::deadline_timer fs_timer(io, boost::posix_time::minutes(3));
     alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
     fs_timer.async_wait(boost::bind(save_fast_resume, boost::asio::placeholders::error, &fs_timer, &ses));
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
+    boost::thread t(boost::bind(&libed2k::io_service::run, &io));
 
 
     /*

@@ -34,7 +34,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_SESSION_STATUS_HPP_INCLUDED
 
 #include "libed2k/config.hpp"
-#include "libed2k/types.hpp"
 #include <vector>
 
 namespace libed2k

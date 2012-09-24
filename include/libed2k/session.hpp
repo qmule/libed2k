@@ -45,7 +45,7 @@ namespace libed2k {
         md4_hash file_hash;
         fs::path file_path; // in UTF8 always!
         fs::path collection_path;
-        fsize_t  file_size;
+        size_type  file_size;
         bitfield pieces;
         std::vector<md4_hash> hashset;
         std::vector<peer_entry> peer_list;

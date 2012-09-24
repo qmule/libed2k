@@ -45,7 +45,7 @@ namespace libed2k
     alert::~alert() {}
     ptime alert::timestamp() const { return m_timestamp; }
 
-    alert_manager::alert_manager(boost::asio::io_service& ios)
+    alert_manager::alert_manager(io_service& ios)
         : m_alert_mask(alert::error_notification)
         , m_queue_size_limit(queue_size_limit_default)
         , m_ios(ios)

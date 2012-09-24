@@ -13,12 +13,10 @@
 
 #include <libed2k/lazy_entry.hpp>
 #include "libed2k/policy.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/piece_picker.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/peer_info.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/entry.hpp"
 
@@ -47,14 +45,14 @@ namespace libed2k {
          * you shouldn't it anywhere except unit tests
          */
         transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                 const md4_hash& hash, const fs::path p, fsize_t size);
+                 const md4_hash& hash, const fs::path p, size_type size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
 
         const md4_hash& hash() const { return m_filehash; }
-        fsize_t filesize() const { return m_filesize; }
+        size_type filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
@@ -327,7 +325,7 @@ namespace libed2k {
         md4_hash m_filehash;
         fs::path m_filepath;
         fs::path m_collectionpath;
-        fsize_t m_filesize;
+        size_type m_filesize;
         boost::uint32_t m_file_type;
 
         bitfield m_verified;
@@ -359,8 +357,8 @@ namespace libed2k {
 
         // all time totals of uploaded and downloaded payload
         // stored in resume data
-        fsize_t m_total_uploaded;
-        fsize_t m_total_downloaded;
+        size_type m_total_uploaded;
+        size_type m_total_downloaded;
         bool m_queued_for_checking:1;
         int m_progress_ppm;
 

@@ -19,7 +19,6 @@
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/error_code.hpp"
-#include "libed2k/types.hpp"
 
 namespace libed2k{
 

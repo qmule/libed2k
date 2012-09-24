@@ -12,7 +12,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <locale.h>
 #include "libed2k/constants.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/log.hpp"

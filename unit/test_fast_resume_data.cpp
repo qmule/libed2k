@@ -12,7 +12,6 @@
 #include <boost/test/unit_test.hpp>
 #include <libed2k/stat.hpp>
 #include <libed2k/bencode.hpp>
-#include "libed2k/types.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/transfer.hpp"

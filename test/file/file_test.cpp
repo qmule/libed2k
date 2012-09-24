@@ -8,7 +8,6 @@
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/archive.hpp"
-#include "libed2k/types.hpp"
 
 using namespace libed2k;
 

@@ -47,7 +47,7 @@ namespace libed2k
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-peer_request mk_peer_request(fsize_t begin, fsize_t end)
+peer_request mk_peer_request(size_type begin, size_type end)
 {
     peer_request r;
     r.piece = begin / PIECE_SIZE;
@@ -56,16 +56,16 @@ peer_request mk_peer_request(fsize_t begin, fsize_t end)
     return r;
 }
 
-peer_request mk_peer_request(const piece_block& b, fsize_t fsize)
+peer_request mk_peer_request(const piece_block& b, size_type fsize)
 {
-    std::pair<fsize_t, fsize_t> r = block_range(b.piece_index, b.block_index, fsize);
+    std::pair<size_type, size_type> r = block_range(b.piece_index, b.block_index, fsize);
     return mk_peer_request(r.first, r.second);
 }
 
-std::pair<fsize_t, fsize_t> mk_range(const peer_request& r)
+std::pair<size_type, size_type> mk_range(const peer_request& r)
 {
-    fsize_t begin = r.piece * PIECE_SIZE + r.start;
-    fsize_t end = begin + r.length;
+    size_type begin = r.piece * PIECE_SIZE + r.start;
+    size_type end = begin + r.length;
     assert(begin < end);
     return std::make_pair(begin, end);
 }
@@ -91,9 +91,9 @@ std::pair<peer_request, peer_request> split_request(const peer_request& req)
     return std::make_pair(r, left);
 }
 
-size_t block_size(const piece_block& b, fsize_t s)
+size_t block_size(const piece_block& b, size_type s)
 {
-    std::pair<fsize_t, fsize_t> r = block_range(b.piece_index, b.block_index, s);
+    std::pair<size_type, size_type> r = block_range(b.piece_index, b.block_index, s);
     return size_t(r.second - r.first);
 }
 
@@ -319,8 +319,8 @@ double peer_connection::peer_rate()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    fsize_t downloaded = statistics().total_download();
-    fsize_t transfer_downloaded = t->statistics().total_download();
+    size_type downloaded = statistics().total_download();
+    size_type transfer_downloaded = t->statistics().total_download();
     return (transfer_downloaded == 0 ? 0 : double(downloaded) / transfer_downloaded) * t->num_peers();
 }
 
@@ -1399,7 +1399,7 @@ void peer_connection::write_part(const peer_request& r)
     if (!t) return;
 
     client_sending_part_64 sp;
-    std::pair<fsize_t, fsize_t> range = mk_range(r);
+    std::pair<size_type, size_type> range = mk_range(r);
     sp.m_hFile = t->hash();
     sp.m_begin_offset = range.first;
     sp.m_end_offset = range.second;

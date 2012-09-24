@@ -51,12 +51,12 @@ namespace libed2k
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
     }
 
-    inline size_t piece_count(fsize_t fsize)
+    inline size_t piece_count(size_type fsize)
     {
         return static_cast<size_t>(div_ceil(fsize, PIECE_SIZE));
     }
 
-    extern std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size);
+    extern std::pair<size_type, size_type> block_range(int piece, int block, size_type size);
 
     template<typename Coll1, typename Coll2>
     void appendAll(Coll1& to, const Coll2& from)
