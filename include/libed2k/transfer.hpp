@@ -50,6 +50,7 @@ namespace libed2k {
         const md4_hash& hash() const { return m_filehash; }
         fsize_t filesize() const { return m_filesize; }
         const fs::path& filepath() const { return m_filepath; }
+        const fs::path& save_path() const { return m_filepath.parent_path(); }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
         const bitfield& verified_pieces() const { return m_verified; }
