@@ -184,7 +184,7 @@ namespace libed2k
 
     fs::path transfer_handle::save_path() const
     {
-        LIBED2K_FORWARD_RETURN(save_path(), fs::path());
+        LIBED2K_FORWARD_RETURN(filepath().parent_path(), fs::path());
     }
 
     void transfer_handle::save_resume_data() const
