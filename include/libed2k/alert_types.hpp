@@ -489,7 +489,7 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification;
 
-        finished_transfer_alert(const transfer_handle& h) : m_handle(h) {}
+        finished_transfer_alert(const transfer_handle& h, bool has_picker) : m_handle(h), m_had_picker(has_picker) {}
 
         virtual int category() const { return static_category; }
 
@@ -502,6 +502,7 @@ namespace libed2k
         virtual char const* what() const { return "transfer finished"; }
 
         transfer_handle m_handle;
+        bool            m_had_picker;
     };
 
     struct file_renamed_alert : alert

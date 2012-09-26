@@ -368,7 +368,7 @@ namespace libed2k
     void transfer::finished()
     {
         DBG("file transfer '" << m_filepath.filename() << "' completed");        
-        m_ses.m_alerts.post_alert_should(finished_transfer_alert(handle()));
+        m_ses.m_alerts.post_alert_should(finished_transfer_alert(handle(), has_picker()));
 
         set_state(transfer_status::finished);
         //set_queue_position(-1);
