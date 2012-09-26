@@ -356,19 +356,14 @@ namespace libed2k
     void transfer::completed()
     {
         m_picker.reset();
-
         set_state(transfer_status::seeding);
-        //if (!m_announcing) return;
-
-        //announce_with_tracker();
     }
 
     // called when torrent is finished (all interesting
     // pieces have been downloaded)
     void transfer::finished()
     {
-        DBG("file transfer '" << m_filepath.filename() << "' completed");        
-        m_ses.m_alerts.post_alert_should(finished_transfer_alert(handle(), has_picker()));
+        DBG("file transfer '" << m_filepath.filename() << "' completed");
 
         set_state(transfer_status::finished);
         //set_queue_position(-1);
@@ -387,6 +382,8 @@ namespace libed2k
             if (p->remote_pieces().count() == int(num_have()))
                 seeds.push_back(p);
         }
+
+        m_ses.m_alerts.post_alert_should(finished_transfer_alert(handle(), seeds.size() > 0));
         std::for_each(seeds.begin(), seeds.end(),
                       boost::bind(&peer_connection::disconnect, _1, errors::transfer_finished, 0));
 
