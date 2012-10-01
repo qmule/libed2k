@@ -187,8 +187,12 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         collection_path /= m_settings.m_collections_directory;
         collection_path /= bc.first;
 
+        // temp fix - we can't manipulate in file system in utf8 codepage
+        fs::path collection_path_native;
+        collection_path_native = convert_to_native(collection_path.string());
+
         // if directory is not exists - attempt create it and generate full collection name
-        if (fs::exists(collection_path) || fs::create_directory(collection_path))
+        if (fs::exists(collection_path_native) || fs::create_directory(collection_path_native))
         {
             std::stringstream sstr;
             sstr << bc.second << "_" << fpaths.size() << ".emulecollection";
@@ -289,6 +293,11 @@ void session_impl_base::share_dir(const std::string& strRoot, const std::string&
         }
     }
 
+    //catch(fs::basic_filesystem_error<fs::path>& e)
+    //{
+    //    DBG("Error on share dir: " << e.what());
+    //    DBG("p1: " << e.path1().string() << " p2: " << e.path2().string());
+    //}
 }
 
 void session_impl_base::update_pendings(const add_transfer_params& atp, bool remove)
