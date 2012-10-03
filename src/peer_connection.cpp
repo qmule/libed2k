@@ -801,6 +801,12 @@ void peer_connection::start()
 {
 }
 
+void peer_connection::cancel_requests()
+{
+    abort_block_requests();
+    write_cancel_transfer();
+}
+
 int peer_connection::picker_options() const
 {
     int ret = 0;
@@ -1014,7 +1020,7 @@ void peer_connection::on_disk_read_complete(
         }
 
         // handle_disk_error may disconnect us
-        t->on_disk_error(j, this);
+        t->handle_disk_error(j, this);
         return;
     }
 
@@ -1194,6 +1200,19 @@ void peer_connection::on_disk_write_complete(
 
     assert(r.piece == j.piece);
     assert(r.start == j.offset);
+
+    if (ret != r.length)
+    {
+        if (!t)
+        {
+            disconnect(j.error);
+            return;
+        }
+
+        // handle_disk_error may disconnect us
+        t->handle_disk_error(j, this);
+        return;
+    }
 
     if (left.length == 0)
     {

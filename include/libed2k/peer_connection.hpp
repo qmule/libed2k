@@ -203,6 +203,7 @@ namespace libed2k
         // and schedule events with references to itself (that is not safe to
         // do in the constructor).
         void start();
+        void cancel_requests();
 
         int picker_options() const;
 
