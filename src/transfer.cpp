@@ -1437,7 +1437,7 @@ namespace libed2k
 
         TORRENT_ASSERT(j.piece >= 0);
 
-        piece_block block_finished(j.piece, div_ceil(j.offset, BLOCK_SIZE));
+        piece_block block_finished(j.piece, j.offset/BLOCK_SIZE);
 
         if (j.action == disk_io_job::write)
         {
