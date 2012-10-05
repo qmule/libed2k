@@ -1010,7 +1010,7 @@ void peer_connection::on_disk_read_complete(
 
     disk_buffer_holder buffer(m_ses.m_disk_thread, j.buffer);
     boost::shared_ptr<transfer> t = m_transfer.lock();
-/*
+
     if (ret != r.length)
     {
         if (!t)
@@ -1023,7 +1023,6 @@ void peer_connection::on_disk_read_complete(
         t->handle_disk_error(j, this);
         return;
     }
-*/
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
@@ -2059,3 +2058,72 @@ void peer_connection::on_client_captcha_result(const error_code& error)
     }
 }
 
+template <typename Struct>
+void peer_connection::on_request_parts(const error_code& error)
+{
+    if (!error)
+    {
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+        if (!t)
+        {
+            DBG("requested parts from detached connection: {remote: " << m_remote << "}");
+            return;
+        }
+
+        DECODE_PACKET(Struct, rp);
+        DBG("request parts " << rp.m_hFile << ": "
+            << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
+            << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
+            << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
+            << " <== " << m_remote);
+        for (size_t i = 0; i < 3; ++i)
+        {
+            if (rp.m_begin_offset[i] < rp.m_end_offset[i])
+            {
+                peer_request req = mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]);
+                if (t->have_piece(req.piece))
+                    m_requests.push_back(req);
+                else
+                    DBG("we haven't piece " << req.piece << " requested from " << m_remote);
+            }
+            else
+                DBG("incorrect request ["
+                    << rp.m_begin_offset[i] << ", " << rp.m_end_offset[i]
+                    << "] from " << m_remote);
+        }
+        fill_send_buffer();
+    }
+    else
+    {
+        ERR("request parts error " << error.message() << " <== " << m_remote);
+    }
+}
+
+template <typename Struct>
+void peer_connection::on_sending_part(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(Struct, sp);
+        DBG("part " << sp.m_hFile
+            << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
+            << " <== " << m_remote);
+
+        peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
+        receive_data(r);
+    }
+    else
+    {
+        ERR("part error " << error.message() << " <== " << m_remote);
+    }
+}
+
+template<typename T>
+void peer_connection::defer_write(const T& t) { m_deferred.push_back(make_message(t)); }
+
+template<typename T>
+void peer_connection::send_throw_meta_order(const T& t)
+{
+    defer_write(t);
+    if (!is_closed()) fill_send_buffer();
+}
