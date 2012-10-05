@@ -1010,7 +1010,7 @@ void peer_connection::on_disk_read_complete(
 
     disk_buffer_holder buffer(m_ses.m_disk_thread, j.buffer);
     boost::shared_ptr<transfer> t = m_transfer.lock();
-
+/*
     if (ret != r.length)
     {
         if (!t)
@@ -1023,7 +1023,7 @@ void peer_connection::on_disk_read_complete(
         t->handle_disk_error(j, this);
         return;
     }
-
+*/
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
