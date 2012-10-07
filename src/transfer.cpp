@@ -1022,21 +1022,33 @@ namespace libed2k
         // called, and the piece is no longer finished.
         // in this case, we have to ignore the fact that
         // it passed the check
-        if (!m_picker->is_piece_finished(index)) return;
+        if (!m_picker->is_piece_finished(index))
+        {
+            ERR("piece was checked but have failed being written: "
+                "{transfer: " << hash() << ", piece: " << index << "}");
+            return;
+        }
 
         if (passed_hash_check == 0)
         {
             // the following call may cause picker to become invalid
             // in case we just became a seed
+            DBG("piece passed hash check: "
+                "{transfer: " << hash() << ", piece: " << index << "}");
             piece_passed(index);
         }
         else if (passed_hash_check == -2)
         {
+            DBG("piece failed hash check: "
+                "{transfer: " << hash() << ", piece: " << index << "}");
             // piece_failed() will restore the piece
             piece_failed(index);
         }
         else
         {
+            ERR("piece check failed with unexpected error: "
+                "{transfer: " << hash() << ", piece: " << index <<
+                ", error: " << passed_hash_check << "}");
             m_picker->restore_piece(index);
             restore_piece_state(index);
         }

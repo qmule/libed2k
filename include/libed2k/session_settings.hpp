@@ -16,7 +16,7 @@ namespace libed2k
             server_timeout(220)
             , peer_timeout(120)
             , peer_connect_timeout(7)
-            , block_request_timeout(BLOCK_SIZE / 1024)
+            , block_request_timeout(10)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)

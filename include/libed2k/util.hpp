@@ -100,7 +100,7 @@ namespace libed2k
     class duration_timer
     {
     public:
-        duration_timer(const time_duration& duration, const ptime& last_tick = time_now());
+        duration_timer(const time_duration& duration, const ptime& last_tick = time_now_hires());
         bool expires();
         const time_duration& tick_interval() const { return m_tick_interval; }
     private:
