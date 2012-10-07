@@ -30,7 +30,7 @@ args = {
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot, libtorrentRoot]],
     'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
                  'boost_thread', 'boost_signals', 'boost_filesystem',
-                 'torrent-rasterbar', 'cryptopp', 'ssl', 'pthread']
+                 'cryptopp', 'ssl', 'pthread', 'rt']
     }
 
 env = Environment(**args)
