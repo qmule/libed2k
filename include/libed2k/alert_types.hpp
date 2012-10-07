@@ -483,6 +483,26 @@ namespace libed2k
         md4_hash m_hash;
     };
 
+    struct finished_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        finished_transfer_alert(const transfer_handle& h, bool has_picker) : m_handle(h), m_had_picker(has_picker) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new finished_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("transfer finished"); }
+        virtual char const* what() const { return "transfer finished"; }
+
+        transfer_handle m_handle;
+        bool            m_had_picker;
+    };
+
     struct file_renamed_alert : alert
     {
         const static int static_category = alert::status_notification;
@@ -641,7 +661,7 @@ namespace libed2k
 
         virtual std::string message() const
         { return m_handle.is_valid()?m_handle.hash().toString():" - "; }
-
+        virtual char const* what() const { return "transfer alert"; }
         transfer_handle m_handle;
     };
 

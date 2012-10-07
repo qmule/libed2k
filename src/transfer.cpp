@@ -356,11 +356,7 @@ namespace libed2k
     void transfer::completed()
     {
         m_picker.reset();
-
         set_state(transfer_status::seeding);
-        //if (!m_announcing) return;
-
-        //announce_with_tracker();
     }
 
     // called when torrent is finished (all interesting
@@ -368,7 +364,6 @@ namespace libed2k
     void transfer::finished()
     {
         DBG("file transfer '" << m_filepath.filename() << "' completed");
-        //TODO: post alert
 
         set_state(transfer_status::finished);
         //set_queue_position(-1);
@@ -387,6 +382,8 @@ namespace libed2k
             if (p->remote_pieces().count() == int(num_have()))
                 seeds.push_back(p);
         }
+
+        m_ses.m_alerts.post_alert_should(finished_transfer_alert(handle(), seeds.size() > 0));
         std::for_each(seeds.begin(), seeds.end(),
                       boost::bind(&peer_connection::disconnect, _1, errors::transfer_finished, 0));
 
@@ -787,12 +784,6 @@ namespace libed2k
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         m_ses.m_alerts.post_alert_should(paused_transfer_alert(handle()));
-    }
-
-    void transfer::on_disk_error(disk_io_job const& j, peer_connection* c)
-    {
-        if (!j.error) return;
-        ERR("disk error: '" << j.error.message() << " in file " << j.error_file);
     }
 
     void transfer::init()
@@ -1467,7 +1458,7 @@ namespace libed2k
 
         LIBED2K_ASSERT(j.piece >= 0);
 
-        piece_block block_finished(j.piece, div_ceil(j.offset, BLOCK_SIZE));
+        piece_block block_finished(j.piece, j.offset/BLOCK_SIZE);
 
         if (j.action == disk_io_job::write)
         {
@@ -1475,7 +1466,15 @@ namespace libed2k
             if (has_picker() && j.piece >= 0) picker().write_failed(block_finished);
         }
 
-        if (j.error == error_code(boost::system::errc::not_enough_memory, get_posix_category()))
+        if (j.error ==
+#if BOOST_VERSION == 103500
+            error_code(boost::system::posix_error::not_enough_memory, get_posix_category())
+#elif BOOST_VERSION > 103500
+            error_code(boost::system::errc::not_enough_memory, get_posix_category())
+#else
+            asio::error::no_memory
+#endif
+            )
         {
             m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
 
@@ -1494,7 +1493,14 @@ namespace libed2k
             // and the filesystem doesn't support sparse files, only zero the priorities
             // of the pieces that are at the tails of all files, leaving everything
             // up to the highest written piece in each file
-            //set_upload_mode(true); //TODO ?
+            DBG("transfer::handle_disk_error: abort block requests on each peer");
+            for (std::set<peer_connection*>::iterator i = m_connections.begin()
+                            , end(m_connections.end()); i != end; ++i)
+            {
+                peer_connection* p = (*i);
+                p->cancel_requests();
+            }
+
             return;
         }
 

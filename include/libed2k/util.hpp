@@ -219,6 +219,11 @@ namespace libed2k
       * make UTF-8 string from native string
      */
     extern std::string convert_from_native(const std::string& s);
+
+    /**
+      * execute url decode from single-character string formatted %XX
+     */
+    extern std::string url_decode(const std::string& s);
 }
 
 #endif

@@ -145,11 +145,14 @@ namespace libed2k{
         {
             try
             {
-                boost::iostreams::stream_buffer<base_connection::Device> buffer(
-                    &m_in_container[0], m_in_header.m_size - 1);
-                std::istream in_array_stream(&buffer);
-                archive::ed2k_iarchive ia(in_array_stream);
-                ia >> t;
+                if (!m_in_container.empty())
+                {
+                    boost::iostreams::stream_buffer<base_connection::Device> buffer(
+                        &m_in_container[0], m_in_header.m_size - 1);
+                    std::istream in_array_stream(&buffer);
+                    archive::ed2k_iarchive ia(in_array_stream);
+                    ia >> t;
+                }
             }
             catch(libed2k_exception& e)
             {

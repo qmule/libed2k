@@ -266,6 +266,7 @@ namespace libed2k
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xls"),   ED2KFT_DOCUMENT));   // Microsoft Excel Spreadsheet
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xlt"),   ED2KFT_DOCUMENT));   // Microsoft Excel Template
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xml"),   ED2KFT_DOCUMENT));   // XML File
+            ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".emulecollection"), ED2KFT_EMULECOLLECTION));   // emulecollection
         }
     };
 
@@ -929,7 +930,7 @@ namespace libed2k
 
                 for (size_t i = 0; i < ebc.m_files.m_collection.size(); ++i) // iterate each tag list
                 {
-                    std::string strFilename;
+                    std::string strFName;
                     boost::uint64_t nFilesize = 0;
                     md4_hash        hFile;
 
@@ -940,7 +941,7 @@ namespace libed2k
                         switch(p->getNameId())
                         {
                             case FT_FILENAME:
-                                strFilename = p->asString();
+                                strFName = p->asString();
                                 break;
                             case FT_FILESIZE:
                                 nFilesize = p->asInt();
@@ -955,9 +956,9 @@ namespace libed2k
 
                     }
 
-                    if (!strFilename.empty() && hFile.defined())
+                    if (!strFName.empty() && hFile.defined())
                     {
-                        ec.m_files.push_back(emule_collection_entry(strFilename, nFilesize, hFile));
+                        ec.m_files.push_back(emule_collection_entry(strFName, nFilesize, hFile));
                     }
                 }
 
@@ -1020,7 +1021,8 @@ namespace libed2k
         {
             return ecl;
         }
-        std::string fileName = strLink.substr(13,iName-13);
+
+        std::string fileName = url_decode(strLink.substr(13,iName-13));
 
         size_t iSize = strLink.find("|",iName+1);
 

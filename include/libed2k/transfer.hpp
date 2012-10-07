@@ -287,9 +287,8 @@ namespace libed2k {
         void on_transfer_paused(int ret, disk_io_job const& j);
         void on_save_resume_data(int ret, disk_io_job const& j);
         void on_resume_data_checked(int ret, disk_io_job const& j);
-        void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
         void on_piece_checked(int ret, disk_io_job const& j);
-
+        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
     private:
         // will initialize the storage and the piece-picker
         void init();
@@ -298,7 +297,6 @@ namespace libed2k {
 
         void write_resume_data(entry& rd) const;
         void read_resume_data(lazy_entry const& rd);
-        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
         // this is the upload and download statistics for the whole transfer.
         // it's updated from all its peers once every second.
