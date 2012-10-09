@@ -694,16 +694,9 @@ namespace libed2k
             : transfer_alert(h)
             , error(e)
         {
-#ifndef LIBED2K_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         error_code error;
-
-#ifndef LIBED2K_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new save_resume_data_failed_alert(*this)); }
@@ -725,16 +718,9 @@ namespace libed2k
             : transfer_alert(h)
             , error(e)
         {
-#ifndef LIBED2K_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         error_code error;
-
-#ifndef LIBED2K_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new fastresume_rejected_alert(*this)); }
@@ -757,17 +743,10 @@ namespace libed2k
             , file(f)
             , error(e)
         {
-#ifndef LIBED2K_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         std::string file;
         error_code error;
-
-#ifndef LIBED2K_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new file_error_alert(*this)); }
@@ -778,8 +757,7 @@ namespace libed2k
         virtual int category() const { return static_category; }
         virtual std::string message() const
         {
-            return transfer_alert::message() + " file (" + file + ") error: "
-                + error.message();
+            return error.message();
         }
     };
 
