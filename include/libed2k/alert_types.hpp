@@ -757,7 +757,8 @@ namespace libed2k
         virtual int category() const { return static_category; }
         virtual std::string message() const
         {
-            return error.message();
+            return transfer_alert::message() + " file (" + file + ") error: "
+                + error.message();
         }
     };
 
