@@ -56,6 +56,7 @@ namespace libed2k
             , disk_cache_algorithm(avoid_readback)
             , read_cache_line_size((32*16*1024) / BLOCK_SIZE)
             , write_cache_line_size((32*16*1024) / BLOCK_SIZE)
+            , optimistic_disk_retry(10 * 60)
             , disable_hash_checks(false)
             , allow_reordered_disk_operations(true)
 #ifndef LIBED2K_DISABLE_MLOCK
@@ -274,6 +275,10 @@ namespace libed2k
         // blocks is found in the write cache, it
         // is flushed immediately
         int write_cache_line_size;
+
+        // this is the number of seconds a disk failure
+        // occurs until libtorrent will re-try.
+        int optimistic_disk_retry;
 
         // when set to true, all data downloaded from
         // peers will be assumed to be correct, and not

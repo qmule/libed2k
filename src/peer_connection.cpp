@@ -433,7 +433,7 @@ void peer_connection::request_block()
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
     if (m_disconnecting) return;
-    if (!t || t->is_seed() || !can_request()) return;
+    if (!t || t->is_seed() || t->upload_mode() || !can_request()) return;
 
     int num_requests = m_desired_queue_size
         - (int)m_download_queue.size()
@@ -525,7 +525,8 @@ bool peer_connection::add_request(const piece_block& block, int flags)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    if (!t || m_disconnecting) return false;
+    if (!t || t->upload_mode()) return false;
+    if (m_disconnecting) return false;
 
     piece_picker::piece_state_t state;
     peer_speed_t speed = peer_speed();
@@ -557,8 +558,15 @@ void peer_connection::send_block_requests()
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t || m_disconnecting) return;
 
+    // we can't download pieces in these states
+    if (t->state() == transfer_status::checking_files ||
+        t->state() == transfer_status::checking_resume_data ||
+        t->state() == transfer_status::downloading_metadata ||
+        t->state() == transfer_status::allocating)
+        return;
+
     // send in 3 requests at a time
-    if (m_download_queue.size() + 2 >= m_desired_queue_size) return;
+    if (m_download_queue.size() + 2 >= m_desired_queue_size || t->upload_mode()) return;
 
     client_request_parts_64 rp;
     rp.m_hFile = t->hash();
@@ -594,7 +602,7 @@ void peer_connection::send_block_requests()
         write_request_parts(rp);
 }
 
-void peer_connection::abort_block_requests()
+void peer_connection::abort_all_requests()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
@@ -655,6 +663,22 @@ void peer_connection::abort_expired_requests()
     }
 
 #undef ABORT_EXPIRED
+}
+
+void peer_connection::cancel_all_requests()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    // this peer might be disconnecting
+    if (!t) return;
+
+    DBG("cancel all requests to " << m_remote);
+    while (!m_request_queue.empty())
+    {
+        t->picker().abort_download(m_request_queue.back().block);
+        m_request_queue.pop_back();
+    }
+
+    write_cancel_transfer();
 }
 
 bool peer_connection::requesting(const piece_block& b)
@@ -735,7 +759,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     {
         // make sure we keep all the stats!
         t->add_stats(m_statistics);
-        abort_block_requests();
+        abort_all_requests();
         //m_queued_time_critical = 0;
 
         t->remove_peer(this);
@@ -803,12 +827,6 @@ void peer_connection::on_connect(error_code const& e)
 
 void peer_connection::start()
 {
-}
-
-void peer_connection::cancel_requests()
-{
-    abort_block_requests();
-    write_cancel_transfer();
 }
 
 int peer_connection::picker_options() const

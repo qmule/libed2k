@@ -204,7 +204,6 @@ namespace libed2k
         // and schedule events with references to itself (that is not safe to
         // do in the constructor).
         void start();
-        void cancel_requests();
 
         int picker_options() const;
 
@@ -238,6 +237,10 @@ namespace libed2k
         boost::optional<piece_block_progress> downloading_piece_progress() const {
             return boost::optional<piece_block_progress>();
         }
+
+        void send_block_requests();
+        void cancel_all_requests();
+
     private:
 
         // constructor method
@@ -251,8 +254,7 @@ namespace libed2k
         // returns true if successful, false otherwise
         enum flags_t { req_time_critical = 1, req_busy = 2 };
         bool add_request(const piece_block& b, int flags = 0);
-        void send_block_requests();
-        void abort_block_requests();
+        void abort_all_requests();
         void abort_expired_requests();
         bool requesting(const piece_block& b);
         size_t num_requesting_busy_blocks();

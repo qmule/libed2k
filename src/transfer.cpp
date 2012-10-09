@@ -43,9 +43,12 @@ namespace libed2k
         m_filesize(p.file_size),
         m_verified(p.pieces),
         m_hashset(p.hashset),
+        m_upload_mode_time(0),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
+        m_upload_mode(false),
+        m_auto_managed(false),
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
@@ -401,6 +404,41 @@ namespace libed2k
         m_stat += s;
     }
 
+    void transfer::set_upload_mode(bool b)
+    {
+        if (b == m_upload_mode) return;
+
+        m_upload_mode = b;
+
+        //state_updated();
+        //send_upload_only();
+
+        if (m_upload_mode)
+        {
+            // clear request queues of all peers
+            for (std::set<peer_connection*>::iterator i = m_connections.begin(),
+                     end(m_connections.end()); i != end; ++i)
+            {
+                peer_connection* p = (*i);
+                p->cancel_all_requests();
+            }
+            // this is used to try leaving upload only mode periodically
+            m_upload_mode_time = 0;
+        }
+        else
+        {
+            // TODO: reset last_connected, to force fast reconnect after leaving upload mode
+
+            // send_block_requests on all peers
+            for (std::set<peer_connection*>::iterator i = m_connections.begin(),
+                     end(m_connections.end()); i != end; ++i)
+            {
+                peer_connection* p = (*i);
+                p->send_block_requests();
+            }
+        }
+    }
+
     void transfer::pause()
     {
         if (m_paused) return;
@@ -434,6 +472,8 @@ namespace libed2k
         DBG("resume transfer {hash: " << hash() << "}");
         m_paused = false;
         m_ses.m_alerts.post_alert_should(resumed_transfer_alert(handle()));
+
+        if (upload_mode()) set_upload_mode(false);
     }
 
     void transfer::set_upload_limit(int limit)
@@ -567,6 +607,7 @@ namespace libed2k
         transfer_status st;
 
         st.seed_mode = m_seed_mode;
+        st.upload_mode = m_upload_mode;
         st.paused = m_paused;
 
         bytes_done(st);
@@ -962,6 +1003,15 @@ namespace libed2k
     {
         if (m_minute_timer.expires() && want_more_peers()) request_peers();
 
+        // if we're in upload only mode and we're auto-managed
+        // leave upload mode every 10 minutes hoping that the error
+        // condition has been fixed
+        if (m_upload_mode && m_auto_managed &&
+            int(m_upload_mode_time) >= m_ses.settings().optimistic_disk_retry)
+        {
+            set_upload_mode(false);
+        }
+
         if (is_paused())
         {
             // let the stats fade out to 0
@@ -987,6 +1037,8 @@ namespace libed2k
                 p->disconnect(errors::no_error, 1);
             }
         }
+
+        if (m_upload_mode) ++m_upload_mode_time;
 
         accumulator += m_stat;
         m_total_uploaded += m_stat.last_payload_uploaded();
@@ -1453,17 +1505,21 @@ namespace libed2k
     {
         if (!j.error) return;
 
-        ERR("disk error: '" << j.error.message()
-            << " in file " << j.error_file);
+        ERR("disk error: '" << j.error.message() << "' in file " << j.error_file);
 
         LIBED2K_ASSERT(j.piece >= 0);
 
-        piece_block block_finished(j.piece, j.offset/BLOCK_SIZE);
+        piece_block block(j.piece, j.offset/BLOCK_SIZE);
 
         if (j.action == disk_io_job::write)
         {
-            // we failed to write j.piece to disk tell the piece picker
-            if (has_picker() && j.piece >= 0) picker().write_failed(block_finished);
+            ERR("block write failed: {piece: " <<  block.piece_index <<
+                ", block: " << block.block_index << " }");
+            if (!have_piece(block.piece_index)) // TODO: this 'if' caused by fake data checking
+            {
+                // we failed to write j.piece to disk tell the piece picker
+                if (has_picker() && j.piece >= 0) picker().write_failed(block);
+            }
         }
 
         if (j.error ==
@@ -1493,14 +1549,7 @@ namespace libed2k
             // and the filesystem doesn't support sparse files, only zero the priorities
             // of the pieces that are at the tails of all files, leaving everything
             // up to the highest written piece in each file
-            DBG("transfer::handle_disk_error: abort block requests on each peer");
-            for (std::set<peer_connection*>::iterator i = m_connections.begin()
-                            , end(m_connections.end()); i != end; ++i)
-            {
-                peer_connection* p = (*i);
-                p->cancel_requests();
-            }
-
+            set_upload_mode(true);
             return;
         }
 
