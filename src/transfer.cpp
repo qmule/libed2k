@@ -472,8 +472,6 @@ namespace libed2k
         DBG("resume transfer {hash: " << hash() << "}");
         m_paused = false;
         m_ses.m_alerts.post_alert_should(resumed_transfer_alert(handle()));
-
-        if (upload_mode()) set_upload_mode(false);
     }
 
     void transfer::set_upload_limit(int limit)
