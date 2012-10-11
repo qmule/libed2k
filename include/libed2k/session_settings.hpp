@@ -24,6 +24,7 @@ namespace libed2k
             , server_port(4661)
             , listen_port(4662)
             , client_name("libed2k")
+            , mod_name("libed2k")
             , server_keep_alive_timeout(200)
             , server_reconnect_timeout(5)
             , max_peerlist_size(4000)
@@ -115,6 +116,8 @@ namespace libed2k
         int listen_port;
         // ed2k client name
         std::string client_name;
+        // ed2k mod program name
+        std::string mod_name;
         int server_keep_alive_timeout;
         // reconnect to server after fail, -1 - do nothing
         int server_reconnect_timeout;

@@ -1263,6 +1263,7 @@ void peer_connection::write_hello()
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
     hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
+    hello.m_list.add_tag(make_string_tag(settings.mod_name, ET_MOD_VERSION, true));
     hello.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
     hello.m_server_network_point.m_nIP = address2int(m_ses.server().address());
     hello.m_server_network_point.m_nPort = m_ses.server().port();
@@ -1303,6 +1304,7 @@ void peer_connection::write_hello_answer()
 
     cha.m_list.add_tag(
         make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
+    cha.m_list.add_tag(make_string_tag(m_ses.settings().mod_name, ET_MOD_VERSION, true));
     cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
     cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
     cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
@@ -1551,6 +1553,7 @@ void peer_connection::on_hello_answer(const error_code& error)
 
         m_hClient = packet.m_hClient;
         DBG("hello answer {name: " << m_options.m_strName
+            << " : mod name: " << m_options.m_strModVersion
             << ", port: " << m_options.m_nPort << "} <== " << m_remote);
 
         m_ses.m_alerts.post_alert_should(
