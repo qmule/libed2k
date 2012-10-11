@@ -20,7 +20,7 @@ namespace libed2k
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
-            , send_buffer_watermark(100 * 1024)
+            , send_buffer_watermark(3 * BLOCK_SIZE)
             , server_port(4661)
             , listen_port(4662)
             , client_name("libed2k")
