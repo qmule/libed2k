@@ -1256,17 +1256,17 @@ void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
     const session_settings& settings = m_ses.settings();
-    boost::uint32_t nVersion = m_ses.settings().m_version;
-    client_hello hello;
+    client_hello hello(m_ses.settings().user_agent,
+            net_identifier(m_ses.m_server_connection->client_id(), m_ses.settings().listen_port),
+            net_identifier(address2int(m_ses.server().address()), m_ses.server().port()),
+            m_ses.settings().client_name,
+            m_ses.settings().mod_name,
+            m_ses.settings().m_version);
+
+    // fill special fields
     hello.m_nHashLength = MD4_HASH_SIZE;
-    hello.m_hClient = settings.user_agent;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
-    hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
-    hello.m_list.add_tag(make_string_tag(settings.mod_name, ET_MOD_VERSION, true));
-    hello.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    hello.m_server_network_point.m_nIP = address2int(m_ses.server().address());
-    hello.m_server_network_point.m_nPort = m_ses.server().port();
 
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
@@ -1294,27 +1294,14 @@ void peer_connection::write_ext_hello()
 void peer_connection::write_hello_answer()
 {
     // prepare hello answer
-    client_hello_answer cha;
-    cha.m_hClient               = m_ses.settings().user_agent;
-    cha.m_network_point.m_nIP   = m_ses.m_server_connection->client_id();
-    cha.m_network_point.m_nPort = m_ses.settings().listen_port;
-
-    boost::uint32_t nVersion = 0x3c;
-    boost::uint32_t nUdpPort = 0;
-
-    cha.m_list.add_tag(
-        make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
-    cha.m_list.add_tag(make_string_tag(m_ses.settings().mod_name, ET_MOD_VERSION, true));
-    cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
-    cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
-    cha.m_server_network_point.m_nIP = m_ses.server().address().to_v4().to_ulong();
-
-    DBG("hello answer {client_hash: " << cha.m_hClient <<
-        ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<
-        ", client_port: " << cha.m_network_point.m_nPort <<
-        ", server_ip: " << int2ipstr(cha.m_server_network_point.m_nIP) <<
-        ", server_port: " << cha.m_server_network_point.m_nPort << "} ==> " << m_remote);
+    client_hello_answer cha(m_ses.settings().user_agent,
+            net_identifier(m_ses.m_server_connection->client_id(), m_ses.settings().listen_port),
+            net_identifier(address2int(m_ses.server().address()), m_ses.server().port()),
+            m_ses.settings().client_name,
+            m_ses.settings().mod_name,
+            m_ses.settings().m_version);
+    cha.dump();
+    DBG(" ==> " << m_remote);
     do_write(cha);
     m_handshake_complete = true;
 }

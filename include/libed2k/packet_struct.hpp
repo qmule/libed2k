@@ -884,29 +884,12 @@ namespace libed2k
     template<> struct packet_type<global_server_state_req>  { static const proto_type value = OP_GLOBSERVSTATREQ;   };      //!< server info request
     template<> struct packet_type<global_server_state_res>  { static const proto_type value = OP_GLOBSERVSTATRES;   };      //!< server info answer
 
-
     // Client to Client structures
-    struct client_hello
-    {
-        boost::uint8_t              m_nHashLength;          //!< clients hash length
-        md4_hash                    m_hClient;              //!< hash
-        net_identifier              m_network_point;        //!< client network identification
-        tag_list<boost::uint32_t>   m_list;                 //!< tag list for additional information
-        net_identifier              m_server_network_point; //!< client network identification
 
-        client_hello(): m_nHashLength(MD4_HASH_SIZE) {}
-
-        template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nHashLength;
-            ar & m_hClient;
-            ar & m_network_point;
-            ar & m_list;
-            ar & m_server_network_point;
-        }
-    };
-
+    /**
+      * client to client hello answer packet
+      *
+     */
     struct client_hello_answer
     {
         md4_hash                    m_hClient;
@@ -914,6 +897,14 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
         net_identifier              m_server_network_point;
 
+        client_hello_answer();
+        client_hello_answer(const md4_hash& client_hash,
+                const net_identifier& np,
+                const net_identifier& sp,
+                const std::string& client_name,
+                const std::string& program_name,
+                boost::uint32_t version);
+
         template<typename Archive>
         void serialize(Archive& ar)
         {
@@ -921,6 +912,32 @@ namespace libed2k
             ar & m_network_point;
             ar & m_list;
             ar & m_server_network_point;
+        }
+
+        void dump() const;
+    };
+
+    /**
+      * client to client hello packet
+     */
+    struct client_hello : public client_hello_answer
+    {
+        boost::uint8_t              m_nHashLength;          //!< clients hash length
+
+
+        client_hello();
+        client_hello(const md4_hash& client_hash,
+                const net_identifier& np,
+                const net_identifier& sp,
+                const std::string& client_name,
+                const std::string& program_name,
+                boost::uint32_t version);
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_nHashLength;
+            client_hello_answer::serialize(ar);
         }
     };
 

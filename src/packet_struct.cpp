@@ -1,4 +1,5 @@
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/util.hpp"
 
 namespace libed2k
 {
@@ -181,6 +182,44 @@ namespace libed2k
         m_hFile.dump();
         m_sources.dump();
     }
+
+    client_hello_answer::client_hello_answer(){}
+    client_hello_answer::client_hello_answer(const md4_hash& client_hash,
+                    const net_identifier& np,
+                    const net_identifier& sp,
+                    const std::string& client_name,
+                    const std::string& program_name,
+                    boost::uint32_t version)
+    {
+        //!< TODO - possible this info is not need
+        boost::uint32_t nUdpPort = 0;
+        m_hClient = client_hash;
+        m_network_point = np;
+        m_server_network_point = sp;
+
+        m_list.add_tag(make_string_tag(client_name, CT_NAME, true));        //!< user name
+        m_list.add_tag(make_string_tag(program_name, ET_MOD_VERSION, true));//!< program name
+        m_list.add_tag(make_typed_tag(version, CT_VERSION, true));          //!< some version
+        m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));  //!< we don't support udp ports
+    }
+
+    void client_hello_answer::dump() const
+    {
+        DBG("hello answer {client_hash: " << m_hClient <<
+            ", client_ip: " << int2ipstr(m_network_point.m_nIP) <<
+            ", client_port: " << m_network_point.m_nPort <<
+            ", server_ip: " << int2ipstr(m_server_network_point.m_nIP) <<
+            ", server_port: " << m_server_network_point.m_nPort << "}");
+    }
+
+    client_hello::client_hello(): client_hello_answer(), m_nHashLength(MD4_HASH_SIZE) {}
+
+    client_hello::client_hello(const md4_hash& client_hash,
+            const net_identifier& np,
+            const net_identifier& sp,
+            const std::string& client_name,
+            const std::string& program_name,
+            boost::uint32_t version) : client_hello_answer(client_hash, np, sp, client_name, program_name, version), m_nHashLength(MD4_HASH_SIZE){}
 
     // special meta tag types
     const tg_type SEARCH_TYPE_BOOL      = '\x00';
