@@ -92,11 +92,13 @@ namespace libed2k
             m_picker.reset(new piece_picker());
             // TODO: file progress
 
+            error_code ec;
             if (!m_resume_data.empty() &&
                 lazy_bdecode(&m_resume_data[0], &m_resume_data[0] + m_resume_data.size(),
-                             m_resume_entry) != 0)
+                             m_resume_entry, ec) != 0)
             {
-                ERR("fast resume parse error: {file: " << m_filepath.filename() << "}");
+                ERR("fast resume parse error: "
+                    "{file: " << m_filepath.filename() << ", error: " << ec.message() << "}");
                 std::vector<char>().swap(m_resume_data);
                 m_ses.m_alerts.post_alert_should(
                     fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));

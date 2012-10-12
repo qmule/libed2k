@@ -4,13 +4,16 @@
 #include <map>
 #include <algorithm>
 #include <locale>
+
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/bind.hpp>
+
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
+
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/md4_hash.hpp"
@@ -18,9 +21,6 @@
 
 namespace libed2k
 {
-
-    using boost::uintmax_t;
-
     typedef std::map<std::string, EED2KFileType> SED2KFileTypeMap;
     typedef SED2KFileTypeMap::value_type SED2KFileTypeMapElement;
     static SED2KFileTypeMap ED2KFileTypesMap;
@@ -690,7 +690,7 @@ namespace libed2k
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    uintmax_t nFileSize = fs::file_size(p);
+                    size_type nFileSize = fs::file_size(p);
 
                     if (nFileSize == 0)
                     {
@@ -779,7 +779,7 @@ namespace libed2k
 
                         bio::mapped_file_source fsource;
 
-                        uintmax_t nCurrentOffset = 0;
+                        size_type nCurrentOffset = 0;
                         CryptoPP::Weak1::MD4 md4_hasher;
 
                         while(nCurrentOffset < nFileSize)
@@ -789,11 +789,11 @@ namespace libed2k
                                 break;
                             }
 
-                            uintmax_t nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
-                            uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
+                            size_type nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
+                            size_type nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
 
                             // calculate map size
-                            uintmax_t nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
+                            size_type nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
 
                             // correct map length
                             if (nMapLength > (nFileSize - nCurrentOffset))
@@ -823,7 +823,7 @@ namespace libed2k
                                 }
 
                                 // calculate current part size size
-                                uintmax_t nLength = PIECE_SIZE;
+                                size_type nLength = PIECE_SIZE;
 
                                 if (PIECE_SIZE > nMapLength - nLocalOffset)
                                 {

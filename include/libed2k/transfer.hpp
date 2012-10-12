@@ -1,4 +1,3 @@
-// ed2k transfer
 
 #ifndef __LIBED2K_TRANSFER__
 #define __LIBED2K_TRANSFER__
