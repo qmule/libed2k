@@ -14,7 +14,6 @@
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/md4_hash.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/file.hpp"
 
 namespace libed2k
@@ -267,6 +266,7 @@ namespace libed2k
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xls"),   ED2KFT_DOCUMENT));   // Microsoft Excel Spreadsheet
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xlt"),   ED2KFT_DOCUMENT));   // Microsoft Excel Template
             ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".xml"),   ED2KFT_DOCUMENT));   // XML File
+            ED2KFileTypesMap.insert(SED2KFileTypeMapElement(std::string(".emulecollection"), ED2KFT_EMULECOLLECTION));   // emulecollection
         }
     };
 
@@ -559,7 +559,7 @@ namespace libed2k
     known_file_entry::known_file_entry(const md4_hash& hFile,
                                         const std::vector<md4_hash>& hSet,
                                         const fs::path& p,
-                                        size_t  nFilesize,
+                                        size_type nFilesize,
                                         boost::uint32_t nAccepted,
                                         boost::uint32_t nRequested,
                                         boost::uint64_t nTransferred,
@@ -604,7 +604,7 @@ namespace libed2k
         }
     }
 
-    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const fs::path& path, fsize_t size, const std::vector<char>& fr_data):
+    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const fs::path& path, size_type size, const std::vector<char>& fr_data):
             m_hash(hash), m_filepath(path.string()), m_filesize(size)
     {
         if (!fr_data.empty())
@@ -770,6 +770,7 @@ namespace libed2k
                     // execute real hashing when migration got nothing
                     if (!atp.file_hash.defined())
                     {
+                        namespace bio = boost::iostreams;
                         bool    bPartial = false; // check last part in file not full
                         bio::mapped_file_params mf_param;
                         mf_param.flags  = bio::mapped_file_base::readonly;
@@ -929,7 +930,7 @@ namespace libed2k
 
                 for (size_t i = 0; i < ebc.m_files.m_collection.size(); ++i) // iterate each tag list
                 {
-                    std::string strFilename;
+                    std::string strFName;
                     boost::uint64_t nFilesize = 0;
                     md4_hash        hFile;
 
@@ -940,7 +941,7 @@ namespace libed2k
                         switch(p->getNameId())
                         {
                             case FT_FILENAME:
-                                strFilename = p->asString();
+                                strFName = p->asString();
                                 break;
                             case FT_FILESIZE:
                                 nFilesize = p->asInt();
@@ -955,9 +956,9 @@ namespace libed2k
 
                     }
 
-                    if (!strFilename.empty() && hFile.defined())
+                    if (!strFName.empty() && hFile.defined())
                     {
-                        ec.m_files.push_back(emule_collection_entry(strFilename, nFilesize, hFile));
+                        ec.m_files.push_back(emule_collection_entry(strFName, nFilesize, hFile));
                     }
                 }
 
@@ -990,7 +991,7 @@ namespace libed2k
     }
 
     // static
-    std::string emule_collection::toLink(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hFile)
+    std::string emule_collection::toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile)
     {
         std::stringstream retvalue;
         // ed2k://|file|fileName|fileSize|fileHash|/
@@ -1020,7 +1021,8 @@ namespace libed2k
         {
             return ecl;
         }
-        std::string fileName = strLink.substr(13,iName-13);
+
+        std::string fileName = url_decode(strLink.substr(13,iName-13));
 
         size_t iSize = strLink.find("|",iName+1);
 
@@ -1088,8 +1090,9 @@ namespace libed2k
 
                 for (size_t n = 0; n < m_files.size(); ++n)
                 {
+                    boost::uint64_t filesize = m_files[n].m_filesize;
                     ebc.m_files.m_collection[n].add_tag(make_string_tag(m_files[n].m_filename, FT_FILENAME, true));
-                    ebc.m_files.m_collection[n].add_tag(make_typed_tag(m_files[n].m_filesize, FT_FILESIZE, true));
+                    ebc.m_files.m_collection[n].add_tag(make_typed_tag(filesize, FT_FILESIZE, true));
                     ebc.m_files.m_collection[n].add_tag(make_typed_tag(m_files[n].m_filehash, FT_FILEHASH, true));
                 }
 
@@ -1134,7 +1137,7 @@ namespace libed2k
         return (false);
     }
 
-    bool emule_collection::add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash)
+    bool emule_collection::add_file(const std::string& strFilename, size_type nFilesize, const std::string& strFilehash)
     {
         md4_hash hash;
 

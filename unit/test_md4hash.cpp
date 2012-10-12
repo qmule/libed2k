@@ -12,10 +12,9 @@
 #include <boost/test/unit_test.hpp>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
-#include "libed2k/md4_hash.hpp"
-#include "libed2k/hasher.hpp"
-#include <libtorrent/piece_picker.hpp>
-#include "libed2k/peer_connection.hpp"
+#include <libed2k/md4_hash.hpp>
+#include <libed2k/hasher.hpp>
+#include <libed2k/peer_connection.hpp>
 
 BOOST_AUTO_TEST_SUITE(test_md4_hash)
 

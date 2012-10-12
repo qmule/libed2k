@@ -6,16 +6,18 @@
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
 
-#include <libtorrent/io.hpp>
-#include <libtorrent/bitfield.hpp>
-#include <libtorrent/piece_block_progress.hpp>
+#include <libed2k/io.hpp>
+#include <libed2k/piece_block_progress.hpp>
 
+#include <libed2k/bitfield.hpp>
 #include <libed2k/disk_buffer_holder.hpp>
 #include <libed2k/base_connection.hpp>
-#include <libed2k/types.hpp>
 #include <libed2k/error_code.hpp>
 #include <libed2k/packet_struct.hpp>
 #include <libed2k/peer_request.hpp>
+#include <libed2k/piece_picker.hpp>
+#include <libed2k/peer_info.hpp>
+#include "libed2k/piece_block_progress.hpp"
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \
@@ -64,7 +66,7 @@ namespace libed2k
 
     struct pending_block
     {
-        pending_block(const piece_block& b, fsize_t fsize):
+        pending_block(const piece_block& b, size_type fsize):
             skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
             data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL),
             create_time(time_now()){}
@@ -90,7 +92,7 @@ namespace libed2k
 
         piece_block block;
         // block covering
-        range<fsize_t> data_left;
+        range<size_type> data_left;
         // disk receive buffer
         char* buffer;
         // time when this block has been created
@@ -102,7 +104,7 @@ namespace libed2k
                 && b.not_wanted == not_wanted && b.timed_out == timed_out;
         }
 
-        void complete(const std::pair<fsize_t,fsize_t>& range) { data_left -= range; }
+        void complete(const std::pair<size_type,size_type>& range) { data_left -= range; }
 
         bool completed() const { return data_left.empty(); }
     };
@@ -234,6 +236,10 @@ namespace libed2k
         boost::optional<piece_block_progress> downloading_piece_progress() const {
             return boost::optional<piece_block_progress>();
         }
+
+        void send_block_requests();
+        void cancel_all_requests();
+
     private:
 
         // constructor method
@@ -247,8 +253,7 @@ namespace libed2k
         // returns true if successful, false otherwise
         enum flags_t { req_time_critical = 1, req_busy = 2 };
         bool add_request(const piece_block& b, int flags = 0);
-        void send_block_requests();
-        void abort_block_requests();
+        void abort_all_requests();
         void abort_expired_requests();
         bool requesting(const piece_block& b);
         size_t num_requesting_busy_blocks();
@@ -323,62 +328,11 @@ namespace libed2k
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
+        template <typename Struct> void on_request_parts(const error_code& error);
+        template <typename Struct> void on_sending_part(const error_code& error);
 
-        template<typename T>
-        void defer_write(const T& t) { m_deferred.push_back(make_message(t)); }
-
-        template<typename T>
-        void send_throw_meta_order(const T& t)
-        {
-            defer_write(t);
-            if (!is_closed()) fill_send_buffer();
-        }
-
-        template <typename Struct>
-        void on_request_parts(const error_code& error)
-        {
-            if (!error)
-            {
-                DECODE_PACKET(Struct, rp);
-                DBG("request parts " << rp.m_hFile << ": "
-                    << "[" << rp.m_begin_offset[0] << ", " << rp.m_end_offset[0] << "]"
-                    << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
-                    << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
-                    << " <== " << m_remote);
-                for (size_t i = 0; i < 3; ++i)
-                {
-                    if (rp.m_begin_offset[i] < rp.m_end_offset[i])
-                    {
-                        m_requests.push_back(
-                            mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]));
-                    }
-                }
-                fill_send_buffer();
-            }
-            else
-            {
-                ERR("request parts error " << error.message() << " <== " << m_remote);
-            }
-        }
-
-        template <typename Struct>
-        void on_sending_part(const error_code& error)
-        {
-            if (!error)
-            {
-                DECODE_PACKET(Struct, sp);
-                DBG("part " << sp.m_hFile
-                    << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
-                    << " <== " << m_remote);
-
-                peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
-                receive_data(r);
-            }
-            else
-            {
-                ERR("part error " << error.message() << " <== " << m_remote);
-            }
-        }
+        template<typename T> void defer_write(const T& t);
+        template<typename T> void send_throw_meta_order(const T& t);
 
         // keep the io_service running as long as we
         // have peer connections

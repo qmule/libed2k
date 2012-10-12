@@ -19,7 +19,7 @@ namespace libed2k
         {
             no_error = 0,
             no_memory,
-            // protocol errors
+            // serialization errors
             md4_hash_index_error,
             md4_hash_convert_error,
             tag_type_mismatch,
@@ -29,6 +29,29 @@ namespace libed2k
             blob_tag_too_long,
             incompatible_tag_getter,
             tag_list_index_error,
+            invalid_entry_type,         // derived from libtorrent
+            depth_exceeded,
+            unexpected_eof,
+            expected_string,
+            expected_value,
+            expected_colon,
+            limit_exceeded,
+
+            metadata_too_large,
+            invalid_bencoding,
+            torrent_missing_piece_length,
+            torrent_missing_name,
+            torrent_invalid_name,
+            torrent_invalid_length,
+            torrent_file_parse_failed,
+            torrent_missing_pieces,
+            torrent_invalid_hashes,
+            torrent_is_no_dict,
+            torrent_info_no_dict,
+            torrent_missing_info,
+            unsupported_url_protocol,
+            expected_close_bracket_in_address,
+            // protocol errors
             decode_packet_error,
             invalid_protocol_type,
             unsupported_protocol_type,

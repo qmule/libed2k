@@ -2,8 +2,10 @@
 #ifndef __LIBED2K_UTIL__
 #define __LIBED2K_UTIL__
 
-#include "libed2k/types.hpp"
+#include "libed2k/bitfield.hpp"
 #include "libed2k/constants.hpp"
+#include "libed2k/ptime.hpp"
+#include "libed2k/socket.hpp"
 
 namespace libed2k
 {
@@ -49,17 +51,12 @@ namespace libed2k
         return ((v & 7) == 0) ? v : v + (8 - (v & 7));
     }
 
-    inline size_t piece_count(fsize_t fsize)
+    inline size_t piece_count(size_type fsize)
     {
         return static_cast<size_t>(div_ceil(fsize, PIECE_SIZE));
     }
 
-    extern std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size);
-
-    inline ptime time_now()
-    {
-        return time::microsec_clock::universal_time();
-    }
+    extern std::pair<size_type, size_type> block_range(int piece, int block, size_type size);
 
     template<typename Coll1, typename Coll2>
     void appendAll(Coll1& to, const Coll2& from)
@@ -103,13 +100,13 @@ namespace libed2k
     class duration_timer
     {
     public:
-        duration_timer(const time::time_duration& duration, const ptime& last_tick = time_now());
+        duration_timer(const time_duration& duration, const ptime& last_tick = time_now_hires());
         bool expires();
-        const time::time_duration& tick_interval() const { return m_tick_interval; }
+        const time_duration& tick_interval() const { return m_tick_interval; }
     private:
-        time::time_duration m_duration;
+        time_duration m_duration;
         ptime m_last_tick;
-        time::time_duration m_tick_interval;
+        time_duration m_tick_interval;
     };
 
     // set of semi open intervals: [a1, b1), [a2, b2), ...
@@ -197,7 +194,7 @@ namespace libed2k
         return pair.first;
     }
 
-
+#if 0
     /**
       * @param vSrc     - incoming data buffer
       * @param vDst     - outgoing data buffer
@@ -205,7 +202,7 @@ namespace libed2k
      */
     extern int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst,
                             int nMaxSize);
-
+#endif
 
     /**
       * truncate BOM header from UTF-8 strings
@@ -222,6 +219,11 @@ namespace libed2k
       * make UTF-8 string from native string
      */
     extern std::string convert_from_native(const std::string& s);
+
+    /**
+      * execute url decode from single-character string formatted %XX
+     */
+    extern std::string url_decode(const std::string& s);
 }
 
 #endif

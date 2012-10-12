@@ -13,7 +13,7 @@ namespace libed2k
         {
             "no error",
             "no memory",
-            // protocol errors
+            // serialization errors
             "md4_hash index error",
             "md4_hash convert error",
             "tag has incorrect type",
@@ -23,6 +23,29 @@ namespace libed2k
             "blob tag too long",
             "incompatible tag getter",
             "tag list index error",
+            "invalid entry type",               // derived from libtorrent
+            "depth exceeded",
+            "unexpected eof",
+            "expected string",
+            "expected value",
+            "expected colon",
+            "limit exceeded",
+
+            "metadata too large",
+            "invalid bencoding",
+            "torrent missing piece length",
+            "torrent missing name",
+            "torrent invalid name",
+            "torrent_invalid length",
+            "torrent file parse failed",
+            "torrent missing pieces",
+            "torrent invalid hashes",
+            "torrent is no dict",
+            "torrent info no dict",
+            "torrent missing info",
+            "unsupported_url_protocol",
+            "expected_close_bracket_in_address",
+            // protocol errors
             "decode packet error",
             "invalid protocol type",
             "unsupported protocol type",

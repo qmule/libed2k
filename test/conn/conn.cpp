@@ -7,8 +7,7 @@
 #include <boost/thread.hpp>
 #include <boost/asio/error.hpp>
 
-#include <libtorrent/torrent_handle.hpp>
-#include <libtorrent/bencode.hpp>
+#include <libed2k/bencode.hpp>
 
 #include "libed2k/log.hpp"
 #include "libed2k/session.hpp"
@@ -19,6 +18,7 @@
 #include "libed2k/search.hpp"
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/io_service.hpp"
 
 using namespace libed2k;
 
@@ -110,7 +110,8 @@ enum CONN_CMD
     cc_connect,
     cc_disconnect,
     cc_listen,
-    cc_empty
+    cc_empty,
+    cc_tr
 };
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
@@ -195,6 +196,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     {
         return cc_listen;
     }
+    else if (strCommand == "tr")
+    {
+        return cc_tr;
+    }
 
     return cc_empty;
 }
@@ -250,6 +255,7 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
             {
                 boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
                 boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
+                boost::shared_ptr<base_tag> src = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_SOURCES);
 
                 if (low.get())
                 {
@@ -262,8 +268,9 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                 }
 
                 DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                        << " name: " << vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME)
-                        << " size: " << nSize);
+                    << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
+                    << " size: " << nSize
+                    << " src: " << src->asInt());
             }
         }
         else if(dynamic_cast<peer_message_alert*>(a.get()))
@@ -397,12 +404,12 @@ int main(int argc, char* argv[])
     ses.set_alert_mask(alert::all_categories);
 
 
-    boost::asio::io_service io;
+    libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
     boost::asio::deadline_timer fs_timer(io, boost::posix_time::minutes(3));
     alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
     fs_timer.async_wait(boost::bind(save_fast_resume, boost::asio::placeholders::error, &fs_timer, &ses));
-    boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
+    boost::thread t(boost::bind(&libed2k::io_service::run, &io));
 
 
     /*
@@ -457,7 +464,7 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(1000000000,0,100,0, "", "", "", 0, 0, strArg);
+                search_request sr = libed2k::generateSearchRequest(1000000000,0,1,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }
@@ -571,7 +578,7 @@ int main(int argc, char* argv[])
                 while (num_resume_data > 0)
                 {
                     DBG("wait for alert");
-                    libed2k::alert const* a = ses.wait_for_alert(boost::posix_time::seconds(30));
+                    libed2k::alert const* a = ses.wait_for_alert(libed2k::seconds(30));
 
                     if (a == 0)
                     {
@@ -610,7 +617,7 @@ int main(int argc, char* argv[])
                     DBG("Saving fast resume data was succesfull");
                     // write fast resume data
                     std::vector<char> vFastResumeData;
-                    libtorrent::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
+                    libed2k::bencode(std::back_inserter(vFastResumeData), *rd->resume_data);
                     DBG("save data size: " << vFastResumeData.size());
 
                     // Saving fast resume data was successful
@@ -721,6 +728,18 @@ int main(int argc, char* argv[])
                     DBG("Unable to reset port");
                 }
                 break;
+            case cc_tr:
+            {
+                std::vector<libed2k::transfer_handle> vth = ses.get_transfers();
+                for (size_t i = 0; i < vth.size(); ++i)
+                {
+                    DBG("TR: " << vth[i].hash().toString()
+                            << " valid: " << (vth[i].is_valid()?"valid":"invalid")
+                            << " urate: " << vth[i].status().upload_payload_rate
+                            << " drate: " << vth[i].status().download_payload_rate);
+                }
+                break;
+            }
             default:
                 break;
         }

@@ -9,14 +9,14 @@
 #include <fstream>
 #include <boost/test/unit_test.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <locale.h>
 #include "libed2k/constants.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/transfer.hpp"
+#include "libed2k/deadline_timer.hpp"
 
 namespace libed2k
 {
@@ -48,11 +48,11 @@ namespace libed2k
             std::deque<boost::shared_ptr<transfer> > m_transfers;
             std::vector<peer_entry> m_peers;
             bool                m_bAfterSave;
-            boost::asio::deadline_timer m_timer;
+            deadline_timer      m_timer;
         };
 
         session_impl_test::session_impl_test(const session_settings& settings) : session_impl_base(settings), m_ready(true), m_hash_count(0),
-                m_timer(m_io_service,  boost::posix_time::seconds(5))
+                m_timer(m_io_service,  libed2k::seconds(5))
         {
             m_bAfterSave = false;
             m_file_hasher.start();
@@ -73,7 +73,7 @@ namespace libed2k
                     t.file_hash,
                     t.file_path,
                     t.file_size)));
-            m_timer.expires_from_now(boost::posix_time::seconds(5));
+            m_timer.expires_from_now(libed2k::seconds(5));
             return (transfer_handle(boost::weak_ptr<transfer>()));
         }
 
@@ -178,7 +178,7 @@ namespace libed2k
                 if (!m_settings.m_known_file.empty())
                 {
                     DBG("save to " << convert_to_native(m_settings.m_known_file));
-                    fs::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
+                    boost::filesystem::ofstream fstream(convert_to_native(m_settings.m_known_file), std::ios::binary);
                     libed2k::archive::ed2k_oarchive ofa(fstream);
                     ofa << kfc;
                 }
@@ -189,7 +189,7 @@ namespace libed2k
             }
 
             // restart timer
-            m_timer.expires_from_now(boost::posix_time::seconds(5));
+            m_timer.expires_from_now(libed2k::seconds(5));
             m_timer.async_wait(boost::bind(&session_impl_test::on_timer, this));
             m_ready = true;
         }
@@ -202,10 +202,10 @@ namespace libed2k
         void session_impl_test::on_timer()
         {
 
-            if (m_timer.expires_at() <= dtimer::traits_type::now())
+            if (m_timer.expires_at() <= deadline_timer::traits_type::now())
             {
                 DBG("Timer expired");
-                m_timer.expires_at(boost::posix_time::pos_infin);
+                m_timer.expires_at(max_time());
                 m_ready = false;
                 m_signal.notify_all();
                 return;

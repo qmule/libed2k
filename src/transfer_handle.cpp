@@ -72,7 +72,7 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(filepath(), fs::path());
     }
 
-    fsize_t transfer_handle::filesize() const
+    size_type transfer_handle::filesize() const
     {
         LIBED2K_FORWARD_RETURN(filesize(), 0);
     }
@@ -157,6 +157,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(download_limit(), 0);
     }
 
+    void transfer_handle::set_upload_mode(bool b) const
+    {
+        LIBED2K_FORWARD(set_upload_mode(b));
+    }
+
     void transfer_handle::pause() const
     {
         LIBED2K_FORWARD(pause());
@@ -184,7 +189,7 @@ namespace libed2k
 
     fs::path transfer_handle::save_path() const
     {
-        LIBED2K_FORWARD_RETURN(filepath(), fs::path());
+        LIBED2K_FORWARD_RETURN(filepath().parent_path(), fs::path());
     }
 
     void transfer_handle::save_resume_data() const

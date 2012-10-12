@@ -33,7 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/version.hpp>
 #include <boost/bind.hpp>
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 #include <libed2k/assert.hpp>
 #include <libed2k/file_pool.hpp>
 #include <libed2k/error_code.hpp>
@@ -114,7 +114,7 @@ namespace libed2k
         if (i != m_files.end())
         {
             lru_file_entry& e = i->second;
-            e.last_use = libtorrent::time_now();
+            e.last_use = libed2k::time_now();
 
             if (e.key != st && ((e.mode & file::rw_mask) != file::read_only
                 || (m & file::rw_mask) != file::read_only))

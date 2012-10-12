@@ -11,11 +11,14 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include <libed2k/lazy_entry.hpp>
 #include <libed2k/policy.hpp>
-#include <libed2k/types.hpp>
+#include <libed2k/piece_picker.hpp>
 #include <libed2k/session.hpp>
 #include <libed2k/packet_struct.hpp>
-
+#include <libed2k/peer_info.hpp>
+#include <libed2k/storage_defs.hpp>
+#include <libed2k/entry.hpp>
 
 namespace libed2k {
 
@@ -41,7 +44,7 @@ namespace libed2k {
          * you shouldn't it anywhere except unit tests
          */
         transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                 const md4_hash& hash, const fs::path p, fsize_t size);
+                 const md4_hash& hash, const fs::path p, size_type size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
@@ -141,6 +144,9 @@ namespace libed2k {
 
         stat statistics() const { return m_stat; }
         void add_stats(const stat& s);
+
+        void set_upload_mode(bool b);
+        bool upload_mode() const { return m_upload_mode; }
 
         // --------------------------------------------
         // PIECE MANAGEMENT
@@ -247,7 +253,7 @@ namespace libed2k {
 
         // --------------------------------------------
         // SERVER MANAGEMENT
-
+        // --------------------------------------------
         /**
           * convert transfer info into announce
          */
@@ -265,9 +271,9 @@ namespace libed2k {
         void on_transfer_paused(int ret, disk_io_job const& j);
         void on_save_resume_data(int ret, disk_io_job const& j);
         void on_resume_data_checked(int ret, disk_io_job const& j);
-        void on_disk_error(disk_io_job const& j, peer_connection* c = 0);
         void on_piece_checked(int ret, disk_io_job const& j);
         void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
+        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
     private:
         // will initialize the storage and the piece-picker
@@ -277,7 +283,6 @@ namespace libed2k {
 
         void write_resume_data(entry& rd) const;
         void read_resume_data(lazy_entry const& rd);
-        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
 
         // this is the upload and download statistics for the whole transfer.
         // it's updated from all its peers once every second.
@@ -303,13 +308,31 @@ namespace libed2k {
 
         fs::path m_filepath;
         fs::path m_collectionpath;
-        boost::uint32_t m_file_type;
+
+        // the number of seconds we've been in upload mode
+        unsigned int m_upload_mode_time;
 
         // determines the storage state for this transfer.
         storage_mode_t m_storage_mode;
 
         // the state of this transfer (queued, checking, downloading, etc.)
         transfer_status::state_t m_state;
+
+        // this means we haven't verified the file content
+        // of the files we're seeding. the m_verified bitfield
+        // indicates which pieces have been verified and which
+        // haven't
+        bool m_seed_mode;
+
+        // set to true when this transfer may not download anything
+        bool m_upload_mode;
+
+        // if this is true, libed2k may pause and resume
+        // this transfer depending on queuing rules. Transfers
+        // started with auto_managed flag set may be added in
+        // a paused state in case there are no available
+        // slots.
+        bool m_auto_managed;
 
         int m_complete;
         int m_incomplete;
@@ -328,9 +351,9 @@ namespace libed2k {
 
         // all time totals of uploaded and downloaded payload
         // stored in resume data
-        fsize_t m_total_uploaded;
-        fsize_t m_total_downloaded;
-        bool m_queued_for_checking:1;
+        size_type m_total_uploaded;
+        size_type m_total_downloaded;
+        bool m_queued_for_checking;
         int m_progress_ppm;
 
         // the piece_manager keeps the transfer object

@@ -1,15 +1,13 @@
-
 #include <algorithm>
-#include <libtorrent/utf8.hpp>
+#include <locale.h>
 
 #ifndef WIN32
 #include <iconv.h>
 #endif
-#include <locale.h>
 
+#include <libed2k/utf8.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/file.hpp>
-#include <zlib.h>
 
 namespace libed2k 
 {
@@ -30,29 +28,30 @@ namespace libed2k
         return str.str();
     }
 
-    std::pair<fsize_t, fsize_t> block_range(int piece, int block, fsize_t size)
+    std::pair<size_type, size_type> block_range(int piece, int block, size_type size)
     {
-        fsize_t begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
-        fsize_t align_size = (piece + 1) * PIECE_SIZE;
-        fsize_t end = std::min<fsize_t>(begin + BLOCK_SIZE, std::min(align_size, size));
+        size_type begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
+        size_type align_size = (piece + 1) * PIECE_SIZE;
+        size_type end = std::min<size_type>(begin + BLOCK_SIZE, std::min(align_size, size));
         assert(begin < end);
         return std::make_pair(begin, end);
     }
 
-    duration_timer::duration_timer(const time::time_duration& duration, const ptime& last_tick):
+    duration_timer::duration_timer(const time_duration& duration, const ptime& last_tick):
         m_duration(duration), m_last_tick(last_tick), m_tick_interval()
     {
     }
 
     bool duration_timer::expires()
     {
-        ptime now = time_now();
+        ptime now = time_now_hires();
         m_tick_interval = now - m_last_tick;
         if (m_tick_interval < m_duration) return false;
         m_last_tick = now;
         return true;
     }
 
+#if 0
     int inflate_gzip(const socket_buffer& vSrc, socket_buffer& vDst, int nMaxSize)
     {
         // start off with one kilobyte and grow
@@ -112,5 +111,68 @@ namespace libed2k
         vDst.resize(vDst.size() - str.avail_out);
         inflateEnd(&str);
         return (ret);
+    }
+#endif
+
+
+const char HEX2DEC[256] = 
+{
+    /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
+    /* 0 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 1 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 2 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 3 */  0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+    
+    /* 4 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 5 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 6 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 7 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    
+    /* 8 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* 9 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* A */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* B */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    
+    /* C */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* D */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* E */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+    /* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
+};
+
+    std::string url_decode(const std::string& s)
+    {      
+        std::string strRes;
+        std::string::size_type index = 0;
+
+        if (s.size() > 2)
+        {
+            std::string::size_type last = s.size() - 2;
+
+            while(index < last)
+            {
+                if (s[index] == '%')
+                {
+                    char dec1, dec2;
+                    if (-1 != (dec1 = HEX2DEC[s[index+1]]) && -1 != (dec2 = HEX2DEC[s[index+2]]))
+                    {
+                        char c = (dec1 << 4) + dec2;
+                        strRes += c;
+                        index+= 3;
+                        continue;
+                    }
+                }            
+
+                strRes += s[index];
+                ++index;
+            }
+        }
+
+        while(index < s.size())
+        {
+            strRes += s[index];
+            ++index;
+        }
+
+        return (strRes);
     }
 }

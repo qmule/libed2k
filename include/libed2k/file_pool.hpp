@@ -45,7 +45,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <map>
 #include <libed2k/filesystem.hpp>
-#include <libtorrent/time.hpp>
+#include <libed2k/time.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/file_storage.hpp>
 
@@ -73,10 +73,10 @@ namespace libed2k
 
         struct lru_file_entry
         {
-            lru_file_entry(): key(0), last_use(libtorrent::time_now()), mode(0) {}
+            lru_file_entry(): key(0), last_use(libed2k::time_now()), mode(0) {}
             mutable boost::intrusive_ptr<file> file_ptr;
             void* key;
-            libtorrent::ptime last_use;
+            libed2k::ptime last_use;
             int mode;
         };
 

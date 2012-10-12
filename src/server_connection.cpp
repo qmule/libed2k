@@ -1,7 +1,5 @@
-#include <zlib.h>
 #include <boost/lexical_cast.hpp>
 
-#include "libtorrent/gzip.hpp"
 #include "libed2k/version.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/transfer.hpp"
@@ -151,13 +149,13 @@ namespace libed2k
 
         m_target = *i;
 
-        DBG("server name resolved: " << libtorrent::print_endpoint(m_target));
-        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libtorrent::print_endpoint(m_target)));
+        DBG("server name resolved: " << libed2k::print_endpoint(m_target));
+        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libed2k::print_endpoint(m_target)));
 
         // prepare for connect
         // set timeout
         // execute connect
-        m_deadline.expires_from_now(boost::posix_time::seconds(settings.server_timeout));
+        m_deadline.expires_from_now(seconds(settings.server_timeout));
         m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
     }
 
@@ -170,14 +168,14 @@ namespace libed2k
 
         if (error)
         {
-            ERR("connection to: " << libtorrent::print_endpoint(m_target)
+            ERR("connection to: " << libed2k::print_endpoint(m_target)
                 << ", failed: " << error);
             close(error);
             return;
         }
 
         // stop deadline timer
-        m_deadline.expires_at(boost::posix_time::pos_infin);
+        m_deadline.expires_at(max_time());
         m_deadline.cancel();
 
         DBG("connect to server:" << m_target << ", successfully");
@@ -315,7 +313,8 @@ namespace libed2k
         if (!error)
         {
             DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
-
+/*
+            // gzip decompressor disabled
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
                 // unzip data
@@ -334,7 +333,7 @@ namespace libed2k
 
                 m_in_container.resize(nSize);
             }
-
+*/
             boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_container.size());
             std::istream in_array_stream(&buffer);
             archive::ed2k_iarchive ia(in_array_stream);
@@ -452,7 +451,7 @@ namespace libed2k
        // the current time since a new asynchronous operation may have moved the
        // deadline before this actor had a chance to run.
 
-       if (m_deadline.expires_at() <= dtimer::traits_type::now())
+       if (m_deadline.expires_at() <= deadline_timer::traits_type::now())
        {
            DBG("server_connection::check_deadline(): deadline timer expired");
 
@@ -461,7 +460,7 @@ namespace libed2k
            close(errors::timed_out);
            // There is no longer an active deadline. The expiry is set to positive
            // infinity so that the actor takes no action until a new deadline is set.
-           m_deadline.expires_at(boost::posix_time::pos_infin);
+           m_deadline.expires_at(max_time());
            boost::system::error_code ignored_ec;
        }
 

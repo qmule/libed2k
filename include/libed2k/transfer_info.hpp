@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <libed2k/config.hpp>
 #include <libed2k/size_type.hpp>
-#include <libtorrent/intrusive_ptr_base.hpp>
+#include <libed2k/intrusive_ptr_base.hpp>
 #include <libed2k/assert.hpp>
 #include <libed2k/file_storage.hpp>
 #include <libed2k/copy_ptr.hpp>
@@ -47,7 +47,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k
 {
-    class LIBED2K_EXPORT transfer_info : public libtorrent::intrusive_ptr_base<transfer_info>
+    class LIBED2K_EXPORT transfer_info : public intrusive_ptr_base<transfer_info>
     {
     public:
 

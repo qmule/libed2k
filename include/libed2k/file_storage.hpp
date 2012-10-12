@@ -40,12 +40,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/size_type.hpp>
 #include <libed2k/assert.hpp>
 #include <libed2k/peer_request.hpp>
-#include <libtorrent/peer_id.hpp>
+#include <libed2k/peer_id.hpp>
 
 namespace libed2k
 {
     struct file;
-    typedef libtorrent::sha1_hash sha1_hash;
 
     struct LIBED2K_EXPORT file_entry
     {

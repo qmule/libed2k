@@ -2,15 +2,6 @@
 #ifndef __LIBED2K_SERVER_CONNECTION__
 #define __LIBED2K_SERVER_CONNECTION__
 
-#include <boost/noncopyable.hpp>
-#include <boost/intrusive_ptr.hpp>
-#include <boost/asio.hpp>
-
-#include <libtorrent/intrusive_ptr_base.hpp>
-
-#include "libed2k/types.hpp"
-#include "libed2k/packet_struct.hpp"
-#include "libed2k/error_code.hpp"
 #include "libed2k/base_connection.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/session_impl.hpp"
@@ -28,7 +19,7 @@ namespace libed2k
     const char SC_TO_SERVER     = SC_ONLINE;
 
 
-    class server_connection: public libtorrent::intrusive_ptr_base<server_connection>,
+    class server_connection: public intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
         friend class aux::session_impl;
@@ -113,7 +104,7 @@ namespace libed2k
         bool                            m_bInitialization;  //!< set true when we wait for connect
         md4_hash                        m_hServer;
         tcp::socket                     m_socket;
-        dtimer                          m_deadline;         //!< deadline timer for reading operations
+        deadline_timer                  m_deadline;         //!< deadline timer for reading operations
 
         libed2k_header                  m_in_header;            //!< incoming message header
         socket_buffer                   m_in_container;         //!< buffer for incoming messages

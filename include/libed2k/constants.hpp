@@ -2,7 +2,6 @@
 #ifndef __LIBED2K_CONSTANTS__
 #define __LIBED2K_CONSTANTS__
 
-#include <boost/cstdint.hpp>
 #include <libed2k/size_type.hpp>
 
 namespace libed2k

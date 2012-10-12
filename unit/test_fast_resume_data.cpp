@@ -8,11 +8,10 @@
 #   define BOOST_TEST_MODULE Main
 #endif
 
+#include <fstream>
 #include <boost/test/unit_test.hpp>
-#include <libtorrent/torrent_handle.hpp>
-#include <libtorrent/stat.hpp>
-#include <libtorrent/bencode.hpp>
-#include "libed2k/types.hpp"
+#include <libed2k/stat.hpp>
+#include <libed2k/bencode.hpp>
 #include "libed2k/log.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/transfer.hpp"
@@ -175,7 +174,7 @@ BOOST_AUTO_TEST_CASE(test_shared_files)
 
     while (num_resume_data > 0)
     {
-        libed2k::alert const* a = session.wait_for_alert(boost::posix_time::seconds(30));
+        libed2k::alert const* a = session.wait_for_alert(libed2k::seconds(30));
 
         if (a == 0)
         {
@@ -253,9 +252,9 @@ BOOST_AUTO_TEST_CASE(test_entries_hash)
     std::vector<char> container;
     libed2k::lazy_entry le;
 
-    libtorrent::bencode(std::back_inserter(container), e);
+    libed2k::bencode(std::back_inserter(container), e);
     BOOST_REQUIRE(!container.empty());
-    BOOST_REQUIRE(libtorrent::lazy_bdecode(&container[0], &container[0] + container.size(), le) == 0);
+    BOOST_REQUIRE(libed2k::lazy_bdecode(&container[0], &container[0] + container.size(), le) == 0);
     BOOST_REQUIRE(le.type() == libed2k::lazy_entry::dict_t);
 
     const libed2k::lazy_entry* lek = le.dict_find_list("hash-keys");

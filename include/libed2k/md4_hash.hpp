@@ -13,13 +13,12 @@
 #include <boost/assert.hpp>
 #include <boost/optional.hpp>
 
-#include <libtorrent/bitfield.hpp>
-#include <libtorrent/escape_string.hpp>
+#include <libed2k/bitfield.hpp>
+#include <libed2k/escape_string.hpp>
 
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/error_code.hpp"
-#include "libed2k/types.hpp"
 
 namespace libed2k{
 
@@ -103,7 +102,7 @@ namespace libed2k{
 
     	    md4_hash hash;
 
-    	    if (!libtorrent::from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)hash.m_hash))
+    	    if (!from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)hash.m_hash))
     	    {
     	        return (md4_hash());
     	    }

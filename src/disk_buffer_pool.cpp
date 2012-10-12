@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #ifdef LIBED2K_DISK_STATS
-#include <libtorrent/time.hpp>
+#include <libed2k/time.hpp>
 #endif
 
 namespace libed2k

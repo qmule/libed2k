@@ -5,10 +5,12 @@
 #include <string>
 #include <vector>
 #include <queue>
-#include <boost/cstdint.hpp>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
+
+#include "libed2k/size_type.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/packet_struct.hpp"
@@ -114,7 +116,7 @@ namespace libed2k
         known_file_entry(const md4_hash& hFile,
                             const std::vector<md4_hash>& hSet,
                             const fs::path& p,
-                            size_t  nFilesize,
+                            size_type  nFilesize,
                             boost::uint32_t nAccepted,
                             boost::uint32_t nRequested,
                             boost::uint64_t nTransferred,
@@ -184,10 +186,10 @@ namespace libed2k
     {
         md4_hash    m_hash;     //!< transfer hash
         container_holder<boost::uint16_t, std::string> m_filepath; //!< utf-8 file path
-        fsize_t     m_filesize; //!< boost::uint64_t file size
+        size_type     m_filesize; //!< boost::uint64_t file size
         tag_list<boost::uint8_t>    m_fast_resume_data;
         transfer_resume_data();
-        transfer_resume_data(const md4_hash& hash, const fs::path& path, fsize_t size, const std::vector<char>& fr_data);
+        transfer_resume_data(const md4_hash& hash, const fs::path& path, size_type size, const std::vector<char>& fr_data);
 
         template<typename Archive>
         void serialize(Archive& ar)
@@ -302,11 +304,11 @@ namespace libed2k
     struct pending_file
     {
         fs::path    m_path;
-        fsize_t     m_size;
+        size_type   m_size;
         md4_hash    m_hash;
         
         pending_file(const fs::path& path) : m_path(path), m_size(0){}
-        pending_file(const fs::path& path, fsize_t size, const md4_hash& hash) :
+        pending_file(const fs::path& path, size_type size, const md4_hash& hash) :
         m_path(path), m_size(size), m_hash(hash){}
 
         // for algorithms
@@ -352,7 +354,7 @@ namespace libed2k
           * @param remove - do not update entry - remove it
           * warning - after update we don't change collection path and don't update collections files count!
          */
-        bool update(const fs::path& p, fsize_t size, const md4_hash& hash, bool remove)
+        bool update(const fs::path& p, size_type size, const md4_hash& hash, bool remove)
         {
             std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), pending_file(p));
 
@@ -405,7 +407,7 @@ namespace libed2k
         {
         }
 
-        emule_collection_entry(const std::string& strFilename, fsize_t nFilesize, const md4_hash& hash) :
+        emule_collection_entry(const std::string& strFilename, size_type nFilesize, const md4_hash& hash) :
             m_filename(strFilename), m_filesize(nFilesize), m_filehash(hash) {}
 
         bool operator==(const emule_collection_entry& ce) const
@@ -421,7 +423,7 @@ namespace libed2k
         }
 
         std::string     m_filename;
-        fsize_t         m_filesize;
+        size_type       m_filesize;
         md4_hash        m_filehash;
     };
 
@@ -438,7 +440,7 @@ namespace libed2k
         /**
           * generate ed2k link from collection item
          */
-        static std::string toLink(const std::string& strFilename, fsize_t nFilesize, const md4_hash& hFile);
+        static std::string toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile);
         static emule_collection_entry fromLink(const std::string& strLink);
 
         /**
@@ -452,7 +454,7 @@ namespace libed2k
         /**
           * add known file
          */
-        bool add_file(const std::string& strFilename, fsize_t nFilesize, const std::string& strFilehash);
+        bool add_file(const std::string& strFilename, size_type nFilesize, const std::string& strFilehash);
         bool add_link(const std::string& strLink);
 
         const std::string get_ed2k_link(size_t nIndex);

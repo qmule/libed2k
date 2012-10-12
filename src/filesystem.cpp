@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
     Physical file offset patch by Morten Husveit
 */
 
-#include <libtorrent/pch.hpp>
+#include <libed2k/pch.hpp>
 #include <libed2k/config.hpp>
 #include <libed2k/alloca.hpp>
 #include <libed2k/allocator.hpp> // page_size
@@ -50,7 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define PtrToPtr64(x) (x)
 #endif
 
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -121,7 +121,7 @@ BOOST_STATIC_ASSERT(sizeof(lseek(0, 0, 0)) >= 8);
 #include <vector>
 
 // for convert_to_wstring and convert_to_native
-#include <libtorrent/escape_string.hpp>
+#include <libed2k/escape_string.hpp>
 #include <stdio.h>
 #include <libed2k/assert.hpp>
 
