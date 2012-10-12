@@ -15,7 +15,7 @@ namespace libed2k {
     class policy
     {
     public:
-        policy(transfer* t, const std::vector<peer_entry>& peer_list);
+        policy(transfer* t);
         // this is called once for every peer we get from the server.
         peer* add_peer(const tcp::endpoint& ep);
         // called when an incoming connection is accepted

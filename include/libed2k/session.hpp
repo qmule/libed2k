@@ -29,19 +29,24 @@ namespace libed2k {
         add_transfer_params() { reset(); }
 
         add_transfer_params(
-            const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath)
+            const md4_hash& hash, size_type nSize, const fs::path& cpath,
+            const fs::path& fpath, const std::vector<md4_hash>& hset)
         {
             reset();
             file_hash = hash;
             file_path = fpath;
             collection_path = cpath;
             file_size = nSize;
+            piece_hashses = hset;
+            seed_mode = true;
         }
 
         md4_hash file_hash;
         fs::path file_path; // in UTF8 always!
         fs::path collection_path;
         size_type  file_size;
+        std::vector<md4_hash> piece_hashses;
+        bool seed_mode;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
@@ -58,6 +63,7 @@ namespace libed2k {
             return (file_hash == t.file_hash &&
                     file_path == t.file_path &&
                     file_size == t.file_size &&
+                    piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&
                     requested == t.requested &&
                     transferred == t.transferred &&

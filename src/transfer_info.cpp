@@ -31,11 +31,11 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#include <libed2k/config.hpp>
-#include <libed2k/transfer_info.hpp>
-#include <libed2k/filesystem.hpp>
-#include <libtorrent/invariant_check.hpp>
-#include <libed2k/util.hpp>
+#include "libed2k/config.hpp"
+#include "libed2k/transfer_info.hpp"
+#include "libed2k/filesystem.hpp"
+#include "libed2k/invariant_check.hpp"
+#include "libed2k/util.hpp"
 
 namespace libed2k
 {

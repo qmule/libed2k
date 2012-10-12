@@ -11,14 +11,14 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
-#include <libed2k/lazy_entry.hpp>
-#include <libed2k/policy.hpp>
-#include <libed2k/piece_picker.hpp>
-#include <libed2k/session.hpp>
-#include <libed2k/packet_struct.hpp>
-#include <libed2k/peer_info.hpp>
-#include <libed2k/storage_defs.hpp>
-#include <libed2k/entry.hpp>
+#include "libed2k/lazy_entry.hpp"
+#include "libed2k/policy.hpp"
+#include "libed2k/piece_picker.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/peer_info.hpp"
+#include "libed2k/storage_defs.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k {
 
@@ -43,8 +43,7 @@ namespace libed2k {
          * it is fake transfer constructor for using in unit tests
          * you shouldn't it anywhere except unit tests
          */
-        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                 const md4_hash& hash, const fs::path p, size_type size);
+        transfer(aux::session_impl& ses, const md4_hash& hash, const fs::path p, size_type size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);

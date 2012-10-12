@@ -698,7 +698,6 @@ namespace libed2k
                     }
 
                     atp.file_size = nFileSize;
-                    atp.pieces = bitfield(piece_count(nFileSize), 1);   // all pieces
 
                     // search file in migration container
                     for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)

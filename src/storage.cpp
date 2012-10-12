@@ -53,15 +53,16 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include <libed2k/config.hpp>
-#include <libed2k/storage.hpp>
-#include <libed2k/filesystem.hpp>
-#include <libed2k/invariant_check.hpp>
-#include <libed2k/file_pool.hpp>
-#include <libed2k/session_impl.hpp>
-#include <libed2k/disk_buffer_holder.hpp>
-#include <libed2k/alloca.hpp>
-#include <libed2k/allocator.hpp> // page_size
+#include "libed2k/config.hpp"
+#include "libed2k/storage.hpp"
+#include "libed2k/filesystem.hpp"
+#include "libed2k/invariant_check.hpp"
+#include "libed2k/file_pool.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/disk_buffer_holder.hpp"
+#include "libed2k/alloca.hpp"
+#include "libed2k/allocator.hpp" // page_size
+#include "libed2k/lazy_entry.hpp"
 
 #include <cstdio>
 
@@ -93,7 +94,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 // for convert_to_wstring and convert_to_native
-#include <libed2k/escape_string.hpp>
+#include "libed2k/escape_string.hpp"
 
 #if defined LIBED2K_DEBUG && defined LIBED2K_STORAGE_DEBUG && LIBED2K_USE_IOSTREAM
 namespace

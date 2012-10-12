@@ -1,14 +1,15 @@
-#include <libed2k/version.hpp>
-#include <libed2k/session.hpp>
-#include <libed2k/session_impl.hpp>
-#include <libed2k/transfer.hpp>
-#include <libed2k/peer.hpp>
-#include <libed2k/peer_connection.hpp>
-#include <libed2k/server_connection.hpp>
-#include <libed2k/constants.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/file.hpp>
-#include <libed2k/alert_types.hpp>
+
+#include "libed2k/version.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/transfer.hpp"
+#include "libed2k/peer.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/server_connection.hpp"
+#include "libed2k/constants.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/alert_types.hpp"
 
 namespace libed2k
 {
@@ -16,19 +17,18 @@ namespace libed2k
     /**
       * fake constructor
      */
-    transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                       const md4_hash& hash, const fs::path p, size_type size):
+    transfer::transfer(aux::session_impl& ses, const md4_hash& hash, const fs::path p, size_type size):
         m_ses(ses),
         m_filepath(p),
         m_complete(-1),
         m_incomplete(-1),
-        m_policy(this, pl),
+        m_policy(this),
         m_info(new transfer_info(hash, p.filename(), size)),
         m_minute_timer(minutes(1), min_time())
     {}
 
     transfer::transfer(aux::session_impl& ses, ip::tcp::endpoint const& net_interface,
-                   int seq, add_transfer_params const& p):
+                       int seq, add_transfer_params const& p):
         m_ses(ses),
         m_announced(false),
         m_abort(false),
@@ -46,7 +46,7 @@ namespace libed2k
         m_auto_managed(false),
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
-        m_policy(this, p.peer_list),
+        m_policy(this),
         m_info(new transfer_info(p.file_hash, p.file_path.filename(), p.file_size, p.piece_hashses)),
         m_accepted(p.accepted),
         m_requested(p.requested),
@@ -87,17 +87,20 @@ namespace libed2k
     {
         LIBED2K_ASSERT(!m_picker);
 
-        m_picker.reset(new piece_picker());
-        // TODO: file progress
-
-        if (!m_resume_data.empty() &&
-            lazy_bdecode(&m_resume_data[0], &m_resume_data[0] + m_resume_data.size(),
-                         m_resume_entry) != 0)
+        if (!m_seed_mode)
         {
-            ERR("fast resume parse error: {file: " << m_filepath.filename() << "}");
-            std::vector<char>().swap(m_resume_data);
-            m_ses.m_alerts.post_alert_should(
-                fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
+            m_picker.reset(new piece_picker());
+            // TODO: file progress
+
+            if (!m_resume_data.empty() &&
+                lazy_bdecode(&m_resume_data[0], &m_resume_data[0] + m_resume_data.size(),
+                             m_resume_entry) != 0)
+            {
+                ERR("fast resume parse error: {file: " << m_filepath.filename() << "}");
+                std::vector<char>().swap(m_resume_data);
+                m_ses.m_alerts.post_alert_should(
+                    fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
+            }
         }
 
         init();
@@ -1051,12 +1054,12 @@ namespace libed2k
     void transfer::async_verify_piece(
         int piece_index, const md4_hash& hash, const boost::function<void(int)>& f)
     {
-        TORRENT_ASSERT(m_storage);
-        TORRENT_ASSERT(m_storage->refcount() > 0);
-        TORRENT_ASSERT(piece_index >= 0);
-        TORRENT_ASSERT(piece_index < m_info->num_pieces());
-        TORRENT_ASSERT(piece_index < (int)m_picker->num_pieces());
-        TORRENT_ASSERT(!m_picker || !m_picker->have_piece(piece_index));
+        LIBED2K_ASSERT(m_storage);
+        LIBED2K_ASSERT(m_storage->refcount() > 0);
+        LIBED2K_ASSERT(piece_index >= 0);
+        LIBED2K_ASSERT(piece_index < m_info->num_pieces());
+        LIBED2K_ASSERT(piece_index < (int)m_picker->num_pieces());
+        LIBED2K_ASSERT(!m_picker || !m_picker->have_piece(piece_index));
 #ifdef LIBED2K_DEBUG
         if (m_picker)
         {
