@@ -5,15 +5,11 @@
 #include <algorithm>
 #include <locale>
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/bind.hpp>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
-#include <cassert>
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
-#include "libed2k/md4_hash.hpp"
 #include "libed2k/file.hpp"
 
 namespace libed2k
@@ -595,6 +591,83 @@ namespace libed2k
     {
     }
 
+    bool known_file_collection::extract_transfer_params(boost::uint32_t write_ts, add_transfer_params& atp)
+    {
+        // search file in migration container
+        bool res = false;
+        for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
+        {
+            // pass files when change time isn't equal
+            if (write_ts != m_known_file_list.m_collection[n].m_nLastChanged)
+            {
+                continue;
+            }
+
+            // ok, we have equal change time - let's check filename
+            if (bom_filter(atp.file_path.string()) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
+            {
+                DBG("orig: " << convert_to_native(atp.file_path.string())
+                    << " isn't equal: " << convert_to_native(bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
+                continue;
+            }
+
+            res = true;
+            atp.file_hash = m_known_file_list.m_collection[n].m_hFile;
+
+            if (m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
+            {
+                // when file contain only one hash - we save main hash directly into container
+                atp.hashset.push_back(m_known_file_list.m_collection[n].m_hFile);
+            }
+            else
+            {
+                atp.hashset = m_known_file_list.m_collection[n].m_hash_list.m_collection;
+            }
+
+            for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.count(); j++)
+            {
+                const boost::shared_ptr<base_tag> p = m_known_file_list.m_collection[n].m_list[j];
+                // we process only int tags - check only ints
+                if (!is_int_tag(p))
+                    continue;
+
+                switch(p->getNameId())
+                {
+                    case FT_FILESIZE:
+                        //atp.file_size = p->asInt();
+                        break;
+                    case FT_ATTRANSFERRED:
+                        atp.transferred += p->asInt();
+                        break;
+                    case FT_ATTRANSFERREDHI:
+                        atp.transferred += (p->asInt() << 32);
+                        break;
+                    case FT_ATREQUESTED:
+                        atp.requested = p->asInt();
+                        break;
+                    case FT_ATACCEPTED:
+                        atp.accepted = p->asInt();
+                        break;
+                    case FT_ULPRIORITY:
+                        atp.priority = p->asInt();
+                        break;
+                    default:
+                        // ignore unused tags like
+                        // FT_PERMISSIONS
+                        // FT_AICH_HASH:
+                        // and all kad tags
+                        // also FT_FILENAME was already checked
+                        break;
+                }
+            }
+
+            DBG("metadata was migrated for {" << convert_to_native(atp.file_path.string()) << "}");
+            break;
+        }
+
+        return res;
+    }
+
     void known_file_collection::dump() const
     {
         for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
@@ -614,6 +687,112 @@ namespace libed2k
 
     transfer_resume_data::transfer_resume_data()
     {}
+
+    transfer_params_maker::transfer_params_maker(const std::string& known_filename) : m_stop(false), m_known_filename(known_filename)
+    {
+    }
+
+    bool transfer_params_maker::start()
+    {
+        LIBED2K_ASSERT(!m_thread);
+        m_thread.reset(new boost::thread(boost::ref(*this)));
+        return true;
+    }
+
+    void transfer_params_maker::stop()
+    {
+        m_order.cancel();
+
+        // when thread exists - wait it
+        if (m_thread.get())
+        {
+            m_thread->join();
+        }
+
+        m_thread.reset();
+    }
+
+
+    boost::shared_ptr<hash_handle> transfer_params_maker::make_transfer_params(const std::string& filename)
+    {
+        boost::shared_ptr<hash_handle> ptr(new hash_handle(fs::path(filename.c_str())));
+        m_order.push(ptr);
+        return (ptr);
+    }
+
+    void transfer_params_maker::operator()()
+    {
+        known_file_collection kfc;
+
+        // when we have known filename path - attempt to extract its content
+        if (!m_known_filename.empty())
+        {
+            std::ifstream fstream(convert_to_native(m_known_filename).c_str(), std::ios_base::binary | std::ios_base::in);
+
+            if (fstream)
+            {
+                libed2k::archive::ed2k_iarchive ifa(fstream);
+
+                try
+                {
+                    ifa >> kfc;
+                }
+                catch(libed2k_exception&)
+                {
+                    kfc.m_known_file_list.m_collection.clear();
+                }
+            }
+        }
+
+        boost::weak_ptr<hash_handle> weak_handle;
+
+        while(m_order.pop_wait(weak_handle))
+        {
+            boost::shared_ptr<hash_handle> sh(weak_handle.lock());  //!< get pointer to object
+
+            if (sh)
+            {
+                // initialize our local transfer params
+                add_transfer_params atp = sh->atp();
+                // generate path in local code page
+                fs::path local_path = convert_to_native(atp.file_path.string());
+
+                hash_status hs;
+
+                if (fs::exists(local_path) && fs::is_regular_file(local_path))
+                {
+                    uintmax_t file_size = fs::file_size(local_path);
+                    hs.m_progress.second = div_ceil(file_size, BLOCK_SIZE);
+
+                    if (file_size > 0)
+                    {
+                        hs.m_error = errors::filesize_is_zero;
+                        boost::uint32_t fts = fs::last_write_time(local_path);
+
+                        if (kfc.extract_transfer_params(fts, atp))
+                        {
+                            sh->set_atp(atp);
+                            DBG("{known file entry was found for: " << local_path.string() << "}");
+                        }
+                        else
+                        {
+                            // transfer parameters weren't found in known file, begin calculations
+                        }
+                    }
+                    else
+                    {
+                        hs.m_error = errors::filesize_is_zero;
+                    }
+
+                }
+                else
+                {
+                    hs.m_error =  errors::file_unavaliable;
+                }
+            }
+        }
+
+    }
 
     file_hasher::file_hasher(add_transfer_handler handler, const std::string& known_filename) :
             m_bCancel(false),
@@ -638,6 +817,34 @@ namespace libed2k
         {
             m_thread->join();
         }
+    }
+
+    hash_handle::hash_handle(const fs::path& f) : m_cancelled(false)
+    {
+    }
+
+    void hash_handle::set_atp(const add_transfer_params& atp)
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_atp = atp;
+    }
+
+    add_transfer_params hash_handle::atp()
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        return m_atp;
+    }
+
+    hash_status hash_handle::status()
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        return m_status;
+    }
+
+    void hash_handle::set_status(const hash_status& hs)
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_status = hs;
     }
 
     void file_hasher::operator()()
@@ -765,7 +972,7 @@ namespace libed2k
                         DBG("metadata was migrated for {" << convert_to_native(atp.file_path.string()) << "}");
                         break;
                     }
-
+#if 0
                     // execute real hashing when migration got nothing
                     if (!atp.file_hash.defined())
                     {
@@ -868,7 +1075,7 @@ namespace libed2k
                             atp.file_hash = atp.hashset[0];
                         }
                     }
-
+#endif
                     m_add_transfer(atp);
                 }
                 catch(libed2k_exception& e)

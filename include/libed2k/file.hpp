@@ -10,10 +10,12 @@
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
 
+#include "libed2k/filesystem.hpp"
 #include "libed2k/size_type.hpp"
-#include "libed2k/error_code.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/config.hpp"
 #include "libed2k/session.hpp"
 
 namespace libed2k
@@ -145,6 +147,7 @@ namespace libed2k
         known_file_list m_known_file_list;
 
         known_file_collection();
+        bool extract_transfer_params(boost::uint32_t write_ts, add_transfer_params& atp);
 
         template<typename Archive>
         void save(Archive& ar)
@@ -199,6 +202,32 @@ namespace libed2k
             ar & m_filesize;
             ar & m_fast_resume_data;
         }
+    };
+
+    struct hash_status
+    {
+        std::pair<int,int>  m_progress; //!< current block, total blocks
+        error_code          m_error;
+    };
+
+    /**
+      * this class provide grip for control hashing process
+     */
+    class hash_handle
+    {
+    public:
+        hash_handle(const fs::path& f);
+        void set_atp(const add_transfer_params& atp);
+        add_transfer_params atp();
+        hash_status status();
+        void set_status(const hash_status& hs);
+        void cancel() { m_cancelled = true; }
+        bool cancelled() const { return m_cancelled; }
+    private:
+        volatile bool       m_cancelled;
+        hash_status         m_status;
+        add_transfer_params m_atp;
+        boost::mutex        m_mutex;
     };
 
     /**
@@ -257,6 +286,27 @@ namespace libed2k
             return temp;
         }
 
+        /**
+          * returns true when queue will produce data
+         */
+        bool pop_wait(Data& data)
+        {
+            boost::mutex::scoped_lock lock(m_monitorMutex);
+
+            if (m_cancelled) { return false; }
+
+            if(m_queue.empty())
+            {
+                m_signal.wait(lock);
+            }
+
+            if (m_queue.empty()) { return false; }
+
+            data = m_queue.front();
+            m_queue.pop();
+            return true;
+        }
+
     private:
         bool                m_cancelled;
         std::queue<Data>    m_queue;
@@ -265,6 +315,26 @@ namespace libed2k
     };
 
     namespace aux { class session_impl; }
+
+    class transfer_params_maker
+    {
+    public:
+        transfer_params_maker(const std::string& known_filename);
+        bool start();
+        void stop();
+        void operator()();
+        /**
+          * @param filename in UTF-8
+         */
+        boost::shared_ptr<hash_handle> make_transfer_params(const std::string& filename);
+    private:
+        bool        m_stop;
+        std::string m_known_filename;
+        boost::shared_ptr<boost::thread> m_thread;
+        boost::mutex m_mutex;
+        monitor_order<boost::weak_ptr<hash_handle> > m_order;
+
+    };
 
     class file_hasher
     {
