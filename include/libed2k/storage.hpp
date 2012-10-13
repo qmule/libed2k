@@ -51,20 +51,20 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include <libed2k/hasher.hpp>
-#include <libed2k/transfer_info.hpp>
-#include <libed2k/piece_picker.hpp>
-#include <libed2k/intrusive_ptr_base.hpp>
-#include <libed2k/peer_request.hpp>
-#include <libed2k/config.hpp>
-#include <libed2k/filesystem.hpp>
-#include <libed2k/disk_buffer_holder.hpp>
-#include <libed2k/thread.hpp>
-#include <libed2k/storage_defs.hpp>
-#include <libed2k/file_storage.hpp>
-#include <libed2k/allocator.hpp>
-#include <libed2k/session_settings.hpp>
-#include <libed2k/entry.hpp>
+#include "libed2k/hasher.hpp"
+#include "libed2k/transfer_info.hpp"
+#include "libed2k/piece_picker.hpp"
+#include "libed2k/intrusive_ptr_base.hpp"
+#include "libed2k/peer_request.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/filesystem.hpp"
+#include "libed2k/disk_buffer_holder.hpp"
+#include "libed2k/thread.hpp"
+#include "libed2k/storage_defs.hpp"
+#include "libed2k/file_storage.hpp"
+#include "libed2k/allocator.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k
 {
@@ -96,7 +96,7 @@ namespace libed2k
         partial_hash(): offset(0) {}
         // the number of bytes in the piece that has been hashed
         int offset;
-        // the sha-1 context
+        // the md4 context
         hasher h;
     };
 

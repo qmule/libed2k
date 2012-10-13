@@ -1270,9 +1270,6 @@ namespace libed2k
 
     void transfer::file_checked()
     {
-        DBG("transfer::file_checked");
-        LIBED2K_ASSERT(m_info->is_valid());
-
         if (m_abort) return;
 
         // we might be finished already, in which case we should
@@ -1310,7 +1307,7 @@ namespace libed2k
 
     void transfer::start_checking()
     {
-        DBG("transfer::start_checking");
+        DBG("start checking: {hash: " << hash() << ", file: " << filepath() << "}");
         LIBED2K_ASSERT(should_check_file());
         set_state(transfer_status::checking_files);
 
@@ -1542,11 +1539,8 @@ namespace libed2k
         {
             ERR("block write failed: {piece: " <<  block.piece_index <<
                 ", block: " << block.block_index << " }");
-            if (!have_piece(block.piece_index)) // TODO: this 'if' caused by fake data checking
-            {
-                // we failed to write j.piece to disk tell the piece picker
-                if (has_picker() && j.piece >= 0) picker().write_failed(block);
-            }
+            // we failed to write j.piece to disk tell the piece picker
+            if (has_picker() && j.piece >= 0) picker().write_failed(block);
         }
 
         if (j.error ==
