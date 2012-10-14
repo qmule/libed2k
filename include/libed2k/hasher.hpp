@@ -5,10 +5,10 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 
-#include <libed2k/md4_hash.hpp>
-#include <libed2k/peer_id.hpp>
-#include <libed2k/config.hpp>
-#include <libed2k/assert.hpp>
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/peer_id.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/assert.hpp"
 
 namespace libed2k
 {

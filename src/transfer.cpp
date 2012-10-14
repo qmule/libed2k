@@ -379,7 +379,7 @@ namespace libed2k
     // pieces have been downloaded)
     void transfer::finished()
     {
-        DBG("file transfer '" << m_filepath.filename() << "' completed");
+        DBG("transfer finished: {hash: " << hash() << ", file: " << filepath() << "}");
 
         set_state(transfer_status::finished);
         //set_queue_position(-1);
@@ -840,7 +840,7 @@ namespace libed2k
 
     void transfer::init()
     {
-        DBG("init transfer: {file: " << m_filepath.filename() << "}");
+        DBG("init transfer: {hash: " << hash() << ", file: " << filepath() << "}");
 
         // we have only one file with normal priority
         std::vector<boost::uint8_t> file_prio;
@@ -860,39 +860,47 @@ namespace libed2k
             m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
         }
 
-        set_state(transfer_status::checking_resume_data);
-
-        if (m_resume_entry.type() == lazy_entry::dict_t)
+        if (!m_seed_mode)
         {
-            DBG("transfer::init() = read resume data");
-            int ev = 0;
-            if (m_resume_entry.dict_find_string_value("file-format") != "libed2k resume file")
-                ev = errors::invalid_file_tag;
+            set_state(transfer_status::checking_resume_data);
 
-            std::string info_hash = m_resume_entry.dict_find_string_value("transfer-hash");
-
-            if (!ev && info_hash.empty())
-                ev = errors::missing_transfer_hash;
-
-            if (!ev && (md4_hash::fromString(info_hash) != hash()))
-                ev = errors::mismatching_transfer_hash;
-
-            if (ev)
+            if (m_resume_entry.type() == lazy_entry::dict_t)
             {
-                std::vector<char>().swap(m_resume_data);
-                lazy_entry().swap(m_resume_entry);
-                m_ses.m_alerts.post_alert_should(
-                    fastresume_rejected_alert(handle(), error_code(ev,  get_libed2k_category())));
+                DBG("read resume data: {hash: " << hash() << ", file: " << filepath() << "}");
+                int ev = 0;
+                if (m_resume_entry.dict_find_string_value("file-format") != "libed2k resume file")
+                    ev = errors::invalid_file_tag;
+
+                std::string info_hash = m_resume_entry.dict_find_string_value("transfer-hash");
+
+                if (!ev && info_hash.empty())
+                    ev = errors::missing_transfer_hash;
+
+                if (!ev && (md4_hash::fromString(info_hash) != hash()))
+                    ev = errors::mismatching_transfer_hash;
+
+                if (ev)
+                {
+                    std::vector<char>().swap(m_resume_data);
+                    lazy_entry().swap(m_resume_entry);
+                    m_ses.m_alerts.post_alert_should(
+                        fastresume_rejected_alert(handle(), error_code(ev,  get_libed2k_category())));
+                }
+                else
+                {
+                    read_resume_data(m_resume_entry);
+                }
             }
-            else
-            {
-                read_resume_data(m_resume_entry);
-            }
+
+            m_storage->async_check_fastresume(
+                &m_resume_entry,
+                boost::bind(&transfer::on_resume_data_checked, shared_from_this(), _1, _2));
         }
-
-        m_storage->async_check_fastresume(
-            &m_resume_entry,
-            boost::bind(&transfer::on_resume_data_checked, shared_from_this(), _1, _2));
+        else
+        {
+            DBG("don't read resume data: {hash: " << hash() << ", file: " << filepath() << "}");
+            set_state(transfer_status::seeding);
+        }
     }
 
     void transfer::on_resume_data_checked(int ret, disk_io_job const& j)
@@ -919,6 +927,7 @@ namespace libed2k
         // that when the resume data check fails.
         if (ret == 0)
         {
+            DBG("resume data check succeed: {hash: " << hash() << ", file: " << filepath() << "}");
             // pieces count will calculate by length pieces string
             int num_pieces = 0;
 
@@ -997,9 +1006,10 @@ namespace libed2k
         }
         else
         {
+            DBG("resume data check fails: {hash: " << hash() << ", file: " << filepath() << "}");
             set_state(transfer_status::queued_for_checking);
             if (should_check_file())
-            queue_transfer_check();
+                queue_transfer_check();
         }
 
         std::vector<char>().swap(m_resume_data);
@@ -1226,7 +1236,7 @@ namespace libed2k
             return;
         }
 
-        BOOST_ASSERT(m_storage);
+        LIBED2K_ASSERT(m_storage);
 
         if (m_state == transfer_status::queued_for_checking
             || m_state == transfer_status::checking_files
@@ -1260,9 +1270,9 @@ namespace libed2k
 
     bool transfer::should_check_file() const
     {
-        return (m_state == transfer_status::checking_files
-            || m_state == transfer_status::queued_for_checking)
-            //&& (m_allow_peers || m_auto_managed)
+        return
+            (m_state == transfer_status::checking_files
+             || m_state == transfer_status::queued_for_checking)
             && !has_error()
             && !m_abort
             && !m_ses.is_paused();
@@ -1329,10 +1339,7 @@ namespace libed2k
         }
         if (ret == piece_manager::fatal_disk_error)
         {
-            if (m_ses.m_alerts.should_post<file_error_alert>())
-            {
-                m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
-            }
+            m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
 
 #if defined LIBED2K_VERBOSE_LOGGING || defined LIBED2K_LOGGING || defined LIBED2K_ERROR_LOGGING
             (*m_ses.m_logger) << time_now_string() << ": fatal disk error ["
@@ -1367,7 +1374,7 @@ namespace libed2k
     void transfer::queue_transfer_check()
     {
         if (m_queued_for_checking) return;
-        DBG("transfer::queue_transfer_check: start");
+        DBG("queue transfer check: {hash: " << hash() << ", file: " << filepath() << "}");
         m_queued_for_checking = true;
         m_ses.queue_check_transfer(shared_from_this());
     }

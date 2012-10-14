@@ -251,10 +251,11 @@ BOOST_AUTO_TEST_CASE(test_entries_hash)
     // ok, encode entry
     std::vector<char> container;
     libed2k::lazy_entry le;
+    libed2k::error_code ec;
 
     libed2k::bencode(std::back_inserter(container), e);
     BOOST_REQUIRE(!container.empty());
-    BOOST_REQUIRE(libed2k::lazy_bdecode(&container[0], &container[0] + container.size(), le) == 0);
+    BOOST_REQUIRE(libed2k::lazy_bdecode(&container[0], &container[0] + container.size(), le, ec) == 0);
     BOOST_REQUIRE(le.type() == libed2k::lazy_entry::dict_t);
 
     const libed2k::lazy_entry* lek = le.dict_find_list("hash-keys");
