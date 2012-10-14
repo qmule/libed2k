@@ -467,7 +467,7 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const std::string& filenam
 
     while(itr != m_transfers.end())
     {
-        if (combine_path(itr->second->save_path(), itr->second->filename()) == filename)
+        if (combine_path(itr->second->path(), itr->second->name()) == filename)
         {
             return itr->second;
         }
@@ -1169,7 +1169,7 @@ void session_impl::announce(int tick_interval_ms)
         }
 
         transfer& t = *i->second;
-        total_size.nQuadPart += t.filesize();
+        total_size.nQuadPart += t.size();
 
         // add transfer to announce list when it has one piece at least and it is not announced yet
         if (!t.is_announced())

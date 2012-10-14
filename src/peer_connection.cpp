@@ -544,7 +544,7 @@ bool peer_connection::add_request(const piece_block& block, int flags)
     if (!t->picker().mark_as_downloading(block, get_peer(), state))
         return false;
 
-    pending_block pb(block, t->filesize());
+    pending_block pb(block, t->size());
     m_request_queue.push_back(pb);
     return true;
 }
@@ -581,7 +581,7 @@ void peer_connection::send_block_requests()
         }
 
         m_download_queue.push_back(block);
-        rp.append(block_range(block.block.piece_index, block.block.block_index, t->filesize()));
+        rp.append(block_range(block.block.piece_index, block.block.block_index, t->size()));
         if (rp.full())
         {
             write_request_parts(rp);
@@ -1064,7 +1064,7 @@ void peer_connection::receive_data(const peer_request& req)
         if (!b->buffer)
         {
             if (!allocate_disk_receive_buffer(
-                    std::min<size_t>(block_size(block, t->filesize()), BLOCK_SIZE)))
+                    std::min<size_t>(block_size(block, t->size()), BLOCK_SIZE)))
             {
                 ERR("cannot allocate disk receive buffer " << r.length);
                 return;
@@ -1145,7 +1145,7 @@ void peer_connection::on_receive_data(
     if (b->completed())
     {
         disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-        peer_request req = mk_peer_request(b->block, t->filesize());
+        peer_request req = mk_peer_request(b->block, t->size());
         fs.async_write(req, holder,
                        boost::bind(&peer_connection::on_disk_write_complete,
                                    self_as<peer_connection>(), _1, _2, req, left, t));
@@ -1167,7 +1167,7 @@ void peer_connection::on_receive_data(
             if (picker.is_piece_finished(r.piece) && !was_finished)
             {
                 const md4_hash& hash =
-                    t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+                    t->size() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
 
                 t->async_verify_piece(
                     r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
@@ -1570,7 +1570,7 @@ void peer_connection::on_file_request(const error_code& error)
         if (attach_to_transfer(fr.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_answer(t->hash(), t->filename());
+            write_file_answer(t->hash(), t->name());
         }
         else
         {
@@ -1673,7 +1673,7 @@ void peer_connection::on_file_status(const error_code& error)
         {
             m_remote_pieces = fs.m_status;
             t->picker().inc_refcount(fs.m_status);
-            if (t->filesize() < PIECE_SIZE)
+            if (t->size() < PIECE_SIZE)
                 write_start_upload(fs.m_hFile);
             else if (fs.m_status.count() > 0)
                 write_hashset_request(fs.m_hFile);
@@ -1942,7 +1942,7 @@ void peer_connection::on_shared_directories_request(const error_code& error)
             client_shared_directories_answer sd;
             std::deque<std::string> dirs;
             std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(dirs),
-                    boost::bind(&transfer::save_path, boost::bind(&boost::shared_ptr<transfer>::get, boost::bind(&take_second<md4_hash, boost::shared_ptr<transfer> >, _1))));
+                    boost::bind(&transfer::path, boost::bind(&boost::shared_ptr<transfer>::get, boost::bind(&take_second<md4_hash, boost::shared_ptr<transfer> >, _1))));
             std::deque<std::string>::iterator itr = std::unique(dirs.begin(), dirs.end());
             dirs.resize(itr - dirs.begin());
             dirs.erase(std::remove(dirs.begin(), dirs.end(), std::string("")), dirs.end());

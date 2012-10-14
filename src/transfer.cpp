@@ -626,7 +626,7 @@ namespace libed2k
     // fills in total_wanted, total_wanted_done and total_done
     void transfer::bytes_done(transfer_status& st) const
     {
-        st.total_wanted = filesize();
+        st.total_wanted = size();
         st.total_done = std::min<size_type>(num_have() * PIECE_SIZE, st.total_wanted);
         st.total_wanted_done = st.total_done;
 
@@ -639,7 +639,7 @@ namespace libed2k
         // assumed all pieces were of equal size
         if (m_picker->have_piece(last_piece))
         {
-            int corr = filesize() % PIECE_SIZE - PIECE_SIZE;
+            int corr = size() % PIECE_SIZE - PIECE_SIZE;
             assert(corr <= 0);
             assert(corr > -int(PIECE_SIZE));
             st.total_done += corr;

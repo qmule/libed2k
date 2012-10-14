@@ -269,8 +269,9 @@ namespace libed2k
         bool is_valid() const;
 
         md4_hash hash() const;
-        std::string filepath() const;
-        size_type filesize() const;
+        std::string name() const;
+        std::string path() const;
+        size_type size() const;
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;

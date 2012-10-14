@@ -55,9 +55,9 @@ namespace libed2k
 
         const md4_hash& hash() const { return m_filehash; }
         const md4_hash& collection_hash() const { return m_collection_hash; } //TODO - add real collection hash here
-        size_type filesize() const { return m_filesize; }
-        const std::string& filename() const { return m_name; }
-        const std::string& save_path() const { return m_path; }
+        size_type size() const { return m_filesize; }
+        const std::string& name() const { return m_name; }
+        const std::string& path() const { return m_path; }
 
         const bitfield& verified_pieces() const { return m_verified; }
         const std::vector<md4_hash>& hashset() const { return m_hashset; }
