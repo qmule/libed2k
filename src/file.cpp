@@ -591,7 +591,7 @@ namespace libed2k
     {
     }
 
-    bool known_file_collection::extract_transfer_params(boost::uint32_t write_ts, add_transfer_params& atp)
+    bool known_file_collection::extract_transfer_params(time_t write_ts, add_transfer_params& atp)
     {
         // search file in migration container
         bool res = false;
@@ -604,9 +604,9 @@ namespace libed2k
             }
 
             // ok, we have equal change time - let's check filename
-            if (bom_filter(atp.file_path.string()) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
+            if (bom_filter(filename(atp.m_filename)) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
             {
-                DBG("orig: " << convert_to_native(atp.file_path.string())
+                DBG("orig: " << convert_to_native(atp.m_filename)
                     << " isn't equal: " << convert_to_native(bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
                 continue;
             }
@@ -661,7 +661,7 @@ namespace libed2k
                 }
             }
 
-            DBG("metadata was migrated for {" << convert_to_native(atp.file_path.string()) << "}");
+            DBG("metadata was migrated for {" << convert_to_native(atp.m_filename) << "}");
             break;
         }
 
@@ -755,7 +755,7 @@ namespace libed2k
                 // initialize our local transfer params
                 add_transfer_params atp = sh->atp();
                 // generate path in local code page
-                fs::path local_path = convert_to_native(atp.file_path.string());
+                fs::path local_path = convert_to_native(atp.m_filename);
 
                 hash_status hs;
 
@@ -873,19 +873,21 @@ namespace libed2k
                 }
             }
 
-            while(1)
+// TODO - remove this code at all
+
+            //while(1)
             {
                 // we have UTF-8 strings in path pair pair
                 std::pair<fs::path, fs::path> pp = m_order.popWait(); 
 
                 DBG("{file_hasher: " << convert_to_native(bom_filter(pp.second.string())) << "}");
-
+#if 0
                 try
                 {
                     add_transfer_params atp;
                     // since transfers work in UTF-8 code page we save paths in this code page
-                    atp.collection_path = pp.first;   // store collection path as is - in UTF-8
-                    atp.file_path       = pp.second;  // store file path as is in UTF-8
+                    //atp.collection_path = pp.first;   // store collection path as is - in UTF-8
+                    //atp.file_path       = pp.second;  // store file path as is in UTF-8
                     atp.seed_mode       = true;       // it is seed!
 
                     // generate operations path in native code page
@@ -972,7 +974,7 @@ namespace libed2k
                         DBG("metadata was migrated for {" << convert_to_native(atp.file_path.string()) << "}");
                         break;
                     }
-#if 0
+
                     // execute real hashing when migration got nothing
                     if (!atp.file_hash.defined())
                     {
@@ -1075,7 +1077,7 @@ namespace libed2k
                             atp.file_hash = atp.hashset[0];
                         }
                     }
-#endif
+
                     m_add_transfer(atp);
                 }
                 catch(libed2k_exception& e)
@@ -1086,6 +1088,7 @@ namespace libed2k
                 {
                     ERR("unhandled exception on hashing file: " << convert_to_native(bom_filter(pp.second.string())));
                 }
+#endif
             }
         }
         catch(libed2k_exception&)

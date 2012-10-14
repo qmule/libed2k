@@ -19,6 +19,7 @@
 #include "libed2k/peer_info.hpp"
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/entry.hpp"
+#include "libed2k/stat.hpp"
 
 
 namespace libed2k {
@@ -45,16 +46,17 @@ namespace libed2k {
          * you shouldn't it anywhere except unit tests
          */
         transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                 const md4_hash& hash, const fs::path p, size_type size);
+                 const md4_hash& hash, const std::string& filename, size_type size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
 
         const md4_hash& hash() const { return m_filehash; }
+        const md4_hash& collection_hash() const { return m_collection_hash; } //TODO - add real collection hash here
         size_type filesize() const { return m_filesize; }
-        const fs::path& filepath() const { return m_filepath; }
-        const fs::path& collectionpath() const { return m_collectionpath; }
+        const std::string& filename() const { return m_name; }
+        const std::string& save_path() const { return m_path; }
 
         const bitfield& verified_pieces() const { return m_verified; }
         const std::vector<md4_hash>& hashset() const { return m_hashset; }
@@ -68,7 +70,6 @@ namespace libed2k {
         void start();
         void abort();
         void set_state(transfer_status::state_t s);
-        void update_collection(const fs::path pc);
 
         aux::session_impl& session() { return m_ses; }
 
@@ -214,7 +215,7 @@ namespace libed2k {
 
         piece_manager& filesystem() { return *m_storage; }
         storage_interface* get_storage();
-        void move_storage(const fs::path& save_path);
+        void move_storage(const std::string& save_path);
         bool rename_file(const std::string& name);
         void delete_files();
 
@@ -323,7 +324,10 @@ namespace libed2k {
         tcp::endpoint m_net_interface;
 
         md4_hash m_filehash;
-        fs::path m_filepath;
+        md4_hash m_collection_hash;
+        std::string m_name;     //!< file name
+        std::string m_path;     //!< file save path
+
         fs::path m_collectionpath;
         size_type m_filesize;
         boost::uint32_t m_file_type;
@@ -398,7 +402,6 @@ namespace libed2k {
         error_code m_error;
     };
 
-    extern std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
     extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
 }
 

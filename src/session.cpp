@@ -13,7 +13,7 @@ namespace libed2k
     {
         DBG("add_transfer_params::dump");
         DBG("file hash: " << file_hash << " all hashes size: " << hashset.size());
-        DBG("file path: " << convert_to_native(file_path.string()));
+        DBG("file full name: " << convert_to_native(m_filename));
         DBG("file size: " << file_size);
         DBG("accepted: " << accepted <<
             " requested: " << requested <<
@@ -231,18 +231,5 @@ namespace libed2k
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
         m_impl->resume();
-    }
-
-    void session::share_file(const std::string& strFilename, bool unshare)
-    {
-        m_impl->m_io_service.post(
-            boost::bind(&aux::session_impl::share_file, m_impl, strFilename, unshare));
-    }
-
-    void session::share_dir(const std::string& strRoot, const std::string& strPath,
-                            const std::deque<std::string>& excludes, bool unshare)
-    {
-        m_impl->m_io_service.post(
-            boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, unshare));
     }
 }

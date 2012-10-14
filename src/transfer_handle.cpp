@@ -67,9 +67,9 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(hash(), empty_hash);
     }
 
-    fs::path transfer_handle::filepath() const
+    std::string transfer_handle::filepath() const
     {
-        LIBED2K_FORWARD_RETURN(filepath(), fs::path());
+        LIBED2K_FORWARD_RETURN(filename(), std::string());
     }
 
     size_type transfer_handle::filesize() const
@@ -182,9 +182,9 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(num_seeds(), 0);
     }
 
-    fs::path transfer_handle::save_path() const
+    std::string transfer_handle::save_path() const
     {
-        LIBED2K_FORWARD_RETURN(filepath(), fs::path());
+        LIBED2K_FORWARD_RETURN(save_path(), std::string());
     }
 
     void transfer_handle::save_resume_data() const
@@ -192,7 +192,7 @@ namespace libed2k
         LIBED2K_FORWARD(save_resume_data());
     }
 
-    void transfer_handle::move_storage(const fs::path& save_path) const
+    void transfer_handle::move_storage(const std::string& save_path) const
     {
         LIBED2K_FORWARD(move_storage(save_path));
     }

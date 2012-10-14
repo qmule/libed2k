@@ -269,7 +269,7 @@ namespace libed2k
         bool is_valid() const;
 
         md4_hash hash() const;
-        fs::path filepath() const;
+        std::string filepath() const;
         size_type filesize() const;
         bool is_seed() const;
         bool is_finished() const;
@@ -295,10 +295,10 @@ namespace libed2k
         size_t num_pieces() const;
         int num_peers() const;
         int num_seeds() const;
-        fs::path save_path() const;
+        std::string save_path() const;
         void save_resume_data() const;
 
-        void move_storage(fs::path const& save_path) const;
+        void move_storage(std::string const& save_path) const;
         bool rename_file(const std::string& name) const;
 
         bool operator==(const transfer_handle& h) const

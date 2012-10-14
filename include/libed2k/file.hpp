@@ -147,7 +147,7 @@ namespace libed2k
         known_file_list m_known_file_list;
 
         known_file_collection();
-        bool extract_transfer_params(boost::uint32_t write_ts, add_transfer_params& atp);
+        bool extract_transfer_params(time_t, add_transfer_params& atp);
 
         template<typename Archive>
         void save(Archive& ar)

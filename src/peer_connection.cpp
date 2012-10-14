@@ -1571,7 +1571,7 @@ void peer_connection::on_file_request(const error_code& error)
         if (attach_to_transfer(fr.m_hFile))
         {
             boost::shared_ptr<transfer> t = m_transfer.lock();
-            write_file_answer(t->hash(), t->filepath().filename());
+            write_file_answer(t->hash(), t->filename());
         }
         else
         {
@@ -1850,7 +1850,10 @@ void peer_connection::on_shared_files_request(const error_code& error)
         {
             client_shared_files_answer sfa;
             // transform transfers to their announces
-            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(sfa.m_files.m_collection), &transfer2sfe);
+            // TODO - suppress output unshared dirs - now we announce all directories all files
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(sfa.m_files.m_collection),
+                    std::ptr_fun(&transfer2sfe));
+
             // erase empty announces
             sfa.m_files.m_collection.erase(std::remove_if(sfa.m_files.m_collection.begin(), sfa.m_files.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), sfa.m_files.m_collection.end());
             DBG("send count: " << sfa.m_files.m_collection.size());
@@ -1874,14 +1877,18 @@ void peer_connection::on_ismod_files_request(const error_code& error)
         DECODE_PACKET(client_directory_content_request, cdcr);
         client_directory_content_result cres;
 
-        // search appropriate transfers and public their filenames
+        // check we public collection now
         if (boost::shared_ptr<transfer> p = m_ses.find_transfer(cdcr.m_hash).lock())
         {
+            // search appropriate transfers by clients collection hash and public their filenames
             for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)
             {
                 transfer& t = *i->second;
 
-                if (t.collectionpath() == p->filepath())
+                /**
+                  * compare clients hash and collections hash of each transfer in our transfer list
+                 */
+                if (cdcr.m_hash == p->collection_hash())
                 {
                     cres.m_files.m_collection.push_back(t.getAnnounce());
                 }
@@ -1935,7 +1942,8 @@ void peer_connection::on_shared_directories_request(const error_code& error)
         {
             client_shared_directories_answer sd;
             std::deque<std::string> dirs;
-            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(dirs), &transfer2catalog);
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(dirs),
+                    boost::bind(&transfer::save_path, boost::bind(&boost::shared_ptr<transfer>::get, boost::bind(&take_second<md4_hash, boost::shared_ptr<transfer> >, _1))));
             std::deque<std::string>::iterator itr = std::unique(dirs.begin(), dirs.end());
             dirs.resize(itr - dirs.begin());
             dirs.erase(std::remove(dirs.begin(), dirs.end(), std::string("")), dirs.end());

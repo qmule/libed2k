@@ -29,13 +29,11 @@ namespace libed2k {
         add_transfer_params() { reset(); }
 
         add_transfer_params(
-            const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
+            const md4_hash& hash, size_t nSize, const std::string& filename,
             const bitfield& ps, const std::vector<md4_hash>& hset)
         {
             reset();
-            file_hash = hash;
-            file_path = fpath;
-            collection_path = cpath;
+            m_filename = filename;
             file_size = nSize;
             pieces = ps;
             hashset = hset;
@@ -43,8 +41,7 @@ namespace libed2k {
         }
 
         md4_hash file_hash;
-        fs::path file_path; // in UTF8 always!
-        fs::path collection_path;
+        std::string m_filename; // full filename in UTF8 always!
         size_type  file_size;
         bitfield pieces;
         std::vector<md4_hash> hashset;
@@ -64,16 +61,14 @@ namespace libed2k {
         bool operator==(const add_transfer_params& t) const
         {
             return (file_hash == t.file_hash &&
-                    file_path == t.file_path &&
+                    m_filename == t.m_filename &&
                     file_size == t.file_size &&
                     //pieces == t.pieces &&
                     hashset == t.hashset &&
                     accepted == t.accepted &&
                     requested == t.requested &&
                     transferred == t.transferred &&
-                    priority  == t.priority &&
-                    collection_path == t.collection_path
-                    );
+                    priority  == t.priority);
         }
 
         void dump() const;
@@ -150,22 +145,6 @@ namespace libed2k {
 
         void pause();
         void resume();
-
-        /**
-          * share single file, collection is empty
-         */
-        void share_file(const std::string& strFilename, bool unshare = false);
-        void unshare_file(const std::string& strFilename) { share_file(strFilename, true); }
-
-        /**
-          * share directory, when root < path - collection name will generate
-         */
-        void share_dir(const std::string& strRoot, const std::string& strPath,
-                       const std::deque<std::string>& excludes, bool unshare = false);
-        void unshare_dir(const std::string& strRoot, const std::string& strPath,
-                         const std::deque<std::string>& excludes) {
-            share_dir(strRoot, strPath, excludes, true);
-        }
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

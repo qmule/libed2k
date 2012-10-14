@@ -485,8 +485,8 @@ int main(int argc, char* argv[])
                     DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
-                    params.file_path = strIncomingDirectory;
-                    params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
+                    params.m_filename = strIncomingDirectory;
+                    params.m_filename = libed2k::combine_path(params.m_filename, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
                     if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
@@ -512,8 +512,8 @@ int main(int argc, char* argv[])
                     DBG("load for: " << nIndex << " " << vSF.m_collection[nIndex].m_hFile.toString());
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
-                    params.file_path = strIncomingDirectory;
-                    params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
+                    params.m_filename = strIncomingDirectory;
+                    params.m_filename = libed2k::combine_path(params.m_filename, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
                     if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
@@ -658,7 +658,7 @@ int main(int argc, char* argv[])
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.file_path = trd.m_filepath.m_collection;
+                        params.m_filename= trd.m_filepath.m_collection;
                         params.file_size = trd.m_filesize;
 
                         if (trd.m_fast_resume_data.count() > 0)
@@ -676,26 +676,26 @@ int main(int argc, char* argv[])
             {
                 DBG("share " << strArg);
                 std::deque<std::string> v;
-                ses.share_dir(strArg, strArg, v);
+                //ses.share_dir(strArg, strArg, v);
                 break;
             }
             case cc_unshare:
             {
                 DBG("unshare " << strArg);
                 std::deque<std::string> v;
-                ses.unshare_dir(strArg, strArg, v);
+                //ses.unshare_dir(strArg, strArg, v);
                 break;
             }
             case cc_sharef:
             {
                 DBG("share file " << strArg);
-                ses.share_file(strArg);
+                //ses.share_file(strArg);
                 break;
             }
             case cc_unsharef:
             {
                 DBG("unshare file " << strArg);
-                ses.unshare_file(strArg);
+                //ses.unshare_file(strArg);
                 break;
             }
             case cc_dump:
@@ -704,7 +704,7 @@ int main(int argc, char* argv[])
                 for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
                 {
                     DBG("transfer: {" << i->hash().toString() << "}{"
-                            << libed2k::convert_to_native(i->filepath().string()) << "}{"
+                            << libed2k::convert_to_native(i->filepath()) << "}{"
                             << i->filesize() << "}{"
                             << libed2k::transfer_status2string(i->status()) << "}{A/S:" << ((i->is_announced())?"Y":"N") << "}");
                 }
