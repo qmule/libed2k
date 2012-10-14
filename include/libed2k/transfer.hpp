@@ -14,15 +14,16 @@
 #include <libed2k/lazy_entry.hpp>
 #include "libed2k/policy.hpp"
 #include "libed2k/piece_picker.hpp"
-#include "libed2k/session.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/peer_info.hpp"
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/entry.hpp"
 #include "libed2k/stat.hpp"
+#include "libed2k/transfer_handle.hpp"
 
 
-namespace libed2k {
+namespace libed2k
+{
 
     class torrent_info;
     class add_transfer_params;

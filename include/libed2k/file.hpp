@@ -10,13 +10,13 @@
 #include <boost/thread.hpp>
 #include <boost/thread/condition.hpp>
 
-#include "libed2k/filesystem.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/error_code.hpp"
 #include "libed2k/size_type.hpp"
+#include "libed2k/filesystem.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/packet_struct.hpp"
-#include "libed2k/error_code.hpp"
-#include "libed2k/config.hpp"
-#include "libed2k/session.hpp"
+#include "libed2k/add_transfer_params.hpp"
 
 namespace libed2k
 {

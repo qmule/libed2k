@@ -6,14 +6,13 @@
 #include <algorithm>
 #include <boost/format.hpp>
 
-#include <libed2k/peer_connection.hpp>
-#include <libed2k/socket.hpp>
 
-#include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/socket.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/transfer.hpp"
-#include "libed2k/peer_connection.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"

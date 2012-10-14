@@ -4,7 +4,6 @@
 #include "libed2k/storage.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/session_impl.hpp"
-#include "libed2k/session.hpp"
 #include "libed2k/transfer.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/util.hpp"
