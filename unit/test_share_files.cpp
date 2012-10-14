@@ -9,6 +9,7 @@
 #include <fstream>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem.hpp>
 #include <locale.h>
 
 #include "libed2k/constants.hpp"
@@ -16,6 +17,8 @@
 #include "libed2k/log.hpp"
 #include "libed2k/transfer.hpp"
 #include "libed2k/deadline_timer.hpp"
+
+namespace fs = boost::filesystem;
 
 BOOST_AUTO_TEST_SUITE(test_share_files)
 
@@ -41,16 +44,16 @@ void create_directory_tree()
 {
     std::string strDirectory = chRussianDirectory;
     std::string strFilename  = chRussianFilename;
-    libed2k::fs::path p(libed2k::convert_to_native(libed2k::bom_filter(strDirectory)));
-    libed2k::fs::create_directories(p);
+    fs::path p(libed2k::convert_to_native(libed2k::bom_filter(strDirectory)));
+    fs::create_directories(p);
     p /= libed2k::convert_to_native(libed2k::bom_filter(strDirectory));
-    libed2k::fs::create_directories(p);
+    fs::create_directories(p);
 
-    libed2k::fs::path p1 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "01.txt"));
-    libed2k::fs::path p2 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "02.txt"));
-    libed2k::fs::path p3 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "03.txt"));
-    libed2k::fs::path p4 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "04.txt"));
-    libed2k::fs::path p5 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "05.txt"));
+    fs::path p1 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "01.txt"));
+    fs::path p2 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "02.txt"));
+    fs::path p3 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "03.txt"));
+    fs::path p4 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "04.txt"));
+    fs::path p5 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "05.txt"));
 
     generate_file(100, p1.string().c_str());
     generate_file(libed2k::PIECE_SIZE, p2.string().c_str());
@@ -65,8 +68,8 @@ void create_directory_tree()
 void drop_directory_tree()
 {
     std::string strDirectory = chRussianDirectory;
-    libed2k::fs::path p(libed2k::convert_to_native(libed2k::bom_filter(strDirectory)));
-    libed2k::fs::remove_all(p);
+    fs::path p(libed2k::convert_to_native(libed2k::bom_filter(strDirectory)));
+    fs::remove_all(p);
 }
 
 BOOST_AUTO_TEST_CASE(test_string_conversions)

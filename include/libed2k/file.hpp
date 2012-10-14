@@ -117,7 +117,7 @@ namespace libed2k
 
         known_file_entry(const md4_hash& hFile,
                             const std::vector<md4_hash>& hSet,
-                            const fs::path& p,
+                            const std::string& filename,
                             size_type  nFilesize,
                             boost::uint32_t nAccepted,
                             boost::uint32_t nRequested,
@@ -188,17 +188,17 @@ namespace libed2k
     struct transfer_resume_data
     {
         md4_hash    m_hash;     //!< transfer hash
-        container_holder<boost::uint16_t, std::string> m_filepath; //!< utf-8 file path
+        container_holder<boost::uint16_t, std::string> m_filename; //!< utf-8 file path
         size_type     m_filesize; //!< boost::uint64_t file size
         tag_list<boost::uint8_t>    m_fast_resume_data;
         transfer_resume_data();
-        transfer_resume_data(const md4_hash& hash, const fs::path& path, size_type size, const std::vector<char>& fr_data);
+        transfer_resume_data(const md4_hash& hash, const std::string& filename, size_type size, const std::vector<char>& fr_data);
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
             ar & m_hash;
-            ar & m_filepath;
+            ar & m_filename;
             ar & m_filesize;
             ar & m_fast_resume_data;
         }
@@ -216,7 +216,7 @@ namespace libed2k
     class hash_handle
     {
     public:
-        hash_handle(const fs::path& f);
+        hash_handle(const std::string& filename);
         void set_atp(const add_transfer_params& atp);
         add_transfer_params atp();
         hash_status status();
@@ -336,116 +336,6 @@ namespace libed2k
 
     };
 
-    class file_hasher
-    {
-    public:
-        file_hasher(add_transfer_handler handler, const std::string& known_filename);
-
-        /**
-          * start monitor thread
-         */
-        void start();
-
-        /**
-          * cancel all current works and wait thread exit
-         */
-        void stop();
-
-        void operator()();
-
-        /**
-          * collection path, file path
-         */
-        monitor_order<std::pair<fs::path, fs::path> >  m_order;
-
-    private:
-        volatile bool           m_bCancel;
-        add_transfer_handler    m_add_transfer;
-        std::string             m_known_filename;   //!< this parameter must contains
-        boost::shared_ptr<boost::thread> m_thread;
-        boost::mutex            m_mutex;
-    };
-
-    /**
-      * this entry used to generate pending entry for async hash + publishing
-      * entry contains path in UTF-8 code page
-     */
-
-    struct pending_file
-    {
-        fs::path    m_path;
-        size_type   m_size;
-        md4_hash    m_hash;
-        
-        pending_file(const fs::path& path) : m_path(path), m_size(0){}
-        pending_file(const fs::path& path, size_type size, const md4_hash& hash) :
-        m_path(path), m_size(size), m_hash(hash){}
-
-        // for algorithms
-        const md4_hash& get_hash() const
-        {
-            return (m_hash);
-        }
-
-        bool operator==(const pending_file& pf) const
-        {
-            return (m_path == pf.m_path && m_size == pf.m_size && m_hash == pf.m_hash);
-        }
-    };
-
-    /**
-      * structure store files in utf-8
-     */
-    struct pending_collection
-    {
-        fs::path                    m_path;
-        std::deque<pending_file>    m_files;
-
-        pending_collection(const fs::path& p) : m_path(p.string()) {}
-
-        /**
-          * return collection status
-         */
-        bool is_pending() const
-        {
-            for (std::deque<pending_file>::const_iterator itr = m_files.begin(); itr != m_files.end(); ++itr)
-            {
-                if (!itr->m_hash.defined())
-                {                    
-                    return (true);
-                }
-            }
-
-            return (false);
-        }
-
-        /**
-          * update element in pending list and return if success
-          * @param remove - do not update entry - remove it
-          * warning - after update we don't change collection path and don't update collections files count!
-         */
-        bool update(const fs::path& p, size_type size, const md4_hash& hash, bool remove)
-        {
-            std::deque<pending_file>::iterator itr = std::find(m_files.begin(), m_files.end(), pending_file(p));
-
-            if (itr != m_files.end())
-            {
-                if (remove)
-                {
-                    m_files.erase(itr);
-                }
-                else
-                {
-                    itr->m_hash = hash;
-                    itr->m_size = size;
-                }
-
-                return (true);
-            }
-
-            return (false);
-        }
-    };
 
     /**
       * structure for save/load binary emulecollection files
@@ -513,12 +403,6 @@ namespace libed2k
         static std::string toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile);
         static emule_collection_entry fromLink(const std::string& strLink);
 
-        /**
-          * generate emule collection from pending collection
-         */
-        static emule_collection fromPending(const pending_collection& pending);
-
-
         bool save(const std::string& strFilename, bool binary = false);
 
         /**
@@ -528,9 +412,6 @@ namespace libed2k
         bool add_link(const std::string& strLink);
 
         const std::string get_ed2k_link(size_t nIndex);
-
-        bool operator==(const std::deque<pending_file>& files) const;
-        bool operator!=(const std::deque<pending_file>& files) const;
         bool operator==(const emule_collection& ecoll) const;
         std::string                         m_name;
         std::deque<emule_collection_entry>  m_files;

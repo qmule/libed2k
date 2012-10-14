@@ -328,7 +328,6 @@ namespace libed2k {
         std::string m_name;     //!< file name
         std::string m_path;     //!< file save path
 
-        fs::path m_collectionpath;
         size_type m_filesize;
         boost::uint32_t m_file_type;
 

@@ -18,6 +18,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/base_connection.hpp"
 
+
 BOOST_AUTO_TEST_SUITE(test_archive)
 
 
@@ -708,17 +709,6 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     BOOST_CHECK_EQUAL(ec_text.m_files.at(1).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"));
     BOOST_CHECK_EQUAL(ec_text.m_files.at(2).m_filehash, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79"));
 
-    libed2k::pending_collection pc("some");
-    pc.m_files.push_back(libed2k::pending_file(libed2k::fs::path("file1"), 0, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
-    pc.m_files.push_back(libed2k::pending_file(libed2k::fs::path("file1"), 1, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
-    pc.m_files.push_back(libed2k::pending_file(libed2k::fs::path("file1"), 2, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79")));
-    BOOST_CHECK(!pc.is_pending());
-    BOOST_CHECK(ec_text == pc.m_files);
-    pc.m_files.push_back(libed2k::pending_file(libed2k::fs::path("file1"), 3, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F17879")));
-    BOOST_CHECK(!(ec_text == pc.m_files));
-    pc.m_files.push_back(libed2k::pending_file(libed2k::fs::path("file1"), 0, libed2k::md4_hash()));
-    BOOST_CHECK(pc.is_pending());
-
     BOOST_CHECK(ec.save("./txt_test.emulecollection", false));
     BOOST_CHECK(ec.save("./binary_test.emulecollection", true));
 
@@ -726,23 +716,6 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     BOOST_CHECK(ec == incoming_ec);
     incoming_ec = libed2k::emule_collection::fromFile("./binary_test.emulecollection");
     BOOST_CHECK(ec == incoming_ec);
-
-    {
-        std::ofstream f1("./file1");
-        std::ofstream f2("./file2");
-        f1 << "TEST 1";
-        f2 << "TEST 2   ";
-    }
-
-    // check transformations
-    libed2k::pending_collection pc2("pc2");
-    pc2.m_files.push_back(libed2k::pending_file(libed2k::fs::path("./file1"), 1, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F15A79")));
-    pc2.m_files.push_back(libed2k::pending_file(libed2k::fs::path("./file2"), 2, libed2k::md4_hash()));
-    BOOST_CHECK_THROW(libed2k::emule_collection::fromPending(pc2), libed2k::libed2k_exception);
-    pc2.m_files.back().m_hash = libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79");
-    BOOST_CHECK_NO_THROW(libed2k::emule_collection::fromPending(pc2));
-    libed2k::emule_collection ec_trans = libed2k::emule_collection::fromPending(pc2);
-    BOOST_CHECK(ec_trans == pc2.m_files);
 }
 
 BOOST_AUTO_TEST_CASE(test_links_parsing)
@@ -757,9 +730,7 @@ BOOST_AUTO_TEST_CASE(test_links_parsing)
 BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)
 {
     std::vector<char> v(100, 122);
-
-    libed2k::fs::path p("./xxx.data");
-    libed2k::transfer_resume_data trd(libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), p, 1009, v);
+    libed2k::transfer_resume_data trd(libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), std::string("./xxx.data"), 1009, v);
     libed2k::transfer_resume_data trd_dst;
     std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
     libed2k::archive::ed2k_oarchive out_string_archive(sstream_out);

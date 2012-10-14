@@ -658,7 +658,7 @@ int main(int argc, char* argv[])
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.m_filename= trd.m_filepath.m_collection;
+                        params.m_filename= trd.m_filename.m_collection;
                         params.file_size = trd.m_filesize;
 
                         if (trd.m_fast_resume_data.count() > 0)

@@ -30,7 +30,7 @@ session_impl_base::session_impl_base(const session_settings& settings) :
         m_abort(false),
         m_settings(settings),
         m_transfers(),
-        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1), settings.m_known_file),
+        m_atp_maker(settings.m_known_file),
         m_alerts(m_io_service)
 {
 }
@@ -44,7 +44,7 @@ void session_impl_base::abort()
 {
     if (m_abort) return;
     m_abort = true;
-    m_file_hasher.stop();
+    m_atp_maker.stop();
 }
 
 void session_impl_base::post_transfer(add_transfer_params const& params)
@@ -244,7 +244,7 @@ void session_impl::operator()()
         m_server_connection->start();
     }
 
-    m_file_hasher.start();
+    m_atp_maker.start();
 
 
     bool stop_loop = false;

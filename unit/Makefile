@@ -4,7 +4,7 @@ BIN=run_tests
 LIBED2K = ../src/libed2k.a 
 OBJF += $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
 
-LDFLAGS=-lboost_unit_test_framework -lcrypto++ -lcryptopp -L../src -led2k
+LDFLAGS=-lboost_unit_test_framework -lboost_filesystem -lcrypto++ -lcryptopp -L../src -led2k
 CXXFLAGS = -I../include -ldl
 
 .PHONY: all clean

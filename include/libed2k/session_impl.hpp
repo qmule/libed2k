@@ -38,31 +38,30 @@ namespace libed2k {
 
     namespace aux
     {
-        bool paths_filter(std::deque<fs::path>& vp, const fs::path& p);
 
-            struct listen_socket_t
-    {
-        listen_socket_t(): external_port(0), ssl(false) {}
+        struct listen_socket_t
+        {
+            listen_socket_t(): external_port(0), ssl(false) {}
 
-        // this is typically empty but can be set
-        // to the WAN IP address of NAT-PMP or UPnP router
-        address external_address;
+            // this is typically empty but can be set
+            // to the WAN IP address of NAT-PMP or UPnP router
+            address external_address;
 
-        // this is typically set to the same as the local
-        // listen port. In case a NAT port forward was
-        // successfully opened, this will be set to the
-        // port that is open on the external (NAT) interface
-        // on the NAT box itself. This is the port that has
-        // to be published to peers, since this is the port
-        // the client is reachable through.
-        int external_port;
+            // this is typically set to the same as the local
+            // listen port. In case a NAT port forward was
+            // successfully opened, this will be set to the
+            // port that is open on the external (NAT) interface
+            // on the NAT box itself. This is the port that has
+            // to be published to peers, since this is the port
+            // the client is reachable through.
+            int external_port;
 
-        // set to true if this is an SSL listen socket
-        bool ssl;
+            // set to true if this is an SSL listen socket
+            bool ssl;
 
-        // the actual socket
-        boost::shared_ptr<socket_acceptor> sock;
-    };
+            // the actual socket
+            boost::shared_ptr<socket_acceptor> sock;
+        };
 
         /**
           * class used for testing
@@ -130,13 +129,8 @@ namespace libed2k {
             /**
               * file hasher closed in self thread
              */
-            file_hasher    m_file_hasher;
+            transfer_params_maker    m_atp_maker;
 
-            /**
-              * pending collections list - when collection changes status from pending
-              * it will remove from deque
-             */
-            std::deque<pending_collection>  m_pending_collections;
 
             // handles delayed alerts
             alert_manager m_alerts;
