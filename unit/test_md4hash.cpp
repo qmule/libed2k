@@ -14,6 +14,7 @@
 #include <cryptopp/md4.h>
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/peer_connection.hpp"
+#include "common.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_md4_hash)
 
@@ -25,21 +26,6 @@ struct test_md4_hash
 
     libed2k::md4_hash m_test;
 };
-
-void generate_test_file(size_t nSize, const char* pchFilename)
-{
-    std::ofstream of(pchFilename, std::ios_base::binary | std::ios_base::out);
-
-    if (of)
-    {
-        // generate small file
-        for (size_t i = 0; i < nSize; i++)
-        {
-            of << 'X';
-        }
-    }
-}
-
 
 BOOST_FIXTURE_TEST_CASE(test_conversion, test_md4_hash)
 {
@@ -83,6 +69,7 @@ BOOST_AUTO_TEST_CASE(test_user_agent)
 
 BOOST_AUTO_TEST_CASE(test_partial_hashing)
 {
+    test_files_holder tfh;
     std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> > vtf;
     vtf.push_back(std::make_pair(100, libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5")));
     vtf.push_back(std::make_pair(libed2k::PIECE_SIZE, libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9")));
@@ -91,7 +78,9 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
 
     for (std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> >::const_iterator itr = vtf.begin(); itr != vtf.end(); ++itr)
     {
-        generate_test_file(itr->first, "./thfile.bin");
+        BOOST_REQUIRE(generate_test_file(itr->first, "./thfile.bin"));
+        tfh.hold("./thfile.bin");
+
         char* chFullBuffer = new char[itr->first];  // allocate buffer for file data
         FILE* fh = fopen("./thfile.bin", "rb");
         BOOST_REQUIRE(fh);

@@ -6,7 +6,7 @@
 #   define BOOST_TEST_MODULE Main
 #endif
 
-#include <fstream>
+#include <sstream>
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem.hpp>
@@ -17,6 +17,7 @@
 #include "libed2k/log.hpp"
 #include "libed2k/transfer.hpp"
 #include "libed2k/deadline_timer.hpp"
+#include "common.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -57,24 +58,12 @@ namespace libed2k
     }
 }
 
+#define WAIT_TPM(x) while(x.queue_size()) {}
+
 BOOST_AUTO_TEST_SUITE(test_share_files)
 
 const char chRussianDirectory[] = {'\xEF', '\xBB', '\xBF', '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81', '\xD1', '\x81', '\xD0', '\xBA', '\xD0', '\xB0', '\xD1', '\x8F', '\x20', '\xD0', '\xB4', '\xD0', '\xB8', '\xD1', '\x80', '\xD0', '\xB5', '\xD0', '\xBA', '\xD1', '\x82', '\xD0', '\xBE', '\xD1', '\x80', '\xD0', '\xB8', '\xD1', '\x8F', '\x00' };
 const char chRussianFilename[] = { '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81', '\xD1', '\x81', '\xD0', '\xBA', '\xD0', '\xB8', '\xD0', '\xB9', '\x20', '\xD1', '\x84', '\xD0', '\xB0', '\xD0', '\xB9', '\xD0', '\xBB', '\x00' };
-
-void generate_file(size_t nSize, const char* pchFilename)
-{
-    std::ofstream of(pchFilename, std::ios_base::binary | std::ios_base::out);
-
-    if (of)
-    {
-        // generate small file
-        for (size_t i = 0; i < nSize; i++)
-        {
-            of << 'X';
-        }
-    }
-}
 
 void create_directory_tree()
 {
@@ -91,11 +80,11 @@ void create_directory_tree()
     fs::path p4 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "04.txt"));
     fs::path p5 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "05.txt"));
 
-    generate_file(100, p1.string().c_str());
-    generate_file(libed2k::PIECE_SIZE, p2.string().c_str());
-    generate_file(libed2k::PIECE_SIZE+1, p3.string().c_str());
-    generate_file(libed2k::PIECE_SIZE*4, p4.string().c_str());
-    generate_file(libed2k::PIECE_SIZE+4566, p5.string().c_str());
+    generate_test_file(100, p1.string().c_str());
+    generate_test_file(libed2k::PIECE_SIZE, p2.string().c_str());
+    generate_test_file(libed2k::PIECE_SIZE+1, p3.string().c_str());
+    generate_test_file(libed2k::PIECE_SIZE*4, p4.string().c_str());
+    generate_test_file(libed2k::PIECE_SIZE+4566, p5.string().c_str());
 
     std::ofstream fstr(p.string().c_str());
 
@@ -148,6 +137,89 @@ BOOST_AUTO_TEST_CASE(test_concurrency)
                 libed2k::hash_status(libed2k::test_transfer_params_maker::m_errors[i],
                         std::make_pair(libed2k::test_transfer_params_maker::m_progress[i], libed2k::test_transfer_params_maker::m_total[i])));
     }
+}
+
+
+BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
+{
+    //LOGGER_INIT();
+    test_files_holder tfh;
+    const size_t sz = 5;
+    const char* filename = "./test_filename";
+    std::pair<libed2k::size_type, libed2k::md4_hash> tmpl[sz] =
+    {
+        std::make_pair(100, libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5")),
+        std::make_pair(libed2k::PIECE_SIZE, libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9")),
+        std::make_pair(libed2k::PIECE_SIZE+1, libed2k::md4_hash::fromString("49EC2B5DEF507DEA73E106FEDB9697EE")),
+        std::make_pair(libed2k::PIECE_SIZE*4, libed2k::md4_hash::fromString("9385DCEF4CB89FD5A4334F5034C28893")),
+        std::make_pair(libed2k::PIECE_SIZE+4566, libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"))
+    };
+
+    for (size_t n = 0; n < sz; ++n)
+    {
+        std::stringstream s;
+        s << filename << n;
+        BOOST_REQUIRE(generate_test_file(tmpl[n].first, s.str()));
+        tfh.hold(s.str());
+    }
+
+    libed2k::transfer_params_maker tpm("");
+    tpm.start();
+
+    std::vector<boost::shared_ptr<libed2k::hash_handle> > v;
+
+    for (size_t n = 0; n < sz; ++n)
+    {
+        std::stringstream s;
+        s << filename << n;
+        v.push_back(tpm.make_transfer_params(s.str()));
+    }
+
+    // wait hasher completed
+    WAIT_TPM(tpm)
+    tpm.stop(); // wait last file will hashed
+
+    for (size_t n = 0; n < sz; ++n)
+    {
+        std::stringstream s;
+        s << filename << n;
+        libed2k::hash_status hs = v[n].get()->status();
+
+        BOOST_CHECK_MESSAGE(!hs.m_error, hs.m_error.message());
+        BOOST_CHECK_MESSAGE(hs.m_progress.first != 0, s.str());
+        BOOST_CHECK_MESSAGE(hs.m_progress.first == hs.m_progress.second, s.str());
+        BOOST_CHECK_MESSAGE(v[n].get()->atp().file_hash == tmpl[n].second, s.str());
+    }
+
+    // free resources
+    v.clear();
+
+    // check resource clean before hash
+    for (size_t k = 0; k < 40; ++k)
+    {
+        for (size_t n = 0; n < sz; ++n)
+        {
+            v.push_back(tpm.make_transfer_params("some non-exists file"));
+        }
+    }
+
+    // start hashing and free reources
+    tpm.start();
+    v.clear();
+
+    const char* zero_filename = "zero_filename.txt";
+    tfh.hold(zero_filename);
+    BOOST_REQUIRE(generate_test_file(0, zero_filename));
+    boost::shared_ptr<libed2k::hash_handle> zero_handle = tpm.make_transfer_params(zero_filename);
+    WAIT_TPM(tpm)
+    tpm.stop();
+    BOOST_CHECK(zero_handle.get()->status().m_error == libed2k::errors::make_error_code(libed2k::errors::filesize_is_zero));
+
+    tpm.start();
+    boost::shared_ptr<libed2k::hash_handle> non_exists_handle = tpm.make_transfer_params("non_exists");
+    WAIT_TPM(tpm)
+    tpm.stop();
+    BOOST_CHECK(non_exists_handle.get()->status().m_error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -814,6 +814,7 @@ namespace libed2k
         }
 
         hs.m_progress.second = div_ceil(filesize, PIECE_SIZE);
+        DBG("stat file: {" << convert_to_native(atp.m_filename) << ", pieces: " << hs.m_progress.second  << "}");
 
         if (m_kfc.extract_transfer_params(fs.mtime, atp))
         {
@@ -843,10 +844,10 @@ namespace libed2k
                         while(in_piece_capacity > 0)
                         {
                             size_type current_block_size =  std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
-                            size_type nBytes = fread(chBlock, current_block_size, 1, sh.get());
 
-                            if (nBytes != current_block_size)   // was file truncated?
+                            if (fread(chBlock, current_block_size, 1, sh.get()) != 1)
                             {
+                                // was file truncated?
                                 throw libed2k_exception(errors::file_was_truncated);
                             }
 
@@ -854,6 +855,10 @@ namespace libed2k
                             capacity -= current_block_size;
                             in_piece_capacity -= current_block_size;
                         }
+
+                        ++hs.m_progress.first;
+                        LIBED2K_ASSERT(hs.m_progress.first <= hs.m_progress.second);
+                        ph->set_status(hs);
 
                         atp.hashset[i] = hasher.final();
                         hasher.reset();
@@ -865,11 +870,19 @@ namespace libed2k
                     }
 
                     // calculate full file hash
-                    hasher.update(reinterpret_cast<const char*>(&atp.hashset[0]), atp.hashset.size()*MD4_HASH_SIZE);
-                    atp.file_hash = hasher.final();
+                    if (atp.hashset.size() > 1)
+                    {
+                        hasher.update(reinterpret_cast<const char*>(&atp.hashset[0]), atp.hashset.size()*MD4_HASH_SIZE);
+                        atp.file_hash = hasher.final();
+                    }
+                    else
+                    {
+                        atp.file_hash = atp.hashset[0];
+                    }
                 }
                 catch(libed2k_exception& e)
                 {
+                    DBG("file {" << convert_to_native(atp.m_filename) << "} was truncated");
                     hs.m_error = e.error();
                 }
             }
@@ -880,14 +893,17 @@ namespace libed2k
 
         }
 
+        ph->set_status(hs);
         // prepare common result
         atp.pieces      = bitfield(piece_count(filesize), 1);
         atp.file_size   = filesize;
         atp.seed_mode   = true;
+        ph->set_atp(atp);
     }
 
     hash_handle::hash_handle(const std::string& filename) : m_cancelled(false)
     {
+        m_atp.m_filename = filename;
     }
 
     void hash_handle::set_atp(const add_transfer_params& atp)
