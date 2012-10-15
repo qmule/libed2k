@@ -155,6 +155,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\src\add_transfer_params.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\alert.cpp"
 				>
 			</File>
@@ -345,6 +349,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\include\libed2k\add_transfer_params.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\address.hpp"
 				>
 			</File>
@@ -502,6 +510,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\md4_hash.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\md4_hasher.hpp"
 				>
 			</File>
 			<File
