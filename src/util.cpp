@@ -5,9 +5,10 @@
 #include <iconv.h>
 #endif
 
-#include <libed2k/utf8.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/file.hpp>
+#include "libed2k/size_type.hpp"
+#include "libed2k/utf8.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/file.hpp"
 
 namespace libed2k 
 {
@@ -32,8 +33,8 @@ namespace libed2k
     {
         size_type begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
         size_type align_size = (piece + 1) * PIECE_SIZE;
-        size_type end = std::min<size_type>(begin + BLOCK_SIZE, std::min(align_size, size));
-        assert(begin < end);
+        size_type end = std::min<size_type>(begin + BLOCK_SIZE, std::min<size_type>(align_size, size));
+        LIBED2K_ASSERT(begin < end);
         return std::make_pair(begin, end);
     }
 
