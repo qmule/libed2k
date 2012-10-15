@@ -55,11 +55,7 @@ namespace libed2k
 		ptime g_current_time;
 	}
 
-	LIBED2K_EXPORT ptime const& time_now()
-    {
-        LIBED2K_ASSERT(!aux::g_current_time.is_not_a_date_time());
-        return aux::g_current_time;
-    }
+	LIBED2K_EXPORT ptime const& time_now() { return aux::g_current_time; }
 
 	char const* time_now_string()
 	{
