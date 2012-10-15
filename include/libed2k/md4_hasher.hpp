@@ -58,7 +58,7 @@ namespace libed2k
 		    m_hasher.Restart();
 		}
 
-		~hasher()
+		~md4_hasher()
 		{
 		}
 

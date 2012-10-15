@@ -20,11 +20,47 @@
 
 namespace fs = boost::filesystem;
 
+namespace libed2k
+{
+
+#define TCOUNT 3
+
+    class test_transfer_params_maker : public transfer_params_maker
+    {
+    public:
+        static error_code m_errors[TCOUNT];
+        static int m_total[TCOUNT];
+        static int m_progress[TCOUNT];
+
+        test_transfer_params_maker(const std::string& known_file);
+    protected:
+        void process_item(hash_handle* ph);
+    private:
+        int m_index;
+    };
+
+    error_code test_transfer_params_maker::m_errors[]  = { errors::no_error, errors::filesize_is_zero, errors::file_was_truncated };
+    int test_transfer_params_maker::m_total[]   = { 10, 20, 30 };
+    int test_transfer_params_maker::m_progress[]= { 10, 0, 23 };
+
+    test_transfer_params_maker::test_transfer_params_maker(const std::string& known_file) : transfer_params_maker(known_file), m_index(0) {}
+
+    void test_transfer_params_maker::process_item(hash_handle* ph)
+    {
+        DBG("process item " << m_index);
+        hash_status hs;
+        hs.m_error = m_errors[m_index];
+        hs.m_progress = std::make_pair(m_progress[m_index], m_total[m_index]);
+        ph->set_status(hs);
+        ++m_index;
+        m_index = m_index % TCOUNT;
+    }
+}
+
 BOOST_AUTO_TEST_SUITE(test_share_files)
 
 const char chRussianDirectory[] = {'\xEF', '\xBB', '\xBF', '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81', '\xD1', '\x81', '\xD0', '\xBA', '\xD0', '\xB0', '\xD1', '\x8F', '\x20', '\xD0', '\xB4', '\xD0', '\xB8', '\xD1', '\x80', '\xD0', '\xB5', '\xD0', '\xBA', '\xD1', '\x82', '\xD0', '\xBE', '\xD1', '\x80', '\xD0', '\xB8', '\xD1', '\x8F', '\x00' };
 const char chRussianFilename[] = { '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81', '\xD1', '\x81', '\xD0', '\xBA', '\xD0', '\xB8', '\xD0', '\xB9', '\x20', '\xD1', '\x84', '\xD0', '\xB0', '\xD0', '\xB9', '\xD0', '\xBB', '\x00' };
-
 
 void generate_file(size_t nSize, const char* pchFilename)
 {
@@ -81,6 +117,36 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
     if (CHECK_BOM(strDirectory.size(), strDirectory))
     {
         BOOST_CHECK_EQUAL(strDirectory.substr(3), libed2k::convert_from_native(strNative));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_concurrency)
+{
+    //LOGGER_INIT();
+    std::vector<boost::shared_ptr<libed2k::hash_handle> > v;
+    libed2k::test_transfer_params_maker maker("");
+    maker.start();
+    maker.stop();
+    maker.stop();
+    maker.start();
+    v.push_back(maker.make_transfer_params(""));
+    v.push_back(maker.make_transfer_params(""));
+    v.push_back(maker.make_transfer_params(""));
+
+    while(maker.queue_size())
+    {
+#ifdef WIN32
+        Sleep(500);
+#else
+        sleep(1);
+#endif
+    }
+
+    for (size_t i = 0; i < TCOUNT; ++i)
+    {
+        BOOST_CHECK(v[i].get()->status() ==
+                libed2k::hash_status(libed2k::test_transfer_params_maker::m_errors[i],
+                        std::make_pair(libed2k::test_transfer_params_maker::m_progress[i], libed2k::test_transfer_params_maker::m_total[i])));
     }
 }
 

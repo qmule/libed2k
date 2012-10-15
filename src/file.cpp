@@ -11,6 +11,7 @@
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/md4_hasher.hpp"
 
 namespace libed2k
 {
@@ -692,7 +693,7 @@ namespace libed2k
     transfer_resume_data::transfer_resume_data()
     {}
 
-    transfer_params_maker::transfer_params_maker(const std::string& known_filename) : m_stop(false), m_known_filename(known_filename)
+    transfer_params_maker::transfer_params_maker(const std::string& known_filename) : m_known_filename(known_filename)
     {
     }
 
@@ -701,6 +702,11 @@ namespace libed2k
         LIBED2K_ASSERT(!m_thread);
         m_thread.reset(new boost::thread(boost::ref(*this)));
         return true;
+    }
+
+    transfer_params_maker::~transfer_params_maker()
+    {
+        stop();
     }
 
     void transfer_params_maker::stop()
@@ -726,8 +732,6 @@ namespace libed2k
 
     void transfer_params_maker::operator()()
     {
-        known_file_collection kfc;
-
         // when we have known filename path - attempt to extract its content
         if (!m_known_filename.empty())
         {
@@ -739,11 +743,11 @@ namespace libed2k
 
                 try
                 {
-                    ifa >> kfc;
+                    ifa >> m_kfc;
                 }
                 catch(libed2k_exception&)
                 {
-                    kfc.m_known_file_list.m_collection.clear();
+                    m_kfc.m_known_file_list.m_collection.clear();
                 }
             }
         }
@@ -756,39 +760,130 @@ namespace libed2k
 
             if (sh)
             {
-                // initialize our local transfer params
-                add_transfer_params atp = sh->atp();
+                process_item(sh.get());
+            }
+        }
+    }
 
-                hash_status hs;
-                file_status fs;
+    /**
+      * small shared resources handler for close file handles
+     */
+    class shared_file
+    {
+    public:
+        shared_file(const std::string& filename)
+        {
+            m_ph = fopen(filename.c_str(), "rb");
+        }
 
-                stat_file(atp.m_filename, &fs, hs.m_error);
-
-                if (!hs.m_error)
-                {
-                    size_type file_size = libed2k::file_size(atp.m_filename);
-                    hs.m_progress.second = div_ceil(file_size, BLOCK_SIZE);
-
-                    if (file_size > 0)
-                    {
-                        if (kfc.extract_transfer_params(fs.mtime, atp))
-                        {
-                            sh->set_atp(atp);
-                            DBG("{known file entry was found for: " << convert_to_native(atp.m_filename) << "}");
-                        }
-                        else
-                        {
-                            // transfer parameters weren't found in known file, begin calculations
-                        }
-                    }
-                    else
-                    {
-                        hs.m_error = errors::filesize_is_zero;
-                    }
-                }
+        ~shared_file()
+        {
+            if (m_ph)
+            {
+                fclose(m_ph);
             }
         }
 
+        FILE* get() { return m_ph; }
+
+    private:
+        FILE* m_ph;
+    };
+
+    void transfer_params_maker::process_item(hash_handle* ph)
+    {
+        add_transfer_params atp = ph->atp();
+        file_status fs;
+        hash_status hs;
+
+        stat_file(atp.m_filename, &fs, hs.m_error);
+
+        if (hs.m_error)
+        {
+            ph->set_status(hs);
+            return;
+        }
+
+        size_type filesize = file_size(atp.m_filename);
+
+        if (filesize == 0)
+        {
+            hs.m_error = errors::filesize_is_zero;
+            ph->set_status(hs);
+            return;
+        }
+
+        hs.m_progress.second = div_ceil(filesize, PIECE_SIZE);
+
+        if (m_kfc.extract_transfer_params(fs.mtime, atp))
+        {
+            DBG("{known file entry was found for: " << convert_to_native(atp.m_filename) << "}");
+            hs.m_progress.first = hs.m_progress.second; // set progress to completed
+        }
+        else
+        {
+            LIBED2K_ASSERT(hs.m_progress.second > 0);
+            shared_file sh(convert_to_native(atp.m_filename));
+
+            if (sh.get())
+            {
+                // I don't know how i can leave cycle simple without exception
+                try
+                {
+                    // prepare results vector
+                    atp.hashset.resize(hs.m_progress.second);
+                    size_type capacity = filesize;
+                    char chBlock[BLOCK_SIZE];
+                    md4_hasher hasher;
+
+                    for (int i = 0; i < hs.m_progress.second; ++i)
+                    {
+                        size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
+
+                        while(in_piece_capacity > 0)
+                        {
+                            size_type current_block_size =  std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
+                            size_type nBytes = fread(chBlock, current_block_size, 1, sh.get());
+
+                            if (nBytes != current_block_size)   // was file truncated?
+                            {
+                                throw libed2k_exception(errors::file_was_truncated);
+                            }
+
+                            hasher.update(chBlock, current_block_size);
+                            capacity -= current_block_size;
+                            in_piece_capacity -= current_block_size;
+                        }
+
+                        atp.hashset[i] = hasher.final();
+                        hasher.reset();
+                    }
+
+                    if (hs.m_progress.second*libed2k::PIECE_SIZE == filesize)
+                    {
+                        atp.hashset.push_back(libed2k::md4_hash::terminal);
+                    }
+
+                    // calculate full file hash
+                    hasher.update(reinterpret_cast<const char*>(&atp.hashset[0]), atp.hashset.size()*MD4_HASH_SIZE);
+                    atp.file_hash = hasher.final();
+                }
+                catch(libed2k_exception& e)
+                {
+                    hs.m_error = e.error();
+                }
+            }
+            else
+            {
+                hs.m_error.assign(errno, boost::system::get_generic_category());
+            }
+
+        }
+
+        // prepare common result
+        atp.pieces      = bitfield(piece_count(filesize), 1);
+        atp.file_size   = filesize;
+        atp.seed_mode   = true;
     }
 
     hash_handle::hash_handle(const std::string& filename) : m_cancelled(false)

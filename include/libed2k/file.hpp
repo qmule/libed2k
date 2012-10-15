@@ -206,8 +206,14 @@ namespace libed2k
 
     struct hash_status
     {
-        std::pair<int,int>  m_progress; //!< current block, total blocks
         error_code          m_error;
+        std::pair<int,int>  m_progress; //!< current piece, total pieces
+        hash_status() : m_error(errors::no_error){}
+        hash_status(error_code ec, std::pair<int, int> p) : m_error(ec), m_progress(p) {}
+        bool operator==(const hash_status& hs) const
+        {
+            return (m_error == hs.m_error) && (m_progress == hs.m_progress);
+        }
     };
 
     /**
@@ -259,6 +265,12 @@ namespace libed2k
             m_cancelled = true;
             m_signal.notify_one();
             DBG("monitor:: completed");
+        }
+
+        size_t size()
+        {
+            boost::mutex::scoped_lock lock(m_monitorMutex);
+            return m_queue.size();
         }
 
         Data popWait()
@@ -314,28 +326,30 @@ namespace libed2k
         boost::condition    m_signal;
     };
 
-    namespace aux { class session_impl; }
-
     class transfer_params_maker
     {
     public:
         transfer_params_maker(const std::string& known_filename);
+        virtual ~transfer_params_maker();
         bool start();
         void stop();
         void operator()();
+
+        size_t queue_size() { return m_order.size(); }
         /**
           * @param filename in UTF-8
          */
         boost::shared_ptr<hash_handle> make_transfer_params(const std::string& filename);
+    protected:
+        virtual void process_item(hash_handle* ph);
     private:
-        bool        m_stop;
         std::string m_known_filename;
+        known_file_collection m_kfc;
         boost::shared_ptr<boost::thread> m_thread;
         boost::mutex m_mutex;
         monitor_order<boost::weak_ptr<hash_handle> > m_order;
 
     };
-
 
     /**
       * structure for save/load binary emulecollection files

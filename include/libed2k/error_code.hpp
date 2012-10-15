@@ -77,6 +77,7 @@ namespace libed2k
             transfer_not_ready,
             // service errors
             filesize_is_zero,
+            file_was_truncated,
             file_unavaliable,
             file_too_short,
             file_collision,
