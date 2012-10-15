@@ -110,6 +110,7 @@ namespace libed2k {
         void set_announced(bool announced) { m_announced = announced; }
         transfer_status::state_t state() const { return m_state; }
         transfer_status status() const;
+
         void pause();
         void resume();
         void set_upload_limit(int limit);
@@ -277,6 +278,7 @@ namespace libed2k {
         // will initialize the storage and the piece-picker
         void init();
         void bytes_done(transfer_status& st) const;
+        void add_failed_bytes(int b);
         int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
 
         void write_resume_data(entry& rd) const;
@@ -353,6 +355,11 @@ namespace libed2k {
         size_type m_total_downloaded;
         bool m_queued_for_checking;
         int m_progress_ppm;
+
+        // the number of bytes that has been
+        // downloaded that failed the hash-test
+        boost::uint32_t m_total_failed_bytes;
+        boost::uint32_t m_total_redundant_bytes;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and

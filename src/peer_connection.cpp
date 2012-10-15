@@ -900,6 +900,16 @@ bool peer_connection::is_seed() const
     return pieces_count == (int)pieces.size() && pieces_count > 0;
 }
 
+const std::vector<pending_block>& peer_connection::download_queue() const
+{
+    return m_download_queue;
+}
+
+const std::vector<pending_block>& peer_connection::request_queue() const
+{
+    return m_request_queue;
+}
+
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
     bool bRet = false;

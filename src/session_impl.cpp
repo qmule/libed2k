@@ -387,7 +387,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_last_connect_duration(0),
     m_last_announce_duration(0),
     m_user_announced(false),
-    m_server_connection_state(SC_OFFLINE)
+    m_server_connection_state(SC_OFFLINE),
+    m_total_failed_bytes(0),
+    m_total_redundant_bytes(0)
 {
     DBG("*** create ed2k session ***");
 

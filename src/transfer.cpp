@@ -56,6 +56,8 @@ namespace libed2k
         m_total_downloaded(0),
         m_queued_for_checking(false),
         m_progress_ppm(0),
+        m_total_failed_bytes(0),
+        m_total_redundant_bytes(0),
         m_minute_timer(minutes(1), min_time())
     {
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
@@ -208,7 +210,7 @@ namespace libed2k
 
     bool transfer::attach_peer(peer_connection* p)
     {
-        assert(!p->has_transfer());
+        LIBED2K_ASSERT(!p->has_transfer());
 
         if (m_state == transfer_status::queued_for_checking ||
             m_state == transfer_status::checking_files ||
@@ -231,7 +233,7 @@ namespace libed2k
         if (!m_policy.new_connection(*p))
             return false;
 
-        assert(m_connections.find(p) == m_connections.end());
+        LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
         return true;
     }
@@ -241,13 +243,13 @@ namespace libed2k
         std::set<peer_connection*>::iterator i = m_connections.find(c);
         if (i == m_connections.end())
         {
-            assert(false);
+            LIBED2K_ASSERT(false);
             return;
         }
 
         if (ready_for_connections())
         {
-            assert(c->get_transfer().lock().get() == this);
+            LIBED2K_ASSERT(c->get_transfer().lock().get() == this);
 
             if (c->is_seed())
             {
@@ -466,7 +468,7 @@ namespace libed2k
         // files and flush all cached data
         if (m_owning_storage.get())
         {
-            assert(m_storage);
+            LIBED2K_ASSERT(m_storage);
             m_storage->async_release_files(
                 boost::bind(&transfer::on_transfer_paused, shared_from_this(), _1, _2));
             m_storage->async_clear_read_cache();
@@ -546,7 +548,7 @@ namespace libed2k
 
         if (m_owning_storage.get())
         {
-            assert(m_storage);
+            LIBED2K_ASSERT(m_storage);
             m_storage->async_delete_files(
                 boost::bind(&transfer::on_files_deleted, shared_from_this(), _1, _2));
         }
@@ -568,9 +570,9 @@ namespace libed2k
         if (is_seed()) return;
 
         // this call is only valid on transfers with metadata
-        assert(m_picker.get());
-        assert(index >= 0);
-        assert(index < int(num_pieces()));
+        LIBED2K_ASSERT(m_picker.get());
+        LIBED2K_ASSERT(index >= 0);
+        LIBED2K_ASSERT(index < int(num_pieces()));
         if (index < 0 || index >= int(num_pieces())) return;
 
         m_picker->set_piece_priority(index, priority);
@@ -581,9 +583,9 @@ namespace libed2k
         if (is_seed()) return 1;
 
         // this call is only valid on transfers with metadata
-        assert(m_picker.get());
-        assert(index >= 0);
-        assert(index < int(num_pieces()));
+        LIBED2K_ASSERT(m_picker.get());
+        LIBED2K_ASSERT(index >= 0);
+        LIBED2K_ASSERT(index < int(num_pieces()));
         if (index < 0 || index >= int(num_pieces())) return 0;
 
         return m_picker->piece_priority(index);
@@ -593,10 +595,62 @@ namespace libed2k
 
     void transfer::piece_failed(int index)
     {
+        LIBED2K_ASSERT(m_storage);
+        LIBED2K_ASSERT(m_storage->refcount() > 0);
+        LIBED2K_ASSERT(m_picker);
+        LIBED2K_ASSERT(index >= 0);
+        LIBED2K_ASSERT(index < int(num_pieces()));
+
+        m_ses.m_alerts.post_alert_should(hash_failed_alert(handle(), index));
+
+        // increase the total amount of failed bytes
+        add_failed_bytes(PIECE_SIZE);
+
+        // TODO:
+        // decrease the trust point of all peers that sent
+        // parts of this piece.
+        // first, build a set of all peers that participated
+
+        // we have to let the piece_picker know that
+        // this piece failed the check as it can restore it
+        // and mark it as being interesting for download
+        m_picker->restore_piece(index);
+
+        // we might still have outstanding requests to this
+        // piece that hasn't been received yet. If this is the
+        // case, we need to re-open the piece and mark any
+        // blocks we're still waiting for as requested
+        restore_piece_state(index);
+
+        LIBED2K_ASSERT(m_storage);
+        LIBED2K_ASSERT(m_picker->have_piece(index) == false);
     }
 
     void transfer::restore_piece_state(int index)
     {
+        LIBED2K_ASSERT(has_picker());
+        for (std::set<peer_connection*>::const_iterator i = m_connections.begin();
+             i != m_connections.end(); ++i)
+        {
+            peer_connection* p = *i;
+            std::vector<pending_block> const& dq = p->download_queue();
+            std::vector<pending_block> const& rq = p->request_queue();
+            for (std::vector<pending_block>::const_iterator k = dq.begin(), end(dq.end());
+                 k != end; ++k)
+            {
+                if (k->timed_out || k->not_wanted) continue;
+                if (int(k->block.piece_index) != index) continue;
+                m_picker->mark_as_downloading(
+                    k->block, p->get_peer(), (piece_picker::piece_state_t)p->peer_speed());
+            }
+            for (std::vector<pending_block>::const_iterator k = rq.begin(), end(rq.end());
+                 k != end; ++k)
+            {
+                if (int(k->block.piece_index) != index) continue;
+                m_picker->mark_as_downloading(
+                    k->block, p->get_peer(), (piece_picker::piece_state_t)p->peer_speed());
+            }
+        }
     }
 
     int transfer::num_seeds() const
@@ -638,6 +692,10 @@ namespace libed2k
             m_stat.total_protocol_download();
         st.total_upload = m_stat.total_payload_upload() +
             m_stat.total_protocol_upload();
+
+        // failed bytes
+        st.total_failed_bytes = m_total_failed_bytes;
+        st.total_redundant_bytes = m_total_redundant_bytes;
 
         // transfer rate
         st.download_rate = m_stat.download_rate();
@@ -692,16 +750,16 @@ namespace libed2k
         if (m_picker->have_piece(last_piece))
         {
             int corr = filesize() % PIECE_SIZE - PIECE_SIZE;
-            assert(corr <= 0);
-            assert(corr > -int(PIECE_SIZE));
+            LIBED2K_ASSERT(corr <= 0);
+            LIBED2K_ASSERT(corr > -int(PIECE_SIZE));
             st.total_done += corr;
             if (m_picker->piece_priority(last_piece) != 0)
             {
-                assert(st.total_wanted_done >= int(PIECE_SIZE));
+                LIBED2K_ASSERT(st.total_wanted_done >= int(PIECE_SIZE));
                 st.total_wanted_done += corr;
             }
         }
-        assert(st.total_wanted >= st.total_wanted_done);
+        LIBED2K_ASSERT(st.total_wanted >= st.total_wanted_done);
 
         const std::vector<piece_picker::downloading_piece>& dl_queue =
             m_picker->get_download_queue();
@@ -717,7 +775,7 @@ namespace libed2k
             int index = i->index;
             // completed pieces are already accounted for
             if (m_picker->have_piece(index)) continue;
-            assert(i->finished <= m_picker->blocks_in_piece(index));
+            LIBED2K_ASSERT(i->finished <= m_picker->blocks_in_piece(index));
 
             for (int j = 0; j < blocks_per_piece; ++j)
             {
@@ -726,8 +784,8 @@ namespace libed2k
                 {
                     corr += block_bytes_wanted(piece_block(index, j));
                 }
-                assert(corr >= 0);
-                //assert(index != last_piece || j < m_picker->blocks_in_last_piece() ||
+                LIBED2K_ASSERT(corr >= 0);
+                //LIBED2K_ASSERT(index != last_piece || j < m_picker->blocks_in_last_piece() ||
                 //       i->info[j].state != piece_picker::block_info::state_finished);
             }
 
@@ -773,6 +831,13 @@ namespace libed2k
         }
     }
 
+    void transfer::add_failed_bytes(int b)
+    {
+        LIBED2K_ASSERT(b > 0);
+        m_total_failed_bytes += b;
+        m_ses.add_failed_bytes(b);
+    }
+
     void transfer::on_files_released(int ret, disk_io_job const& j)
     {
         // do nothing
@@ -792,7 +857,7 @@ namespace libed2k
     {
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
-        assert(j.piece == 0);
+        LIBED2K_ASSERT(j.piece == 0);
 
         if (ret == 0)
         {
