@@ -319,10 +319,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\torrent_info.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\transfer.cpp"
 				>
 			</File>
@@ -618,10 +614,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\time.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\torrent_info.hpp"
 				>
 			</File>
 			<File
