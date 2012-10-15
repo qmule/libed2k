@@ -327,6 +327,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\transfer_info.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\utf8.cpp"
 				>
 			</File>
@@ -622,6 +626,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\transfer_handle.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\transfer_info.hpp"
 				>
 			</File>
 			<File
