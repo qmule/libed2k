@@ -1,16 +1,16 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
-#include <libed2k/storage.hpp>
-#include <libed2k/peer_connection.hpp>
-#include <libed2k/session_impl.hpp>
-#include <libed2k/session.hpp>
-#include <libed2k/transfer.hpp>
-#include <libed2k/file.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/alert_types.hpp>
-#include <libed2k/server_connection.hpp>
-#include <libed2k/peer_info.hpp>
+#include "libed2k/storage.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/session.hpp"
+#include "libed2k/transfer.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/alert_types.hpp"
+#include "libed2k/server_connection.hpp"
+#include "libed2k/peer_info.hpp"
 
 namespace libed2k
 {
@@ -1744,7 +1744,7 @@ void peer_connection::on_hashset_request(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_request, hr);
-        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
+        DBG("hashset request " << hr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
@@ -1771,19 +1771,19 @@ void peer_connection::on_hashset_answer(const error_code& error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
         const std::vector<md4_hash>& hashes = ha.m_vhParts.m_collection;
-        DBG("hash set answer " << ha.m_hFile <<
-            " {count: " << hashes.size() << "} <== " << m_remote);
+        DBG("hashset answer " << ha.m_hFile << " {count: " << hashes.size() << "} <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
-        if (t->hash() == ha.m_hFile && hashes.size() > 0)
+        if (t->hash() == ha.m_hFile && t->hash() == md4_hash::fromHashset(hashes))
         {
             t->piece_hashses(hashes);
             write_start_upload(t->hash());
         }
         else
         {
+            DBG("incorrect hashset answer: {hash: " << t->hash() << ", remote: " << m_remote << "}");
             write_no_file(ha.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }
