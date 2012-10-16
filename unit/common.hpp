@@ -16,7 +16,7 @@ inline bool generate_test_file(libed2k::size_type filesize, const std::string& f
     if (of)
     {
         // generate small file
-        for (size_t i = 0; i < filesize; i++)
+        for (libed2k::size_type i = 0; i < filesize; ++i)
         {
             of << 'X';
         }

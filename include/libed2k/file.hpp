@@ -204,12 +204,17 @@ namespace libed2k
         }
     };
 
+    /**
+      * status struct contains error code and operation progress
+     */
     struct hash_status
     {
         error_code          m_error;
         std::pair<int,int>  m_progress; //!< current piece, total pieces
         hash_status() : m_error(errors::no_error){}
         hash_status(error_code ec, std::pair<int, int> p) : m_error(ec), m_progress(p) {}
+        bool valid() const { return !m_error; }
+        bool completed() const { return ((m_progress.first != 0) && (m_progress.first == m_progress.second)); }
         bool operator==(const hash_status& hs) const
         {
             return (m_error == hs.m_error) && (m_progress == hs.m_progress);
@@ -252,19 +257,17 @@ namespace libed2k
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
             m_queue.push(data);
-            m_cancelled = false;
             m_signal.notify_one();
         }
 
         void cancel()
         {
-            DBG("monitor:: cancel");
+            DBG("monitor_order {cancel}");
             boost::mutex::scoped_lock lock(m_monitorMutex);
             std::queue<Data> empty;
             std::swap(m_queue, empty );
             m_cancelled = true;
             m_signal.notify_one();
-            DBG("monitor:: completed");
         }
 
         size_t size()
@@ -273,29 +276,10 @@ namespace libed2k
             return m_queue.size();
         }
 
-        Data popWait()
+        void reset()
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
-
-            if (m_cancelled)
-            {
-                throw libed2k_exception(errors::no_error);
-            }
-
-            if(m_queue.empty())
-            {
-                m_signal.wait(lock);
-            }
-
-            if (m_queue.empty())
-            {
-                // we have exit signal
-                throw libed2k_exception(errors::no_error);
-            }
-
-            Data temp(m_queue.front());
-            m_queue.pop();
-            return temp;
+            m_cancelled = false;
         }
 
         /**

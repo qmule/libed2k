@@ -111,10 +111,11 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
 
 BOOST_AUTO_TEST_CASE(test_concurrency)
 {
-    //LOGGER_INIT();
     std::vector<boost::shared_ptr<libed2k::hash_handle> > v;
     libed2k::test_transfer_params_maker maker("");
     maker.start();
+    maker.stop();
+    maker.stop();
     maker.stop();
     maker.stop();
     maker.start();
@@ -142,7 +143,6 @@ BOOST_AUTO_TEST_CASE(test_concurrency)
 
 BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
 {
-    //LOGGER_INIT();
     test_files_holder tfh;
     const size_t sz = 5;
     const char* filename = "./test_filename";
@@ -185,9 +185,8 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
         s << filename << n;
         libed2k::hash_status hs = v[n].get()->status();
 
-        BOOST_CHECK_MESSAGE(!hs.m_error, hs.m_error.message());
-        BOOST_CHECK_MESSAGE(hs.m_progress.first != 0, s.str());
-        BOOST_CHECK_MESSAGE(hs.m_progress.first == hs.m_progress.second, s.str());
+        BOOST_CHECK(hs.valid());
+        BOOST_CHECK(hs.completed());
         BOOST_CHECK_MESSAGE(v[n].get()->atp().file_hash == tmpl[n].second, s.str());
     }
 
@@ -220,6 +219,7 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
     WAIT_TPM(tpm)
     tpm.stop();
     BOOST_CHECK(non_exists_handle.get()->status().m_error);
+    DBG("test_add_transfer_params_maker {completed}");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
