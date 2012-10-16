@@ -29,16 +29,15 @@ namespace libed2k {
         add_transfer_params() { reset(); }
 
         add_transfer_params(
-            const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
-            const bitfield& ps, const std::vector<md4_hash>& hset)
+            const md4_hash& hash, size_type nSize, const fs::path& cpath,
+            const fs::path& fpath, const std::vector<md4_hash>& hset)
         {
             reset();
             file_hash = hash;
             file_path = fpath;
             collection_path = cpath;
             file_size = nSize;
-            pieces = ps;
-            hashset = hset;
+            piece_hashses = hset;
             seed_mode = true;
         }
 
@@ -46,13 +45,11 @@ namespace libed2k {
         fs::path file_path; // in UTF8 always!
         fs::path collection_path;
         size_type  file_size;
-        bitfield pieces;
-        std::vector<md4_hash> hashset;
-        std::vector<peer_entry> peer_list;
+        std::vector<md4_hash> piece_hashses;
+        bool seed_mode;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
-        bool seed_mode;
         int num_complete_sources;
         int num_incomplete_sources;
 
@@ -66,8 +63,7 @@ namespace libed2k {
             return (file_hash == t.file_hash &&
                     file_path == t.file_path &&
                     file_size == t.file_size &&
-                    //pieces == t.pieces &&
-                    hashset == t.hashset &&
+                    piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&
                     requested == t.requested &&
                     transferred == t.transferred &&

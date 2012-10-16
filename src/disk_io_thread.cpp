@@ -135,7 +135,7 @@ namespace libed2k
         m_last_stats_flip = now;
     }
 
-    void disk_io_thread::get_cache_info(sha1_hash const& ih, std::vector<cached_piece_info>& ret) const
+    void disk_io_thread::get_cache_info(md4_hash const& ih, std::vector<cached_piece_info>& ret) const
     {
         mutex::scoped_lock l(m_piece_mutex);
         ret.clear();
@@ -143,7 +143,7 @@ namespace libed2k
         for (cache_t::const_iterator i = m_pieces.begin()
             , end(m_pieces.end()); i != end; ++i)
         {
-            torrent_info const& ti = *i->storage->info();
+            transfer_info const& ti = *i->storage->info();
             if (ti.info_hash() != ih) continue;
             cached_piece_info info;
             info.next_to_hash = i->next_block_to_hash;
@@ -159,7 +159,7 @@ namespace libed2k
         for (cache_t::const_iterator i = m_read_pieces.begin()
             , end(m_read_pieces.end()); i != end; ++i)
         {
-            torrent_info const& ti = *i->storage->info();
+            transfer_info const& ti = *i->storage->info();
             if (ti.info_hash() != ih) continue;
             cached_piece_info info;
             info.next_to_hash = i->next_block_to_hash;
@@ -1048,7 +1048,7 @@ namespace libed2k
     }
 
     // cache the entire piece and hash it
-    int disk_io_thread::read_piece_from_cache_and_hash(disk_io_job const& j, sha1_hash& h)
+    int disk_io_thread::read_piece_from_cache_and_hash(disk_io_job const& j, md4_hash& h)
     {
         LIBED2K_ASSERT(j.buffer);
 
@@ -1934,7 +1934,7 @@ namespace libed2k
                     // since we need to check the hash, this function
                     // will ignore the cache size limit (at least for
                     // reading and hashing, not for keeping it around)
-                    sha1_hash h;
+                    md4_hash h;
                     ret = read_piece_from_cache_and_hash(j, h);
 
                     // -2 means there's no space in the read cache
@@ -2217,7 +2217,7 @@ namespace libed2k
                     libed2k::ptime hash_start = libed2k::time_now_hires();
 
                     int readback = 0;
-                    sha1_hash h = j.storage->hash_for_piece_impl(j.piece, &readback);
+                    md4_hash h = j.storage->hash_for_piece_impl(j.piece, &readback);
                     if (test_error(j))
                     {
                         ret = -1;
@@ -2325,7 +2325,7 @@ namespace libed2k
                     // build a vector of all the buffers we need to free
                     // and free them all in one go
                     std::vector<char*> buffers;
-                    torrent_info const& ti = *j.storage->info();
+                    transfer_info const& ti = *j.storage->info();
                     for (cache_piece_index_t::iterator i = start; i != end; ++i)
                     {
                         int blocks_in_piece = (ti.piece_size(i->piece) + m_block_size - 1) / m_block_size;

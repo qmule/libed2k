@@ -46,7 +46,6 @@ namespace libed2k
             std::vector<md4_hash> m_vH;
             std::deque<add_transfer_params> m_vParams;
             std::deque<boost::shared_ptr<transfer> > m_transfers;
-            std::vector<peer_entry> m_peers;
             bool                m_bAfterSave;
             deadline_timer      m_timer;
         };
@@ -69,7 +68,7 @@ namespace libed2k
             update_pendings(t, false);
             m_vParams.push_back(t);
             // incorrect base pointer - using only for call constructor
-            m_transfers.push_back(boost::shared_ptr<transfer>(new transfer(*((aux::session_impl*)this), m_peers,
+            m_transfers.push_back(boost::shared_ptr<transfer>(new transfer(*((aux::session_impl*)this),
                     t.file_hash,
                     t.file_path,
                     t.file_size)));
@@ -162,7 +161,7 @@ namespace libed2k
             {
                 itr->dump();
                 kfc.m_known_file_list.add(known_file_entry(itr->file_hash,
-                        itr->hashset,
+                        itr->piece_hashses,
                         itr->file_path,
                         itr->file_size,
                         itr->accepted,

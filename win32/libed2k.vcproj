@@ -319,15 +319,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\torrent_info.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\transfer.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\transfer_handle.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\transfer_info.cpp"
 				>
 			</File>
 			<File
@@ -621,15 +621,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\torrent_info.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\include\libed2k\transfer.hpp"
 				>
 			</File>
 			<File
 				RelativePath="..\include\libed2k\transfer_handle.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\transfer_info.hpp"
 				>
 			</File>
 			<File

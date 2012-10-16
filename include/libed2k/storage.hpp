@@ -51,29 +51,24 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-
-#include <libed2k/hasher.hpp>
-#include <libed2k/torrent_info.hpp>
-#include <libed2k/piece_picker.hpp>
-#include <libed2k/intrusive_ptr_base.hpp>
-#include <libed2k/peer_request.hpp>
-#include <libed2k/config.hpp>
-#include <libed2k/filesystem.hpp>
-#include <libed2k/disk_buffer_holder.hpp>
-#include <libed2k/thread.hpp>
-#include <libed2k/storage_defs.hpp>
-#include <libed2k/file_storage.hpp>
-#include <libed2k/allocator.hpp>
-#include <libed2k/session_settings.hpp>
+#include "libed2k/hasher.hpp"
+#include "libed2k/transfer_info.hpp"
+#include "libed2k/piece_picker.hpp"
+#include "libed2k/intrusive_ptr_base.hpp"
+#include "libed2k/peer_request.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/filesystem.hpp"
+#include "libed2k/disk_buffer_holder.hpp"
+#include "libed2k/thread.hpp"
+#include "libed2k/storage_defs.hpp"
+#include "libed2k/file_storage.hpp"
+#include "libed2k/allocator.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k
 {
     struct file_pool;
-    //class session;
-}
-
-namespace libed2k
-{
     struct disk_io_job;
     struct disk_buffer_pool;
 
@@ -101,7 +96,7 @@ namespace libed2k
         partial_hash(): offset(0) {}
         // the number of bytes in the piece that has been hashed
         int offset;
-        // the sha-1 context
+        // the md4 context
         hasher h;
     };
 
@@ -300,7 +295,7 @@ namespace libed2k
 
         piece_manager(
             boost::shared_ptr<void> const& torrent
-            , boost::intrusive_ptr<torrent_info const> info
+            , boost::intrusive_ptr<transfer_info const> info
             , std::string const& path
             , file_pool& fp
             , disk_io_thread& io
@@ -310,7 +305,7 @@ namespace libed2k
 
         ~piece_manager();
 
-        boost::intrusive_ptr<torrent_info const> info() const { return m_info; }
+        boost::intrusive_ptr<transfer_info const> info() const { return m_info; }
         void write_resume_data(entry& rd) const;
 
         void async_finalize_file(int file);
@@ -425,7 +420,7 @@ namespace libed2k
         // and optionally a 'small hash' as well, the hash for
         // the partial slot. Returns the number of bytes read
         int hash_for_slot(int slot, partial_hash& h, int piece_size
-            , int small_piece_size = 0, sha1_hash* small_hash = 0);
+            , int small_piece_size = 0, md4_hash* small_hash = 0);
 
         void hint_read_impl(int piece_index, int offset, int size);
 
@@ -451,12 +446,12 @@ namespace libed2k
         // -1=error 0=ok >0=skip this many pieces
         int check_one_piece(int& have_piece);
         int identify_data(
-            sha1_hash const& large_hash
-            , sha1_hash const& small_hash
+            md4_hash const& large_hash
+            , md4_hash const& small_hash
             , int current_slot);
 
         void switch_to_full_mode();
-        sha1_hash hash_for_piece_impl(int piece, int* readback = 0);
+        md4_hash hash_for_piece_impl(int piece, int* readback = 0);
 
         int release_files_impl() { return m_storage->release_files(); }
         int delete_files_impl() { return m_storage->delete_files(); }
@@ -472,7 +467,7 @@ namespace libed2k
         void debug_log() const;
 #endif
 #endif
-        boost::intrusive_ptr<torrent_info const> m_info;
+        boost::intrusive_ptr<transfer_info const> m_info;
         file_storage const& m_files;
 
         boost::scoped_ptr<storage_interface> m_storage;
@@ -540,7 +535,7 @@ namespace libed2k
         // this maps a piece hash to piece index. It will be
         // build the first time it is used (to save time if it
         // isn't needed)
-        std::multimap<sha1_hash, int> m_hash_to_piece;
+        std::multimap<md4_hash, int> m_hash_to_piece;
 
         // this map contains partial hashes for downloading
         // pieces. This is only accessed from within the
@@ -554,7 +549,7 @@ namespace libed2k
         // torrent. This shared_ptr is here only
         // to keep the torrent object alive until
         // the piece_manager destructs. This is because
-        // the torrent_info object is owned by the torrent.
+        // the transfer_info object is owned by the torrent.
         boost::shared_ptr<void> m_torrent;
     };
 

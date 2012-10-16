@@ -900,6 +900,16 @@ bool peer_connection::is_seed() const
     return pieces_count == (int)pieces.size() && pieces_count > 0;
 }
 
+const std::vector<pending_block>& peer_connection::download_queue() const
+{
+    return m_download_queue;
+}
+
+const std::vector<pending_block>& peer_connection::request_queue() const
+{
+    return m_request_queue;
+}
+
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
     bool bRet = false;
@@ -1191,8 +1201,7 @@ void peer_connection::on_receive_data(
             if (picker.is_piece_finished(r.piece) && !was_finished)
             {
                 DBG("piece downloaded: {transfer: " << t->hash() << ", piece: " << r.piece << "}");
-                const md4_hash& hash =
-                    t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+                const md4_hash& hash = t->hash_for_piece(r.piece);
                 t->async_verify_piece(
                     r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
             }
@@ -1667,7 +1676,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 
         if (t->hash() == fr.m_hFile)
         {
-            write_file_status(t->hash(), t->verified_pieces());
+            write_file_status(t->hash(), t->have_pieces());
         }
         else
         {
@@ -1722,14 +1731,14 @@ void peer_connection::on_hashset_request(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_request, hr);
-        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
+        DBG("hashset request " << hr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset());
+            write_hashset_answer(t->hash(), t->piece_hashses());
         }
         else
         {
@@ -1749,19 +1758,19 @@ void peer_connection::on_hashset_answer(const error_code& error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
         const std::vector<md4_hash>& hashes = ha.m_vhParts.m_collection;
-        DBG("hash set answer " << ha.m_hFile <<
-            " {count: " << hashes.size() << "} <== " << m_remote);
+        DBG("hashset answer " << ha.m_hFile << " {count: " << hashes.size() << "} <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
-        if (t->hash() == ha.m_hFile && hashes.size() > 0)
+        if (t->hash() == ha.m_hFile && t->hash() == md4_hash::fromHashset(hashes))
         {
-            t->hashset(hashes);
+            t->piece_hashses(hashes);
             write_start_upload(t->hash());
         }
         else
         {
+            DBG("incorrect hashset answer: {hash: " << t->hash() << ", remote: " << m_remote << "}");
             write_no_file(ha.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }

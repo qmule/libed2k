@@ -1,4 +1,3 @@
-// ed2k session network thread
 
 #ifndef __LIBED2K_SESSION_IMPL__
 #define __LIBED2K_SESSION_IMPL__
@@ -10,19 +9,19 @@
 
 #include <boost/pool/object_pool.hpp>
 
-#include <libed2k/socket.hpp>
+#include "libed2k/socket.hpp"
 #include "libed2k/stat.hpp"
-#include <libed2k/fingerprint.hpp>
-#include <libed2k/md4_hash.hpp>
-#include <libed2k/transfer_handle.hpp>
-#include <libed2k/peer_connection_handle.hpp>
-#include <libed2k/session_settings.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/alert.hpp>
-#include <libed2k/packet_struct.hpp>
-#include <libed2k/file.hpp>
-#include <libed2k/disk_io_thread.hpp>
-#include <libed2k/file_pool.hpp>
+#include "libed2k/fingerprint.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/transfer_handle.hpp"
+#include "libed2k/peer_connection_handle.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/file.hpp"
+#include "libed2k/disk_io_thread.hpp"
+#include "libed2k/file_pool.hpp"
 #include "libed2k/connection_queue.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/io_service.hpp"
@@ -215,12 +214,12 @@ namespace libed2k {
             /**
               * add transfer to check queue
              */
-            void queue_check_torrent(boost::shared_ptr<transfer> const& t);
+            void queue_check_transfer(boost::shared_ptr<transfer> const& t);
 
             /**
               * remove transfer from check queue
              */
-            void dequeue_check_torrent(boost::shared_ptr<transfer> const& t);
+            void dequeue_check_transfer(boost::shared_ptr<transfer> const& t);
 
             void close_connection(const peer_connection* p, const error_code& ec);
 
@@ -257,6 +256,19 @@ namespace libed2k {
                     m_connections.begin(), m_connections.end(),
                     boost::bind(&boost::intrusive_ptr<peer_connection>::get, _1) == p)
                     != m_connections.end();
+            }
+
+            void add_redundant_bytes(size_type b, int reason)
+            {
+                LIBED2K_ASSERT(b > 0);
+                m_total_redundant_bytes += b;
+                m_redundant_bytes[reason] += b;
+            }
+
+            void add_failed_bytes(size_type b)
+            {
+                LIBED2K_ASSERT(b > 0);
+                m_total_failed_bytes += b;
             }
 
             std::pair<char*, int> allocate_buffer(int size);
@@ -410,6 +422,13 @@ namespace libed2k {
             int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed
             bool m_user_announced;              //!< ismod extension - share user as file
             char m_server_connection_state;     //!< last measured server connection state
+
+            // total redundant and failed bytes
+            size_type m_total_failed_bytes;
+            size_type m_total_redundant_bytes;
+
+            // redundant bytes per category
+            size_type m_redundant_bytes[7];
 
             // the main working thread
             // !!! should be last in the member list
