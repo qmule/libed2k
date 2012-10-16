@@ -5,19 +5,17 @@
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/aligned_storage.hpp>
 
-#include <libed2k/io.hpp>
-#include <libed2k/piece_block_progress.hpp>
-
-#include <libed2k/bitfield.hpp>
-#include <libed2k/disk_buffer_holder.hpp>
-#include <libed2k/base_connection.hpp>
-#include <libed2k/error_code.hpp>
-#include <libed2k/packet_struct.hpp>
-#include <libed2k/peer_request.hpp>
-#include <libed2k/piece_picker.hpp>
-#include <libed2k/peer_info.hpp>
+#include "libed2k/io.hpp"
+#include "libed2k/piece_block_progress.hpp"
+#include "libed2k/bitfield.hpp"
+#include "libed2k/disk_buffer_holder.hpp"
+#include "libed2k/base_connection.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/peer_request.hpp"
+#include "libed2k/piece_picker.hpp"
+#include "libed2k/peer_info.hpp"
 #include "libed2k/piece_block_progress.hpp"
 
 #define DECODE_PACKET(packet_struct, name)       \
@@ -212,8 +210,10 @@ namespace libed2k
         bool can_write() const;
         bool can_read(char* state = 0) const;
         bool can_request() const;
-
         bool is_seed() const;
+
+        const std::vector<pending_block>& download_queue() const;
+        const std::vector<pending_block>& request_queue() const;
 
         void send_message(const std::string& strMessage);
         void request_shared_files();

@@ -17,17 +17,14 @@ namespace libed2k
             reset();
             m_filename = filename;
             file_size = nSize;
-            pieces = ps;
-            hashset = hset;
+            piece_hashses = hset;
             seed_mode = true;
         }
 
         md4_hash file_hash;
         std::string m_filename; // full filename in UTF8 always!
         size_type  file_size;
-        bitfield pieces;
-        std::vector<md4_hash> hashset;
-        std::vector<peer_entry> peer_list;
+        std::vector<md4_hash> piece_hashses;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
@@ -45,8 +42,7 @@ namespace libed2k
             return (file_hash == t.file_hash &&
                     m_filename == t.m_filename &&
                     file_size == t.file_size &&
-                    //pieces == t.pieces &&
-                    hashset == t.hashset &&
+                    piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&
                     requested == t.requested &&
                     transferred == t.transferred &&

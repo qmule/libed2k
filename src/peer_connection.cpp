@@ -899,6 +899,16 @@ bool peer_connection::is_seed() const
     return pieces_count == (int)pieces.size() && pieces_count > 0;
 }
 
+const std::vector<pending_block>& peer_connection::download_queue() const
+{
+    return m_download_queue;
+}
+
+const std::vector<pending_block>& peer_connection::request_queue() const
+{
+    return m_request_queue;
+}
+
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
     bool bRet = false;
@@ -1190,8 +1200,7 @@ void peer_connection::on_receive_data(
             if (picker.is_piece_finished(r.piece) && !was_finished)
             {
                 DBG("piece downloaded: {transfer: " << t->hash() << ", piece: " << r.piece << "}");
-                const md4_hash& hash =
-                t->size() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+                const md4_hash& hash = t->hash_for_piece(r.piece);
                 t->async_verify_piece(
                     r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
             }
@@ -1255,17 +1264,17 @@ void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
     const session_settings& settings = m_ses.settings();
-    boost::uint32_t nVersion = m_ses.settings().m_version;
-    client_hello hello;
+    client_hello hello(m_ses.settings().user_agent,
+            net_identifier(m_ses.m_server_connection->client_id(), m_ses.settings().listen_port),
+            net_identifier(address2int(m_ses.server().address()), m_ses.server().port()),
+            m_ses.settings().client_name,
+            m_ses.settings().mod_name,
+            m_ses.settings().m_version);
+
+    // fill special fields
     hello.m_nHashLength = MD4_HASH_SIZE;
-    hello.m_hClient = settings.user_agent;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
-    hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
-    hello.m_list.add_tag(make_string_tag(settings.mod_name, ET_MOD_VERSION, true));
-    hello.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    hello.m_server_network_point.m_nIP = address2int(m_ses.server().address());
-    hello.m_server_network_point.m_nPort = m_ses.server().port();
 
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
@@ -1293,27 +1302,14 @@ void peer_connection::write_ext_hello()
 void peer_connection::write_hello_answer()
 {
     // prepare hello answer
-    client_hello_answer cha;
-    cha.m_hClient               = m_ses.settings().user_agent;
-    cha.m_network_point.m_nIP   = m_ses.m_server_connection->client_id();
-    cha.m_network_point.m_nPort = m_ses.settings().listen_port;
-
-    boost::uint32_t nVersion = 0x3c;
-    boost::uint32_t nUdpPort = 0;
-
-    cha.m_list.add_tag(
-        make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
-    cha.m_list.add_tag(make_string_tag(m_ses.settings().mod_name, ET_MOD_VERSION, true));
-    cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
-    cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
-    cha.m_server_network_point.m_nIP = m_ses.server().address().to_v4().to_ulong();
-
-    DBG("hello answer {client_hash: " << cha.m_hClient <<
-        ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<
-        ", client_port: " << cha.m_network_point.m_nPort <<
-        ", server_ip: " << int2ipstr(cha.m_server_network_point.m_nIP) <<
-        ", server_port: " << cha.m_server_network_point.m_nPort << "} ==> " << m_remote);
+    client_hello_answer cha(m_ses.settings().user_agent,
+            net_identifier(m_ses.m_server_connection->client_id(), m_ses.settings().listen_port),
+            net_identifier(address2int(m_ses.server().address()), m_ses.server().port()),
+            m_ses.settings().client_name,
+            m_ses.settings().mod_name,
+            m_ses.settings().m_version);
+    cha.dump();
+    DBG(" ==> " << m_remote);
     do_write(cha);
     m_handshake_complete = true;
 }
@@ -1679,7 +1675,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 
         if (t->hash() == fr.m_hFile)
         {
-            write_file_status(t->hash(), t->verified_pieces());
+            write_file_status(t->hash(), t->have_pieces());
         }
         else
         {
@@ -1734,14 +1730,14 @@ void peer_connection::on_hashset_request(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_request, hr);
-        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
+        DBG("hashset request " << hr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset());
+            write_hashset_answer(t->hash(), t->piece_hashses());
         }
         else
         {
@@ -1761,19 +1757,19 @@ void peer_connection::on_hashset_answer(const error_code& error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
         const std::vector<md4_hash>& hashes = ha.m_vhParts.m_collection;
-        DBG("hash set answer " << ha.m_hFile <<
-            " {count: " << hashes.size() << "} <== " << m_remote);
+        DBG("hashset answer " << ha.m_hFile << " {count: " << hashes.size() << "} <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
-        if (t->hash() == ha.m_hFile && hashes.size() > 0)
+        if (t->hash() == ha.m_hFile && t->hash() == md4_hash::fromHashset(hashes))
         {
-            t->hashset(hashes);
+            t->piece_hashses(hashes);
             write_start_upload(t->hash());
         }
         else
         {
+            DBG("incorrect hashset answer: {hash: " << t->hash() << ", remote: " << m_remote << "}");
             write_no_file(ha.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }

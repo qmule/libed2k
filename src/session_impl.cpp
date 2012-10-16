@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <boost/format.hpp>
 
-
 #include "libed2k/session_impl.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/peer_connection.hpp"
@@ -99,7 +98,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_last_connect_duration(0),
     m_last_announce_duration(0),
     m_user_announced(false),
-    m_server_connection_state(SC_OFFLINE)
+    m_server_connection_state(SC_OFFLINE),
+    m_total_failed_bytes(0),
+    m_total_redundant_bytes(0)
 {
     DBG("*** create ed2k session ***");
 
@@ -522,29 +523,23 @@ std::vector<transfer_handle> session_impl::get_transfers()
     return ret;
 }
 
-void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
+void session_impl::queue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
-    BOOST_ASSERT(t->should_check_file());
-    BOOST_ASSERT(t->state() != transfer_status::checking_files);
-    if (m_queued_for_checking.empty())
-    {
-        m_queued_for_checking.push_back(t);
-        t->start_checking();
-    }
-    else
-    {
-        t->set_state(transfer_status::queued_for_checking);
-        m_queued_for_checking.push_back(t);
-    }
+    LIBED2K_ASSERT(t->should_check_file());
+    LIBED2K_ASSERT(t->state() != transfer_status::checking_files);
+    if (m_queued_for_checking.empty()) t->start_checking();
+    else t->set_state(transfer_status::queued_for_checking);
 
-    BOOST_ASSERT(std::find(m_queued_for_checking.begin()
-        , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
+    LIBED2K_ASSERT(
+        std::find(m_queued_for_checking.begin(), m_queued_for_checking.end(), t) ==
+        m_queued_for_checking.end());
+    m_queued_for_checking.push_back(t);
 }
 
-void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
+void session_impl::dequeue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
-    BOOST_ASSERT(t->state() == transfer_status::checking_files
+    LIBED2K_ASSERT(t->state() == transfer_status::checking_files
         || t->state() == transfer_status::queued_for_checking);
 
     if (m_queued_for_checking.empty()) return;
@@ -554,13 +549,13 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
     for (check_queue_t::iterator i = m_queued_for_checking.begin()
         , end(m_queued_for_checking.end()); i != end; ++i)
     {
-        BOOST_ASSERT(*i == t || (*i)->should_check_file());
+        LIBED2K_ASSERT(*i == t || (*i)->should_check_file());
         if (*i == t) done = i;
         if (next_check == t || next_check->queue_position() > (*i)->queue_position())
             next_check = *i;
     }
     // only start a new one if we removed the one that is checking
-    BOOST_ASSERT(done != m_queued_for_checking.end());
+    LIBED2K_ASSERT(done != m_queued_for_checking.end());
     if (done == m_queued_for_checking.end()) return;
 
     if (next_check != t && t->state() == transfer_status::checking_files)
@@ -942,7 +937,7 @@ void session_impl::on_tick(error_code const& e)
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
-        BOOST_ASSERT(!t.is_aborted());
+        LIBED2K_ASSERT(!t.is_aborted());
         if (t.state() == transfer_status::checking_files) ++num_checking;
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms);
@@ -964,7 +959,7 @@ void session_impl::on_tick(error_code const& e)
     // the queued torrents
     if (num_checking == 0 && num_queued > 0)
     {
-        BOOST_ASSERT(false);
+        LIBED2K_ASSERT(false);
         check_queue_t::iterator i = std::min_element(m_queued_for_checking.begin()
             , m_queued_for_checking.end(), boost::bind(&transfer::queue_position, _1)
             < boost::bind(&transfer::queue_position, _2));

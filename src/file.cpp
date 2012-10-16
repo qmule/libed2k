@@ -4,20 +4,19 @@
 #include <map>
 #include <algorithm>
 #include <locale>
+
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/bind.hpp>
+
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
-#include "libed2k/md4_hasher.hpp"
+#include "libed2k/hasher.hpp"
 
 namespace libed2k
 {
-
-    using boost::uintmax_t;
-
     typedef std::map<std::string, EED2KFileType> SED2KFileTypeMap;
     typedef SED2KFileTypeMap::value_type SED2KFileTypeMapElement;
     static SED2KFileTypeMap ED2KFileTypesMap;
@@ -623,11 +622,11 @@ namespace libed2k
             if (m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
             {
                 // when file contain only one hash - we save main hash directly into container
-                atp.hashset.push_back(m_known_file_list.m_collection[n].m_hFile);
+                atp.piece_hashses.push_back(m_known_file_list.m_collection[n].m_hFile);
             }
             else
             {
-                atp.hashset = m_known_file_list.m_collection[n].m_hash_list.m_collection;
+                atp.piece_hashses = m_known_file_list.m_collection[n].m_hash_list.m_collection;
             }
 
             for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.count(); j++)
@@ -794,6 +793,7 @@ namespace libed2k
         FILE* m_ph;
     };
 
+
     void transfer_params_maker::process_item(hash_handle* ph)
     {
         add_transfer_params atp = ph->atp();
@@ -830,10 +830,10 @@ namespace libed2k
                         try
                         {
                             // prepare results vector
-                            atp.hashset.resize(hs.m_progress.second);
+                            atp.piece_hashses.resize(hs.m_progress.second);
                             size_type capacity = filesize;
                             char chBlock[BLOCK_SIZE];
-                            md4_hasher hasher;
+                            hasher hproc;
 
                             for (int i = 0; i < hs.m_progress.second; ++i)
                             {
@@ -849,7 +849,7 @@ namespace libed2k
                                         throw libed2k_exception(errors::file_was_truncated);
                                     }
 
-                                    hasher.update(chBlock, current_block_size);
+                                    hproc.update(chBlock, current_block_size);
                                     capacity -= current_block_size;
                                     in_piece_capacity -= current_block_size;
                                 }
@@ -858,24 +858,23 @@ namespace libed2k
                                 LIBED2K_ASSERT(hs.m_progress.first <= hs.m_progress.second);
                                 ph->set_status(hs);
 
-                                atp.hashset[i] = hasher.final();
-                                hasher.reset();
+                                atp.piece_hashses[i] = hproc.final();
+                                hproc.reset();
                             }
 
                             if (hs.m_progress.second*libed2k::PIECE_SIZE == filesize)
                             {
-                                atp.hashset.push_back(libed2k::md4_hash::terminal);
+                                atp.piece_hashses.push_back(libed2k::md4_hash::terminal);
                             }
-
                             // calculate full file hash
-                            if (atp.hashset.size() > 1)
+                            if (atp.piece_hashses.size() > 1)
                             {
-                                hasher.update(reinterpret_cast<const char*>(&atp.hashset[0]), atp.hashset.size()*MD4_HASH_SIZE);
-                                atp.file_hash = hasher.final();
+                                hproc.update(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_HASH_SIZE);
+                                atp.file_hash = hproc.final();
                             }
                             else
                             {
-                                atp.file_hash = atp.hashset[0];
+                                atp.file_hash = atp.piece_hashses[0];
                             }
                         }
                         catch(libed2k_exception& e)
@@ -893,7 +892,6 @@ namespace libed2k
 
                 // possibly we have params
                 // prepare common result
-                atp.pieces      = bitfield(piece_count(filesize), 1);
                 atp.file_size   = filesize;
                 atp.seed_mode   = true;
                 ph->set_atp(atp);

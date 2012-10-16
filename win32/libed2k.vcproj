@@ -48,6 +48,7 @@
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderThrough="pch.hpp"
+				ProgramDataBaseFileName="$(IntDir)\libed2k_vc90.pdb"
 				BrowseInformation="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -114,6 +115,7 @@
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(IntDir)\libed2k_vc90.pdb"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -323,15 +325,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\torrent_info.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\transfer.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\transfer_handle.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\transfer_info.cpp"
 				>
 			</File>
 			<File
@@ -633,15 +635,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\torrent_info.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\include\libed2k\transfer.hpp"
 				>
 			</File>
 			<File
 				RelativePath="..\include\libed2k\transfer_handle.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\transfer_info.hpp"
 				>
 			</File>
 			<File

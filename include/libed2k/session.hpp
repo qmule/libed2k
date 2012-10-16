@@ -26,6 +26,7 @@ namespace libed2k {
         class session_impl;
     }
 
+
     // Once it's created, the session object will spawn the main thread
     // that will do all the work. The main thread will be idle as long 
     // it doesn't have any transfers to participate in.

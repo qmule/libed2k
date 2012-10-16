@@ -6,8 +6,6 @@
 #include "libed2k/size_type.hpp"
 #include "libed2k/utf8.hpp"
 
-
-
 inline bool generate_test_file(libed2k::size_type filesize, const std::string& filename)
 {
     bool res = false;

@@ -6,7 +6,6 @@
 
 namespace libed2k
 {
-
     void session::init(const fingerprint& id, const char* listen_interface,
                        const session_settings& settings)
     {
