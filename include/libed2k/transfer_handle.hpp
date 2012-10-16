@@ -289,6 +289,7 @@ namespace libed2k
         int upload_limit() const;
         void set_download_limit(int limit) const;
         int download_limit() const;
+        void set_upload_mode(bool b) const;
 
         void pause() const;
         void resume() const;

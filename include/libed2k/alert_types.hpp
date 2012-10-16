@@ -483,6 +483,26 @@ namespace libed2k
         md4_hash m_hash;
     };
 
+    struct finished_transfer_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+
+        finished_transfer_alert(const transfer_handle& h, bool has_picker) : m_handle(h), m_had_picker(has_picker) {}
+
+        virtual int category() const { return static_category; }
+
+        virtual std::auto_ptr<alert> clone() const
+        {
+            return std::auto_ptr<alert>(new finished_transfer_alert(*this));
+        }
+
+        virtual std::string message() const { return std::string("transfer finished"); }
+        virtual char const* what() const { return "transfer finished"; }
+
+        transfer_handle m_handle;
+        bool            m_had_picker;
+    };
+
     struct file_renamed_alert : alert
     {
         const static int static_category = alert::status_notification;
@@ -641,7 +661,7 @@ namespace libed2k
 
         virtual std::string message() const
         { return m_handle.is_valid()?m_handle.hash().toString():" - "; }
-
+        virtual char const* what() const { return "transfer alert"; }
         transfer_handle m_handle;
     };
 
@@ -674,16 +694,9 @@ namespace libed2k
             : transfer_alert(h)
             , error(e)
         {
-#ifndef LIBED2K_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         error_code error;
-
-#ifndef LIBED2K_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new save_resume_data_failed_alert(*this)); }
@@ -705,16 +718,9 @@ namespace libed2k
             : transfer_alert(h)
             , error(e)
         {
-#ifndef LIBED2K_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         error_code error;
-
-#ifndef LIBED2K_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new fastresume_rejected_alert(*this)); }
@@ -737,17 +743,10 @@ namespace libed2k
             , file(f)
             , error(e)
         {
-#ifndef LIBED2K_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         std::string file;
         error_code error;
-
-#ifndef LIBED2K_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new file_error_alert(*this)); }

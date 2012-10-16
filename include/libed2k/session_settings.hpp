@@ -16,14 +16,15 @@ namespace libed2k
             server_timeout(220)
             , peer_timeout(120)
             , peer_connect_timeout(7)
-            , block_request_timeout(BLOCK_SIZE / 1024)
+            , block_request_timeout(10)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
-            , send_buffer_watermark(100 * 1024)
+            , send_buffer_watermark(3 * BLOCK_SIZE)
             , server_port(4661)
             , listen_port(4662)
             , client_name("libed2k")
+            , mod_name("libed2k")
             , server_keep_alive_timeout(200)
             , server_reconnect_timeout(5)
             , max_peerlist_size(4000)
@@ -56,6 +57,7 @@ namespace libed2k
             , disk_cache_algorithm(avoid_readback)
             , read_cache_line_size((32*16*1024) / BLOCK_SIZE)
             , write_cache_line_size((32*16*1024) / BLOCK_SIZE)
+            , optimistic_disk_retry(10 * 60)
             , disable_hash_checks(false)
             , allow_reordered_disk_operations(true)
 #ifndef LIBED2K_DISABLE_MLOCK
@@ -114,6 +116,8 @@ namespace libed2k
         int listen_port;
         // ed2k client name
         std::string client_name;
+        // ed2k mod program name
+        std::string mod_name;
         int server_keep_alive_timeout;
         // reconnect to server after fail, -1 - do nothing
         int server_reconnect_timeout;
@@ -274,6 +278,10 @@ namespace libed2k
         // blocks is found in the write cache, it
         // is flushed immediately
         int write_cache_line_size;
+
+        // this is the number of seconds a disk failure
+        // occurs until libtorrent will re-try.
+        int optimistic_disk_retry;
 
         // when set to true, all data downloaded from
         // peers will be assumed to be correct, and not

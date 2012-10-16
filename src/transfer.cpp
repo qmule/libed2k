@@ -45,9 +45,12 @@ namespace libed2k
         m_filesize(p.file_size),
         m_verified(p.pieces),
         m_hashset(p.hashset),
+        m_upload_mode_time(0),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
+        m_upload_mode(false),
+        m_auto_managed(false),
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this, p.peer_list),
@@ -353,11 +356,7 @@ namespace libed2k
     void transfer::completed()
     {
         m_picker.reset();
-
         set_state(transfer_status::seeding);
-        //if (!m_announcing) return;
-
-        //announce_with_tracker();
     }
 
     // called when torrent is finished (all interesting
@@ -365,8 +364,6 @@ namespace libed2k
     void transfer::finished()
     {
         DBG("file transfer '" << m_name << "' completed");
-        //TODO: post alert
-
         set_state(transfer_status::finished);
         //set_queue_position(-1);
 
@@ -384,6 +381,8 @@ namespace libed2k
             if (p->remote_pieces().count() == int(num_have()))
                 seeds.push_back(p);
         }
+
+        m_ses.m_alerts.post_alert_should(finished_transfer_alert(handle(), seeds.size() > 0));
         std::for_each(seeds.begin(), seeds.end(),
                       boost::bind(&peer_connection::disconnect, _1, errors::transfer_finished, 0));
 
@@ -399,6 +398,41 @@ namespace libed2k
         // these stats are propagated to the session
         // stats the next time second_tick is called
         m_stat += s;
+    }
+
+    void transfer::set_upload_mode(bool b)
+    {
+        if (b == m_upload_mode) return;
+
+        m_upload_mode = b;
+
+        //state_updated();
+        //send_upload_only();
+
+        if (m_upload_mode)
+        {
+            // clear request queues of all peers
+            for (std::set<peer_connection*>::iterator i = m_connections.begin(),
+                     end(m_connections.end()); i != end; ++i)
+            {
+                peer_connection* p = (*i);
+                p->cancel_all_requests();
+            }
+            // this is used to try leaving upload only mode periodically
+            m_upload_mode_time = 0;
+        }
+        else
+        {
+            // TODO: reset last_connected, to force fast reconnect after leaving upload mode
+
+            // send_block_requests on all peers
+            for (std::set<peer_connection*>::iterator i = m_connections.begin(),
+                     end(m_connections.end()); i != end; ++i)
+            {
+                peer_connection* p = (*i);
+                p->send_block_requests();
+            }
+        }
     }
 
     void transfer::pause()
@@ -567,6 +601,7 @@ namespace libed2k
         transfer_status st;
 
         st.seed_mode = m_seed_mode;
+        st.upload_mode = m_upload_mode;
         st.paused = m_paused;
 
         bytes_done(st);
@@ -786,12 +821,6 @@ namespace libed2k
         m_ses.m_alerts.post_alert_should(paused_transfer_alert(handle()));
     }
 
-    void transfer::on_disk_error(disk_io_job const& j, peer_connection* c)
-    {
-        if (!j.error) return;
-        ERR("disk error: '" << j.error.message() << " in file " << j.error_file);
-    }
-
     void transfer::init()
     {
         DBG("transfer::init {" << convert_to_native(m_name) << "}");
@@ -968,6 +997,15 @@ namespace libed2k
     {
         if (m_minute_timer.expires() && want_more_peers()) request_peers();
 
+        // if we're in upload only mode and we're auto-managed
+        // leave upload mode every 10 minutes hoping that the error
+        // condition has been fixed
+        if (m_upload_mode && m_auto_managed &&
+            int(m_upload_mode_time) >= m_ses.settings().optimistic_disk_retry)
+        {
+            set_upload_mode(false);
+        }
+
         if (is_paused())
         {
             // let the stats fade out to 0
@@ -994,6 +1032,8 @@ namespace libed2k
             }
         }
 
+        if (m_upload_mode) ++m_upload_mode_time;
+
         accumulator += m_stat;
         m_total_uploaded += m_stat.last_payload_uploaded();
         m_total_downloaded += m_stat.last_payload_downloaded();
@@ -1019,21 +1059,33 @@ namespace libed2k
         // called, and the piece is no longer finished.
         // in this case, we have to ignore the fact that
         // it passed the check
-        if (!m_picker->is_piece_finished(index)) return;
+        if (!m_picker->is_piece_finished(index))
+        {
+            ERR("piece was checked but have failed being written: "
+                "{transfer: " << hash() << ", piece: " << index << "}");
+            return;
+        }
 
         if (passed_hash_check == 0)
         {
             // the following call may cause picker to become invalid
             // in case we just became a seed
+            DBG("piece passed hash check: "
+                "{transfer: " << hash() << ", piece: " << index << "}");
             piece_passed(index);
         }
         else if (passed_hash_check == -2)
         {
+            DBG("piece failed hash check: "
+                "{transfer: " << hash() << ", piece: " << index << "}");
             // piece_failed() will restore the piece
             piece_failed(index);
         }
         else
         {
+            ERR("piece check failed with unexpected error: "
+                "{transfer: " << hash() << ", piece: " << index <<
+                ", error: " << passed_hash_check << "}");
             m_picker->restore_piece(index);
             restore_piece_state(index);
         }
@@ -1447,20 +1499,32 @@ namespace libed2k
     {
         if (!j.error) return;
 
-        ERR("disk error: '" << j.error.message()
-            << " in file " << j.error_file);
+        ERR("disk error: '" << j.error.message() << "' in file " << j.error_file);
 
         LIBED2K_ASSERT(j.piece >= 0);
 
-        piece_block block_finished(j.piece, div_ceil(j.offset, BLOCK_SIZE));
+        piece_block block(j.piece, j.offset/BLOCK_SIZE);
 
         if (j.action == disk_io_job::write)
         {
-            // we failed to write j.piece to disk tell the piece picker
-            if (has_picker() && j.piece >= 0) picker().write_failed(block_finished);
+            ERR("block write failed: {piece: " <<  block.piece_index <<
+                ", block: " << block.block_index << " }");
+            if (!have_piece(block.piece_index)) // TODO: this 'if' caused by fake data checking
+            {
+                // we failed to write j.piece to disk tell the piece picker
+                if (has_picker() && j.piece >= 0) picker().write_failed(block);
+            }
         }
 
-        if (j.error == error_code(boost::system::errc::not_enough_memory, get_posix_category()))
+        if (j.error ==
+#if BOOST_VERSION == 103500
+            error_code(boost::system::posix_error::not_enough_memory, get_posix_category())
+#elif BOOST_VERSION > 103500
+            error_code(boost::system::errc::not_enough_memory, get_posix_category())
+#else
+            asio::error::no_memory
+#endif
+            )
         {
             m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
 
@@ -1479,7 +1543,7 @@ namespace libed2k
             // and the filesystem doesn't support sparse files, only zero the priorities
             // of the pieces that are at the tails of all files, leaving everything
             // up to the highest written piece in each file
-            //set_upload_mode(true); //TODO ?
+            set_upload_mode(true);
             return;
         }
 

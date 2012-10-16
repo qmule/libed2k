@@ -38,7 +38,6 @@ namespace libed2k {
 
     namespace aux
     {
-
         struct listen_socket_t
         {
             listen_socket_t(): external_port(0), ssl(false) {}
@@ -63,10 +62,17 @@ namespace libed2k {
             boost::shared_ptr<socket_acceptor> sock;
         };
 
+        // used to initialize the g_current_time before
+        // anything else
+        struct initialize_timer
+        {
+            initialize_timer();
+        };
+
         /**
-          * class used for testing
+         * class used for testing
          */
-        class session_impl_base : boost::noncopyable
+        class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
             typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
@@ -366,8 +372,6 @@ namespace libed2k {
             int m_max_connections;
 
             duration_timer m_second_timer;
-            ptime m_last_second_tick;
-
             // the timer used to fire the tick
             deadline_timer m_timer;
 
