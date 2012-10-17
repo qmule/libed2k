@@ -227,7 +227,7 @@ namespace libed2k
     class hash_handle
     {
     public:
-        hash_handle(const std::string& filename);
+        hash_handle(const std::string& filepath);
         void set_atp(const add_transfer_params& atp);
         add_transfer_params atp();
         hash_status status();
@@ -313,7 +313,7 @@ namespace libed2k
     class transfer_params_maker
     {
     public:
-        transfer_params_maker(const std::string& known_filename);
+        transfer_params_maker(const std::string& known_filepath);
         virtual ~transfer_params_maker();
         bool start();
         void stop();
@@ -321,13 +321,13 @@ namespace libed2k
 
         size_t queue_size() { return m_order.size(); }
         /**
-          * @param filename in UTF-8
+          * @param filepath in UTF-8
          */
-        boost::shared_ptr<hash_handle> make_transfer_params(const std::string& filename);
+        boost::shared_ptr<hash_handle> make_transfer_params(const std::string& filepath);
     protected:
         virtual void process_item(hash_handle* ph);
     private:
-        std::string m_known_filename;
+        std::string m_known_filepath;
         known_file_collection m_kfc;
         boost::shared_ptr<boost::thread> m_thread;
         boost::mutex m_mutex;

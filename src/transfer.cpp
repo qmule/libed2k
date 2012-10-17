@@ -17,13 +17,13 @@ namespace libed2k
       * fake constructor
      */
     transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                       const md4_hash& hash, const std::string& filename, size_type size):
+                       const md4_hash& hash, const std::string& filepath, size_type size):
         m_ses(ses),
-        m_save_path(parent_path(filename)),
+        m_save_path(parent_path(filepath)),
         m_complete(-1),
         m_incomplete(-1),
         m_policy(this),
-        m_info(new transfer_info(hash, libed2k::filename(filename), size)),
+        m_info(new transfer_info(hash, filename(filepath), size)),
         m_minute_timer(minutes(1), min_time())
     {}
 
@@ -36,7 +36,7 @@ namespace libed2k
         m_sequential_download(false),
         m_sequence_number(seq),
         m_net_interface(net_interface.address(), 0),
-        m_save_path(parent_path(p.m_filename)),
+        m_save_path(parent_path(p.m_filepath)),
         m_upload_mode_time(0),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -46,7 +46,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this),
-        m_info(new transfer_info(p.file_hash, libed2k::filename(p.m_filename), p.file_size, p.piece_hashses)),
+        m_info(new transfer_info(p.file_hash, filename(p.m_filepath), p.file_size, p.piece_hashses)),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),

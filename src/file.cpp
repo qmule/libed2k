@@ -608,10 +608,10 @@ namespace libed2k
                 continue;
             }
 
-            // ok, we have equal change time - let's check filename
-            if (bom_filter(filename(atp.m_filename)) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
+            // ok, we have equal change time - let's check filepath
+            if (bom_filter(filename(atp.m_filepath)) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
             {
-                DBG("orig: " << convert_to_native(atp.m_filename)
+                DBG("orig: " << convert_to_native(atp.m_filepath)
                     << " isn't equal: " << convert_to_native(bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
                 continue;
             }
@@ -666,7 +666,7 @@ namespace libed2k
                 }
             }
 
-            DBG("metadata was migrated for {" << convert_to_native(atp.m_filename) << "}");
+            DBG("metadata was migrated for {" << convert_to_native(atp.m_filepath) << "}");
             break;
         }
 
@@ -693,7 +693,7 @@ namespace libed2k
     transfer_resume_data::transfer_resume_data()
     {}
 
-    transfer_params_maker::transfer_params_maker(const std::string& known_filename) : m_known_filename(known_filename)
+    transfer_params_maker::transfer_params_maker(const std::string& known_filepath) : m_known_filepath(known_filepath)
     {
     }
 
@@ -724,19 +724,19 @@ namespace libed2k
     }
 
 
-    boost::shared_ptr<hash_handle> transfer_params_maker::make_transfer_params(const std::string& filename)
+    boost::shared_ptr<hash_handle> transfer_params_maker::make_transfer_params(const std::string& filepath)
     {
-        boost::shared_ptr<hash_handle> ptr(new hash_handle(filename));
+        boost::shared_ptr<hash_handle> ptr(new hash_handle(filepath));
         m_order.push(ptr);
         return (ptr);
     }
 
     void transfer_params_maker::operator()()
     {
-        // when we have known filename path - attempt to extract its content
-        if (!m_known_filename.empty())
+        // when we have known filepath path - attempt to extract its content
+        if (!m_known_filepath.empty())
         {
-            std::ifstream fstream(convert_to_native(m_known_filename).c_str(), std::ios_base::binary | std::ios_base::in);
+            std::ifstream fstream(convert_to_native(m_known_filepath).c_str(), std::ios_base::binary | std::ios_base::in);
 
             if (fstream)
             {
@@ -774,9 +774,9 @@ namespace libed2k
     class shared_file
     {
     public:
-        shared_file(const std::string& filename)
+        shared_file(const std::string& filepath)
         {
-            m_ph = fopen(filename.c_str(), "rb");
+            m_ph = fopen(filepath.c_str(), "rb");
         }
 
         ~shared_file()
@@ -800,11 +800,11 @@ namespace libed2k
         hash_status hs;
 
         file_status fs;
-        stat_file(atp.m_filename, &fs, hs.m_error);
+        stat_file(atp.m_filepath, &fs, hs.m_error);
 
         if (!hs.m_error)
         {
-            size_type filesize = file_size(atp.m_filename);
+            size_type filesize = file_size(atp.m_filepath);
 
             if (filesize != 0)
             {
@@ -812,17 +812,17 @@ namespace libed2k
                 ph->set_status(hs); // initialize progress
                 LIBED2K_ASSERT(hs.m_progress.second != 0);
 
-                DBG("stat file: {" << convert_to_native(atp.m_filename) << ", pieces: " << hs.m_progress.second  << "}");
+                DBG("stat file: {" << convert_to_native(atp.m_filepath) << ", pieces: " << hs.m_progress.second  << "}");
 
                 if (m_kfc.extract_transfer_params(fs.mtime, atp))
                 {
-                    DBG("{known file entry was found for: " << convert_to_native(atp.m_filename) << "}");
+                    DBG("{known file entry was found for: " << convert_to_native(atp.m_filepath) << "}");
                     hs.m_progress.first = hs.m_progress.second; // set progress to completed
                 }
                 else
                 {
                     LIBED2K_ASSERT(hs.m_progress.second > 0);
-                    shared_file sh(convert_to_native(atp.m_filename));
+                    shared_file sh(convert_to_native(atp.m_filepath));
 
                     if (sh.get())
                     {
@@ -879,7 +879,7 @@ namespace libed2k
                         }
                         catch(libed2k_exception& e)
                         {
-                            DBG("file {" << convert_to_native(atp.m_filename) << "} was truncated");
+                            DBG("file {" << convert_to_native(atp.m_filepath) << "} was truncated");
                             hs.m_error = e.error();
                         }
                     }
@@ -905,9 +905,9 @@ namespace libed2k
         ph->set_status(hs);
     }
 
-    hash_handle::hash_handle(const std::string& filename) : m_cancelled(false)
+    hash_handle::hash_handle(const std::string& filepath) : m_cancelled(false)
     {
-        m_atp.m_filename = filename;
+        m_atp.m_filepath = filepath;
     }
 
     void hash_handle::set_atp(const add_transfer_params& atp)

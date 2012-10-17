@@ -467,7 +467,7 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const std::string& filenam
 
     while(itr != m_transfers.end())
     {
-        if (combine_path(itr->second->save_path(), itr->second->save_path()) == filename)
+        if (combine_path(itr->second->save_path(), itr->second->name()) == filename)
         {
             return itr->second;
         }
@@ -577,7 +577,7 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
 transfer_handle session_impl::add_transfer(
     add_transfer_params const& params, error_code& ec)
 {
-    APP("add transfer: {hash: " << params.file_hash << ", path: " << convert_to_native(params.m_filename)
+    APP("add transfer: {hash: " << params.file_hash << ", path: " << convert_to_native(params.m_filepath)
         << ", size: " << params.file_size << "}");
 
     if (is_aborted())

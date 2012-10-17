@@ -11,21 +11,21 @@ namespace libed2k
         add_transfer_params() { reset(); }
 
         /**
-          * @param filename - it is path+name UTF8
+          * @param filepath - UTF8
          */
         add_transfer_params(
-            const md4_hash& hash, size_t nSize, const std::string& filename,
+            const md4_hash& hash, size_t nSize, const std::string& filepath,
             const bitfield& ps, const std::vector<md4_hash>& hset)
         {
             reset();
-            m_filename = filename;
+            m_filepath = filepath;
             file_size = nSize;
             piece_hashses = hset;
             seed_mode = true;
         }
 
         md4_hash file_hash;
-        std::string m_filename; // full filename in UTF8 always!
+        std::string m_filepath; // full filename in UTF8 always!
         size_type  file_size;
         std::vector<md4_hash> piece_hashses;
         std::vector<char>* resume_data;
@@ -43,7 +43,7 @@ namespace libed2k
         bool operator==(const add_transfer_params& t) const
         {
             return (file_hash == t.file_hash &&
-                    m_filename == t.m_filename &&
+                    m_filepath == t.m_filepath &&
                     file_size == t.file_size &&
                     piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&

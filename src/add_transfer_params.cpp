@@ -8,7 +8,7 @@ namespace libed2k
         {
             DBG("add_transfer_params::dump");
             DBG("file hash: " << file_hash << " all hashes size: " << piece_hashses.size());
-            DBG("file full name: " << convert_to_native(m_filename));
+            DBG("file path: " << convert_to_native(m_filepath));
             DBG("file size: " << file_size);
             DBG("accepted: " << accepted <<
                 " requested: " << requested <<
@@ -18,6 +18,7 @@ namespace libed2k
 
         void add_transfer_params::reset()
         {
+            m_filepath.clear();
             file_size = 0;
             seed_mode = false;
             num_complete_sources = -1;
