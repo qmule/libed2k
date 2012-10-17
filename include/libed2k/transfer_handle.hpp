@@ -270,7 +270,7 @@ namespace libed2k
 
         md4_hash hash() const;
         std::string name() const;
-        std::string path() const;
+        std::string save_path() const;
         size_type size() const;
         bool is_seed() const;
         bool is_finished() const;
@@ -297,7 +297,6 @@ namespace libed2k
         size_t num_pieces() const;
         int num_peers() const;
         int num_seeds() const;
-        std::string save_path() const;
         void save_resume_data() const;
 
         void move_storage(std::string const& save_path) const;

@@ -72,9 +72,9 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(name(), std::string());
     }
 
-    std::string transfer_handle::path() const
+    std::string transfer_handle::save_path() const
     {
-        LIBED2K_FORWARD_RETURN(path(), std::string());
+        LIBED2K_FORWARD_RETURN(save_path(), std::string());
     }
 
     size_type transfer_handle::size() const
@@ -190,11 +190,6 @@ namespace libed2k
     int transfer_handle::num_seeds() const
     {
         LIBED2K_FORWARD_RETURN(num_seeds(), 0);
-    }
-
-    std::string transfer_handle::save_path() const
-    {
-        LIBED2K_FORWARD_RETURN(path(), std::string());
     }
 
     void transfer_handle::save_resume_data() const

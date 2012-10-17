@@ -10,7 +10,6 @@
 #include "libed2k/file.hpp"
 #include "libed2k/alert_types.hpp"
 
-
 namespace libed2k
 {
 
@@ -20,12 +19,11 @@ namespace libed2k
     transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
                        const md4_hash& hash, const std::string& filename, size_type size):
         m_ses(ses),
-        m_name(libed2k::filename(filename)),
-        m_path(parent_path(filename)),
+        m_save_path(parent_path(filename)),
         m_complete(-1),
         m_incomplete(-1),
         m_policy(this),
-        m_info(new transfer_info(hash, filename, size)),
+        m_info(new transfer_info(hash, libed2k::filename(filename), size)),
         m_minute_timer(minutes(1), min_time())
     {}
 
@@ -38,8 +36,7 @@ namespace libed2k
         m_sequential_download(false),
         m_sequence_number(seq),
         m_net_interface(net_interface.address(), 0),
-        m_name(libed2k::filename(p.m_filename)),
-        m_path(parent_path(p.m_filename)),
+        m_save_path(parent_path(p.m_filename)),
         m_upload_mode_time(0),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -49,7 +46,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this),
-        m_info(new transfer_info(p.file_hash, p.m_filename, p.file_size, p.piece_hashses)),
+        m_info(new transfer_info(p.file_hash, libed2k::filename(p.m_filename), p.file_size, p.piece_hashses)),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),
@@ -72,7 +69,10 @@ namespace libed2k
     }
 
     const md4_hash& transfer::hash() const { return m_info->info_hash(); }
+    const md4_hash transfer::collection_hash() const { return md4_hash(); }
     size_type transfer::size() const { return m_info->file_at(0).size; }
+    const std::string& transfer::name() const { return m_info->name(); }
+    const std::string& transfer::save_path() const { return m_save_path; }
     const std::vector<md4_hash>& transfer::piece_hashses() const { return m_info->piece_hashses(); }
     void transfer::piece_hashses(const std::vector<md4_hash>& hs) {
         LIBED2K_ASSERT(hs.size() > 0);
@@ -102,7 +102,7 @@ namespace libed2k
                              m_resume_entry, ec) != 0)
             {
                 ERR("fast resume parse error: "
-                    "{file: " << m_name << ", error: " << ec.message() << "}");
+                    "{file: " << name() << ", error: " << ec.message() << "}");
                 std::vector<char>().swap(m_resume_data);
                 m_ses.m_alerts.post_alert_should(
                     fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
@@ -378,7 +378,7 @@ namespace libed2k
     // pieces have been downloaded)
     void transfer::finished()
     {
-        DBG("file transfer '" << hash() << ", " << m_name << "' completed");
+        DBG("file transfer '" << hash() << ", " << name() << "' completed");
         set_state(transfer_status::finished);
         //set_queue_position(-1);
 
@@ -521,14 +521,14 @@ namespace libed2k
         else
         {
             m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), save_path));
-            m_path = save_path;
+            m_save_path = save_path;
         }
     }
 
     bool transfer::rename_file(const std::string& name)
     {
         DBG("renaming file in transfer {hash: " << hash() <<
-            ", from: " << m_name << ", to: " << name << "}");
+            ", from: " << transfer::name() << ", to: " << name << "}");
         if (!m_owning_storage.get()) return false;
 
         m_owning_storage->async_rename_file(
@@ -538,7 +538,7 @@ namespace libed2k
 
     void transfer::delete_files()
     {
-        DBG("deleting file in transfer {hash: " << hash() << ", files: " << m_name << "}");
+        DBG("deleting file in transfer {hash: " << hash() << ", files: " << name() << "}");
         disconnect_all(errors::transfer_removed);
 
         if (m_owning_storage.get())
@@ -858,7 +858,6 @@ namespace libed2k
         {
             DBG("file successfully renamed {hash: " << hash() << ", to: " << j.str << "}");
             m_ses.m_alerts.post_alert_should(file_renamed_alert(handle(), j.str));
-            m_name = j.str;
         }
         else
         {
@@ -876,7 +875,7 @@ namespace libed2k
         {
             DBG("storage successfully moved {hash: " << hash() << ", to: " << j.str << "}");
             m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), j.str));
-            m_path = j.str;
+            m_save_path = j.str;
         }
         else
         {
@@ -902,7 +901,6 @@ namespace libed2k
     {
         DBG("init transfer: {hash: " << hash() << ", file: " << name() << "}");
 
-
         // we have only one file with normal priority
         std::vector<boost::uint8_t> file_prio;
         file_prio.push_back(1);
@@ -910,7 +908,7 @@ namespace libed2k
         // the shared_from_this() will create an intentional
         // cycle of ownership, see the hpp file for description.
         m_owning_storage = new piece_manager(
-            shared_from_this(), m_info, m_path, m_ses.m_filepool,
+            shared_from_this(), m_info, m_save_path, m_ses.m_filepool,
             m_ses.m_disk_thread, default_storage_constructor, m_storage_mode, file_prio);
         m_storage = m_owning_storage.get();
 
@@ -1246,7 +1244,7 @@ namespace libed2k
             entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
         }
 
-        entry.m_list.add_tag(make_string_tag(m_name, FT_FILENAME, true));
+        entry.m_list.add_tag(make_string_tag(name(), FT_FILENAME, true));
 
         __file_size fs;
         fs.nQuadPart = size();
@@ -1262,7 +1260,7 @@ namespace libed2k
         if (m_ses.m_server_connection->tcp_flags() & SRV_TCPFLG_TYPETAGINTEGER)
         {
             // Send integer file type tags to newer servers
-            boost::uint32_t eFileType = GetED2KFileTypeSearchID(GetED2KFileTypeID(m_name));
+            boost::uint32_t eFileType = GetED2KFileTypeSearchID(GetED2KFileTypeID(name()));
 
             if (eFileType >= ED2KFT_AUDIO && eFileType <= ED2KFT_EMULECOLLECTION)
             {
@@ -1277,7 +1275,7 @@ namespace libed2k
             //  - newer servers, in case there is no integer type available for the file type (e.g. emulecollection)
             //  - older servers
             //  - all clients
-            std::string strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(m_name)));
+            std::string strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(name())));
 
             if (!strED2KFileType.empty())
             {

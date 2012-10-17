@@ -467,7 +467,7 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const std::string& filenam
 
     while(itr != m_transfers.end())
     {
-        if (combine_path(itr->second->path(), itr->second->name()) == filename)
+        if (combine_path(itr->second->save_path(), itr->second->save_path()) == filename)
         {
             return itr->second;
         }

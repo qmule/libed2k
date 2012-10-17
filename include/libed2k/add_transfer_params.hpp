@@ -10,6 +10,9 @@ namespace libed2k
     public:
         add_transfer_params() { reset(); }
 
+        /**
+          * @param filename - it is path+name UTF8
+         */
         add_transfer_params(
             const md4_hash& hash, size_t nSize, const std::string& filename,
             const bitfield& ps, const std::vector<md4_hash>& hset)

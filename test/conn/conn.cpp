@@ -625,7 +625,7 @@ int main(int argc, char* argv[])
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), libed2k::combine_path(rd->m_handle.path(), rd->m_handle.name()), rd->m_handle.size(), vFastResumeData);
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), libed2k::combine_path(rd->m_handle.save_path(), rd->m_handle.name()), rd->m_handle.size(), vFastResumeData);
 
                     // prepare storage filename
                     std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
@@ -706,7 +706,7 @@ int main(int argc, char* argv[])
                 for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
                 {
                     DBG("transfer: {" << i->hash().toString() << "}{"
-                            << libed2k::convert_to_native(i->path()) << "}{"
+                            << libed2k::convert_to_native(i->save_path()) << "}{"
                             << libed2k::convert_to_native(i->name()) << "}{"
                             << i->size() << "}{"
                             << libed2k::transfer_status2string(i->status()) << "}{A/S:" << ((i->is_announced())?"Y":"N") << "}");

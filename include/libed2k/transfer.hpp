@@ -53,10 +53,10 @@ namespace libed2k
 
         const md4_hash& hash() const;
         // TODO temp code - it will be part of new share files engine
-        const md4_hash collection_hash() const { return md4_hash(); }
+        const md4_hash collection_hash() const;
         size_type size() const;
-        const std::string& name() const { return m_name; }
-        const std::string& path() const { return m_path; }
+        const std::string& name() const;
+        const std::string& save_path() const;
 
 
         const std::vector<md4_hash>& piece_hashses() const;
@@ -310,11 +310,7 @@ namespace libed2k
         // the network interface all outgoing connections
         // are opened through
         tcp::endpoint m_net_interface;
-
-        std::string m_name;     //!< file name
-        std::string m_path;     //!< file save path
-
-
+        std::string   m_save_path;     //!< file save path
         // the number of seconds we've been in upload mode
         unsigned int m_upload_mode_time;
 
