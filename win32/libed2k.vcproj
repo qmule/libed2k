@@ -515,10 +515,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\md4_hasher.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\include\libed2k\packet_struct.hpp"
 				>
 			</File>
