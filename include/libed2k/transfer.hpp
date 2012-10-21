@@ -354,6 +354,8 @@ namespace libed2k {
         size_type m_total_uploaded;
         size_type m_total_downloaded;
         bool m_queued_for_checking;
+
+        // progress parts per million (the number of millionths of completeness)
         int m_progress_ppm;
 
         // the number of bytes that has been
