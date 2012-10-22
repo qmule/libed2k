@@ -2,15 +2,13 @@
 #define __LIBED2K_ALERT_TYPES__
 
 // for print_endpoint
-#include <libtorrent/socket.hpp>
-
-
-#include "libed2k/alert.hpp"
-#include "libed2k/types.hpp"
-#include "libed2k/error_code.hpp"
-#include "libed2k/packet_struct.hpp"
-#include "libed2k/transfer_handle.hpp"
-
+#include <libed2k/socket.hpp>
+#include <libed2k/alert.hpp>
+#include <libed2k/error_code.hpp>
+#include <libed2k/packet_struct.hpp>
+#include <libed2k/transfer_handle.hpp>
+#include "libed2k/socket_io.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k
 {
@@ -175,7 +173,7 @@ namespace libed2k
         {
             char ret[200];
             snprintf(ret, sizeof(ret), "mule listening on %s failed: %s"
-                , libtorrent::print_endpoint(endpoint).c_str(), error.message().c_str());
+                , libed2k::print_endpoint(endpoint).c_str(), error.message().c_str());
             return ret;
         }
 
@@ -696,16 +694,9 @@ namespace libed2k
             : transfer_alert(h)
             , error(e)
         {
-#ifndef TORRENT_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         error_code error;
-
-#ifndef TORRENT_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new save_resume_data_failed_alert(*this)); }
@@ -720,23 +711,16 @@ namespace libed2k
         }
     };
 
-    struct TORRENT_EXPORT fastresume_rejected_alert: transfer_alert
+    struct LIBED2K_EXPORT fastresume_rejected_alert: transfer_alert
     {
         fastresume_rejected_alert(transfer_handle const& h
             , error_code const& e)
             : transfer_alert(h)
             , error(e)
         {
-#ifndef TORRENT_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         error_code error;
-
-#ifndef TORRENT_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new fastresume_rejected_alert(*this)); }
@@ -749,27 +733,15 @@ namespace libed2k
         }
     };
 
-    struct TORRENT_EXPORT file_error_alert: transfer_alert
+    struct LIBED2K_EXPORT file_error_alert: transfer_alert
     {
-        file_error_alert(
-            std::string const& f
-            , transfer_handle const& h
-            , error_code const& e)
-            : transfer_alert(h)
-            , file(f)
-            , error(e)
+        file_error_alert(std::string const& f, transfer_handle const& h, error_code const& e)
+            : transfer_alert(h), file(f), error(e)
         {
-#ifndef TORRENT_NO_DEPRECATE
-            msg = error.message();
-#endif
         }
 
         std::string file;
         error_code error;
-
-#ifndef TORRENT_NO_DEPRECATE
-        std::string msg;
-#endif
 
         virtual std::auto_ptr<alert> clone() const
         { return std::auto_ptr<alert>(new file_error_alert(*this)); }
@@ -800,7 +772,26 @@ namespace libed2k
         {
             return transfer_alert::message() + " checked";
         }
-  };
+    };
+
+    struct hash_failed_alert: transfer_alert
+    {
+        hash_failed_alert(transfer_handle const& h, int failed_index)
+            : transfer_alert(h), index(failed_index)
+        {}
+
+        int index;
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new hash_failed_alert(*this)); }
+        virtual char const* what() const { return "piece check failed"; }
+        const static int static_category = alert::status_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            return transfer_alert::message() + " piece check failed";
+        }
+    };
 
 }
 

@@ -13,13 +13,11 @@
 #include <boost/assert.hpp>
 #include <boost/optional.hpp>
 
-#include <libtorrent/bitfield.hpp>
-#include <libtorrent/escape_string.hpp>
-
+#include "libed2k/bitfield.hpp"
+#include "libed2k/escape_string.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/error_code.hpp"
-#include "libed2k/types.hpp"
 
 namespace libed2k{
 
@@ -39,25 +37,25 @@ namespace libed2k{
 
         enum { hash_size = MD4_HASH_SIZE };
 
-    	md4_hash()
-    	{
-    	    clear();
-    	}
+        md4_hash()
+        {
+            clear();
+        }
 
-    	md4_hash(const std::vector<boost::uint8_t>& vHash)
-    	{
+        md4_hash(const std::vector<boost::uint8_t>& vHash)
+        {
             size_t nSize = (vHash.size()> MD4_HASH_SIZE)?MD4_HASH_SIZE:vHash.size();
 
-    		for (size_t i = 0; i < nSize; i++)
-    		{
-    			m_hash[i] = vHash[i];
-    		}
-    	}
+            for (size_t i = 0; i < nSize; i++)
+            {
+                m_hash[i] = vHash[i];
+            }
+        }
 
-    	md4_hash(const md4hash_container& container)
-    	{
-    		memcpy(m_hash, container, MD4_HASH_SIZE);
-    	}
+        md4_hash(const md4hash_container& container)
+        {
+            memcpy(m_hash, container, MD4_HASH_SIZE);
+        }
 
         bool defined() const
         {
@@ -67,101 +65,103 @@ namespace libed2k{
             return sum != 0;
         }
 
-    	unsigned char* getContainer()
-    	{
-    	    return &m_hash[0];
-    	}
-
-    	bool operator==(const md4_hash& hash) const
+        unsigned char* getContainer()
         {
-    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == 0);
+            return &m_hash[0];
         }
 
-    	bool operator!=(const md4_hash& hash) const
+        bool operator==(const md4_hash& hash) const
         {
-    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) != 0);
+            return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) == 0);
         }
 
-    	bool operator<(const md4_hash& hash) const
-    	{
-    	    return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) < 0);
-    	}
+        bool operator!=(const md4_hash& hash) const
+        {
+            return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) != 0);
+        }
 
-    	bool operator>(const md4_hash& hash) const
-    	{
-    	     return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) > 0);
-    	}
+        bool operator<(const md4_hash& hash) const
+        {
+            return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) < 0);
+        }
 
-    	void clear()
-    	{
-    	    memset(m_hash, 0, MD4_HASH_SIZE);
-    	}
+        bool operator>(const md4_hash& hash) const
+        {
+             return (memcmp(m_hash, hash.m_hash, MD4_HASH_SIZE) > 0);
+        }
 
-    	static md4_hash fromString(const std::string& strHash)
-    	{
-    	    BOOST_ASSERT(strHash.size() == MD4_HASH_SIZE*2);
+        void clear()
+        {
+            memset(m_hash, 0, MD4_HASH_SIZE);
+        }
 
-    	    md4_hash hash;
+        static md4_hash fromHashset(const std::vector<md4_hash>& hashset);
 
-    	    if (!libtorrent::from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)hash.m_hash))
-    	    {
-    	        return (md4_hash());
-    	    }
+        static md4_hash fromString(const std::string& strHash)
+        {
+            LIBED2K_ASSERT(strHash.size() == MD4_HASH_SIZE*2);
 
-    	    return (hash);
-    	}
+            md4_hash hash;
 
-    	std::string toString() const
-    	{
-    	    std::stringstream ss;
+            if (!from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)hash.m_hash))
+            {
+                return (md4_hash());
+            }
 
-    	    for (size_t i = 0; i < MD4_HASH_SIZE; i++)
-    	    {
-    	        ss << std::uppercase << std::hex << (m_hash[i] >> 4) << (m_hash[i] & 0x0F);
-    	    }
+            return (hash);
+        }
 
-    	    return (ss.str());
-    	}
+        std::string toString() const
+        {
+            std::stringstream ss;
 
-    	boost::uint8_t operator[](size_t n) const
-    	{
-    	    if (n >= MD4_HASH_SIZE)
+            for (size_t i = 0; i < MD4_HASH_SIZE; i++)
+            {
+                ss << std::uppercase << std::hex << (m_hash[i] >> 4) << (m_hash[i] & 0x0F);
+            }
+
+            return (ss.str());
+        }
+
+        boost::uint8_t operator[](size_t n) const
+        {
+            if (n >= MD4_HASH_SIZE)
             {
                 throw libed2k_exception(errors::md4_hash_index_error);
             }
 
-    	    return (m_hash[n]);
-    	}
+            return (m_hash[n]);
+        }
 
-    	boost::uint8_t& operator[](size_t n)
+        boost::uint8_t& operator[](size_t n)
         {
-    	    if (n >= MD4_HASH_SIZE)
+            if (n >= MD4_HASH_SIZE)
             {
                 throw libed2k_exception(errors::md4_hash_index_error);
             }
-    	    return (m_hash[n]);
+            return (m_hash[n]);
         }
 
-    	template<typename Archive>
-    	void serialize(Archive& ar)
-    	{
-    	    for (size_t n = 0; n < sizeof(md4hash_container); n++)
-    	    {
-    	        ar & m_hash[n];
-    	    }
-    	}
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            for (size_t n = 0; n < sizeof(md4hash_container); n++)
+            {
+                ar & m_hash[n];
+            }
+        }
 
-    	void dump() const
-    	{
-    	    DBG("md4_hash::dump " << toString().c_str());
-    	}
+        void dump() const
+        {
+            DBG("md4_hash::dump " << toString().c_str());
+        }
 
-    	/**
-    	  * for using in logger output
-    	 */
-    	friend std::ostream& operator<< (std::ostream& stream, const md4_hash& hash);
+        /**
+          * for using in logger output
+         */
+        friend std::ostream& operator<< (std::ostream& stream, const md4_hash& hash);
     private:
-    	md4hash_container   m_hash;
+        md4hash_container   m_hash;
     };
 }
 

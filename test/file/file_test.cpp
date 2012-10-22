@@ -1,14 +1,13 @@
 #include <iostream>
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 
 #include "libed2k/constants.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/archive.hpp"
-#include "libed2k/types.hpp"
 
 using namespace libed2k;
 
@@ -22,18 +21,18 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::wstring strPath = L"C:/work";
+    std::string strPath = "C:/work";
 
-    fs::wpath wp(strPath);
+    fs::path p(strPath);
 
-    if ( fs::exists( wp ) )
+    if ( fs::exists( p ) )
     {
-        fs::wrecursive_directory_iterator end_itr; // default construction yields past-the-end
-        for ( fs::wrecursive_directory_iterator itr( wp );  itr != end_itr;  ++itr )
+        fs::recursive_directory_iterator end_itr; // default construction yields past-the-end
+        for ( fs::recursive_directory_iterator itr( p );  itr != end_itr;  ++itr )
         {            
             std::cout << "x\n";
             std::string strUTF8;
-            libtorrent::wchar_utf8(itr->filename(), strUTF8);
+            //libtorrent::wchar_utf8(itr->filename(), strUTF8);
             std::cout << strUTF8 << std::endl;
         }
     }    

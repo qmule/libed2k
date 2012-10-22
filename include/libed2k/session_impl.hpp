@@ -1,4 +1,3 @@
-// ed2k session network thread
 
 #ifndef __LIBED2K_SESSION_IMPL__
 #define __LIBED2K_SESSION_IMPL__
@@ -8,24 +7,24 @@
 #include <map>
 #include <set>
 
-#include "libtorrent/torrent_handle.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/peer_connection.hpp"
-#include "libtorrent/config.hpp"
-#include "libtorrent/assert.hpp"
-#include "libtorrent/identify_client.hpp"
-#include "libtorrent/stat.hpp"
+#include <boost/pool/object_pool.hpp>
 
+#include "libed2k/socket.hpp"
+#include "libed2k/stat.hpp"
 #include "libed2k/fingerprint.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/session_settings.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/util.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/disk_io_thread.hpp"
+#include "libed2k/file_pool.hpp"
+#include "libed2k/connection_queue.hpp"
+#include "libed2k/session_status.hpp"
+#include "libed2k/io_service.hpp"
 
 namespace libed2k {
 
@@ -34,6 +33,7 @@ namespace libed2k {
     class transfer;
     class add_transfer_params;
     struct transfer_handle;
+    struct listen_socket_t;
 
     extern std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path);
 
@@ -41,10 +41,41 @@ namespace libed2k {
     {
         bool paths_filter(std::deque<fs::path>& vp, const fs::path& p);
 
+        struct listen_socket_t
+        {
+            listen_socket_t(): external_port(0), ssl(false) {}
+
+            // this is typically empty but can be set
+            // to the WAN IP address of NAT-PMP or UPnP router
+            address external_address;
+
+            // this is typically set to the same as the local
+            // listen port. In case a NAT port forward was
+            // successfully opened, this will be set to the
+            // port that is open on the external (NAT) interface
+            // on the NAT box itself. This is the port that has
+            // to be published to peers, since this is the port
+            // the client is reachable through.
+            int external_port;
+
+            // set to true if this is an SSL listen socket
+            bool ssl;
+
+            // the actual socket
+            boost::shared_ptr<socket_acceptor> sock;
+        };
+
+        // used to initialize the g_current_time before
+        // anything else
+        struct initialize_timer
+        {
+            initialize_timer();
+        };
+
         /**
-          * class used for testing
+         * class used for testing
          */
-        class session_impl_base : boost::noncopyable
+        class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
             typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
@@ -107,7 +138,7 @@ namespace libed2k {
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
             // them
-            mutable boost::asio::io_service m_io_service;
+            mutable io_service m_io_service;
 
             // set to true when the session object
             // is being destructed and the thread
@@ -116,7 +147,6 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
-            libtorrent::session_settings m_disk_thread_settings;
             transfer_map m_transfers;
 
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
@@ -184,12 +214,12 @@ namespace libed2k {
             /**
               * add transfer to check queue
              */
-            void queue_check_torrent(boost::shared_ptr<transfer> const& t);
+            void queue_check_transfer(boost::shared_ptr<transfer> const& t);
 
             /**
               * remove transfer from check queue
              */
-            void dequeue_check_torrent(boost::shared_ptr<transfer> const& t);
+            void dequeue_check_transfer(boost::shared_ptr<transfer> const& t);
 
             void close_connection(const peer_connection* p, const error_code& ec);
 
@@ -228,11 +258,25 @@ namespace libed2k {
                     != m_connections.end();
             }
 
+            void add_redundant_bytes(size_type b, int reason)
+            {
+                LIBED2K_ASSERT(b > 0);
+                m_total_redundant_bytes += b;
+                m_redundant_bytes[reason] += b;
+            }
+
+            void add_failed_bytes(size_type b)
+            {
+                LIBED2K_ASSERT(b > 0);
+                m_total_failed_bytes += b;
+            }
+
             std::pair<char*, int> allocate_buffer(int size);
             void free_buffer(char* buf, int size);
 
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
+            bool can_write_to_disk() const { return m_disk_thread.can_write(); }
 
             std::string buffer_usage();
 
@@ -300,7 +344,7 @@ namespace libed2k {
             // this vector is used to store the block_info
             // objects pointed to by partial_piece_info returned
             // by torrent::get_download_queue.
-            std::vector<libtorrent::block_info> m_block_info_storage;
+            std::vector<block_info> m_block_info_storage;
 
             // this pool is used to allocate and recycle send
             // buffers from.
@@ -314,7 +358,7 @@ namespace libed2k {
             // file pool must be destructed after the torrents
             // since they will still have references to it
             // when they are destructed.
-            libtorrent::file_pool m_filepool;
+            file_pool m_filepool;
 
             // handles disk io requests asynchronously
             // peers have pointers into the disk buffer
@@ -324,13 +368,13 @@ namespace libed2k {
             // m_files. The disk io thread posts completion
             // events to the io service, and needs to be
             // constructed after it.
-            libtorrent::disk_io_thread m_disk_thread;
+            disk_io_thread m_disk_thread;
 
             // this is a list of half-open tcp connections
             // (only outgoing connections)
             // this has to be one of the last
             // members to be destructed
-            libtorrent::connection_queue m_half_open;
+            libed2k::connection_queue m_half_open;
 
             // ed2k server connection
             boost::intrusive_ptr<server_connection> m_server_connection;
@@ -354,7 +398,7 @@ namespace libed2k {
             // interface to listen on
             tcp::endpoint m_listen_interface;
 
-            typedef libtorrent::aux::session_impl::listen_socket_t listen_socket_t;
+            typedef aux::listen_socket_t listen_socket_t;
 
             // possibly we will be listening on multiple interfaces
             // so we might need more than one listen socket
@@ -371,14 +415,20 @@ namespace libed2k {
             int m_max_connections;
 
             duration_timer m_second_timer;
-
             // the timer used to fire the tick
-            boost::asio::deadline_timer m_timer;
+            deadline_timer m_timer;
 
             int m_last_connect_duration;        //!< duration in milliseconds since last server connection was executed
             int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed
             bool m_user_announced;              //!< ismod extension - share user as file
             char m_server_connection_state;     //!< last measured server connection state
+
+            // total redundant and failed bytes
+            size_type m_total_failed_bytes;
+            size_type m_total_redundant_bytes;
+
+            // redundant bytes per category
+            size_type m_redundant_bytes[7];
 
             // the main working thread
             // !!! should be last in the member list

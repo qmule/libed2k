@@ -1,4 +1,3 @@
-// ed2k transfer
 
 #ifndef __LIBED2K_TRANSFER__
 #define __LIBED2K_TRANSFER__
@@ -11,17 +10,18 @@
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "libed2k/lazy_entry.hpp"
 #include "libed2k/policy.hpp"
-#include "libed2k/types.hpp"
+#include "libed2k/piece_picker.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/packet_struct.hpp"
-
-namespace libtorrent {
-    class torrent_info;
-}
+#include "libed2k/peer_info.hpp"
+#include "libed2k/storage_defs.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k {
 
+    class transfer_info;
     class add_transfer_params;
     namespace aux{
         class session_impl;
@@ -29,6 +29,8 @@ namespace libed2k {
     class peer;
     class server_request;
     class server_response;
+    class piece_manager;
+    struct disk_io_job;
 
     // a transfer is a class that holds information
     // for a specific download. It updates itself against
@@ -40,25 +42,20 @@ namespace libed2k {
          * it is fake transfer constructor for using in unit tests
          * you shouldn't it anywhere except unit tests
          */
-        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
-                 const md4_hash& hash, const fs::path p, fsize_t size);
+        transfer(aux::session_impl& ses, const md4_hash& hash, const fs::path p, size_type size);
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
 
-        const md4_hash& hash() const { return m_filehash; }
-        fsize_t filesize() const { return m_filesize; }
+        const md4_hash& hash() const;
+        size_type filesize() const;
         const fs::path& filepath() const { return m_filepath; }
         const fs::path& collectionpath() const { return m_collectionpath; }
 
-        const bitfield& verified_pieces() const { return m_verified; }
-        const std::vector<md4_hash>& hashset() const { return m_hashset; }
-        void hashset(const std::vector<md4_hash>& hs) {
-            assert(hs.size() > 0);
-            m_hashset = hs;
-        }
-        const md4_hash& hash(size_t piece) const { return m_hashset.at(piece); }
+        const std::vector<md4_hash>& piece_hashses() const;
+        void piece_hashses(const std::vector<md4_hash>& hs);
+        const md4_hash& hash_for_piece(size_t piece) const;
 
         transfer_handle handle();
         void start();
@@ -113,6 +110,7 @@ namespace libed2k {
         void set_announced(bool announced) { m_announced = announced; }
         transfer_status::state_t state() const { return m_state; }
         transfer_status status() const;
+
         void pause();
         void resume();
         void set_upload_limit(int limit);
@@ -146,11 +144,14 @@ namespace libed2k {
         stat statistics() const { return m_stat; }
         void add_stats(const stat& s);
 
+        void set_upload_mode(bool b);
+        bool upload_mode() const { return m_upload_mode; }
+
         // --------------------------------------------
         // PIECE MANAGEMENT
         // --------------------------------------------
         void async_verify_piece(int piece_index, const md4_hash& hash,
-                                const boost::function<void(int)>& fun);
+                                const boost::function<void(int)>& f);
 
         // this is called from the peer_connection
         // each time a piece has failed the hash test
@@ -182,6 +183,7 @@ namespace libed2k {
         {
             return has_picker() ? m_picker->have_piece(index) : true;
         }
+        bitfield have_pieces() const;
 
         // called when we learn that we have a piece
         // only once per piece
@@ -209,12 +211,7 @@ namespace libed2k {
         size_t num_free_blocks() const;
 
         piece_manager& filesystem() { return *m_storage; }
-        storage_interface* get_storage()
-        {
-            if (!m_owning_storage) return 0;
-            return m_owning_storage->get_storage_impl();
-        }
-
+        storage_interface* get_storage();
         void move_storage(const fs::path& save_path);
         bool rename_file(const std::string& name);
         void delete_files();
@@ -232,21 +229,6 @@ namespace libed2k {
           * async generate fast resume data and emit alert
          */
         void save_resume_data();
-
-        bool verified_piece(int piece) const
-        {
-            BOOST_ASSERT(piece < int(m_verified.size()));
-            BOOST_ASSERT(piece >= 0);
-            return m_verified.get_bit(piece);
-        }
-
-        void verified(int piece)
-        {
-            BOOST_ASSERT(piece < int(m_verified.size()));
-            BOOST_ASSERT(piece >= 0);
-            BOOST_ASSERT(m_verified.get_bit(piece) == false);
-            m_verified.set_bit(piece);
-        }
 
         bool should_check_file() const;
 
@@ -270,7 +252,7 @@ namespace libed2k {
 
         // --------------------------------------------
         // SERVER MANAGEMENT
-
+        // --------------------------------------------
         /**
           * convert transfer info into announce
          */
@@ -289,11 +271,14 @@ namespace libed2k {
         void on_save_resume_data(int ret, disk_io_job const& j);
         void on_resume_data_checked(int ret, disk_io_job const& j);
         void on_piece_checked(int ret, disk_io_job const& j);
+        void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+
     private:
         // will initialize the storage and the piece-picker
         void init();
         void bytes_done(transfer_status& st) const;
+        void add_failed_bytes(int b);
         int block_bytes_wanted(const piece_block& p) const { return BLOCK_SIZE; }
 
         void write_resume_data(entry& rd) const;
@@ -321,14 +306,11 @@ namespace libed2k {
         // are opened through
         tcp::endpoint m_net_interface;
 
-        md4_hash m_filehash;
         fs::path m_filepath;
         fs::path m_collectionpath;
-        fsize_t m_filesize;
-        boost::uint32_t m_file_type;
 
-        bitfield m_verified;
-        std::vector<md4_hash> m_hashset;
+        // the number of seconds we've been in upload mode
+        unsigned int m_upload_mode_time;
 
         // determines the storage state for this transfer.
         storage_mode_t m_storage_mode;
@@ -336,8 +318,21 @@ namespace libed2k {
         // the state of this transfer (queued, checking, downloading, etc.)
         transfer_status::state_t m_state;
 
-        // Indicates whether transfer will download anything
+        // this means we haven't verified the file content
+        // of the files we're seeding. the m_verified bitfield
+        // indicates which pieces have been verified and which
+        // haven't
         bool m_seed_mode;
+
+        // set to true when this transfer may not download anything
+        bool m_upload_mode;
+
+        // if this is true, libed2k may pause and resume
+        // this transfer depending on queuing rules. Transfers
+        // started with auto_managed flag set may be added in
+        // a paused state in case there are no available
+        // slots.
+        bool m_auto_managed;
 
         int m_complete;
         int m_incomplete;
@@ -347,7 +342,7 @@ namespace libed2k {
         // used for compatibility with piece_manager,
         // may store invalid data
         // should store valid file path
-        boost::intrusive_ptr<libtorrent::torrent_info> m_info;
+        boost::intrusive_ptr<transfer_info> m_info;
 
         boost::uint32_t m_accepted;
         boost::uint32_t m_requested;
@@ -356,10 +351,17 @@ namespace libed2k {
 
         // all time totals of uploaded and downloaded payload
         // stored in resume data
-        fsize_t m_total_uploaded;
-        fsize_t m_total_downloaded;
-        bool m_queued_for_checking:1;
+        size_type m_total_uploaded;
+        size_type m_total_downloaded;
+        bool m_queued_for_checking;
+
+        // progress parts per million (the number of millionths of completeness)
         int m_progress_ppm;
+
+        // the number of bytes that has been
+        // downloaded that failed the hash-test
+        boost::uint32_t m_total_failed_bytes;
+        boost::uint32_t m_total_redundant_bytes;
 
         // the piece_manager keeps the transfer object
         // alive by holding a shared_ptr to it and
@@ -371,17 +373,17 @@ namespace libed2k {
         // outstanding disk io jobs (that keeps
         // the piece_manager alive) it will destruct
         // and release the transfer file. The reason for
-        // this is that the torrent_info is used by
+        // this is that the transfer_info is used by
         // the piece_manager, and stored in the
         // torrent, so the torrent cannot destruct
         // before the piece_manager.
-        boost::intrusive_ptr<libtorrent::piece_manager> m_owning_storage;
+        boost::intrusive_ptr<piece_manager> m_owning_storage;
 
         // this is a weak (non owninig) pointer to
         // the piece_manager. This is used after the torrent
         // has been aborted, and it can no longer own
         // the object.
-        libtorrent::piece_manager* m_storage;
+        piece_manager* m_storage;
 
         duration_timer m_minute_timer;
 

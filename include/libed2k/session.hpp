@@ -4,8 +4,7 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-#include <libtorrent/storage.hpp>
-
+#include "libed2k/storage_defs.hpp"
 #include "libed2k/fingerprint.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/transfer_handle.hpp"
@@ -13,10 +12,10 @@
 #include "libed2k/peer.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/session_status.hpp"
+#include "libed2k/filesystem.hpp"
 
 namespace libed2k {
-
-    typedef libtorrent::storage_constructor_type storage_constructor_type;
 
     class session_settings;
     struct transfer_handle;
@@ -24,43 +23,33 @@ namespace libed2k {
         class session_impl;
     }
 
-    enum storage_mode_t
-    {
-        storage_mode_allocate = 0,
-        storage_mode_sparse,
-        storage_mode_compact
-    };
-
     class add_transfer_params
     {
     public:
         add_transfer_params() { reset(); }
 
         add_transfer_params(
-            const md4_hash& hash, size_t nSize, const fs::path& cpath, const fs::path& fpath,
-            const bitfield& ps, const std::vector<md4_hash>& hset)
+            const md4_hash& hash, size_type nSize, const fs::path& cpath,
+            const fs::path& fpath, const std::vector<md4_hash>& hset)
         {
             reset();
             file_hash = hash;
             file_path = fpath;
             collection_path = cpath;
             file_size = nSize;
-            pieces = ps;
-            hashset = hset;
+            piece_hashses = hset;
             seed_mode = true;
         }
 
         md4_hash file_hash;
         fs::path file_path; // in UTF8 always!
         fs::path collection_path;
-        fsize_t  file_size;
-        bitfield pieces;
-        std::vector<md4_hash> hashset;
-        std::vector<peer_entry> peer_list;
+        size_type  file_size;
+        std::vector<md4_hash> piece_hashses;
+        bool seed_mode;
         std::vector<char>* resume_data;
         storage_mode_t storage_mode;
         bool duplicate_is_error;
-        bool seed_mode;
         int num_complete_sources;
         int num_incomplete_sources;
 
@@ -74,8 +63,7 @@ namespace libed2k {
             return (file_hash == t.file_hash &&
                     file_path == t.file_path &&
                     file_size == t.file_size &&
-                    //pieces == t.pieces &&
-                    hashset == t.hashset &&
+                    piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&
                     requested == t.requested &&
                     transferred == t.transferred &&

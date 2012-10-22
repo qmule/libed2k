@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;_CONSOLE;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;_CONSOLE;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -61,9 +61,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libboost_iostreams-vc90-mt-gd-1_49.lib cryptlib.lib cryptopp.lib libed2kd.lib libtorrentd.lib libeay32MDd.lib ssleay32MDd.lib"
+				AdditionalDependencies="libboost_iostreams-vc90-mt-gd-1_49.lib cryptlib.lib cryptopp.lib libed2kd.lib libeay32MDd.lib ssleay32MDd.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\Debug&quot;; &quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\Debug&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;;&quot;$(LIBTORRENT_ROOT)\lib&quot;;&quot;$(OPENSSL_ROOT)\lib\VC&quot;"
+				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\Debug&quot;;&quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\Debug&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;;&quot;$(OPENSSL_ROOT)\lib\VC&quot;"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
@@ -119,8 +119,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -138,9 +138,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libboost_iostreams-vc90-mt-1_49.lib cryptlib.lib cryptopp.lib libed2k.lib libtorrent.lib libeay32MD.lib ssleay32MD.lib"
+				AdditionalDependencies="libboost_iostreams-vc90-mt-1_49.lib cryptlib.lib cryptopp.lib libed2k.lib libeay32MD.lib ssleay32MD.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\release&quot;; &quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\release&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;$(SolutionDir)$(ConfigurationName);$(LIBTORRENT_ROOT)\lib"
+				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\release&quot;;&quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\release&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

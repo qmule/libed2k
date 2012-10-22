@@ -19,7 +19,7 @@ namespace libed2k
         {
             no_error = 0,
             no_memory,
-            // protocol errors
+            // serialization errors
             md4_hash_index_error,
             md4_hash_convert_error,
             tag_type_mismatch,
@@ -29,6 +29,29 @@ namespace libed2k
             blob_tag_too_long,
             incompatible_tag_getter,
             tag_list_index_error,
+            invalid_entry_type,         // derived from libtorrent
+            depth_exceeded,
+            unexpected_eof,
+            expected_string,
+            expected_value,
+            expected_colon,
+            limit_exceeded,
+
+            metadata_too_large,
+            invalid_bencoding,
+            transfer_missing_piece_length,
+            transfer_missing_name,
+            transfer_invalid_name,
+            transfer_invalid_length,
+            transfer_file_parse_failed,
+            transfer_missing_pieces,
+            transfer_invalid_hashes,
+            transfer_is_no_dict,
+            transfer_info_no_dict,
+            transfer_missing_info,
+            unsupported_url_protocol,
+            expected_close_bracket_in_address,
+            // protocol errors
             decode_packet_error,
             invalid_protocol_type,
             unsupported_protocol_type,
@@ -55,6 +78,21 @@ namespace libed2k
             // service errors
             filesize_is_zero,
             file_unavaliable,
+            file_too_short,
+            file_collision,
+            mismatching_number_of_files,
+            mismatching_file_size,
+            mismatching_file_timestamp,
+            missing_file_sizes,
+            missing_pieces,
+            not_a_dictionary,
+            invalid_blocks_per_piece,
+            missing_slots,
+            too_many_slots,
+            invalid_slot_list,
+            invalid_piece_index,
+            pieces_need_reorder,
+            no_files_in_resume_data,
             unclosed_quotation_mark,
             operator_incorrect_place,
             known_file_invalid_header,
@@ -66,6 +104,8 @@ namespace libed2k
             missing_transfer_hash,
             mismatching_transfer_hash,
             hashes_dont_match_pieces,
+            failed_hash_check,
+            invalid_escaped_string,
             num_errors
         };
     }

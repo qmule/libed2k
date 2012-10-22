@@ -13,7 +13,7 @@ namespace libed2k
         {
             "no error",
             "no memory",
-            // protocol errors
+            // serialization errors
             "md4_hash index error",
             "md4_hash convert error",
             "tag has incorrect type",
@@ -23,6 +23,29 @@ namespace libed2k
             "blob tag too long",
             "incompatible tag getter",
             "tag list index error",
+            "invalid entry type",               // derived from libtorrent
+            "depth exceeded",
+            "unexpected eof",
+            "expected string",
+            "expected value",
+            "expected colon",
+            "limit exceeded",
+
+            "metadata too large",
+            "invalid bencoding",
+            "transfer missing piece length",
+            "transfer missing name",
+            "transfer invalid name",
+            "transfer invalid length",
+            "transfer file parse failed",
+            "transfer missing pieces",
+            "transfer invalid hashes",
+            "transfer is no dict",
+            "transfer info no dict",
+            "transfer missing info",
+            "unsupported_url_protocol",
+            "expected_close_bracket_in_address",
+            // protocol errors
             "decode packet error",
             "invalid protocol type",
             "unsupported protocol type",
@@ -49,6 +72,21 @@ namespace libed2k
             // service errors
             "file size is zero",
             "file not exists or is not regular file",
+            "file is too short",
+            "file collision",
+            "mismatching number of files",
+            "mismatching file size",
+            "mismatching file timestamp",
+            "missing file sizes",
+            "missing pieces",
+            "not a dictionary",
+            "invalid blocks per piece",
+            "missing slots",
+            "too many slots",
+            "invalid slot list",
+            "invalid piece index",
+            "pieces need reorder",
+            "no files in resume data",
             "unclosed quotation mark",
             "operator incorrect place",
             "known file has invalid header on save/load",
@@ -59,7 +97,9 @@ namespace libed2k
             "invalid file tag",
             "missing transfer hash",
             "mismatching transfer hash",
-            "hashes dont match pieces"
+            "hashes dont match pieces",
+            "failed hash check",
+            "invalid escaped string"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

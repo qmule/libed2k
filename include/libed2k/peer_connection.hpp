@@ -5,20 +5,18 @@
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
-#include <boost/aligned_storage.hpp>
 
-#include <libtorrent/error_code.hpp>
-#include <libtorrent/disk_buffer_holder.hpp>
-#include <libtorrent/time.hpp>
-#include <libtorrent/io.hpp>
-#include <libtorrent/bitfield.hpp>
-#include <libtorrent/piece_block_progress.hpp>
-
+#include "libed2k/io.hpp"
+#include "libed2k/piece_block_progress.hpp"
+#include "libed2k/bitfield.hpp"
+#include "libed2k/disk_buffer_holder.hpp"
 #include "libed2k/base_connection.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/packet_struct.hpp"
-
+#include "libed2k/peer_request.hpp"
+#include "libed2k/piece_picker.hpp"
+#include "libed2k/peer_info.hpp"
+#include "libed2k/piece_block_progress.hpp"
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \
@@ -63,10 +61,11 @@ namespace libed2k
     namespace aux{
         class session_impl;
     }
+    struct disk_io_job;
 
     struct pending_block
     {
-        pending_block(const piece_block& b, fsize_t fsize):
+        pending_block(const piece_block& b, size_type fsize):
             skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
             data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL),
             create_time(time_now()){}
@@ -92,7 +91,7 @@ namespace libed2k
 
         piece_block block;
         // block covering
-        range<fsize_t> data_left;
+        range<size_type> data_left;
         // disk receive buffer
         char* buffer;
         // time when this block has been created
@@ -104,7 +103,7 @@ namespace libed2k
                 && b.not_wanted == not_wanted && b.timed_out == timed_out;
         }
 
-        void complete(const std::pair<fsize_t,fsize_t>& range) { data_left -= range; }
+        void complete(const std::pair<size_type,size_type>& range) { data_left -= range; }
 
         bool completed() const { return data_left.empty(); }
     };
@@ -203,7 +202,6 @@ namespace libed2k
         // and schedule events with references to itself (that is not safe to
         // do in the constructor).
         void start();
-        void cancel_requests();
 
         int picker_options() const;
 
@@ -212,8 +210,10 @@ namespace libed2k
         bool can_write() const;
         bool can_read(char* state = 0) const;
         bool can_request() const;
-
         bool is_seed() const;
+
+        const std::vector<pending_block>& download_queue() const;
+        const std::vector<pending_block>& request_queue() const;
 
         void send_message(const std::string& strMessage);
         void request_shared_files();
@@ -237,6 +237,10 @@ namespace libed2k
         boost::optional<piece_block_progress> downloading_piece_progress() const {
             return boost::optional<piece_block_progress>();
         }
+
+        void send_block_requests();
+        void cancel_all_requests();
+
     private:
 
         // constructor method
@@ -250,8 +254,7 @@ namespace libed2k
         // returns true if successful, false otherwise
         enum flags_t { req_time_critical = 1, req_busy = 2 };
         bool add_request(const piece_block& b, int flags = 0);
-        void send_block_requests();
-        void abort_block_requests();
+        void abort_all_requests();
         void abort_expired_requests();
         bool requesting(const piece_block& b);
         size_t num_requesting_busy_blocks();
@@ -262,7 +265,7 @@ namespace libed2k
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void receive_data(const peer_request& r);
         void on_disk_write_complete(int ret, disk_io_job const& j,
-                                    peer_request r, peer_request left, boost::shared_ptr<transfer> t);
+                                    peer_request req, peer_request left, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred,
                              peer_request r, peer_request left);
         void on_skip_data(const error_code& error, peer_request r);

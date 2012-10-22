@@ -1,4 +1,3 @@
-
 #include "libed2k/base_connection.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
@@ -26,7 +25,7 @@ namespace libed2k
 
     void base_connection::reset()
     {
-        m_deadline.expires_at(boost::posix_time::pos_infin);
+        m_deadline.expires_at(max_time());
         m_write_in_progress = false;
         m_read_in_progress = false;
     }
@@ -42,8 +41,7 @@ namespace libed2k
     {
         if (is_closed() || m_read_in_progress) return;
 
-        m_deadline.expires_from_now(
-            boost::posix_time::seconds(m_ses.settings().peer_timeout));
+        m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
         boost::asio::async_read(
             *m_socket, boost::asio::buffer(&m_in_header, header_size),
             boost::bind(&base_connection::on_read_header, self(), _1, _2));
@@ -58,8 +56,7 @@ namespace libed2k
         int amount_to_send = m_send_buffer.size();
 
         // set deadline timer
-        m_deadline.expires_from_now(
-            boost::posix_time::seconds(m_ses.settings().peer_timeout));
+        m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
 
         const std::list<boost::asio::const_buffer>& buffers =
             m_send_buffer.build_iovec(amount_to_send);
@@ -184,7 +181,7 @@ namespace libed2k
         if (!error)
         {
             m_read_in_progress = false;
-
+/*
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
                 // unzip data
@@ -197,7 +194,7 @@ namespace libed2k
                     return;
                 }
             }
-
+*/
             //!< search appropriate dispatcher
             handler_map::iterator itr = m_handlers.find(std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
 
@@ -249,7 +246,7 @@ namespace libed2k
         // Check whether the deadline has passed. We compare the deadline against
         // the current time since a new asynchronous operation may have moved the
         // deadline before this actor had a chance to run.
-        if (m_deadline.expires_at() <= dtimer::traits_type::now())
+        if (m_deadline.expires_at() <= deadline_timer::traits_type::now())
         {
             DBG("base_connection::check_deadline(): deadline timer expired");
 
@@ -258,7 +255,7 @@ namespace libed2k
             close(errors::timed_out);
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
-            m_deadline.expires_at(boost::posix_time::pos_infin);
+            m_deadline.expires_at(max_time());
             boost::system::error_code ignored_ec;
 
             on_timeout(ignored_ec);

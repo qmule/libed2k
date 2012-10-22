@@ -1,9 +1,7 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
-#include <libtorrent/piece_picker.hpp>
-#include <libtorrent/storage.hpp>
-
+#include "libed2k/storage.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/session.hpp"
@@ -12,6 +10,7 @@
 #include "libed2k/util.hpp"
 #include "libed2k/alert_types.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/peer_info.hpp"
 
 namespace libed2k
 {
@@ -48,7 +47,7 @@ namespace libed2k
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
-peer_request mk_peer_request(fsize_t begin, fsize_t end)
+peer_request mk_peer_request(size_type begin, size_type end)
 {
     peer_request r;
     r.piece = begin / PIECE_SIZE;
@@ -57,10 +56,16 @@ peer_request mk_peer_request(fsize_t begin, fsize_t end)
     return r;
 }
 
-std::pair<fsize_t, fsize_t> mk_range(const peer_request& r)
+peer_request mk_peer_request(const piece_block& b, size_type fsize)
 {
-    fsize_t begin = r.piece * PIECE_SIZE + r.start;
-    fsize_t end = begin + r.length;
+    std::pair<size_type, size_type> r = block_range(b.piece_index, b.block_index, fsize);
+    return mk_peer_request(r.first, r.second);
+}
+
+std::pair<size_type, size_type> mk_range(const peer_request& r)
+{
+    size_type begin = r.piece * PIECE_SIZE + r.start;
+    size_type end = begin + r.length;
     assert(begin < end);
     return std::make_pair(begin, end);
 }
@@ -79,16 +84,16 @@ std::pair<peer_request, peer_request> split_request(const peer_request& req)
 {
     peer_request r = req;
     peer_request left = req;
-    r.length = std::min(req.length, int(DISK_BLOCK_SIZE));
+    r.length = std::min(req.length, int(BLOCK_SIZE));
     left.start = r.start + r.length;
     left.length = req.length - r.length;
 
     return std::make_pair(r, left);
 }
 
-size_t block_size(const piece_block& b, fsize_t s)
+size_t block_size(const piece_block& b, size_type s)
 {
-    std::pair<fsize_t, fsize_t> r = block_range(b.piece_index, b.block_index, s);
+    std::pair<size_type, size_type> r = block_range(b.piece_index, b.block_index, s);
     return size_t(r.second - r.first);
 }
 
@@ -155,12 +160,12 @@ void peer_connection::reset()
 {
     m_last_receive = time_now();
     m_last_sent = time_now();
-    m_timeout = time::seconds(m_ses.settings().peer_timeout);
+    m_timeout = seconds(m_ses.settings().peer_timeout);
 
     m_disconnecting = false;
     m_connection_ticket = -1;
     m_speed = slow;
-    m_desired_queue_size = 32;
+    m_desired_queue_size = 3;
     m_max_busy_blocks = 1;
 
     m_channel_state[upload_channel] = bw_idle;
@@ -314,8 +319,8 @@ double peer_connection::peer_rate()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    fsize_t downloaded = statistics().total_download();
-    fsize_t transfer_downloaded = t->statistics().total_download();
+    size_type downloaded = statistics().total_download();
+    size_type transfer_downloaded = t->statistics().total_download();
     return (transfer_downloaded == 0 ? 0 : double(downloaded) / transfer_downloaded) * t->num_peers();
 }
 
@@ -411,8 +416,7 @@ void peer_connection::do_read()
     {
         boost::shared_ptr<transfer> t = m_transfer.lock();
 
-        DBG((boost::format("cannot read: {disk_queue: %1%, disk_queue_limit: %2%}")
-             % ((t && t->get_storage()) ? t->filesystem().queued_bytes() : 0)
+        DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
              % m_ses.settings().max_queued_disk_bytes).str());
 
         // if we block reading, waiting for the disk, we will wake up
@@ -429,7 +433,7 @@ void peer_connection::request_block()
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
     if (m_disconnecting) return;
-    if (!t || t->is_seed() || !can_request()) return;
+    if (!t || t->is_seed() || t->upload_mode() || !can_request()) return;
 
     int num_requests = m_desired_queue_size
         - (int)m_download_queue.size()
@@ -453,7 +457,7 @@ void peer_connection::request_block()
 
     p.pick_pieces(m_remote_pieces, interesting_pieces,
                   num_requests, prefer_whole_pieces, m_peer,
-                  state, picker_options(), std::vector<int>());
+                  state, picker_options(), std::vector<int>(), t->num_peers());
 
     // if the number of pieces we have + the number of pieces
     // we're requesting from is less than the number of pieces
@@ -521,7 +525,8 @@ bool peer_connection::add_request(const piece_block& block, int flags)
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    if (!t || m_disconnecting) return false;
+    if (!t || t->upload_mode()) return false;
+    if (m_disconnecting) return false;
 
     piece_picker::piece_state_t state;
     peer_speed_t speed = peer_speed();
@@ -553,8 +558,15 @@ void peer_connection::send_block_requests()
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t || m_disconnecting) return;
 
+    // we can't download pieces in these states
+    if (t->state() == transfer_status::checking_files ||
+        t->state() == transfer_status::checking_resume_data ||
+        t->state() == transfer_status::downloading_metadata ||
+        t->state() == transfer_status::allocating)
+        return;
+
     // send in 3 requests at a time
-    if (m_download_queue.size() + 2 >= m_desired_queue_size) return;
+    if (m_download_queue.size() + 2 >= m_desired_queue_size || t->upload_mode()) return;
 
     client_request_parts_64 rp;
     rp.m_hFile = t->hash();
@@ -590,7 +602,7 @@ void peer_connection::send_block_requests()
         write_request_parts(rp);
 }
 
-void peer_connection::abort_block_requests()
+void peer_connection::abort_all_requests()
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
@@ -625,7 +637,7 @@ void peer_connection::abort_expired_requests()
 #define ABORT_EXPIRED(reqs)                                             \
     for(std::vector<pending_block>::iterator pi = reqs.begin(); pi != reqs.end();) \
     {                                                                   \
-        if (now - pi->create_time > time::seconds(settings.block_request_timeout)) \
+        if (now - pi->create_time > seconds(settings.block_request_timeout)) \
         {                                                               \
             piece_block& b = pi->block;                                 \
             DBG("abort expired block request: "                         \
@@ -651,6 +663,22 @@ void peer_connection::abort_expired_requests()
     }
 
 #undef ABORT_EXPIRED
+}
+
+void peer_connection::cancel_all_requests()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+    // this peer might be disconnecting
+    if (!t) return;
+
+    DBG("cancel all requests to " << m_remote);
+    while (!m_request_queue.empty())
+    {
+        t->picker().abort_download(m_request_queue.back().block);
+        m_request_queue.pop_back();
+    }
+
+    write_cancel_transfer();
 }
 
 bool peer_connection::requesting(const piece_block& b)
@@ -731,7 +759,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
     {
         // make sure we keep all the stats!
         t->add_stats(m_statistics);
-        abort_block_requests();
+        abort_all_requests();
         //m_queued_time_critical = 0;
 
         t->remove_peer(this);
@@ -801,12 +829,6 @@ void peer_connection::start()
 {
 }
 
-void peer_connection::cancel_requests()
-{
-    abort_block_requests();
-    write_cancel_transfer();
-}
-
 int peer_connection::picker_options() const
 {
     int ret = 0;
@@ -854,9 +876,7 @@ bool peer_connection::can_read(char* state) const
 {
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
-    bool disk = m_ses.settings().max_queued_disk_bytes == 0 ||
-        !t || t->get_storage() == 0 ||
-        t->filesystem().queued_bytes() < m_ses.settings().max_queued_disk_bytes;
+    bool disk = m_ses.settings().max_queued_disk_bytes == 0 || m_ses.can_write_to_disk();
 
     if (!disk)
     {
@@ -878,6 +898,16 @@ bool peer_connection::is_seed() const
     const bitfield& pieces = m_remote_pieces;
     int pieces_count = pieces.count();
     return pieces_count == (int)pieces.size() && pieces_count > 0;
+}
+
+const std::vector<pending_block>& peer_connection::download_queue() const
+{
+    return m_download_queue;
+}
+
+const std::vector<pending_block>& peer_connection::request_queue() const
+{
+    return m_request_queue;
 }
 
 bool peer_connection::has_network_point(const net_identifier& np) const
@@ -1068,7 +1098,7 @@ void peer_connection::receive_data(const peer_request& req)
         if (!b->buffer)
         {
             if (!allocate_disk_receive_buffer(
-                    std::min<size_t>(block_size(block, t->filesize()), DISK_BLOCK_SIZE)))
+                    std::min<size_t>(block_size(block, t->filesize()), BLOCK_SIZE)))
             {
                 ERR("cannot allocate disk receive buffer " << r.length);
                 return;
@@ -1102,9 +1132,9 @@ void peer_connection::on_receive_data(
     if (error) disconnect(error);
     if (m_disconnecting || is_closed()) return;
 
-    assert(int(bytes_transferred) == r.length);
-    assert(m_channel_state[download_channel] == bw_network);
-    assert(m_read_in_progress);
+    LIBED2K_ASSERT(int(bytes_transferred) == r.length);
+    LIBED2K_ASSERT(m_channel_state[download_channel] == bw_network);
+    LIBED2K_ASSERT(m_read_in_progress);
 
     m_read_in_progress = false;
     m_last_receive = time_now();
@@ -1149,28 +1179,32 @@ void peer_connection::on_receive_data(
     if (b->completed())
     {
         disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-        fs.async_write(r, holder, boost::bind(&peer_connection::on_disk_write_complete,
-                                              self_as<peer_connection>(), _1, _2, r, left, t));
+        peer_request req = mk_peer_request(b->block, t->filesize());
+        fs.async_write(req, holder,
+                       boost::bind(&peer_connection::on_disk_write_complete,
+                                   self_as<peer_connection>(), _1, _2, req, left, t));
     }
 
     if (left.length > 0)
         receive_data(left);
-    else if (b->completed())
+    else
     {
-        bool was_finished = picker.is_piece_finished(r.piece);
-        picker.mark_as_writing(block_finished, get_peer());
-        m_download_queue.erase(b);
-
-        // did we just finish the piece?
-        // this means all blocks are either written
-        // to disk or are in the disk write cache
-        if (picker.is_piece_finished(r.piece) && !was_finished)
+        if (b->completed())
         {
-            const md4_hash& hash =
-                t->filesize() < PIECE_SIZE ? t->hash() : t->hash(r.piece);
+            bool was_finished = picker.is_piece_finished(r.piece);
+            picker.mark_as_writing(block_finished, get_peer());
+            m_download_queue.erase(b);
 
-            t->async_verify_piece(
-                r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
+            // did we just finish the piece?
+            // this means all blocks are either written
+            // to disk or are in the disk write cache
+            if (picker.is_piece_finished(r.piece) && !was_finished)
+            {
+                DBG("piece downloaded: {transfer: " << t->hash() << ", piece: " << r.piece << "}");
+                const md4_hash& hash = t->hash_for_piece(r.piece);
+                t->async_verify_piece(
+                    r.piece, hash, boost::bind(&transfer::piece_finished, t, r.piece, _1));
+            }
         }
 
         m_channel_state[download_channel] = bw_idle;
@@ -1193,14 +1227,14 @@ void peer_connection::on_skip_data(const error_code& error, peer_request r)
 }
 
 void peer_connection::on_disk_write_complete(
-    int ret, disk_io_job const& j, peer_request r, peer_request left, boost::shared_ptr<transfer> t)
+    int ret, disk_io_job const& j, peer_request req, peer_request left, boost::shared_ptr<transfer> t)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
-    assert(r.piece == j.piece);
-    assert(r.start == j.offset);
+    LIBED2K_ASSERT(req.piece == j.piece);
+    LIBED2K_ASSERT(req.start == j.offset);
 
-    if (ret != r.length)
+    if (ret != req.length)
     {
         if (!t)
         {
@@ -1221,7 +1255,7 @@ void peer_connection::on_disk_write_complete(
 
         if (t->is_seed()) return;
 
-        piece_block block_finished(mk_block(r));
+        piece_block block_finished(mk_block(req));
         piece_picker& picker = t->picker();
         picker.mark_as_finished(block_finished, get_peer());
     }
@@ -1231,16 +1265,17 @@ void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
     const session_settings& settings = m_ses.settings();
-    boost::uint32_t nVersion = m_ses.settings().m_version;
-    client_hello hello;
+    client_hello hello(m_ses.settings().user_agent,
+            net_identifier(m_ses.m_server_connection->client_id(), m_ses.settings().listen_port),
+            net_identifier(address2int(m_ses.server().address()), m_ses.server().port()),
+            m_ses.settings().client_name,
+            m_ses.settings().mod_name,
+            m_ses.settings().m_version);
+
+    // fill special fields
     hello.m_nHashLength = MD4_HASH_SIZE;
-    hello.m_hClient = settings.user_agent;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
-    hello.m_list.add_tag(make_string_tag(settings.client_name, CT_NAME, true));
-    hello.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    hello.m_server_network_point.m_nIP = address2int(m_ses.server().address());
-    hello.m_server_network_point.m_nPort = m_ses.server().port();
 
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
@@ -1268,26 +1303,14 @@ void peer_connection::write_ext_hello()
 void peer_connection::write_hello_answer()
 {
     // prepare hello answer
-    client_hello_answer cha;
-    cha.m_hClient               = m_ses.settings().user_agent;
-    cha.m_network_point.m_nIP   = m_ses.m_server_connection->client_id();
-    cha.m_network_point.m_nPort = m_ses.settings().listen_port;
-
-    boost::uint32_t nVersion = 0x3c;
-    boost::uint32_t nUdpPort = 0;
-
-    cha.m_list.add_tag(
-        make_string_tag(std::string(m_ses.settings().client_name), CT_NAME, true));
-    cha.m_list.add_tag(make_typed_tag(nVersion, CT_VERSION, true));
-    cha.m_list.add_tag(make_typed_tag(nUdpPort, CT_EMULE_UDPPORTS, true));
-    cha.m_server_network_point.m_nPort = m_ses.settings().server_port;
-    cha.m_server_network_point.m_nIP = m_ses.server().address().to_v4().to_ulong();
-
-    DBG("hello answer {client_hash: " << cha.m_hClient <<
-        ", client_ip: " << int2ipstr(cha.m_network_point.m_nIP) <<
-        ", client_port: " << cha.m_network_point.m_nPort <<
-        ", server_ip: " << int2ipstr(cha.m_server_network_point.m_nIP) <<
-        ", server_port: " << cha.m_server_network_point.m_nPort << "} ==> " << m_remote);
+    client_hello_answer cha(m_ses.settings().user_agent,
+            net_identifier(m_ses.m_server_connection->client_id(), m_ses.settings().listen_port),
+            net_identifier(address2int(m_ses.server().address()), m_ses.server().port()),
+            m_ses.settings().client_name,
+            m_ses.settings().mod_name,
+            m_ses.settings().m_version);
+    cha.dump();
+    DBG(" ==> " << m_remote);
     do_write(cha);
     m_handshake_complete = true;
 }
@@ -1410,7 +1433,7 @@ void peer_connection::write_part(const peer_request& r)
     if (!t) return;
 
     client_sending_part_64 sp;
-    std::pair<fsize_t, fsize_t> range = mk_range(r);
+    std::pair<size_type, size_type> range = mk_range(r);
     sp.m_hFile = t->hash();
     sp.m_begin_offset = range.first;
     sp.m_end_offset = range.second;
@@ -1526,6 +1549,7 @@ void peer_connection::on_hello_answer(const error_code& error)
 
         m_hClient = packet.m_hClient;
         DBG("hello answer {name: " << m_options.m_strName
+            << " : mod name: " << m_options.m_strModVersion
             << ", port: " << m_options.m_nPort << "} <== " << m_remote);
 
         m_ses.m_alerts.post_alert_should(
@@ -1652,7 +1676,7 @@ void peer_connection::on_filestatus_request(const error_code& error)
 
         if (t->hash() == fr.m_hFile)
         {
-            write_file_status(t->hash(), t->verified_pieces());
+            write_file_status(t->hash(), t->have_pieces());
         }
         else
         {
@@ -1707,14 +1731,14 @@ void peer_connection::on_hashset_request(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hashset_request, hr);
-        DBG("hash set request " << hr.m_hFile << " <== " << m_remote);
+        DBG("hashset request " << hr.m_hFile << " <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
         if (t->hash() == hr.m_hFile)
         {
-            write_hashset_answer(t->hash(), t->hashset());
+            write_hashset_answer(t->hash(), t->piece_hashses());
         }
         else
         {
@@ -1734,19 +1758,19 @@ void peer_connection::on_hashset_answer(const error_code& error)
     {
         DECODE_PACKET(client_hashset_answer, ha);
         const std::vector<md4_hash>& hashes = ha.m_vhParts.m_collection;
-        DBG("hash set answer " << ha.m_hFile <<
-            " {count: " << hashes.size() << "} <== " << m_remote);
+        DBG("hashset answer " << ha.m_hFile << " {count: " << hashes.size() << "} <== " << m_remote);
 
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
-        if (t->hash() == ha.m_hFile && hashes.size() > 0)
+        if (t->hash() == ha.m_hFile && t->hash() == md4_hash::fromHashset(hashes))
         {
-            t->hashset(hashes);
+            t->piece_hashses(hashes);
             write_start_upload(t->hash());
         }
         else
         {
+            DBG("incorrect hashset answer: {hash: " << t->hash() << ", remote: " << m_remote << "}");
             write_no_file(ha.m_hFile);
             disconnect(errors::file_unavaliable, 2);
         }

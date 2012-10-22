@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 #include <locale>
-#include <libtorrent/utf8.hpp>
+#include <libed2k/utf8.hpp>
 #include "libed2k/log.hpp"
 #include "libed2k/is_crypto.hpp"
 

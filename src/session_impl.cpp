@@ -6,9 +6,8 @@
 #include <algorithm>
 #include <boost/format.hpp>
 
-#include <libtorrent/peer_connection.hpp>
-#include <libtorrent/socket.hpp>
-
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/socket.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/transfer_handle.hpp"
@@ -377,19 +376,20 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
-    m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this),
-                  m_filepool, DISK_BLOCK_SIZE),
+    m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), m_filepool, BLOCK_SIZE),
     m_half_open(m_io_service),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
     m_paused(false),
     m_max_connections(200),
-    m_second_timer(time::seconds(1)),
+    m_second_timer(seconds(1)),
     m_timer(m_io_service),
     m_last_connect_duration(0),
     m_last_announce_duration(0),
     m_user_announced(false),
-    m_server_connection_state(SC_OFFLINE)
+    m_server_connection_state(SC_OFFLINE),
+    m_total_failed_bytes(0),
+    m_total_redundant_bytes(0)
 {
     DBG("*** create ed2k session ***");
 
@@ -472,7 +472,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     }
 #endif
 
-#if defined TORRENT_BSD || defined TORRENT_LINUX
+#if defined LIBED2K_BSD || defined LIBED2K_LINUX
     // ---- auto-cap open files ----
 
     struct rlimit rl;
@@ -492,7 +492,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
         DBG("max connections: " << m_max_connections);
         DBG("max files: " << m_filepool.size_limit());
     }
-#endif // TORRENT_BSD || TORRENT_LINUX
+#endif // LIBED2K_BSD || LIBED2K_LINUX
 
     m_io_service.post(boost::bind(&session_impl::on_tick, this, ec));
 
@@ -501,12 +501,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
 
 session_impl::~session_impl()
 {
-    boost::mutex::scoped_lock l(m_mutex);
-
     DBG("*** shutting down session ***");
-    abort();
+    m_io_service.post(boost::bind(&session_impl::abort, this));
 
-    l.unlock();
     // we need to wait for the disk-io thread to
     // die first, to make sure it won't post any
     // more messages to the io_service containing references
@@ -526,7 +523,7 @@ void session_impl::operator()()
 {
     // main session thread
 
-    eh_initializer();
+    //eh_initializer();
 
     if (m_listen_interface.port() != 0)
     {
@@ -632,7 +629,7 @@ char session_impl::server_connection_state() const
 void session_impl::update_disk_thread_settings()
 {
     disk_io_job j;
-    j.buffer = (char*)&m_disk_thread_settings;
+    j.buffer = (char*) new session_settings(m_settings);
     j.action = disk_io_job::update_settings;
     m_disk_thread.add_job(j);
 }
@@ -672,10 +669,10 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
 
         std::string msg =
             "error accepting connection on '" +
-            libtorrent::print_endpoint(ep) + "' " + e.message();
+            libed2k::print_endpoint(ep) + "' " + e.message();
         DBG(msg);
 
-#ifdef TORRENT_WINDOWS
+#ifdef LIBED2K_WINDOWS
         // Windows sometimes generates this error. It seems to be
         // non-fatal and we have to do another async_accept.
         if (e.value() == ERROR_SEM_TIMEOUT)
@@ -684,7 +681,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
             return;
         }
 #endif
-#ifdef TORRENT_BSD
+#ifdef LIBED2K_BSD
         // Leopard sometimes generates an "invalid argument" error. It seems to be
         // non-fatal and we have to do another async_accept.
         if (e.value() == EINVAL)
@@ -815,29 +812,23 @@ std::vector<transfer_handle> session_impl::get_transfers()
     return ret;
 }
 
-void session_impl::queue_check_torrent(boost::shared_ptr<transfer> const& t)
+void session_impl::queue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
     if (m_abort) return;
-    BOOST_ASSERT(t->should_check_file());
-    BOOST_ASSERT(t->state() != transfer_status::checking_files);
-    if (m_queued_for_checking.empty())
-    {
-        m_queued_for_checking.push_back(t);
-        t->start_checking();
-    }
-    else
-    {
-        t->set_state(transfer_status::queued_for_checking);
-        m_queued_for_checking.push_back(t);
-    }
+    LIBED2K_ASSERT(t->should_check_file());
+    LIBED2K_ASSERT(t->state() != transfer_status::checking_files);
+    if (m_queued_for_checking.empty()) t->start_checking();
+    else t->set_state(transfer_status::queued_for_checking);
 
-    BOOST_ASSERT(std::find(m_queued_for_checking.begin()
-        , m_queued_for_checking.end(), t) == m_queued_for_checking.end());
+    LIBED2K_ASSERT(
+        std::find(m_queued_for_checking.begin(), m_queued_for_checking.end(), t) ==
+        m_queued_for_checking.end());
+    m_queued_for_checking.push_back(t);
 }
 
-void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
+void session_impl::dequeue_check_transfer(boost::shared_ptr<transfer> const& t)
 {
-    BOOST_ASSERT(t->state() == transfer_status::checking_files
+    LIBED2K_ASSERT(t->state() == transfer_status::checking_files
         || t->state() == transfer_status::queued_for_checking);
 
     if (m_queued_for_checking.empty()) return;
@@ -847,13 +838,13 @@ void session_impl::dequeue_check_torrent(boost::shared_ptr<transfer> const& t)
     for (check_queue_t::iterator i = m_queued_for_checking.begin()
         , end(m_queued_for_checking.end()); i != end; ++i)
     {
-        BOOST_ASSERT(*i == t || (*i)->should_check_file());
+        LIBED2K_ASSERT(*i == t || (*i)->should_check_file());
         if (*i == t) done = i;
         if (next_check == t || next_check->queue_position() > (*i)->queue_position())
             next_check = *i;
     }
     // only start a new one if we removed the one that is checking
-    BOOST_ASSERT(done != m_queued_for_checking.end());
+    LIBED2K_ASSERT(done != m_queued_for_checking.end());
     if (done == m_queued_for_checking.end()) return;
 
     if (next_check != t && t->state() == transfer_status::checking_files)
@@ -980,7 +971,7 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
 
     m_half_open.enqueue(boost::bind(&peer_connection::connect, c, _1),
                         boost::bind(&peer_connection::on_timeout, c),
-                        libtorrent::seconds(m_settings.peer_connect_timeout));
+                        libed2k::seconds(m_settings.peer_connect_timeout));
 
     return (peer_connection_handle(c, this));
 }
@@ -1123,7 +1114,7 @@ void session_impl::abort()
 
     // closing all the connections needs to be done from a callback,
     // when the session mutex is not held
-    m_io_service.post(boost::bind(&libtorrent::connection_queue::close, &m_half_open));
+    m_io_service.post(boost::bind(&libed2k::connection_queue::close, &m_half_open));
 
     DBG("connection queue: " << m_half_open.size());
     DBG("without transfers connections size: " << m_connections.size());
@@ -1135,6 +1126,8 @@ void session_impl::abort()
     }
 
     DBG("connection queue: " << m_half_open.size());
+
+    m_disk_thread.abort();
 }
 
 void session_impl::pause()
@@ -1161,8 +1154,25 @@ void session_impl::resume()
     }
 }
 
+// this function is called from the disk-io thread
+// when the disk queue is low enough to post new
+// write jobs to it. It will go through all peer
+// connections that are blocked on the disk and
+// wake them up
 void session_impl::on_disk_queue()
 {
+}
+
+// used to cache the current time
+// every 100 ms. This is cheaper
+// than a system call and can be
+// used where more accurate time
+// is not necessary
+extern ptime g_current_time;
+
+initialize_timer::initialize_timer()
+{
+    g_current_time = time_now_hires();
 }
 
 void session_impl::on_tick(error_code const& e)
@@ -1180,14 +1190,16 @@ void session_impl::on_tick(error_code const& e)
         return;
     }
 
+    aux::g_current_time = time_now_hires();
+
     error_code ec;
-    m_timer.expires_from_now(time::milliseconds(100), ec);
+    m_timer.expires_from_now(milliseconds(100), ec);
     m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
 
     // only tick the following once per second
     if (!m_second_timer.expires()) return;
 
-    int tick_interval_ms = m_second_timer.tick_interval().total_milliseconds();
+    int tick_interval_ms = total_milliseconds(m_second_timer.tick_interval());
 
     // --------------------------------------------------------------
     // check for incoming connections that might have timed out
@@ -1220,7 +1232,7 @@ void session_impl::on_tick(error_code const& e)
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
         transfer& t = *i->second;
-        BOOST_ASSERT(!t.is_aborted());
+        LIBED2K_ASSERT(!t.is_aborted());
         if (t.state() == transfer_status::checking_files) ++num_checking;
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms);
@@ -1242,7 +1254,7 @@ void session_impl::on_tick(error_code const& e)
     // the queued torrents
     if (num_checking == 0 && num_queued > 0)
     {
-        BOOST_ASSERT(false);
+        LIBED2K_ASSERT(false);
         check_queue_t::iterator i = std::min_element(m_queued_for_checking.begin()
             , m_queued_for_checking.end(), boost::bind(&transfer::queue_position, _1)
             < boost::bind(&transfer::queue_position, _2));
@@ -1362,7 +1374,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //ERR("failed to open socket: " << libtorrent::print_endpoint(ep)
+        //ERR("failed to open socket: " << libed2k::print_endpoint(ep)
         //    << ": " << ec.message().c_str());
     }
 
@@ -1374,7 +1386,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
         char msg[200];
         snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
-                 libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
+                 libed2k::print_endpoint(ep).c_str(), ec.message().c_str());
         ERR(msg);
 
         return listen_socket_t();
@@ -1389,7 +1401,7 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
         char msg[200];
         snprintf(msg, 200, "cannot listen on interface \"%s\": %s",
-                 libtorrent::print_endpoint(ep).c_str(), ec.message().c_str());
+                 libed2k::print_endpoint(ep).c_str(), ec.message().c_str());
         ERR(msg);
 
         return listen_socket_t();

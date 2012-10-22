@@ -19,17 +19,17 @@ def unionArgs(*args):
 
 # Environment
 boostRoot      = os.getenv('BOOST_ROOT')
-libtorrentRoot = os.getenv('LIBTORRENT_ROOT')
 
 # Arguments
 args = {
     'ENV'     : os.environ,
-    'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot, libtorrentRoot]],
-    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-DBOOST_FILESYSTEM_VERSION=2', '-Wall', '-g'],
-    'LIBPATH' : [join(p, 'lib') for p in [boostRoot, libtorrentRoot]],
+    'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot]],
+    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
+                 '-DBOOST_FILESYSTEM_VERSION=2', '-DLIBED2K_USE_BOOST_DATE_TIME'],
+    'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
     'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
                  'boost_thread', 'boost_signals', 'boost_filesystem',
-                 'torrent-rasterbar', 'cryptopp', 'ssl', 'pthread']
+                 'cryptopp', 'ssl', 'pthread', 'rt']
     }
 
 env = Environment(**args)

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <map>
 #include <deque>
-#include <boost/cstdint.hpp>
+
 #include <boost/tuple/tuple.hpp>
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
@@ -16,16 +16,18 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include <libtorrent/assert.hpp>
-#include <libtorrent/chained_buffer.hpp>
-#include <libtorrent/intrusive_ptr_base.hpp>
-#include <libtorrent/stat.hpp>
+#include "libed2k/intrusive_ptr_base.hpp"
+#include <libed2k/stat.hpp>
 
-#include "libed2k/types.hpp"
+#include "libed2k/assert.hpp"
+#include "libed2k/config.hpp"
+#include "libed2k/size_type.hpp"
+#include "libed2k/socket.hpp"
+#include "libed2k/chained_buffer.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
 #include "libed2k/packet_struct.hpp"
-#include "libed2k/constants.hpp"
+#include "libed2k/deadline_timer.hpp"
 
 namespace libed2k{
 
@@ -33,7 +35,7 @@ namespace libed2k{
 
     namespace aux{ class session_impl; }
 
-    class base_connection: public libtorrent::intrusive_ptr_base<base_connection>,
+    class base_connection: public intrusive_ptr_base<base_connection>,
                            public boost::noncopyable
     {
         friend class aux::session_impl;
@@ -183,7 +185,7 @@ namespace libed2k{
 
         aux::session_impl& m_ses;
         boost::shared_ptr<tcp::socket> m_socket;
-        dtimer m_deadline;     //!< deadline timer for reading operations
+        deadline_timer m_deadline;     //!< deadline timer for reading operations
         libed2k_header m_in_header;    //!< incoming message header
         socket_buffer m_in_container; //!< buffer for incoming messages
         socket_buffer m_in_gzip_container; //!< buffer for compressed data
@@ -210,8 +212,8 @@ namespace libed2k{
             boost::aligned_storage<Size> bytes;
         };
 
-        handler_storage<READ_HANDLER_MAX_SIZE> m_read_handler_storage;
-        handler_storage<WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
+        handler_storage<LIBED2K_READ_HANDLER_MAX_SIZE> m_read_handler_storage;
+        handler_storage<LIBED2K_WRITE_HANDLER_MAX_SIZE> m_write_handler_storage;
 
         template <class Handler, std::size_t Size>
         class allocating_handler
@@ -255,18 +257,18 @@ namespace libed2k{
         };
 
         template <class Handler>
-        allocating_handler<Handler, READ_HANDLER_MAX_SIZE>
+        allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>
         make_read_handler(Handler const& handler)
         {
-            return allocating_handler<Handler, READ_HANDLER_MAX_SIZE>(
+            return allocating_handler<Handler, LIBED2K_READ_HANDLER_MAX_SIZE>(
                 handler, m_read_handler_storage);
         }
 
         template <class Handler>
-        allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>
+        allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>
         make_write_handler(Handler const& handler)
         {
-            return allocating_handler<Handler, WRITE_HANDLER_MAX_SIZE>(
+            return allocating_handler<Handler, LIBED2K_WRITE_HANDLER_MAX_SIZE>(
                 handler, m_write_handler_storage);
         }
     };

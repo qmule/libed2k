@@ -58,7 +58,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma warning(pop)
 #endif
 
-#include "libed2k/types.hpp"
+#include "libed2k/time.hpp"
+#include "libed2k/io_service.hpp"
 
 #ifndef LIBED2K_MAX_ALERT_TYPES
 #define LIBED2K_MAX_ALERT_TYPES 7
@@ -122,7 +123,7 @@ namespace libed2k
     public:
         enum { queue_size_limit_default = 1000 };
 
-        alert_manager(boost::asio::io_service& ios);
+        alert_manager(io_service& ios);
         ~alert_manager();
 
         void post_alert(const alert& alert_);
@@ -166,7 +167,7 @@ namespace libed2k
         boost::uint32_t m_alert_mask;
         size_t m_queue_size_limit;
         boost::function<void(alert const&)> m_dispatch;
-        boost::asio::io_service& m_ios;
+        io_service& m_ios;
     };
 
     struct unhandled_alert : std::exception

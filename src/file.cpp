@@ -4,24 +4,23 @@
 #include <map>
 #include <algorithm>
 #include <locale>
+
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/bind.hpp>
+
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
 #include <cassert>
+
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/md4_hash.hpp"
-#include "libed2k/types.hpp"
 #include "libed2k/file.hpp"
 
 namespace libed2k
 {
-
-    using boost::uintmax_t;
-
     typedef std::map<std::string, EED2KFileType> SED2KFileTypeMap;
     typedef SED2KFileTypeMap::value_type SED2KFileTypeMapElement;
     static SED2KFileTypeMap ED2KFileTypesMap;
@@ -560,7 +559,7 @@ namespace libed2k
     known_file_entry::known_file_entry(const md4_hash& hFile,
                                         const std::vector<md4_hash>& hSet,
                                         const fs::path& p,
-                                        size_t  nFilesize,
+                                        size_type nFilesize,
                                         boost::uint32_t nAccepted,
                                         boost::uint32_t nRequested,
                                         boost::uint64_t nTransferred,
@@ -605,7 +604,7 @@ namespace libed2k
         }
     }
 
-    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const fs::path& path, fsize_t size, const std::vector<char>& fr_data):
+    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const fs::path& path, size_type size, const std::vector<char>& fr_data):
             m_hash(hash), m_filepath(path.string()), m_filesize(size)
     {
         if (!fr_data.empty())
@@ -691,7 +690,7 @@ namespace libed2k
                         throw libed2k_exception(errors::file_unavaliable);
                     }
 
-                    uintmax_t nFileSize = fs::file_size(p);
+                    size_type nFileSize = fs::file_size(p);
 
                     if (nFileSize == 0)
                     {
@@ -699,7 +698,6 @@ namespace libed2k
                     }
 
                     atp.file_size = nFileSize;
-                    atp.pieces = bitfield(piece_count(nFileSize), 1);   // all pieces
 
                     // search file in migration container
                     for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
@@ -723,11 +721,11 @@ namespace libed2k
                         if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
                         {
                             // when file contain only one hash - we save main hash directly into container
-                            atp.hashset.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
+                            atp.piece_hashses.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
                         }
                         else
                         {
-                            atp.hashset = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
+                            atp.piece_hashses = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
                         }
 
                         for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
@@ -771,6 +769,7 @@ namespace libed2k
                     // execute real hashing when migration got nothing
                     if (!atp.file_hash.defined())
                     {
+                        namespace bio = boost::iostreams;
                         bool    bPartial = false; // check last part in file not full
                         bio::mapped_file_params mf_param;
                         mf_param.flags  = bio::mapped_file_base::readonly;
@@ -780,7 +779,7 @@ namespace libed2k
 
                         bio::mapped_file_source fsource;
 
-                        uintmax_t nCurrentOffset = 0;
+                        size_type nCurrentOffset = 0;
                         CryptoPP::Weak1::MD4 md4_hasher;
 
                         while(nCurrentOffset < nFileSize)
@@ -790,11 +789,11 @@ namespace libed2k
                                 break;
                             }
 
-                            uintmax_t nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
-                            uintmax_t nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
+                            size_type nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
+                            size_type nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
 
                             // calculate map size
-                            uintmax_t nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
+                            size_type nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
 
                             // correct map length
                             if (nMapLength > (nFileSize - nCurrentOffset))
@@ -810,7 +809,7 @@ namespace libed2k
                             mf_param.length = nMapLength;
                             fsource.open(mf_param);
 
-                            uintmax_t nLocalOffset = nDataCorrection; // start from data correction offset
+                            size_type nLocalOffset = nDataCorrection; // start from data correction offset
 
                             DBG("{mpos: " << nMapPosition << "} {dt corr: "
                                     << nDataCorrection << "} {map len: "
@@ -824,7 +823,7 @@ namespace libed2k
                                 }
 
                                 // calculate current part size size
-                                uintmax_t nLength = PIECE_SIZE;
+                                size_type nLength = PIECE_SIZE;
 
                                 if (PIECE_SIZE > nMapLength - nLocalOffset)
                                 {
@@ -836,7 +835,7 @@ namespace libed2k
                                 md4_hasher.CalculateDigest(
                                     hash.getContainer(),
                                     reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                                atp.hashset.push_back(hash);
+                                atp.piece_hashses.push_back(hash);
                                 // generate hash
                                 nLocalOffset    += nLength;
                                 nCurrentOffset  += nLength;
@@ -854,19 +853,19 @@ namespace libed2k
                         // when we don't have last partial piece - add special hash
                         if (!bPartial)
                         {
-                            atp.hashset.push_back(md4_hash::terminal);
+                            atp.piece_hashses.push_back(md4_hash::terminal);
                         }
 
-                        if (atp.hashset.size() > 1)
+                        if (atp.piece_hashses.size() > 1)
                         {
                             md4_hasher.CalculateDigest(
                                 atp.file_hash.getContainer(),
-                                reinterpret_cast<const unsigned char*>(&atp.hashset[0]),
-                                atp.hashset.size()*libed2k::MD4_HASH_SIZE);
+                                reinterpret_cast<const unsigned char*>(&atp.piece_hashses[0]),
+                                atp.piece_hashses.size()*libed2k::MD4_HASH_SIZE);
                         }
                         else
                         {
-                            atp.file_hash = atp.hashset[0];
+                            atp.file_hash = atp.piece_hashses[0];
                         }
                     }
 
@@ -940,7 +939,7 @@ namespace libed2k
 
                         switch(p->getNameId())
                         {
-                            case FT_FILENAME:                                
+                            case FT_FILENAME:
                                 strFName = p->asString();
                                 break;
                             case FT_FILESIZE:
@@ -991,7 +990,7 @@ namespace libed2k
     }
 
     // static
-    std::string emule_collection::toLink(const std::string& strFilename, boost::uint64_t nFilesize, const md4_hash& hFile)
+    std::string emule_collection::toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile)
     {
         std::stringstream retvalue;
         // ed2k://|file|fileName|fileSize|fileHash|/
@@ -1090,8 +1089,9 @@ namespace libed2k
 
                 for (size_t n = 0; n < m_files.size(); ++n)
                 {
+                    boost::uint64_t filesize = m_files[n].m_filesize;
                     ebc.m_files.m_collection[n].add_tag(make_string_tag(m_files[n].m_filename, FT_FILENAME, true));
-                    ebc.m_files.m_collection[n].add_tag(make_typed_tag(m_files[n].m_filesize, FT_FILESIZE, true));
+                    ebc.m_files.m_collection[n].add_tag(make_typed_tag(filesize, FT_FILESIZE, true));
                     ebc.m_files.m_collection[n].add_tag(make_typed_tag(m_files[n].m_filehash, FT_FILEHASH, true));
                 }
 
@@ -1136,7 +1136,7 @@ namespace libed2k
         return (false);
     }
 
-    bool emule_collection::add_file(const std::string& strFilename, boost::uint64_t nFilesize, const std::string& strFilehash)
+    bool emule_collection::add_file(const std::string& strFilename, size_type nFilesize, const std::string& strFilehash)
     {
         md4_hash hash;
 

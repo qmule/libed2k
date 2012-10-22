@@ -41,12 +41,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;TORRENT_DEBUG;LIBED2K_DEBUG"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
+				PrecompiledHeaderThrough="pch.hpp"
 				ProgramDataBaseFileName="$(IntDir)\libed2k_vc90.pdb"
 				BrowseInformation="1"
 				WarningLevel="3"
@@ -86,7 +87,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="4"
-			CharacterSet="1"
+			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -108,8 +109,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\include&quot;;&quot;$(LIBTORRENT_ROOT)\zlib&quot;;&quot;$(CRYPTOPP_ROOT)&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500"
+				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -159,7 +161,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\allocator.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\assert.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\base_connection.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\chained_buffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\connection_queue.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ConvertUTF.cpp"
 				>
 			</File>
 			<File
@@ -167,11 +189,43 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\disk_buffer_holder.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\disk_buffer_pool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\disk_io_thread.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\entry.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\error_code.cpp"
 				>
 			</File>
 			<File
+				RelativePath="..\src\escape_string.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\file.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file_pool.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\file_storage.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\filesystem.cpp"
 				>
 			</File>
 			<File
@@ -180,6 +234,10 @@
 			</File>
 			<File
 				RelativePath="..\src\is_https_auth.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lazy_bdecode.cpp"
 				>
 			</File>
 			<File
@@ -195,6 +253,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\parse_url.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\peer.cpp"
 				>
 			</File>
@@ -207,7 +269,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\piece_picker.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\policy.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\random.cpp"
 				>
 			</File>
 			<File
@@ -227,11 +297,43 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\sha1.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\socket_io.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\stat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\storage.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\thread.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\time.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\transfer.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\transfer_handle.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\transfer_info.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utf8.cpp"
 				>
 			</File>
 			<File
@@ -245,6 +347,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\include\libed2k\address.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\alert.hpp"
 				>
 			</File>
@@ -253,7 +359,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\alloca.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\allocator.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\archive.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\assert.hpp"
 				>
 			</File>
 			<File
@@ -261,7 +379,59 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\bencode.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\bitfield.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\chained_buffer.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\config.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\connection_queue.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\constants.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\ConvertUTF.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\copy_ptr.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\ctag.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\deadline_timer.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\disk_buffer_holder.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\disk_buffer_pool.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\disk_io_thread.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\entry.hpp"
 				>
 			</File>
 			<File
@@ -269,11 +439,47 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\escape_string.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\file.hpp"
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\file_pool.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\file_storage.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\filesystem.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\fingerprint.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\hasher.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\intrusive_ptr_base.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\invariant_check.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\io.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\io_service.hpp"
 				>
 			</File>
 			<File
@@ -285,7 +491,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\lazy_entry.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\log.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\max.hpp"
 				>
 			</File>
 			<File
@@ -294,6 +508,14 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\packet_struct.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\parse_url.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\pch.hpp"
 				>
 			</File>
 			<File
@@ -313,7 +535,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\peer_info.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\peer_request.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\piece_block_progress.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\piece_picker.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\policy.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\ptime.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\random.hpp"
 				>
 			</File>
 			<File
@@ -337,6 +583,46 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\session_status.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\size_type.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\sliding_average.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\socket.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\socket_io.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\stat.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\storage.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\storage_defs.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\thread.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\time.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\transfer.hpp"
 				>
 			</File>
@@ -345,7 +631,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\types.hpp"
+				RelativePath="..\include\libed2k\transfer_info.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\utf8.hpp"
 				>
 			</File>
 			<File
