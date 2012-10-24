@@ -131,14 +131,13 @@ namespace libed2k {
             // statistics gathered from all transfers.
             stat m_stat;
 
+            // handles delayed alerts
+            alert_manager m_alerts;
+
             /**
               * file hasher closed in self thread
              */
-            transfer_params_maker    m_atp_maker;
-
-
-            // handles delayed alerts
-            alert_manager m_alerts;
+            transfer_params_maker    m_tpm;
         };
 
 

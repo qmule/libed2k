@@ -17,6 +17,8 @@
 #include "libed2k/log.hpp"
 #include "libed2k/transfer.hpp"
 #include "libed2k/deadline_timer.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/session_impl.hpp"
 #include "common.hpp"
 
 namespace fs = boost::filesystem;
@@ -26,6 +28,8 @@ namespace libed2k
 
 #define TCOUNT 3
 
+    static session_settings ss;
+
     class test_transfer_params_maker : public transfer_params_maker
     {
     public:
@@ -33,26 +37,38 @@ namespace libed2k
         static int m_total[TCOUNT];
         static int m_progress[TCOUNT];
 
-        test_transfer_params_maker(const std::string& known_file);
+        test_transfer_params_maker(alert_manager& am, const std::string& known_file);
     protected:
-        void process_item(hash_handle* ph);
+        void process_item(const std::string& filepath);
     private:
         int m_index;
+    };
+
+    class session_impl_test : public aux::session_impl_base
+    {
+    public:
+        session_impl_test(const session_settings& settings) : aux::session_impl_base(settings), m_tp_maker(m_alerts, ""){}
+        virtual ~session_impl_test(){}
+
+        transfer_handle add_transfer(add_transfer_params const&, error_code& ec){return transfer_handle();}
+        boost::weak_ptr<transfer> find_transfer(const std::string& filename) {return boost::shared_ptr<transfer>(); }
+        void remove_transfer(const transfer_handle& h, int options) {}
+        std::vector<transfer_handle> get_transfers() {return std::vector<transfer_handle>();}
+        test_transfer_params_maker  m_tp_maker; // do not name it m_tpm - original makers already named
     };
 
     error_code test_transfer_params_maker::m_errors[]  = { errors::no_error, errors::filesize_is_zero, errors::file_was_truncated };
     int test_transfer_params_maker::m_total[]   = { 10, 20, 30 };
     int test_transfer_params_maker::m_progress[]= { 10, 0, 23 };
 
-    test_transfer_params_maker::test_transfer_params_maker(const std::string& known_file) : transfer_params_maker(known_file), m_index(0) {}
+    test_transfer_params_maker::test_transfer_params_maker(alert_manager& am, const std::string& known_file) : transfer_params_maker(am, known_file), m_index(0) {}
 
-    void test_transfer_params_maker::process_item(hash_handle* ph)
+    void test_transfer_params_maker::process_item(const std::string& filepath)
     {
         DBG("process item " << m_index);
-        hash_status hs;
-        hs.m_error = m_errors[m_index];
-        hs.m_progress = std::make_pair(m_progress[m_index], m_total[m_index]);
-        ph->set_status(hs);
+        add_transfer_params atp;
+        atp.m_filepath = filepath;
+        m_am.post_alert_should(transfer_params_alert(atp, m_errors[m_index]));
         ++m_index;
         m_index = m_index % TCOUNT;
     }
@@ -111,19 +127,23 @@ BOOST_AUTO_TEST_CASE(test_string_conversions)
 
 BOOST_AUTO_TEST_CASE(test_concurrency)
 {
-    std::vector<boost::shared_ptr<libed2k::hash_handle> > v;
-    libed2k::test_transfer_params_maker maker("");
-    maker.start();
-    maker.stop();
-    maker.stop();
-    maker.stop();
-    maker.stop();
-    maker.start();
-    v.push_back(maker.make_transfer_params(""));
-    v.push_back(maker.make_transfer_params(""));
-    v.push_back(maker.make_transfer_params(""));
+    const char* names[TCOUNT] = {"xxx", "yyy", "zzz"};
+    libed2k::session_impl_test sit(libed2k::ss);
+    sit.m_alerts.set_alert_mask(libed2k::alert::all_categories);
 
-    while(maker.queue_size())
+    sit.m_tp_maker.start();
+    sit.m_tp_maker.stop();
+    sit.m_tp_maker.stop();
+    sit.m_tp_maker.stop();
+    sit.m_tp_maker.stop();
+    sit.m_tp_maker.start();
+
+    for (size_t n = 0; n < sizeof(names)/sizeof(names[0]); ++n)
+    {
+        sit.m_tp_maker.make_transfer_params(names[n]);
+    }
+
+    while(sit.m_tp_maker.queue_size())
     {
 #ifdef WIN32
         Sleep(500);
@@ -132,20 +152,25 @@ BOOST_AUTO_TEST_CASE(test_concurrency)
 #endif
     }
 
-    for (size_t i = 0; i < TCOUNT; ++i)
+    for (size_t n = 0; n < TCOUNT; ++n)
     {
-        BOOST_CHECK(v[i].get()->status() ==
-                libed2k::hash_status(libed2k::test_transfer_params_maker::m_errors[i],
-                        std::make_pair(libed2k::test_transfer_params_maker::m_progress[i], libed2k::test_transfer_params_maker::m_total[i])));
+        BOOST_REQUIRE(sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)));
+        std::auto_ptr<libed2k::alert> a = sit.m_alerts.get();
+        BOOST_REQUIRE(dynamic_cast<libed2k::transfer_params_alert*>(a.get()));
+        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::transfer_params_alert*>(a.get()))->m_ec, libed2k::test_transfer_params_maker::m_errors[n]);
+        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::transfer_params_alert*>(a.get()))->m_atp.m_filepath, std::string(names[n]));
     }
 }
 
-
 BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
 {
+    libed2k::session_impl_test sit(libed2k::ss);
+    sit.m_alerts.set_alert_mask(libed2k::alert::all_categories);
+
     test_files_holder tfh;
     const size_t sz = 5;
     const char* filename = "./test_filename";
+
     std::pair<libed2k::size_type, libed2k::md4_hash> tmpl[sz] =
     {
         std::make_pair(100, libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5")),
@@ -163,62 +188,54 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
         tfh.hold(s.str());
     }
 
-    libed2k::transfer_params_maker tpm("");
-    tpm.start();
-
-    std::vector<boost::shared_ptr<libed2k::hash_handle> > v;
+    sit.m_tpm.start();
 
     for (size_t n = 0; n < sz; ++n)
     {
         std::stringstream s;
         s << filename << n;
-        v.push_back(tpm.make_transfer_params(s.str()));
+        sit.m_tpm.make_transfer_params(s.str());
     }
 
     // wait hasher completed
-    WAIT_TPM(tpm)
-    tpm.stop(); // wait last file will hashed
+    WAIT_TPM(sit.m_tpm)
+    sit.m_tpm.stop(); // wait last file will hashed
 
     for (size_t n = 0; n < sz; ++n)
     {
         std::stringstream s;
         s << filename << n;
-        libed2k::hash_status hs = v[n].get()->status();
-
-        BOOST_CHECK(hs.valid());
-        BOOST_CHECK(hs.completed());
-        BOOST_CHECK_MESSAGE(v[n].get()->atp().file_hash == tmpl[n].second, s.str());
+        BOOST_REQUIRE(sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)));
+        std::auto_ptr<libed2k::alert> aptr = sit.m_alerts.get();
+        libed2k::transfer_params_alert* a = dynamic_cast<libed2k::transfer_params_alert*>(aptr.get());
+        BOOST_REQUIRE(a);
+        BOOST_CHECK(!a->m_ec);
+        BOOST_CHECK_MESSAGE(a->m_atp.file_hash == tmpl[n].second, s.str());
     }
 
-    // free resources
-    v.clear();
+    // start hashing and free resources
+    sit.m_tpm.start();
 
-    // check resource clean before hash
-    for (size_t k = 0; k < 40; ++k)
-    {
-        for (size_t n = 0; n < sz; ++n)
-        {
-            v.push_back(tpm.make_transfer_params("some non-exists file"));
-        }
-    }
-
-    // start hashing and free reources
-    tpm.start();
-    v.clear();
 
     const char* zero_filename = "zero_filename.txt";
     tfh.hold(zero_filename);
     BOOST_REQUIRE(generate_test_file(0, zero_filename));
-    boost::shared_ptr<libed2k::hash_handle> zero_handle = tpm.make_transfer_params(zero_filename);
-    WAIT_TPM(tpm)
-    tpm.stop();
-    BOOST_CHECK(zero_handle.get()->status().m_error == libed2k::errors::make_error_code(libed2k::errors::filesize_is_zero));
+    sit.m_tpm.make_transfer_params(zero_filename);
 
-    tpm.start();
-    boost::shared_ptr<libed2k::hash_handle> non_exists_handle = tpm.make_transfer_params("non_exists");
-    WAIT_TPM(tpm)
-    tpm.stop();
-    BOOST_CHECK(non_exists_handle.get()->status().m_error);
+    sit.m_tpm.make_transfer_params("non_exists");
+    WAIT_TPM(sit.m_tpm)
+
+    BOOST_REQUIRE(sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)));
+    std::auto_ptr<libed2k::alert> aptr = sit.m_alerts.get();
+    libed2k::transfer_params_alert* a = dynamic_cast<libed2k::transfer_params_alert*>(aptr.get());
+    BOOST_REQUIRE(a);
+    BOOST_CHECK_EQUAL(a->m_ec, libed2k::errors::make_error_code(libed2k::errors::filesize_is_zero));
+    BOOST_REQUIRE(sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)));
+    aptr = sit.m_alerts.get();
+    a = dynamic_cast<libed2k::transfer_params_alert*>(aptr.get());
+    BOOST_REQUIRE(a);
+    BOOST_CHECK(a->m_ec);
+
     DBG("test_add_transfer_params_maker {completed}");
 }
 

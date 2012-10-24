@@ -603,7 +603,7 @@ namespace libed2k
         for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
         {
             // pass files when change time isn't equal
-            if (write_ts != m_known_file_list.m_collection[n].m_nLastChanged)
+            if (write_ts != static_cast<time_t>(m_known_file_list.m_collection[n].m_nLastChanged))
             {
                 continue;
             }
@@ -693,7 +693,7 @@ namespace libed2k
     transfer_resume_data::transfer_resume_data()
     {}
 
-    transfer_params_maker::transfer_params_maker(const std::string& known_filepath) : m_known_filepath(known_filepath)
+    transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) : m_am(am), m_known_filepath(known_filepath)
     {
     }
 
@@ -711,7 +711,7 @@ namespace libed2k
 
     void transfer_params_maker::stop()
     {
-        m_order.cancel();
+        m_order.abort();
 
         // when thread exists - wait it
         if (m_thread.get())
@@ -724,11 +724,14 @@ namespace libed2k
     }
 
 
-    boost::shared_ptr<hash_handle> transfer_params_maker::make_transfer_params(const std::string& filepath)
+    void transfer_params_maker::make_transfer_params(const std::string& filepath)
     {
-        boost::shared_ptr<hash_handle> ptr(new hash_handle(filepath));
-        m_order.push(ptr);
-        return (ptr);
+        m_order.push(filepath);
+    }
+
+    void transfer_params_maker::cancel_transfer_params(const std::string& filepath)
+    {
+        m_order.cancel(filepath);
     }
 
     void transfer_params_maker::operator()()
@@ -753,16 +756,11 @@ namespace libed2k
             }
         }
 
-        boost::weak_ptr<hash_handle> weak_handle;
+        std::string filepath;
 
-        while(m_order.pop_wait(weak_handle))
+        while(m_order.pop_wait(filepath))
         {
-            boost::shared_ptr<hash_handle> sh(weak_handle.lock());  //!< get pointer to object
-
-            if (sh)
-            {
-                process_item(sh.get());
-            }
+            process_item(filepath);
         }
 
         DBG("transfer_params_maker {thread exit}");
@@ -794,34 +792,34 @@ namespace libed2k
     };
 
 
-    void transfer_params_maker::process_item(hash_handle* ph)
+    void transfer_params_maker::process_item(const std::string& filepath)
     {
-        add_transfer_params atp = ph->atp();
-        hash_status hs;
+        add_transfer_params atp;
+        atp.m_filepath = filepath;
+        error_code ec;
+
+        //hash_status hs;
 
         file_status fs;
-        stat_file(atp.m_filepath, &fs, hs.m_error);
+        stat_file(atp.m_filepath, &fs, ec);
 
-        if (!hs.m_error)
+        if (!ec)
         {
             size_type filesize = file_size(atp.m_filepath);
 
             if (filesize != 0)
             {
-                hs.m_progress.second = div_ceil(filesize, PIECE_SIZE);
-                ph->set_status(hs); // initialize progress
-                LIBED2K_ASSERT(hs.m_progress.second != 0);
+                int pieces_count = div_ceil(filesize, PIECE_SIZE);
+                LIBED2K_ASSERT(pieces_count != 0);
 
-                DBG("stat file: {" << convert_to_native(atp.m_filepath) << ", pieces: " << hs.m_progress.second  << "}");
+                DBG("stat file: {" << convert_to_native(atp.m_filepath) << ", pieces: " << pieces_count  << "}");
 
                 if (m_kfc.extract_transfer_params(fs.mtime, atp))
                 {
                     DBG("{known file entry was found for: " << convert_to_native(atp.m_filepath) << "}");
-                    hs.m_progress.first = hs.m_progress.second; // set progress to completed
                 }
                 else
                 {
-                    LIBED2K_ASSERT(hs.m_progress.second > 0);
                     shared_file sh(convert_to_native(atp.m_filepath));
 
                     if (sh.get())
@@ -830,12 +828,13 @@ namespace libed2k
                         try
                         {
                             // prepare results vector
-                            atp.piece_hashses.resize(hs.m_progress.second);
+
+                            atp.piece_hashses.resize(pieces_count);
                             size_type capacity = filesize;
                             char chBlock[BLOCK_SIZE];
                             hasher hproc;
 
-                            for (int i = 0; i < hs.m_progress.second; ++i)
+                            for (int i = 0; i < pieces_count; ++i)
                             {
                                 size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
 
@@ -854,15 +853,11 @@ namespace libed2k
                                     in_piece_capacity -= current_block_size;
                                 }
 
-                                ++hs.m_progress.first;
-                                LIBED2K_ASSERT(hs.m_progress.first <= hs.m_progress.second);
-                                ph->set_status(hs);
-
                                 atp.piece_hashses[i] = hproc.final();
                                 hproc.reset();
                             }
 
-                            if (hs.m_progress.second*libed2k::PIECE_SIZE == filesize)
+                            if (pieces_count*libed2k::PIECE_SIZE == filesize)
                             {
                                 atp.piece_hashses.push_back(libed2k::md4_hash::terminal);
                             }
@@ -880,12 +875,12 @@ namespace libed2k
                         catch(libed2k_exception& e)
                         {
                             DBG("file {" << convert_to_native(atp.m_filepath) << "} was truncated");
-                            hs.m_error = e.error();
+                            ec = e.error();
                         }
                     }
                     else
                     {
-                        hs.m_error.assign(errno, boost::system::get_generic_category());
+                        ec.assign(errno, boost::system::get_generic_category());
                     }
 
                 }
@@ -894,44 +889,14 @@ namespace libed2k
                 // prepare common result
                 atp.file_size   = filesize;
                 atp.seed_mode   = true;
-                ph->set_atp(atp);
             }
             else
             {
-                hs.m_error = errors::filesize_is_zero;
+                ec = errors::filesize_is_zero;
             }
         }
 
-        ph->set_status(hs);
-    }
-
-    hash_handle::hash_handle(const std::string& filepath) : m_cancelled(false)
-    {
-        m_atp.m_filepath = filepath;
-    }
-
-    void hash_handle::set_atp(const add_transfer_params& atp)
-    {
-        boost::mutex::scoped_lock lock(m_mutex);
-        m_atp = atp;
-    }
-
-    add_transfer_params hash_handle::atp()
-    {
-        boost::mutex::scoped_lock lock(m_mutex);
-        return m_atp;
-    }
-
-    hash_status hash_handle::status()
-    {
-        boost::mutex::scoped_lock lock(m_mutex);
-        return m_status;
-    }
-
-    void hash_handle::set_status(const hash_status& hs)
-    {
-        boost::mutex::scoped_lock lock(m_mutex);
-        m_status = hs;
+        m_am.post_alert_should(transfer_params_alert(atp, ec));
     }
 
     void emule_binary_collection::dump() const

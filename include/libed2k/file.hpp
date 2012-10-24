@@ -4,7 +4,7 @@
 
 #include <string>
 #include <vector>
-#include <queue>
+#include <deque>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
@@ -13,10 +13,11 @@
 #include "libed2k/config.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/size_type.hpp"
+#include "libed2k/alert.hpp"
 #include "libed2k/filesystem.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/packet_struct.hpp"
-#include "libed2k/add_transfer_params.hpp"
+#include "libed2k/alert_types.hpp"
 
 namespace libed2k
 {
@@ -222,26 +223,6 @@ namespace libed2k
     };
 
     /**
-      * this class provide grip for control hashing process
-     */
-    class hash_handle
-    {
-    public:
-        hash_handle(const std::string& filepath);
-        void set_atp(const add_transfer_params& atp);
-        add_transfer_params atp();
-        hash_status status();
-        void set_status(const hash_status& hs);
-        void cancel() { m_cancelled = true; }
-        bool cancelled() const { return m_cancelled; }
-    private:
-        volatile bool       m_cancelled;
-        hash_status         m_status;
-        add_transfer_params m_atp;
-        boost::mutex        m_mutex;
-    };
-
-    /**
       * simple monitor object
      */
     template <typename Data>
@@ -256,18 +237,31 @@ namespace libed2k
         void push(const Data& data)
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
-            m_queue.push(data);
+            // for extremely effective we don't check item already exists in deeue
+            m_queue.push_front(data);
             m_signal.notify_one();
         }
 
-        void cancel()
+        /**
+          * remove all items and abort waiting
+         */
+        void abort()
         {
             DBG("monitor_order {cancel}");
             boost::mutex::scoped_lock lock(m_monitorMutex);
-            std::queue<Data> empty;
+            std::deque<Data> empty;
             std::swap(m_queue, empty );
             m_cancelled = true;
             m_signal.notify_one();
+        }
+
+        /**
+          * cancel one item
+         */
+        void cancel(const Data& data)
+        {
+            boost::mutex::scoped_lock lock(m_monitorMutex);
+            m_queue.erase(std::remove(m_queue.begin(), m_queue.end(), data), m_queue.end());
         }
 
         size_t size()
@@ -298,14 +292,14 @@ namespace libed2k
 
             if (m_queue.empty()) { return false; }
 
-            data = m_queue.front();
-            m_queue.pop();
+            data = m_queue.back();
+            m_queue.pop_back();
             return true;
         }
 
     private:
         bool                m_cancelled;
-        std::queue<Data>    m_queue;
+        std::deque<Data>    m_queue;
         boost::mutex        m_monitorMutex;
         boost::condition    m_signal;
     };
@@ -313,7 +307,7 @@ namespace libed2k
     class transfer_params_maker
     {
     public:
-        transfer_params_maker(const std::string& known_filepath);
+        transfer_params_maker(alert_manager& am, const std::string& known_filepath);
         virtual ~transfer_params_maker();
         bool start();
         void stop();
@@ -323,15 +317,17 @@ namespace libed2k
         /**
           * @param filepath in UTF-8
          */
-        boost::shared_ptr<hash_handle> make_transfer_params(const std::string& filepath);
+        void make_transfer_params(const std::string& filepath);
+        void cancel_transfer_params(const std::string& filepath);
     protected:
-        virtual void process_item(hash_handle* ph);
+        virtual void process_item(const std::string& filepath);
+        alert_manager& m_am;
     private:
         std::string m_known_filepath;
         known_file_collection m_kfc;
         boost::shared_ptr<boost::thread> m_thread;
         boost::mutex m_mutex;
-        monitor_order<boost::weak_ptr<hash_handle> > m_order;
+        monitor_order<std::string> m_order;
 
     };
 
