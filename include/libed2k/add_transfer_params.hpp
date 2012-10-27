@@ -1,3 +1,5 @@
+#ifndef __ADD_TRANSFER_PARAMS_HPP__
+#define __ADD_TRANSFER_PARAMS_HPP__
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/peer.hpp"
@@ -58,3 +60,5 @@ namespace libed2k
         void reset();
     };
 }
+
+#endif //__ADD_TRANSFER_PARAMS_HPP__

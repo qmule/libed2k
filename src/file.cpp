@@ -681,8 +681,12 @@ namespace libed2k
         }
     }
 
-    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const std::string& filename, size_type size, const std::vector<char>& fr_data):
-            m_hash(hash), m_filename(filename), m_filesize(size)
+    transfer_resume_data::transfer_resume_data(const md4_hash& hash,
+            const std::string& save_path,
+            const std::string& filename,
+            size_type size,
+            const std::vector<char>& fr_data):
+            m_hash(hash), m_filepath(combine_path(save_path, filename)), m_filesize(size)
     {
         if (!fr_data.empty())
         {
