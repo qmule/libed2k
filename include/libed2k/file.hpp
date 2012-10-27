@@ -237,7 +237,7 @@ namespace libed2k
         void push(const Data& data)
         {
             boost::mutex::scoped_lock lock(m_monitorMutex);
-            // for extremely effective we don't check item already exists in deeue
+            // for extremely effective we don't check item already exists in deque
             m_queue.push_front(data);
             m_signal.notify_one();
         }
