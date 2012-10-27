@@ -127,6 +127,13 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(piece_priority(index), 0);
     }
 
+	std::vector<int> transfer_handle::piece_priorities() const
+    {
+        std::vector<int> ret;
+        LIBED2K_FORWARD(piece_priorities(&ret));
+        return ret;
+    }
+
     bool transfer_handle::is_sequential_download() const
     {
         LIBED2K_FORWARD_RETURN(is_sequential_download(), false);

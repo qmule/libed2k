@@ -591,6 +591,19 @@ namespace libed2k
         return m_picker->piece_priority(index);
     }
 
+	void transfer::piece_priorities(std::vector<int>* pieces) const
+    {
+        if (is_seed())
+        {
+            pieces->clear();
+            pieces->resize(num_pieces(), 1);
+            return;
+        }
+
+        LIBED2K_ASSERT(m_picker.get());
+        m_picker->piece_priorities(*pieces);
+    }
+
     void transfer::set_sequential_download(bool sd) { m_sequential_download = sd; }
 
     void transfer::piece_failed(int index)
