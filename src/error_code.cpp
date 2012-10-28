@@ -100,7 +100,8 @@ namespace libed2k
             "mismatching transfer hash",
             "hashes dont match pieces",
             "failed hash check",
-            "invalid escaped string"
+            "invalid escaped string",
+            "parameters maker was aborted"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

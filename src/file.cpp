@@ -697,7 +697,10 @@ namespace libed2k
     transfer_resume_data::transfer_resume_data()
     {}
 
-    transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) : m_am(am), m_known_filepath(known_filepath)
+    transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) :
+            m_am(am),
+            m_abort(false),
+            m_known_filepath(known_filepath)
     {
     }
 
@@ -713,9 +716,11 @@ namespace libed2k
         stop();
     }
 
-    void transfer_params_maker::stop()
+    void transfer_params_maker::stop(bool abort)
     {
         m_order.abort();
+
+        if (abort) m_abort = true;
 
         // when thread exists - wait it
         if (m_thread.get())
@@ -725,6 +730,7 @@ namespace libed2k
 
         m_thread.reset();   //!< remove thread
         m_order.reset();    //!< return order to normal state
+        m_abort = false;
     }
 
 
@@ -850,6 +856,11 @@ namespace libed2k
                                     {
                                         // was file truncated?
                                         throw libed2k_exception(errors::file_was_truncated);
+                                    }
+
+                                    if (m_abort)
+                                    {
+                                        throw libed2k_exception(errors::params_maker_was_aborted);
                                     }
 
                                     hproc.update(chBlock, current_block_size);

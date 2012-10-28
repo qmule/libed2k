@@ -42,7 +42,7 @@ void session_impl_base::abort()
 {
     if (m_abort) return;
     m_abort = true;
-    m_tpm.stop();
+    m_tpm.stop(true);
 }
 
 void session_impl_base::post_transfer(add_transfer_params const& params)

@@ -314,7 +314,10 @@ namespace libed2k
         transfer_params_maker(alert_manager& am, const std::string& known_filepath);
         virtual ~transfer_params_maker();
         bool start();
-        void stop();
+        /**
+          * @param abort - interrupt immediately, abort current file processing
+         */
+        void stop(bool abort = false);
         void operator()();
 
         size_t queue_size() { return m_order.size(); }
@@ -326,6 +329,7 @@ namespace libed2k
     protected:
         virtual void process_item(const std::string& filepath);
         alert_manager& m_am;
+        mutable bool        m_abort;
     private:
         std::string m_known_filepath;
         known_file_collection m_kfc;

@@ -198,8 +198,10 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
     }
 
     // wait hasher completed
-    WAIT_TPM(sit.m_tpm)
-    sit.m_tpm.stop(); // wait last file will hashed
+    WAIT_TPM(sit.m_tpm);
+
+    // do not iterrupt last file processing
+    sit.m_tpm.stop(false); // wait last file will hashed
 
     for (size_t n = 0; n < sz; ++n)
     {
@@ -235,6 +237,35 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
     a = dynamic_cast<libed2k::transfer_params_alert*>(aptr.get());
     BOOST_REQUIRE(a);
     BOOST_CHECK(a->m_ec);
+
+    // check abort processing
+    for (size_t n = 0; n < sz; ++n)
+    {
+        std::stringstream s;
+        s << filename << n;
+        sit.m_tpm.make_transfer_params(s.str());
+    }
+
+    // wait for process begins
+#ifdef WIN32
+    Sleep(1000);
+#else
+    sleep(1);
+#endif
+
+    sit.m_tpm.stop(true);  // abort
+    int iters = 0;
+
+    while (sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)) && iters < 2)
+    {
+        ++iters;
+        libed2k::transfer_params_alert* aptr = dynamic_cast<libed2k::transfer_params_alert*>(sit.m_alerts.get().get());
+        BOOST_REQUIRE(aptr);
+        BOOST_CHECK(!aptr->m_ec || (aptr->m_ec == libed2k::errors::make_error_code(libed2k::errors::params_maker_was_aborted)));
+    }
+
+
+    BOOST_CHECK_MESSAGE(iters, "Process nothing");
 
     DBG("test_add_transfer_params_maker {completed}");
 }

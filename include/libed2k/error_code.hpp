@@ -107,6 +107,7 @@ namespace libed2k
             hashes_dont_match_pieces,
             failed_hash_check,
             invalid_escaped_string,
+            params_maker_was_aborted,
             num_errors
         };
     }
