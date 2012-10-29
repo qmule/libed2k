@@ -226,6 +226,7 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
 
     sit.m_tpm.make_transfer_params("non_exists");
     WAIT_TPM(sit.m_tpm)
+    sit.m_tpm.stop(false);  // soft stop and wait last file completed
 
     BOOST_REQUIRE(sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)));
     std::auto_ptr<libed2k::alert> aptr = sit.m_alerts.get();
@@ -237,6 +238,8 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
     a = dynamic_cast<libed2k::transfer_params_alert*>(aptr.get());
     BOOST_REQUIRE(a);
     BOOST_CHECK(a->m_ec);
+
+    sit.m_tpm.start();
 
     // check abort processing
     for (size_t n = 0; n < sz; ++n)
