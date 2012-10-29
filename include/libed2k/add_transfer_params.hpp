@@ -26,6 +26,12 @@ namespace libed2k
             seed_mode = true;
         }
 
+        add_transfer_params(const std::string& filepath)
+        {
+            reset();
+            m_filepath = filepath;
+        }
+
         md4_hash file_hash;
         std::string m_filepath; // full filename in UTF8 always!
         size_type  file_size;

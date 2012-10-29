@@ -101,7 +101,8 @@ namespace libed2k
             "hashes dont match pieces",
             "failed hash check",
             "invalid escaped string",
-            "parameters maker was aborted"
+            "parameters maker was aborted",
+            "file parameters making was cancelled"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

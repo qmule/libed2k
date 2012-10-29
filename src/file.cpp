@@ -700,6 +700,8 @@ namespace libed2k
     transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) :
             m_am(am),
             m_abort(false),
+            m_cancel_file(false),
+            m_current_filepath(""),
             m_known_filepath(known_filepath)
     {
     }
@@ -716,11 +718,14 @@ namespace libed2k
         stop();
     }
 
-    void transfer_params_maker::stop(bool abort)
+    void transfer_params_maker::stop()
     {
-        m_order.abort();
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_order.clear();
+        m_abort = true;
+        m_condition.notify_one();
 
-        if (abort) m_abort = true;
+        lock.unlock();
 
         // when thread exists - wait it
         if (m_thread.get())
@@ -729,19 +734,47 @@ namespace libed2k
         }
 
         m_thread.reset();   //!< remove thread
-        m_order.reset();    //!< return order to normal state
         m_abort = false;
     }
 
+    size_t transfer_params_maker::order_size()
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        return m_order.size();
+    }
+
+    std::string transfer_params_maker::current_filepath()
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        return m_current_filepath;
+    }
 
     void transfer_params_maker::make_transfer_params(const std::string& filepath)
     {
-        m_order.push(filepath);
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_order.push_front(filepath);
+        m_condition.notify_one();
     }
 
     void transfer_params_maker::cancel_transfer_params(const std::string& filepath)
     {
-        m_order.cancel(filepath);
+        boost::mutex::scoped_lock lock(m_mutex);
+        std::deque<std::string>::iterator itr = std::remove(m_order.begin(), m_order.end(), filepath);
+
+        // we got target in order - simply erase it and exit
+        // it doesn't claim any signals
+        if (itr != m_order.end())
+        {
+            m_order.erase(itr, m_order.end());
+            return;
+        }
+
+        if (m_current_filepath == filepath)
+        {
+            m_cancel_file = true;               // erase flag available only on current iteration
+        }
+
+        m_cancel_order.push(filepath);  // this alert will emit after current file processing completed
     }
 
     void transfer_params_maker::operator()()
@@ -766,11 +799,36 @@ namespace libed2k
             }
         }
 
-        std::string filepath;
 
-        while(m_order.pop_wait(filepath))
+        while(1)
         {
-            process_item(filepath);
+            boost::mutex::scoped_lock lock(m_mutex);
+            m_current_filepath.clear();
+            m_cancel_file = false;
+
+            if (m_abort) { break; }
+
+            // ok, alert all cancels
+            while(!m_cancel_order.empty())
+            {
+                m_am.post_alert_should(transfer_params_alert(add_transfer_params(m_cancel_order.front()), errors::file_params_making_was_cancelled));
+                m_cancel_order.pop();
+            }
+
+            if(m_order.empty())
+            {
+                m_condition.wait(lock);
+            }
+
+            if (!m_order.empty())
+            {
+                m_current_filepath = m_order.back();
+                m_order.pop_back();
+            }
+
+            lock.unlock();
+
+            if (!m_current_filepath.empty()) process_item();
         }
 
         DBG("transfer_params_maker {thread exit}");
@@ -802,14 +860,11 @@ namespace libed2k
     };
 
 
-    void transfer_params_maker::process_item(const std::string& filepath)
+    void transfer_params_maker::process_item()
     {
         add_transfer_params atp;
-        atp.m_filepath = filepath;
+        atp.m_filepath = m_current_filepath;
         error_code ec;
-
-        //hash_status hs;
-
         file_status fs;
         stat_file(atp.m_filepath, &fs, ec);
 
@@ -861,6 +916,11 @@ namespace libed2k
                                     if (m_abort)
                                     {
                                         throw libed2k_exception(errors::params_maker_was_aborted);
+                                    }
+
+                                    if (m_cancel_file)
+                                    {
+                                        throw libed2k_exception(errors::file_params_making_was_cancelled);
                                     }
 
                                     hproc.update(chBlock, current_block_size);
