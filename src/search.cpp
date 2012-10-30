@@ -128,7 +128,7 @@ namespace libed2k
                 if (!strCodec.empty())
                 {
                     ADD_AND()
-                    vResult.push_back(search_request_entry(FT_MEDIA_CODEC, strFileExtension)); // I don't check this value!
+                    vResult.push_back(search_request_entry(FT_MEDIA_CODEC, strCodec)); // I don't check this value!
                 }
 
                 if (nMediaLength != 0)
