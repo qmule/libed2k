@@ -101,7 +101,6 @@ namespace libed2k
             "hashes dont match pieces",
             "failed hash check",
             "invalid escaped string",
-            "parameters maker was aborted",
             "file parameters making was cancelled"
         };
 

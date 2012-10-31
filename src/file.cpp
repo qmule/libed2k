@@ -596,10 +596,10 @@ namespace libed2k
     {
     }
 
-    bool known_file_collection::extract_transfer_params(time_t write_ts, add_transfer_params& atp)
+    add_transfer_params known_file_collection::extract_transfer_params(time_t write_ts, const std::string& filepath)
     {
-        // search file in migration container
-        bool res = false;
+        add_transfer_params atp;
+
         for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
         {
             // pass files when change time isn't equal
@@ -609,14 +609,14 @@ namespace libed2k
             }
 
             // ok, we have equal change time - let's check filepath
-            if (bom_filter(filename(atp.m_filepath)) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
+            if (bom_filter(filename(filepath)) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
             {
-                DBG("orig: " << convert_to_native(atp.m_filepath)
+                DBG("orig: " << convert_to_native(filepath)
                     << " isn't equal: " << convert_to_native(bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
                 continue;
             }
 
-            res = true;
+            atp.m_filepath = filepath;
             atp.file_hash = m_known_file_list.m_collection[n].m_hFile;
 
             if (m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
@@ -666,11 +666,11 @@ namespace libed2k
                 }
             }
 
-            DBG("metadata was migrated for {" << convert_to_native(atp.m_filepath) << "}");
+            DBG("metadata was migrated for {" << convert_to_native(filepath) << "}");
             break;
         }
 
-        return res;
+        return atp;
     }
 
     void known_file_collection::dump() const
@@ -700,7 +700,7 @@ namespace libed2k
     transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) :
             m_am(am),
             m_abort(false),
-            m_cancel_file(false),
+            m_abort_current(false),
             m_current_filepath(""),
             m_known_filepath(known_filepath)
     {
@@ -722,6 +722,7 @@ namespace libed2k
     {
         boost::mutex::scoped_lock lock(m_mutex);
         m_order.clear();
+        m_abort_current = true;
         m_abort = true;
         m_condition.notify_one();
 
@@ -771,7 +772,7 @@ namespace libed2k
 
         if (m_current_filepath == filepath)
         {
-            m_cancel_file = true;               // erase flag available only on current iteration
+            m_abort_current = true;               // erase flag available only on current iteration
         }
 
         m_cancel_order.push(filepath);  // this alert will emit after current file processing completed
@@ -804,7 +805,7 @@ namespace libed2k
         {
             boost::mutex::scoped_lock lock(m_mutex);
             m_current_filepath.clear();
-            m_cancel_file = false;
+            m_abort_current = false;
 
             if (m_abort) { break; }
 
@@ -859,115 +860,118 @@ namespace libed2k
         FILE* m_ph;
     };
 
+    std::pair<add_transfer_params, error_code> file2atp::operator()(const std::string& filepath, bool& cancel)
+    {
+        std::pair<add_transfer_params, error_code> res_pair;
+        // references
+        add_transfer_params& atp = res_pair.first;
+        error_code& ec = res_pair.second;
+
+        size_type filesize = file_size(filepath);
+
+        if (filesize != 0)
+        {
+            int pieces_count = div_ceil(filesize, PIECE_SIZE);
+            LIBED2K_ASSERT(pieces_count != 0);
+            DBG("stat file: {" << convert_to_native(filepath) << ", pieces: " << pieces_count  << "}");
+            shared_file sh(convert_to_native(filepath));
+
+            if (sh.get())
+            {
+                // I don't know how i can leave cycle simple without exception
+                try
+                {
+                    // prepare results vector
+                    atp.piece_hashses.resize(pieces_count);
+                    size_type capacity = filesize;
+                    char chBlock[BLOCK_SIZE];
+                    hasher hproc;
+
+                    for (int i = 0; i < pieces_count; ++i)
+                    {
+                        size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
+
+                        while(in_piece_capacity > 0)
+                        {
+                            size_type current_block_size =  std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
+
+                            if (fread(chBlock, current_block_size, 1, sh.get()) != 1)
+                            {
+                                // was file truncated?
+                                throw libed2k_exception(errors::file_was_truncated);
+                            }
+
+                            if (cancel)
+                            {
+                                throw libed2k_exception(errors::file_params_making_was_cancelled);
+                            }
+
+                            hproc.update(chBlock, current_block_size);
+                            capacity -= current_block_size;
+                            in_piece_capacity -= current_block_size;
+                        }
+
+                        atp.piece_hashses[i] = hproc.final();
+                        hproc.reset();
+                    }
+
+                    if (pieces_count*libed2k::PIECE_SIZE == filesize)
+                    {
+                        atp.piece_hashses.push_back(libed2k::md4_hash::terminal);
+                    }
+                    // calculate full file hash
+                    if (atp.piece_hashses.size() > 1)
+                    {
+                        hproc.update(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_HASH_SIZE);
+                        atp.file_hash = hproc.final();
+                    }
+                    else
+                    {
+                        atp.file_hash = atp.piece_hashses[0];
+                    }
+                }
+                catch(libed2k_exception& e)
+                {
+                    DBG("file {" << convert_to_native(filepath) << "} was truncated");
+                    ec = e.error();
+                }
+            }
+            else
+            {
+                ec.assign(errno, boost::system::get_generic_category());
+            }
+
+            // prepare common result
+            atp.m_filepath = filepath;
+            atp.file_size   = filesize;
+            atp.seed_mode   = true;
+        }
+        else
+        {
+            ec = errors::filesize_is_zero;
+        }
+
+        DBG("file2atp res: {" << ec.message() << "}");
+        return res_pair;
+    }
 
     void transfer_params_maker::process_item()
     {
         add_transfer_params atp;
-        atp.m_filepath = m_current_filepath;
         error_code ec;
         file_status fs;
-        stat_file(atp.m_filepath, &fs, ec);
+        stat_file(m_current_filepath, &fs, ec);
 
         if (!ec)
         {
-            size_type filesize = file_size(atp.m_filepath);
+            add_transfer_params atp = m_kfc.extract_transfer_params(fs.mtime, m_current_filepath);
 
-            if (filesize != 0)
+            if (!atp.file_hash.defined())
             {
-                int pieces_count = div_ceil(filesize, PIECE_SIZE);
-                LIBED2K_ASSERT(pieces_count != 0);
-
-                DBG("stat file: {" << convert_to_native(atp.m_filepath) << ", pieces: " << pieces_count  << "}");
-
-                if (m_kfc.extract_transfer_params(fs.mtime, atp))
-                {
-                    DBG("{known file entry was found for: " << convert_to_native(atp.m_filepath) << "}");
-                }
-                else
-                {
-                    shared_file sh(convert_to_native(atp.m_filepath));
-
-                    if (sh.get())
-                    {
-                        // I don't know how i can leave cycle simple without exception
-                        try
-                        {
-                            // prepare results vector
-
-                            atp.piece_hashses.resize(pieces_count);
-                            size_type capacity = filesize;
-                            char chBlock[BLOCK_SIZE];
-                            hasher hproc;
-
-                            for (int i = 0; i < pieces_count; ++i)
-                            {
-                                size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
-
-                                while(in_piece_capacity > 0)
-                                {
-                                    size_type current_block_size =  std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
-
-                                    if (fread(chBlock, current_block_size, 1, sh.get()) != 1)
-                                    {
-                                        // was file truncated?
-                                        throw libed2k_exception(errors::file_was_truncated);
-                                    }
-
-                                    if (m_abort)
-                                    {
-                                        throw libed2k_exception(errors::params_maker_was_aborted);
-                                    }
-
-                                    if (m_cancel_file)
-                                    {
-                                        throw libed2k_exception(errors::file_params_making_was_cancelled);
-                                    }
-
-                                    hproc.update(chBlock, current_block_size);
-                                    capacity -= current_block_size;
-                                    in_piece_capacity -= current_block_size;
-                                }
-
-                                atp.piece_hashses[i] = hproc.final();
-                                hproc.reset();
-                            }
-
-                            if (pieces_count*libed2k::PIECE_SIZE == filesize)
-                            {
-                                atp.piece_hashses.push_back(libed2k::md4_hash::terminal);
-                            }
-                            // calculate full file hash
-                            if (atp.piece_hashses.size() > 1)
-                            {
-                                hproc.update(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_HASH_SIZE);
-                                atp.file_hash = hproc.final();
-                            }
-                            else
-                            {
-                                atp.file_hash = atp.piece_hashses[0];
-                            }
-                        }
-                        catch(libed2k_exception& e)
-                        {
-                            DBG("file {" << convert_to_native(atp.m_filepath) << "} was truncated");
-                            ec = e.error();
-                        }
-                    }
-                    else
-                    {
-                        ec.assign(errno, boost::system::get_generic_category());
-                    }
-
-                }
-
-                // possibly we have params
-                // prepare common result
-                atp.file_size   = filesize;
-                atp.seed_mode   = true;
-            }
-            else
-            {
-                ec = errors::filesize_is_zero;
+                file2atp fatp;
+                std::pair<add_transfer_params, error_code> rp = fatp(m_current_filepath, m_abort_current);
+                m_am.post_alert_should(transfer_params_alert(rp.first, rp.second));
+                return;
             }
         }
 

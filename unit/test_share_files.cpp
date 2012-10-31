@@ -93,14 +93,9 @@ namespace libed2k
         {
             while(1)
             {
-                if (m_cancel_file)
+                if (m_abort_current || m_abort)
                 {
                     throw libed2k_exception(errors::file_params_making_was_cancelled);
-                }
-
-                if (m_abort)
-                {
-                    throw libed2k_exception(errors::params_maker_was_aborted);
                 }
 
             }
@@ -294,7 +289,7 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
         std::auto_ptr<libed2k::alert> a = sit.m_alerts.get();
         libed2k::transfer_params_alert* aptr = dynamic_cast<libed2k::transfer_params_alert*>(a.get());
         BOOST_REQUIRE(aptr);
-        BOOST_CHECK(!aptr->m_ec || (aptr->m_ec == libed2k::errors::make_error_code(libed2k::errors::params_maker_was_aborted)));
+        BOOST_CHECK(!aptr->m_ec || (aptr->m_ec == libed2k::errors::make_error_code(libed2k::errors::file_params_making_was_cancelled)));
     }
 
     BOOST_CHECK_MESSAGE(iters, "Process nothing");
@@ -390,7 +385,7 @@ BOOST_AUTO_TEST_CASE(test_cancel_filename_in_progress)
     a = sit.m_alerts.get();
     aptr = dynamic_cast<libed2k::transfer_params_alert*>(a.get());
     BOOST_REQUIRE(aptr);
-    BOOST_CHECK(aptr->m_ec == libed2k::errors::make_error_code(libed2k::errors::params_maker_was_aborted));
+    BOOST_CHECK(aptr->m_ec == libed2k::errors::make_error_code(libed2k::errors::file_params_making_was_cancelled));
 
     BOOST_CHECK(!sit.m_alerts.wait_for_alert(libed2k::milliseconds(10)));
 }

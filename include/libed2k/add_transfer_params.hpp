@@ -32,6 +32,7 @@ namespace libed2k
             m_filepath = filepath;
         }
 
+
         md4_hash file_hash;
         std::string m_filepath; // full filename in UTF8 always!
         size_type  file_size;

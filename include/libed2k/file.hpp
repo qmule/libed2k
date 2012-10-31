@@ -148,7 +148,7 @@ namespace libed2k
         known_file_list m_known_file_list;
 
         known_file_collection();
-        bool extract_transfer_params(time_t, add_transfer_params& atp);
+        add_transfer_params extract_transfer_params(time_t, const std::string&);
 
         template<typename Archive>
         void save(Archive& ar)
@@ -308,6 +308,11 @@ namespace libed2k
         boost::condition    m_signal;
     };
 
+    struct file2atp : public std::binary_function<const std::string&, bool&, std::pair<add_transfer_params, error_code> >
+    {
+        std::pair<add_transfer_params, error_code> operator()(const std::string&, bool&);
+    };
+
     class transfer_params_maker
     {
     public:
@@ -329,7 +334,7 @@ namespace libed2k
         virtual void process_item();
         alert_manager&      m_am;
         mutable bool        m_abort;                //!< cancel thread
-        mutable bool        m_cancel_file;          //!< cancel one file
+        mutable bool        m_abort_current;       //!< cancel one file
         std::string         m_current_filepath;     //!< current file path
     private:
         std::string m_known_filepath;
