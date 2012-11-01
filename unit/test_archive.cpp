@@ -17,6 +17,7 @@
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/base_connection.hpp"
+#include "libed2k/util.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_archive)
 
@@ -752,6 +753,10 @@ BOOST_AUTO_TEST_CASE(test_links_parsing)
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more3|fd|ggfgfg|/").defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|more2|10|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more1|0|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
+    BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|Code Geass.emulecollection|1568|6462EAFF860B98A0592BB0284225F85B|h=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM|/").defined()); 
+    BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://%7Cfile%7C%D0%A1%D0%BF%D0%B5%D1%88%D0%B0%D0%BB%D1%8B%20Code%20Geass.emulecollection%7C1568%7C6462EAFF860B98A0592BB0284225F85B%7Ch=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM%7C/")).defined());
+    BOOST_CHECK(!libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://%7Cfile%7C%D0%A1%D0%BF%D0%B5%D1%88%D0%B0%D0%BB%D1%8B%20Code%20Geass.emulecollection%7C1568%7C6462EAFF860B98A0592BB0284225F85B%7Ch=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM%7C/ ")).defined());
+
 }
 
 BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)
