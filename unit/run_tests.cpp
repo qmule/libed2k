@@ -111,6 +111,8 @@ BOOST_AUTO_TEST_CASE(check_url_decode)
     BOOST_CHECK_EQUAL(libed2k::url_decode("xlc"), "xlc");
     BOOST_CHECK_EQUAL(libed2k::url_decode("%20%20xlc"), "  xlc");
     BOOST_CHECK_EQUAL(libed2k::url_decode("%20A"), " A");
+    BOOST_CHECK_EQUAL(libed2k::url_encode(" A "), "%20A%20");
+    BOOST_CHECK_EQUAL(libed2k::url_encode("A0123456789B,>."), "A0123456789B%2C%3E%2E");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

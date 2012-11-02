@@ -224,6 +224,7 @@ namespace libed2k
       * execute url decode from single-character string formatted %XX
      */
     extern std::string url_decode(const std::string& s);
+    extern std::string url_encode(const std::string& s);
 }
 
 #endif

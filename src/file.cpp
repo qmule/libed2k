@@ -1212,7 +1212,7 @@ namespace libed2k
     {
         md4_hash hash;
 
-        if (strFilename.empty() || nFilesize == 0 || nFilesize > 0xffffffffLL || strFilehash.size() != md4_hash::hash_size*2)
+        if (strFilename.empty() || nFilesize == 0 || strFilehash.size() != md4_hash::hash_size*2)
         {
             return false;
         }
