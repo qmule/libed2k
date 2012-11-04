@@ -127,6 +127,7 @@ namespace libed2k
 
         void set_piece_priority(int index, int priority);
         int piece_priority(int index) const;
+        void piece_priorities(std::vector<int>* pieces) const;
 
         void set_sequential_download(bool sd);
         bool is_sequential_download() const { return m_sequential_download; }
@@ -356,6 +357,8 @@ namespace libed2k
         size_type m_total_uploaded;
         size_type m_total_downloaded;
         bool m_queued_for_checking;
+
+        // progress parts per million (the number of millionths of completeness)
         int m_progress_ppm;
 
         // the number of bytes that has been

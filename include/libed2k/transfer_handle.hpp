@@ -283,6 +283,7 @@ namespace libed2k
         void piece_availability(std::vector<int>& avail) const;
         void set_piece_priority(int index, int priority) const;
         int piece_priority(int index) const;
+        std::vector<int> piece_priorities() const;
         bool is_sequential_download() const;
         void set_sequential_download(bool sd) const;
         void set_upload_limit(int limit) const;

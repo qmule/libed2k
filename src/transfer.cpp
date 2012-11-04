@@ -586,6 +586,19 @@ namespace libed2k
         return m_picker->piece_priority(index);
     }
 
+	void transfer::piece_priorities(std::vector<int>* pieces) const
+    {
+        if (is_seed())
+        {
+            pieces->clear();
+            pieces->resize(num_pieces(), 1);
+            return;
+        }
+
+        LIBED2K_ASSERT(m_picker.get());
+        m_picker->piece_priorities(*pieces);
+    }
+
     void transfer::set_sequential_download(bool sd) { m_sequential_download = sd; }
 
     void transfer::piece_failed(int index)
@@ -709,6 +722,20 @@ namespace libed2k
         st.connections_limit = 0; // TODO: m_max_connections;
 
         st.state = m_state;
+
+        if (m_state == transfer_status::checking_files)
+        {
+            st.progress_ppm = m_progress_ppm;
+        }
+        else if (st.total_wanted == 0)
+        {
+            st.progress_ppm = 1000000;
+            st.progress = 1.f;
+        }
+        else
+        {
+            st.progress_ppm = st.total_wanted_done * 1000000 / st.total_wanted;
+        }
 
         if (has_picker())
         {
@@ -1063,12 +1090,19 @@ namespace libed2k
 
             file_checked();
         }
-        else
+        else if (m_info->is_valid())
         {
-            DBG("resume data check fails: {hash: " << hash() << ", file: " << name() << "}");
+            DBG("resume data check fails: {hash: " << hash() << ", file: " << name() << "}, metadata: valid");
             set_state(transfer_status::queued_for_checking);
             if (should_check_file())
                 queue_transfer_check();
+        }
+        else
+        {
+            // TODO: we might request the metadata for checking
+            DBG("resume data check fails: {hash: " << hash() << ", file: " << name() <<
+                ", metadata: invalid}");
+            file_checked();
         }
 
         std::vector<char>().swap(m_resume_data);
@@ -1341,6 +1375,8 @@ namespace libed2k
     {
         if (m_abort) return;
 
+        DBG("file checked: {hash: " << hash() << ", file: " << name() << "}");
+
         // we might be finished already, in which case we should
         // not switch to downloading mode. If all files are
         // filtered, we're finished when we start.
@@ -1380,8 +1416,6 @@ namespace libed2k
         LIBED2K_ASSERT(should_check_file());
         set_state(transfer_status::checking_files);
 
-        //dequeue_transfer_check();
-        //file_checked();
         m_storage->async_check_files(
             boost::bind(&transfer::on_piece_checked, shared_from_this(), _1, _2));
     }
@@ -1398,28 +1432,24 @@ namespace libed2k
         }
         if (ret == piece_manager::fatal_disk_error)
         {
+            ERR("fatal disk error: {hash: " << hash() << ", file: " << name() <<
+                ", error: " << j.error.message() << "}");
             m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
 
-#if defined LIBED2K_VERBOSE_LOGGING || defined LIBED2K_LOGGING || defined LIBED2K_ERROR_LOGGING
-            (*m_ses.m_logger) << time_now_string() << ": fatal disk error ["
-                " error: " << j.error.message() <<
-                " torrent: " << torrent_file().name() <<
-                " ]\n";
-#endif
             pause();
             set_error(j.error);
             return;
         }
 
         // TODO - should i use size_type?
-        m_progress_ppm = size_type(j.piece) * PIECE_SIZE / num_pieces();
+        m_progress_ppm = size_type(j.piece) * 1000000 / num_pieces();
 
         LIBED2K_ASSERT(m_picker);
         if (j.offset >= 0 && !m_picker->have_piece(j.offset))
+        {
             we_have(j.offset);
-
-        // what is it?
-        //remove_time_critical_piece(j.offset);
+            //remove_time_critical_piece(j.offset);
+        }
 
         // we're not done checking yet
         // this handler will be called repeatedly until
@@ -1441,6 +1471,7 @@ namespace libed2k
     void transfer::dequeue_transfer_check()
     {
         if (!m_queued_for_checking) return;
+        DBG("dequeue transfer check: {hash: " << hash() << ", file: " << name() << "}");
         m_queued_for_checking = false;
         m_ses.dequeue_check_transfer(shared_from_this());
     }

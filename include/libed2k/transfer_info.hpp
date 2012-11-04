@@ -36,14 +36,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <vector>
 
-#include <libed2k/config.hpp>
-#include <libed2k/size_type.hpp>
-#include <libed2k/intrusive_ptr_base.hpp>
-#include <libed2k/assert.hpp>
-#include <libed2k/file_storage.hpp>
-#include <libed2k/copy_ptr.hpp>
-#include <libed2k/md4_hash.hpp>
-#include <libed2k/constants.hpp>
+#include "libed2k/config.hpp"
+#include "libed2k/size_type.hpp"
+#include "libed2k/intrusive_ptr_base.hpp"
+#include "libed2k/assert.hpp"
+#include "libed2k/file_storage.hpp"
+#include "libed2k/copy_ptr.hpp"
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/constants.hpp"
 
 namespace libed2k
 {
