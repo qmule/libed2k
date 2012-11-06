@@ -92,6 +92,7 @@ namespace libed2k {
 
         void pause();
         void resume();
+        void make_transfer_parameters(const std::string& filepath);
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

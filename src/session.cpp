@@ -202,4 +202,9 @@ namespace libed2k
         boost::mutex::scoped_lock l(m_impl->m_mutex);
         m_impl->resume();
     }
+
+    void session::make_transfer_parameters(const std::string& filepath)
+    {
+        m_impl->m_tpm.make_transfer_params(filepath);
+    }
 }

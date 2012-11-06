@@ -206,12 +206,14 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
         std::make_pair(libed2k::PIECE_SIZE+4566, libed2k::md4_hash::fromString("9C7F988154D2C9AF16D92661756CF6B2"))
     };
 
+    bool cancel = false;
     for (size_t n = 0; n < sz; ++n)
     {
         std::stringstream s;
         s << filename << n;
         BOOST_REQUIRE(generate_test_file(tmpl[n].first, s.str()));
         tfh.hold(s.str());
+        BOOST_CHECK_EQUAL(tmpl[n].second, libed2k::file2atp()(s.str(), cancel).first.file_hash);
     }
 
     sit.m_tpm.start();
