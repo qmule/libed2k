@@ -1690,7 +1690,7 @@ namespace libed2k
             return std::string("");
         }
 
-        return tran.second->filepath().directory_string();
+        return tran.second->save_path().string();
     }
 
     shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)
