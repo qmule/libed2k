@@ -115,4 +115,11 @@ BOOST_AUTO_TEST_CASE(check_url_decode)
     BOOST_CHECK_EQUAL(libed2k::url_encode("A0123456789B,>."), "A0123456789B%2C%3E%2E");
 }
 
+BOOST_AUTO_TEST_CASE(check_collection_dir)
+{
+    BOOST_CHECK_EQUAL(libed2k::collection_dir("dir1-dir2-5.emulecollection"), "dir1/dir2");
+    BOOST_CHECK_EQUAL(libed2k::collection_dir("dir1-dir2_2-50.emulecollection"), "dir1/dir2_2");
+    BOOST_CHECK_EQUAL(libed2k::collection_dir("xxx.avi"), "");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

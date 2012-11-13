@@ -5,6 +5,8 @@
 #include <iconv.h>
 #endif
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "libed2k/size_type.hpp"
 #include "libed2k/utf8.hpp"
 #include "libed2k/util.hpp"
@@ -228,5 +230,18 @@ namespace libed2k
         std::string sResult((char *)pStart, (char *)pEnd);
         delete [] pStart;
         return sResult;
+    }
+
+    std::string collection_dir(const std::string& colname)
+    {
+        std::string res;
+
+        if (boost::algorithm::ends_with(colname, ".emulecollection"))
+        {
+            res = boost::replace_all_copy(
+                colname.substr(0, colname.find_last_of("-")), "-", "/");
+        }
+
+        return res;
     }
 }

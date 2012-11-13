@@ -1976,11 +1976,16 @@ void peer_connection::on_shared_directories_request(const error_code& error)
         {
             client_shared_directories_answer sd;
             std::deque<std::string> dirs;
-            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(dirs),
-                    boost::bind(&transfer::save_path, boost::bind(&boost::shared_ptr<transfer>::get, boost::bind(&take_second<md4_hash, boost::shared_ptr<transfer> >, _1))));
+
+            for (aux::session_impl::transfer_map::const_iterator i = m_ses.m_transfers.begin(),
+                     end(m_ses.m_transfers.end()); i != end; ++i)
+            {
+                std::string dir = collection_dir(i->second->name());
+                if (!dir.empty()) dirs.push_back(dir);
+            }
+
             std::deque<std::string>::iterator itr = std::unique(dirs.begin(), dirs.end());
             dirs.resize(itr - dirs.begin());
-            dirs.erase(std::remove(dirs.begin(), dirs.end(), std::string("")), dirs.end());
 
             sd.m_dirs.m_collection.resize(dirs.size());
 

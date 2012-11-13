@@ -225,6 +225,11 @@ namespace libed2k
      */
     extern std::string url_decode(const std::string& s);
     extern std::string url_encode(const std::string& s);
+
+    /**
+     * dir1-dir2[-dirn][_uniqueprefix]-filescount.emulecollection => dir1/dir2[/dirn][_uniqueprefix]
+     */
+    extern std::string collection_dir(const std::string& colname);
 }
 
 #endif
