@@ -1,5 +1,6 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include "libed2k/storage.hpp"
 #include "libed2k/peer_connection.hpp"
@@ -96,8 +97,9 @@ size_t block_size(const piece_block& b, size_type s)
     return size_t(r.second - r.first);
 }
 
-void async_skip_bytes(tcp::socket& s, int n, boost::function<void(error_code const&)> h,
-                      char* buf = NULL, const error_code& ec = error_code(), std::size_t bytes_transferred = 0)
+void async_skip_bytes(
+    tcp::socket& s, int n, boost::function<void(error_code const&)> h,
+    char* buf = NULL, const error_code& ec = error_code(), std::size_t bytes_transferred = 0)
 {
     const std::size_t skip_buf_size = 4096;
 
@@ -943,6 +945,7 @@ bool peer_connection::operator==(const md4_hash& hash) const
 
 void peer_connection::send_message(const std::string& strMessage)
 {
+    DBG("send message: " << strMessage << " ==> " << m_remote);
     m_ses.m_io_service.post(
         boost::bind(
             &peer_connection::send_throw_meta_order<client_message>,
@@ -951,6 +954,7 @@ void peer_connection::send_message(const std::string& strMessage)
 
 void peer_connection::request_shared_files()
 {
+    DBG("request shared files ==> " << m_remote);
     m_ses.m_io_service.post(
         boost::bind(
             &peer_connection::send_throw_meta_order<client_shared_files_request>,
@@ -959,6 +963,7 @@ void peer_connection::request_shared_files()
 
 void peer_connection::request_shared_directories()
 {
+    DBG("request shared directories ==> " << m_remote);
     m_ses.m_io_service.post(
         boost::bind(
             &peer_connection::send_throw_meta_order<client_shared_directories_request>,
@@ -967,6 +972,7 @@ void peer_connection::request_shared_directories()
 
 void peer_connection::request_shared_directory_files(const std::string& strDirectory)
 {
+    DBG("request shared directory files: {dir: " << strDirectory << "} ==> " << m_remote);
     m_ses.m_io_service.post(
         boost::bind(
             &peer_connection::send_throw_meta_order<client_shared_directory_files>,
@@ -975,6 +981,7 @@ void peer_connection::request_shared_directory_files(const std::string& strDirec
 
 void peer_connection::request_ismod_directory_files(const md4_hash& hash)
 {
+    DBG("request ismod directory files: {hash: " << hash << "} ==> " << m_remote);
     m_ses.m_io_service.post(
         boost::bind(
             &peer_connection::send_throw_meta_order<client_directory_content_request>,
@@ -1874,33 +1881,63 @@ void peer_connection::on_end_download(const error_code& error)
     }
 }
 
+template <typename DirContainer>
+std::vector<std::string> dirlist(const DirContainer& dirs) {
+    std::vector<std::string> res;
+    for (int i = 0; i < dirs.m_collection.size(); ++i)
+        res.push_back(dirs.m_collection[i].m_collection);
+    return res;
+}
+
+template <typename FileContainer>
+std::vector<std::string> filelist(const FileContainer& files) {
+    std::vector<std::string> res;
+    for (int i = 0; i < files.m_collection.size(); ++i)
+        for (int j = 0; j < files.m_collection[i].m_list.count(); ++j)
+        {
+            boost::shared_ptr<libed2k::base_tag> ptag = files.m_collection[i].m_list[j];
+            switch(ptag->getNameId())
+            {
+            case FT_FILENAME:
+                res.push_back(ptag->asString());
+            default:
+                break;
+            }
+        }
+    return res;
+}
+
 void peer_connection::on_shared_files_request(const error_code& error)
 {
     if (!error)
     {
-        DBG("peer_connection::on_shared_files_request");        
+        DBG("request shared files <== " << m_remote);
 
         if (m_ses.settings().m_show_shared_files)
         {
             client_shared_files_answer sfa;
             // transform transfers to their announces
             // TODO - suppress output unshared dirs - now we announce all directories all files
-            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(), std::back_inserter(sfa.m_files.m_collection),
-                    std::ptr_fun(&transfer2sfe));
-
+            std::transform(m_ses.m_transfers.begin(), m_ses.m_transfers.end(),
+                           std::back_inserter(sfa.m_files.m_collection), &transfer2sfe);
             // erase empty announces
-            sfa.m_files.m_collection.erase(std::remove_if(sfa.m_files.m_collection.begin(), sfa.m_files.m_collection.end(), std::mem_fun_ref(&shared_file_entry::is_empty)), sfa.m_files.m_collection.end());
-            DBG("send count: " << sfa.m_files.m_collection.size());
+            sfa.m_files.m_collection.erase(
+                std::remove_if(sfa.m_files.m_collection.begin(), sfa.m_files.m_collection.end(),
+                               std::mem_fun_ref(&shared_file_entry::is_empty)),
+                sfa.m_files.m_collection.end());
+            DBG("shared files: " << boost::algorithm::join(filelist(sfa.m_files), ", ") <<
+                " ==> " << m_remote);
             send_throw_meta_order(sfa);
         }
         else
         {
+            DBG("shared files denied ==> " << m_remote);
             send_throw_meta_order(client_shared_files_denied());
         }
     }
     else
     {
-        ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
+        ERR("on_shared_files_request(" << error.message() << ")");
     }
 }
 
@@ -1910,12 +1947,14 @@ void peer_connection::on_ismod_files_request(const error_code& error)
     {
         DECODE_PACKET(client_directory_content_request, cdcr);
         client_directory_content_result cres;
+        DBG("request ismod directory content: {hash: " << cres.m_hdirectory << "} <== " << m_remote);
 
         // check we public collection now
         if (boost::shared_ptr<transfer> p = m_ses.find_transfer(cdcr.m_hash).lock())
         {
             // search appropriate transfers by clients collection hash and public their filenames
-            for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)
+            for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin();
+                 i != m_ses.m_transfers.end(); ++i)
             {
                 transfer& t = *i->second;
 
@@ -1929,13 +1968,15 @@ void peer_connection::on_ismod_files_request(const error_code& error)
             }
         }
 
+        DBG("ismod directory content: {hash: " << cres.m_hdirectory <<
+            ", files: [" << boost::algorithm::join(filelist(cres.m_files), ", ") <<
+            "]} <== " << m_remote);
         send_throw_meta_order(cres);
     }
     else
     {
-        ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
+        ERR("on_ismod_files_request(" << error.message() << ")");
     }
-
 }
 
 void peer_connection::on_shared_files_answer(const error_code& error)
@@ -1943,12 +1984,14 @@ void peer_connection::on_shared_files_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_files_answer, packet);
+        DBG("shared files: " << boost::algorithm::join(filelist(packet.m_files), ", ") <<
+            " <== " << m_remote);
         m_ses.m_alerts.post_alert_should(
             shared_files_alert(get_network_point(), get_connection_hash(), packet.m_files, false));
     }
     else
     {
-        ERR("peer_connection::on_shared_files_answer(" << error.message() << ")");
+        ERR("on_shared_files_answer(" << error.message() << ")");
     }
 }
 
@@ -1957,7 +2000,7 @@ void peer_connection::on_shared_files_denied(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_files_denied, sfd);
-        DBG("shared files access denied <== " << m_remote);
+        DBG("shared files denied <== " << m_remote);
     }
     else
     {
@@ -1969,8 +2012,8 @@ void peer_connection::on_shared_directories_request(const error_code& error)
 {
     if (!error)
     {
-        DBG("peer_connection::on_shared_directories_request");
         DECODE_PACKET(client_shared_directories_request, sdr);
+        DBG("request shared directories <== " << m_remote);
 
         if (m_ses.settings().m_show_shared_catalogs)
         {
@@ -1993,9 +2036,9 @@ void peer_connection::on_shared_directories_request(const error_code& error)
             {
                 sd.m_dirs.m_collection[i].m_collection = dirs[i];
                 sd.m_dirs.m_collection[i].m_size = dirs[i].size();
-                DBG("send: " << dirs[i]);
             }
 
+            DBG("shared directories: " << boost::algorithm::join(dirs, ", ") << " ==> " << m_remote);
             send_throw_meta_order(sd);
         }
     }
@@ -2010,7 +2053,10 @@ void peer_connection::on_shared_directories_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_directories_answer, sd);
-        m_ses.m_alerts.post_alert_should(shared_directories_alert(get_network_point(), get_connection_hash(), sd));
+        DBG("shared directories: " << boost::algorithm::join(dirlist(sd.m_dirs), ", ") <<
+            " <== " << m_remote);
+        m_ses.m_alerts.post_alert_should(
+            shared_directories_alert(get_network_point(), get_connection_hash(), sd));
     }
     else
     {
@@ -2023,6 +2069,9 @@ void peer_connection::on_shared_directory_files_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_shared_directory_files_answer, sdf);
+        DBG("shared directory files: {dir: " << sdf.m_directory.m_collection << 
+            ", files: [" << boost::algorithm::join(filelist(sdf.m_list), ", ") <<
+            "]} <== " << m_remote);
         m_ses.m_alerts.post_alert_should(shared_directory_files_alert(get_network_point(),
                 get_connection_hash(),
                 sdf.m_directory.m_collection,
@@ -2039,6 +2088,9 @@ void peer_connection::on_ismod_directory_files(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_directory_content_result, cdcr);
+        DBG("ismod directory files: {dir: " << cdcr.m_hdirectory <<
+            ", files: [" << boost::algorithm::join(filelist(cdcr.m_files), ", ") <<
+            "]} <== " << m_remote);
         m_ses.m_alerts.post_alert_should(ismod_shared_directory_files_alert(get_network_point(),
                 get_connection_hash(),
                 cdcr.m_hdirectory,
@@ -2054,8 +2106,8 @@ void peer_connection::on_client_message(const error_code& error)
 {
     if (!error)
     {
-
-        DECODE_PACKET(client_message, packet)
+        DECODE_PACKET(client_message, packet);
+        DBG("client message: " << packet.m_strMessage << " <== " << m_remote);
         m_ses.m_alerts.post_alert_should(
             peer_message_alert(get_network_point(), get_connection_hash(), packet.m_strMessage));
     }
@@ -2069,7 +2121,8 @@ void peer_connection::on_client_captcha_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_captcha_request, packet)
+        DECODE_PACKET(client_captcha_request, packet);
+        DBG("client captcha request <== " << m_remote);
         m_ses.m_alerts.post_alert_should(
             peer_captcha_request_alert(get_network_point(), get_connection_hash(), packet.m_captcha));
 
@@ -2084,9 +2137,11 @@ void peer_connection::on_client_captcha_result(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_captcha_result, packet)
+        DECODE_PACKET(client_captcha_result, packet);
+        DBG("client captcha result: " << packet.m_captcha_result << " <== " << m_remote);
         m_ses.m_alerts.post_alert_should(
-            peer_captcha_result_alert(get_network_point(), get_connection_hash(), packet.m_captcha_result));
+            peer_captcha_result_alert(
+                get_network_point(), get_connection_hash(), packet.m_captcha_result));
     }
     else
     {
