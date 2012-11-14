@@ -996,15 +996,15 @@ namespace libed2k
     /**
       * this structure wasn't implemented since we don't answer to request files from directory
      */
-    struct client_shared_directory_files
+    struct client_shared_directory_files_request
     {
         container_holder<boost::uint16_t, std::string>  m_directory;
 
-        client_shared_directory_files()
+        client_shared_directory_files_request()
         {
         }
 
-        client_shared_directory_files(const std::string& strDirectory)
+        client_shared_directory_files_request(const std::string& strDirectory)
         {
             m_directory.m_collection = strDirectory;
         }
@@ -1464,7 +1464,7 @@ namespace libed2k
         static const proto_type value   = OP_ASKSHAREDDIRS;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
-    template<> struct packet_type<client_shared_directory_files> {
+    template<> struct packet_type<client_shared_directory_files_request> {
         static const proto_type value   = OP_ASKSHAREDFILESDIR;
         static const proto_type protocol= OP_EDONKEYPROT;
     };

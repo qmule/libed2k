@@ -324,6 +324,7 @@ namespace libed2k
         void on_shared_files_denied(const error_code& error);
         void on_shared_directories_request(const error_code& error);
         void on_shared_directories_answer(const error_code& error);
+        void on_shared_directory_files_request(const error_code& error);
         void on_shared_directory_files_answer(const error_code& error);
         void on_ismod_directory_files(const error_code& error);
         void on_client_message(const error_code& error);
