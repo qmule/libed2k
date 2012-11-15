@@ -57,6 +57,7 @@ namespace libed2k
         size_type size() const;
         const std::string& name() const;
         const std::string& save_path() const;
+        std::string file_path() const;
 
         const std::vector<md4_hash>& piece_hashses() const;
         void piece_hashses(const std::vector<md4_hash>& hs);

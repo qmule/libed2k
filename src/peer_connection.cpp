@@ -209,6 +209,7 @@ void peer_connection::reset()
     add_handler(get_proto_pair<client_shared_directories_answer>(), boost::bind(&peer_connection::on_shared_directories_answer, this, _1));
 
     // shared files in directory
+    add_handler(get_proto_pair<client_shared_directory_files_request>(), boost::bind(&peer_connection::on_shared_directory_files_request, this, _1));
     add_handler(get_proto_pair<client_shared_directory_files_answer>(), boost::bind(&peer_connection::on_shared_directory_files_answer, this, _1));
 
     //ismod collections
@@ -975,8 +976,8 @@ void peer_connection::request_shared_directory_files(const std::string& strDirec
     DBG("request shared directory files: {dir: " << strDirectory << "} ==> " << m_remote);
     m_ses.m_io_service.post(
         boost::bind(
-            &peer_connection::send_throw_meta_order<client_shared_directory_files>,
-            self_as<peer_connection>(), client_shared_directory_files(strDirectory)));
+            &peer_connection::send_throw_meta_order<client_shared_directory_files_request>,
+            self_as<peer_connection>(), client_shared_directory_files_request(strDirectory)));
 }
 
 void peer_connection::request_ismod_directory_files(const md4_hash& hash)
@@ -2061,6 +2062,42 @@ void peer_connection::on_shared_directories_answer(const error_code& error)
     else
     {
         ERR("shared directories answer error " << error.message() << " <== " << m_remote);
+    }
+}
+
+void peer_connection::on_shared_directory_files_request(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_shared_directory_files_request, req);
+        DBG("request shared directory files: {dir: " << req.m_directory.m_collection <<
+            "} <== " << m_remote);
+        for (aux::session_impl::transfer_map::const_iterator i = m_ses.m_transfers.begin(),
+                 end(m_ses.m_transfers.end()); i != end; ++i)
+        {
+            if (collection_dir(i->second->name()) == req.m_directory.m_collection)
+            {
+                emule_collection coll = emule_collection::fromFile(i->second->file_path());
+                client_shared_directory_files_answer ans;
+                ans.m_directory = req.m_directory;
+
+                for(std::deque<emule_collection_entry>::const_iterator i = coll.m_files.begin();
+                    i != coll.m_files.end(); ++i)
+                {
+                    boost::shared_ptr<transfer> t = m_ses.find_transfer(i->m_filehash).lock();
+                    if (t) ans.m_list.m_collection.push_back(t->getAnnounce());
+                }
+
+                DBG("shared directory files: {dir: " << ans.m_directory.m_collection <<
+                    ", files: [" << boost::algorithm::join(filelist(ans.m_list), ", ") <<
+                    "]} ==> " << m_remote);
+                send_throw_meta_order(ans);
+            }
+        }
+    }
+    else
+    {
+        ERR("shared directory files request error " << error.message() << " <== " << m_remote);
     }
 }
 

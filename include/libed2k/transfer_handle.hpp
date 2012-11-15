@@ -3,7 +3,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-#include <libed2k/peer_info.hpp>
+
+#include "libed2k/peer_info.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/storage_defs.hpp"

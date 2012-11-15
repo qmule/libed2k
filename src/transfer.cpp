@@ -73,6 +73,7 @@ namespace libed2k
     size_type transfer::size() const { return m_info->file_at(0).size; }
     const std::string& transfer::name() const { return m_info->name(); }
     const std::string& transfer::save_path() const { return m_save_path; }
+    std::string transfer::file_path() const { return combine_path(save_path(), name()); }
     const std::vector<md4_hash>& transfer::piece_hashses() const { return m_info->piece_hashses(); }
     void transfer::piece_hashses(const std::vector<md4_hash>& hs) {
         LIBED2K_ASSERT(hs.size() > 0);

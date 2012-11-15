@@ -117,8 +117,8 @@ BOOST_AUTO_TEST_CASE(check_url_decode)
 
 BOOST_AUTO_TEST_CASE(check_collection_dir)
 {
-    BOOST_CHECK_EQUAL(libed2k::collection_dir("dir1-dir2-5.emulecollection"), "dir1/dir2");
-    BOOST_CHECK_EQUAL(libed2k::collection_dir("dir1-dir2_2-50.emulecollection"), "dir1/dir2_2");
+    BOOST_CHECK_EQUAL(libed2k::collection_dir("dir1-dir2-5.emulecollection"), "dir1\\dir2");
+    BOOST_CHECK_EQUAL(libed2k::collection_dir("dir1-dir2_2-50.emulecollection"), "dir1\\dir2_2");
     BOOST_CHECK_EQUAL(libed2k::collection_dir("xxx.avi"), "");
 }
 
