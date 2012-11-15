@@ -207,4 +207,9 @@ namespace libed2k
     {
         m_impl->m_tpm.make_transfer_params(filepath);
     }
+
+    void session::cancel_transfer_parameters(const std::string& filepath)
+    {
+        m_impl->m_tpm.cancel_transfer_params(filepath);
+    }
 }
