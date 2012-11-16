@@ -34,7 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #define LIBED2K_STAT_HPP_INCLUDED
 
 #include <algorithm>
-#include <vector>
+#include <deque>
 #include <assert.h>
 #include <cstring>
 
@@ -58,6 +58,7 @@ namespace libed2k
             , m_5_sec_average(0)
             , m_30_sec_average(0)
             , m_total_counter(0)
+            , m_samples(5)
         {}
 
         void operator+=(stat_channel const& s)
@@ -103,6 +104,7 @@ namespace libed2k
             m_5_sec_average = 0;
             m_30_sec_average = 0;
             m_total_counter = 0;
+            std::fill(m_samples.begin(), m_samples.end(), 0);
         }
 
     private:
@@ -116,6 +118,9 @@ namespace libed2k
 
         // total counters
         size_type m_total_counter;
+
+        // last samples
+        std::deque<int> m_samples;
     };
 
     class LIBED2K_EXTRA_EXPORT stat

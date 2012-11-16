@@ -42,7 +42,10 @@ void stat_channel::second_tick(int tick_interval_ms)
 {
     int sample = int(size_type(m_counter) * 1000 / tick_interval_ms);
     LIBED2K_ASSERT(sample >= 0);
-    m_5_sec_average = size_type(m_5_sec_average) * 4 / 5 + sample / 5;
+    m_samples.push_front(sample);
+    m_samples.pop_back();
+    m_5_sec_average = std::accumulate(m_samples.begin(), m_samples.begin() + 5, 0) / 5;
+    //m_5_sec_average = size_type(m_5_sec_average) * 4 / 5 + sample / 5;
     m_30_sec_average = size_type(m_30_sec_average) * 29 / 30 + sample / 30;
     m_counter = 0;
 }
