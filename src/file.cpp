@@ -869,6 +869,9 @@ namespace libed2k
 
         size_type filesize = file_size(filepath);
 
+        // store filepath always for search node ability!
+        atp.m_filepath = filepath;
+
         if (filesize != 0)
         {
             int pieces_count = div_ceil(filesize, PIECE_SIZE);
@@ -941,8 +944,7 @@ namespace libed2k
                 ec.assign(errno, boost::system::get_generic_category());
             }
 
-            // prepare common result
-            atp.m_filepath = filepath;
+            // common result
             atp.file_size   = filesize;
             atp.seed_mode   = true;
         }
