@@ -1257,8 +1257,6 @@ namespace libed2k
         entry.m_hFile = hash();
         if (m_ses.m_server_connection->tcp_flags() & SRV_TCPFLG_COMPRESSION)
         {
-            DBG("server support compression");
-
             if (!is_seed())
             {
                 // publishing an incomplete file
@@ -1274,7 +1272,6 @@ namespace libed2k
         }
         else
         {
-            DBG("servers isn't support compression");
             entry.m_network_point.m_nIP     = m_ses.m_server_connection->client_id();
             entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
         }
