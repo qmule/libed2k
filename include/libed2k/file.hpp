@@ -312,7 +312,7 @@ namespace libed2k
         /**
           * generate ed2k link from collection item
          */
-        static std::string toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile);
+        static std::string toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile, bool uencode = false);
         static emule_collection_entry fromLink(const std::string& strLink);
 
         bool save(const std::string& strFilename, bool binary = false);

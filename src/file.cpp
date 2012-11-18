@@ -14,6 +14,7 @@
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/hasher.hpp"
+#include "libed2k/util.hpp"
 
 namespace libed2k
 {
@@ -1083,15 +1084,26 @@ namespace libed2k
     }
 
     // static
-    std::string emule_collection::toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile)
+    std::string emule_collection::toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile, bool uencode /* = false*/)
     {
         std::stringstream retvalue;
         // ed2k://|file|fileName|fileSize|fileHash|/
-        retvalue
-        << "ed2k://|file|" << strFilename
-        << "|" << nFilesize
-        << "|" << hFile.toString()
-        << "|/";
+        if (uencode)
+        {
+            retvalue << "ed2k://"
+            << url_encode("|file|") << url_encode(strFilename)
+            << url_encode("|") << nFilesize
+            << url_encode("|") << hFile.toString()
+            << url_encode("|") << "/";
+        }
+        else
+        {
+            retvalue
+            << "ed2k://|file|" << strFilename
+            << "|" << nFilesize
+            << "|" << hFile.toString()
+            << "|/";
+        }
 
         return (retvalue.str());
     }
