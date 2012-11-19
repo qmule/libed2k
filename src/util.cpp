@@ -6,6 +6,7 @@
 #endif
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "libed2k/size_type.hpp"
 #include "libed2k/utf8.hpp"
@@ -238,7 +239,7 @@ namespace libed2k
 
         if (boost::algorithm::ends_with(colname, ".emulecollection"))
         {
-            res = boost::replace_all_copy(
+            res = boost::algorithm::replace_all_copy(
                 colname.substr(0, colname.find_last_of("-")), "-", "\\");
         }
 
