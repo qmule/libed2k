@@ -861,7 +861,7 @@ namespace libed2k
         FILE* m_ph;
     };
 
-    std::pair<add_transfer_params, error_code> file2atp::operator()(const std::string& filepath, bool& cancel)
+    std::pair<add_transfer_params, error_code> file2atp::operator()(const std::string& filepath, const bool& cancel)
     {
         std::pair<add_transfer_params, error_code> res_pair;
         // references
@@ -936,7 +936,7 @@ namespace libed2k
                 }
                 catch(libed2k_exception& e)
                 {
-                    DBG("file {" << convert_to_native(filepath) << "} was truncated");
+                    DBG("file {" << convert_to_native(filepath) << "} was truncated/cancelled");
                     ec = e.error();
                 }
             }

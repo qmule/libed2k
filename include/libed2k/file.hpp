@@ -211,7 +211,7 @@ namespace libed2k
 
     struct file2atp : public std::binary_function<const std::string&, bool&, std::pair<add_transfer_params, error_code> >
     {
-        std::pair<add_transfer_params, error_code> operator()(const std::string&, bool&);
+        std::pair<add_transfer_params, error_code> operator()(const std::string&, const bool&);
     };
 
     class transfer_params_maker
