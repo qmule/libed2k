@@ -640,7 +640,7 @@ namespace libed2k
                 switch(p->getNameId())
                 {
                     case FT_FILESIZE:
-                        //atp.file_size = p->asInt();
+                        atp.file_size = p->asInt();
                         break;
                     case FT_ATTRANSFERRED:
                         atp.transferred += p->asInt();
@@ -668,7 +668,8 @@ namespace libed2k
             }
 
             atp.m_filepath = filepath;
-            DBG("metadata was migrated for {" << convert_to_native(filepath) << "}");
+            DBG("metadata was migrated for {" << convert_to_native(filepath) << "}{"
+                    << atp.file_hash.toString() << "}{" << atp.file_size << "}");
             break;
         }
 
@@ -971,7 +972,7 @@ namespace libed2k
         {
             atp = m_kfc.extract_transfer_params(fs.mtime, m_current_filepath);
 
-            if (!atp.file_hash.defined())
+            if (!atp.file_hash.defined() || (atp.file_size == 0)) // avoid some fails on zero lengths
             {
                 file2atp fatp;
                 std::pair<add_transfer_params, error_code> rp = fatp(m_current_filepath, m_abort_current);
