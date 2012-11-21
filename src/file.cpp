@@ -667,6 +667,7 @@ namespace libed2k
                 }
             }
 
+            atp.m_filepath = filepath;
             DBG("metadata was migrated for {" << convert_to_native(filepath) << "}");
             break;
         }
@@ -960,14 +961,15 @@ namespace libed2k
 
     void transfer_params_maker::process_item()
     {
-        add_transfer_params atp;
         error_code ec;
         file_status fs;
         stat_file(m_current_filepath, &fs, ec);
+        add_transfer_params atp;
+        atp.m_filepath = m_current_filepath;
 
         if (!ec)
         {
-            add_transfer_params atp = m_kfc.extract_transfer_params(fs.mtime, m_current_filepath);
+            atp = m_kfc.extract_transfer_params(fs.mtime, m_current_filepath);
 
             if (!atp.file_hash.defined())
             {
