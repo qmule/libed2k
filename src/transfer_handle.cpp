@@ -4,7 +4,6 @@
 
 using libed2k::aux::session_impl;
 
-#ifdef BOOST_NO_EXCEPTIONS
 
 #define LIBED2K_FORWARD(call) \
     boost::shared_ptr<transfer> t = m_transfer.lock(); \
@@ -24,7 +23,7 @@ using libed2k::aux::session_impl;
     session_impl::mutex_t::scoped_lock l(t->session().m_mutex); \
     t->call
 
-#else
+#if 0
 
 #define LIBED2K_FORWARD(call) \
     boost::shared_ptr<transfer> t = m_transfer.lock(); \
@@ -135,7 +134,7 @@ namespace libed2k
 	std::vector<int> transfer_handle::piece_priorities() const
     {
         std::vector<int> ret;
-        LIBED2K_FORWARD(piece_priorities(&ret));
+        LIBED2K_FORWARD_RETURN2(piece_priorities(&ret), std::vector<int>());
         return ret;
     }
 
