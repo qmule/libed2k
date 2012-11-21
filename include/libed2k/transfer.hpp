@@ -93,8 +93,8 @@ namespace libed2k
         void give_connect_points(int points);
         bool has_error() const { return m_error; }
 
-        // the number of peers that belong to this torrent
-        int num_peers() const { return (int)m_connections.size(); }
+        // the number of peers that belong to this transfer
+        int num_peers() const;
         int num_seeds() const;
 
         bool is_paused() const;
