@@ -662,13 +662,18 @@ namespace libed2k
         }
     }
 
+    int transfer::num_peers() const
+    {
+        return (int)std::count_if(
+            m_connections.begin(), m_connections.end(),
+            !boost::bind(&peer_connection::is_connecting, _1));
+    }
+
     int transfer::num_seeds() const
     {
-        int ret = 0;
-        for (std::set<peer_connection*>::const_iterator i = m_connections.begin(),
-                 end(m_connections.end()); i != end; ++i)
-            if ((*i)->is_seed()) ++ret;
-        return ret;
+        return (int)std::count_if(
+            m_connections.begin(), m_connections.end(),
+            boost::bind(&peer_connection::is_seed, _1));
     }
 
     bool transfer::is_paused() const
@@ -712,9 +717,8 @@ namespace libed2k
         st.download_payload_rate = m_stat.download_payload_rate();
         st.upload_payload_rate = m_stat.upload_payload_rate();
 
-        st.num_peers = (int)std::count_if(
-            m_connections.begin(), m_connections.end(),
-            !boost::bind(&peer_connection::is_connecting, _1));
+        st.num_seeds = num_seeds();
+        st.num_peers = num_peers();
 
         st.list_peers = m_policy.num_peers();
         //st.list_seeds = m_policy.num_seeds();
