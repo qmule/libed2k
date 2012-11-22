@@ -20,7 +20,7 @@ namespace libed2k
             const bitfield& ps, const std::vector<md4_hash>& hset)
         {
             reset();
-            m_filepath = filepath;
+            file_path = filepath;
             file_size = nSize;
             piece_hashses = hset;
             seed_mode = true;
@@ -29,12 +29,12 @@ namespace libed2k
         add_transfer_params(const std::string& filepath)
         {
             reset();
-            m_filepath = filepath;
+            file_path = filepath;
         }
 
 
         md4_hash file_hash;
-        std::string m_filepath; // full filename in UTF8 always!
+        std::string file_path; // full filename in UTF8 always!
         size_type  file_size;
         std::vector<md4_hash> piece_hashses;
         std::vector<char>* resume_data;
@@ -52,7 +52,7 @@ namespace libed2k
         bool operator==(const add_transfer_params& t) const
         {
             return (file_hash == t.file_hash &&
-                    m_filepath == t.m_filepath &&
+                    file_path == t.file_path &&
                     file_size == t.file_size &&
                     piece_hashses == t.piece_hashses &&
                     accepted == t.accepted &&

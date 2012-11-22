@@ -62,6 +62,7 @@ namespace libed2k
         const std::vector<md4_hash>& piece_hashses() const;
         void piece_hashses(const std::vector<md4_hash>& hs);
         const md4_hash& hash_for_piece(size_t piece) const;
+        add_transfer_params params() const;
 
         transfer_handle handle();
         void start();

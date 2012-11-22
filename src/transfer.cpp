@@ -36,7 +36,7 @@ namespace libed2k
         m_sequential_download(false),
         m_sequence_number(seq),
         m_net_interface(net_interface.address(), 0),
-        m_save_path(parent_path(p.m_filepath)),
+        m_save_path(parent_path(p.file_path)),
         m_upload_mode_time(0),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -46,7 +46,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this),
-        m_info(new transfer_info(p.file_hash, filename(p.m_filepath), p.file_size, p.piece_hashses)),
+        m_info(new transfer_info(p.file_hash, filename(p.file_path), p.file_size, p.piece_hashses)),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),
@@ -79,10 +79,32 @@ namespace libed2k
         LIBED2K_ASSERT(hs.size() > 0);
         m_info->piece_hashses(hs);
     }
+
     const md4_hash& transfer::hash_for_piece(size_t piece) const
     {
         return m_info->hash_for_piece(piece);
     }
+
+    add_transfer_params transfer::params() const
+    {
+        add_transfer_params res;
+        res.file_hash = hash();
+        res.file_path = file_path();
+        res.file_size = size();
+        res.piece_hashses = piece_hashses();
+        //res.resume_data = &m_resume_data;
+        res.storage_mode = m_storage_mode;
+        //res.duplicate_is_error = ???
+        res.seed_mode = m_seed_mode;
+        res.num_complete_sources = m_complete;
+        res.num_incomplete_sources = m_incomplete;
+        res.accepted = m_accepted;
+        res.requested = m_requested;
+        res.transferred = m_transferred;
+        res.priority = m_priority;
+        return res;
+    }
+
     transfer_handle transfer::handle()
     {
         return transfer_handle(shared_from_this());

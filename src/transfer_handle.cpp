@@ -81,6 +81,11 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(size(), 0);
     }
 
+    add_transfer_params transfer_handle::params() const
+    {
+        LIBED2K_FORWARD_RETURN(params(), add_transfer_params());
+    }
+
     bool transfer_handle::is_seed() const
     {
         LIBED2K_FORWARD_RETURN(is_seed(), false);

@@ -79,7 +79,7 @@ namespace libed2k
     {
         DBG("process item " << m_index);
         add_transfer_params atp;
-        atp.m_filepath = m_current_filepath;
+        atp.file_path = m_current_filepath;
         m_am.post_alert_should(transfer_params_alert(atp, m_errors[m_index]));
         ++m_index;
         m_index = m_index % TCOUNT;
@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE(test_concurrency)
         std::auto_ptr<libed2k::alert> a = sit.m_alerts.get();
         BOOST_REQUIRE(dynamic_cast<libed2k::transfer_params_alert*>(a.get()));
         BOOST_CHECK_EQUAL((dynamic_cast<libed2k::transfer_params_alert*>(a.get()))->m_ec, libed2k::test_transfer_params_maker::m_errors[n]);
-        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::transfer_params_alert*>(a.get()))->m_atp.m_filepath, std::string(names[n]));
+        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::transfer_params_alert*>(a.get()))->m_atp.file_path, std::string(names[n]));
     }
 }
 

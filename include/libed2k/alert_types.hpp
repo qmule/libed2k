@@ -808,7 +808,7 @@ namespace libed2k
         virtual int category() const { return static_category; }
         virtual std::string message() const
         {
-            return m_atp.m_filepath + " params ready";
+            return m_atp.file_path + " params ready";
         }
 
         add_transfer_params m_atp;

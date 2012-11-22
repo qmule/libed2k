@@ -617,7 +617,7 @@ namespace libed2k
                 continue;
             }
 
-            atp.m_filepath = filepath;
+            atp.file_path = filepath;
             atp.file_hash = m_known_file_list.m_collection[n].m_hFile;
 
             if (m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
@@ -667,7 +667,7 @@ namespace libed2k
                 }
             }
 
-            atp.m_filepath = filepath;
+            atp.file_path = filepath;
             DBG("metadata was migrated for {" << convert_to_native(filepath) << "}");
             break;
         }
@@ -872,7 +872,7 @@ namespace libed2k
         size_type filesize = file_size(filepath);
 
         // store filepath always for search node ability!
-        atp.m_filepath = filepath;
+        atp.file_path = filepath;
 
         if (filesize != 0)
         {
@@ -965,7 +965,7 @@ namespace libed2k
         file_status fs;
         stat_file(m_current_filepath, &fs, ec);
         add_transfer_params atp;
-        atp.m_filepath = m_current_filepath;
+        atp.file_path = m_current_filepath;
 
         if (!ec)
         {
