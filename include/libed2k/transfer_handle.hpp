@@ -14,6 +14,7 @@
 namespace libed2k
 {
     class transfer;
+    class add_transfer_params;
     namespace aux
     {
         class session_impl_base;
@@ -273,6 +274,8 @@ namespace libed2k
         std::string name() const;
         std::string save_path() const;
         size_type size() const;
+        add_transfer_params params() const;
+
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;

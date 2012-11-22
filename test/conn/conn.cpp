@@ -487,8 +487,8 @@ int main(int argc, char* argv[])
                     DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
-                    params.m_filepath = strIncomingDirectory;
-                    params.m_filepath = libed2k::combine_path(params.m_filepath, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
+                    params.file_path = strIncomingDirectory;
+                    params.file_path = libed2k::combine_path(params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
                     if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
@@ -514,8 +514,8 @@ int main(int argc, char* argv[])
                     DBG("load for: " << nIndex << " " << vSF.m_collection[nIndex].m_hFile.toString());
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
-                    params.m_filepath = strIncomingDirectory;
-                    params.m_filepath = libed2k::combine_path(params.m_filepath, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
+                    params.file_path = strIncomingDirectory;
+                    params.file_path = libed2k::combine_path(params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
                     if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
@@ -660,7 +660,7 @@ int main(int argc, char* argv[])
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.m_filepath= trd.m_filepath.m_collection;
+                        params.file_path= trd.m_filepath.m_collection;
                         params.file_size = trd.m_filesize;
 
                         if (trd.m_fast_resume_data.count() > 0)
