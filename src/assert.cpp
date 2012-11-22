@@ -219,7 +219,7 @@ LIBED2K_EXPORT void assert_fail(char const* expr, int line, char const* file
 	print_backtrace(stack, sizeof(stack), 0);
 
 	fprintf(out, "assertion failed. Please file a bugreport at "
-		"http://code.rasterbar.com/libtorrent/newticket\n"
+		"intser79@gmail.com\n"
 		"Please include the following information:\n\n"
 		"version: " LIBED2K_VERSION "\n"
 		"%s\n"
