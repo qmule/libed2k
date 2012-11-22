@@ -84,13 +84,13 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         BOOST_REQUIRE(generate_test_file(itr->first, "./thfile.bin"));
         tfh.hold("./thfile.bin");
 
-        char* chFullBuffer = new char[itr->first];  // allocate buffer for file data
+        char* chFullBuffer = new char[static_cast<unsigned int>(itr->first)];  // allocate buffer for file data
         FILE* fh = fopen("./thfile.bin", "rb");
         BOOST_REQUIRE(fh);
-        BOOST_REQUIRE(fread(chFullBuffer, 1, itr->first, fh) == itr->first);
+        BOOST_REQUIRE(fread(chFullBuffer, 1, static_cast<unsigned int>(itr->first), fh) == itr->first);
         fclose(fh);
 
-        int pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);
+        libed2k::size_type pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);
         std::vector<libed2k::md4_hash> hashset;
         hashset.resize(pieces);
         libed2k::size_type capacity = itr->first;
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         std::vector<libed2k::hasher> vlh;
         CryptoPP::Weak1::MD4 md4_hasher;
 
-        for (int i = 0; i < pieces; ++i)
+        for (libed2k::size_type i = 0; i < pieces; ++i)
         {
             md4_hasher.CalculateDigest(hashset[i].getContainer(),
                    reinterpret_cast<const unsigned char*>(chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity));
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         }
 
         // simple compare hashes
-        for (int i = 0; i < pieces; ++i)
+        for (libed2k::size_type i = 0; i < pieces; ++i)
         {
             BOOST_CHECK(hashset[i] == vlh[i].final());
         }
