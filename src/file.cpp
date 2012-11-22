@@ -15,6 +15,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/hasher.hpp"
 #include "libed2k/util.hpp"
+#include "libed2k/thread.hpp"
 
 namespace libed2k
 {
@@ -668,6 +669,7 @@ namespace libed2k
             }
 
             atp.m_filepath = filepath;
+            atp.seed_mode  = true;
             DBG("metadata was migrated for {" << convert_to_native(filepath) << "}{"
                     << atp.file_hash.toString() << "}{" << atp.file_size << "}");
             break;
@@ -976,12 +978,15 @@ namespace libed2k
             {
                 file2atp fatp;
                 std::pair<add_transfer_params, error_code> rp = fatp(m_current_filepath, m_abort_current);
-                m_am.post_alert_should(transfer_params_alert(rp.first, rp.second));
-                return;
+                atp = rp.first;
+                ec =  rp.second;
             }
         }
 
-        m_am.post_alert_should(transfer_params_alert(atp, ec));
+        if (m_am.pending()) libed2k::sleep(100);
+
+        if (!m_am.post_alert(transfer_params_alert(atp, ec)))
+            ERR("add transfer parameters for {" << atp.m_filepath << "} waren't added because order overflow!");
     }
 
     void emule_binary_collection::dump() const
