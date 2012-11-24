@@ -94,21 +94,22 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         hashset.resize(pieces);
         libed2k::size_type capacity = itr->first;
 
-        std::vector<libed2k::hasher> vlh;
+        std::deque<libed2k::hasher*> vlh;
         CryptoPP::Weak1::MD4 md4_hasher;
 
         for (libed2k::size_type i = 0; i < pieces; ++i)
         {
             md4_hasher.CalculateDigest(hashset[i].getContainer(),
                    reinterpret_cast<const unsigned char*>(chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity));
-            vlh.push_back(libed2k::hasher((chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity)));
+            vlh.push_back(new libed2k::hasher((chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity)));
             capacity -= std::min(libed2k::PIECE_SIZE, capacity);
         }
 
         // simple compare hashes
         for (libed2k::size_type i = 0; i < pieces; ++i)
         {
-            BOOST_CHECK(hashset[i] == vlh[i].final());
+            BOOST_CHECK(hashset[i] == vlh[i]->final());
+            delete vlh[i];
         }
 
         if (itr->first/libed2k::PIECE_SIZE == libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE))
