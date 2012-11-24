@@ -52,7 +52,6 @@ BOOST_AUTO_TEST_CASE(test_compare)
     BOOST_CHECK(h2[0] == '\x00');
     BOOST_CHECK(h1 == h2);
     BOOST_CHECK(h3 > h2);
-    BOOST_CHECK_THROW(h3[16], libed2k::libed2k_exception);
 }
 
 BOOST_AUTO_TEST_CASE(test_user_agent)

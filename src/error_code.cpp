@@ -14,8 +14,6 @@ namespace libed2k
             "no error",
             "no memory",
             // serialization errors
-            "md4_hash index error",
-            "md4_hash convert error",
             "tag has incorrect type",
             "unexpected output stream error",
             "unexpected input stream error",

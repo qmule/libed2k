@@ -20,8 +20,6 @@ namespace libed2k
             no_error = 0,
             no_memory,
             // serialization errors
-            md4_hash_index_error,
-            md4_hash_convert_error,
             tag_type_mismatch,
             unexpected_ostream_error,
             unexpected_istream_error,
