@@ -1141,7 +1141,7 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
 
 void session_impl::announce(int tick_interval_ms)
 {
-    // check announces avaliable
+    // check announces available
     if (m_settings.m_announce_timeout == -1)
     {
         return;
@@ -1158,22 +1158,16 @@ void session_impl::announce(int tick_interval_ms)
     m_last_announce_duration = 0;
 
     shared_files_list offer_list;
-    __file_size total_size;
-    total_size.nQuadPart = 0;
-    bool new_announces = false;  // check we have new announces
-
 
     for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
-        // we send no more m_max_announces_per_call elements in one package
+        // we send no more m_max_announces_per_call elements in one packet
         if (offer_list.m_collection.size() >= m_settings.m_max_announces_per_call)
         {
-            m_server_connection->post_announce(offer_list);
-            offer_list.clear();
+            break;
         }
 
         transfer& t = *i->second;
-        total_size.nQuadPart += t.size();
 
         // add transfer to announce list when it has one piece at least and it is not announced yet
         if (!t.is_announced())
@@ -1184,17 +1178,30 @@ void session_impl::announce(int tick_interval_ms)
             {
                 offer_list.add(se);
                 t.set_announced(true); // mark transfer as announced
-                new_announces = true;
             }
         }
-
     }
 
-    // generate announce for user as transfer when new announces or user is not announced yet(when transfers list empty)
-    // NOTE - new_announces doesn't work since server doesn't update users transfer information after first announce
-    if (new_announces || !m_user_announced)
+    if (offer_list.m_size > 0)
     {
-        DBG("new announces exist - re-announce user with correct size");
+        DBG("session_impl::announce: " << offer_list.m_size);
+        m_server_connection->post_announce(offer_list);
+    }
+
+    // generate announce for user as transfer when all transfers were announced but user wasn't
+    // NOTE - new_announces don't work since server doesn't update users transfer information after first announce
+    if ((offer_list.m_size == 0) && !m_user_announced)
+    {
+        DBG("all transfer probably ware announced - announce user with correct size");
+        __file_size total_size;
+        total_size.nQuadPart = 0;
+
+        for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+        {
+            transfer& t = *i->second;
+            total_size.nQuadPart += t.size();
+        }
+
         shared_file_entry se;
         se.m_hFile = m_settings.user_agent;
 
@@ -1227,13 +1234,8 @@ void session_impl::announce(int tick_interval_ms)
         }
 
         offer_list.add(se);
-        m_user_announced = true;
-    }
-
-    if (offer_list.m_size > 0)
-    {
-        DBG("session_impl::announce: " << offer_list.m_size);
         m_server_connection->post_announce(offer_list);
+        m_user_announced = true;
     }
 }
 
