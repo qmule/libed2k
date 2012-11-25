@@ -1946,33 +1946,28 @@ void peer_connection::on_ismod_files_request(const error_code& error)
 {
     if (!error)
     {
-        DECODE_PACKET(client_directory_content_request, cdcr);
-        client_directory_content_result cres;
-        DBG("request ismod directory content: {hash: " << cres.m_hdirectory << "} <== " << m_remote);
+        DECODE_PACKET(client_directory_content_request, req);
+        DBG("request ismod directory content: {hash: " << req.m_hash << "} <== " << m_remote);
 
         // check we public collection now
-        if (boost::shared_ptr<transfer> p = m_ses.find_transfer(cdcr.m_hash).lock())
+        if (boost::shared_ptr<transfer> ct = m_ses.find_transfer(req.m_hash).lock())
         {
-            // search appropriate transfers by clients collection hash and public their filenames
-            for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin();
-                 i != m_ses.m_transfers.end(); ++i)
+            emule_collection coll = emule_collection::fromFile(ct->file_path());
+            client_directory_content_result ans;
+            ans.m_hdirectory = req.m_hash;
+
+            for(std::deque<emule_collection_entry>::const_iterator i = coll.m_files.begin();
+                i != coll.m_files.end(); ++i)
             {
-                transfer& t = *i->second;
-
-                /**
-                  * compare clients hash and collections hash of each transfer in our transfer list
-                 */
-                if (cdcr.m_hash == p->collection_hash())
-                {
-                    cres.m_files.m_collection.push_back(t.getAnnounce());
-                }
+                boost::shared_ptr<transfer> t = m_ses.find_transfer(i->m_filehash).lock();
+                if (t) ans.m_files.m_collection.push_back(t->getAnnounce());
             }
-        }
 
-        DBG("ismod directory content: {hash: " << cres.m_hdirectory <<
-            ", files: [" << boost::algorithm::join(filelist(cres.m_files), ", ") <<
-            "]} <== " << m_remote);
-        send_throw_meta_order(cres);
+            DBG("ismod directory content: {hash: " << ans.m_hdirectory <<
+                ", files: [" << boost::algorithm::join(filelist(ans.m_files), ", ") <<
+                "]} <== " << m_remote);
+            send_throw_meta_order(ans);
+        }
     }
     else
     {
