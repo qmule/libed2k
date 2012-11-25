@@ -13,14 +13,15 @@
 #include "libed2k/lazy_entry.hpp"
 #include "libed2k/policy.hpp"
 #include "libed2k/piece_picker.hpp"
-#include "libed2k/session.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/peer_info.hpp"
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/entry.hpp"
+#include "libed2k/stat.hpp"
+#include "libed2k/transfer_handle.hpp"
 
-namespace libed2k {
-
+namespace libed2k
+{
     class transfer_info;
     class add_transfer_params;
     namespace aux{
@@ -42,27 +43,31 @@ namespace libed2k {
          * it is fake transfer constructor for using in unit tests
          * you shouldn't it anywhere except unit tests
          */
-        transfer(aux::session_impl& ses, const md4_hash& hash, const fs::path p, size_type size);
+        transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
+                 const md4_hash& hash, const std::string& filename, size_type size);
+
 
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
 
         const md4_hash& hash() const;
-        size_type filesize() const;
-        const fs::path& filepath() const { return m_filepath; }
-        const fs::path& collectionpath() const { return m_collectionpath; }
-        fs::path save_path() const { return m_filepath.parent_path(); }
+        // TODO temp code - it will be part of new share files engine
+        const md4_hash collection_hash() const;
+        size_type size() const;
+        const std::string& name() const;
+        const std::string& save_path() const;
+        std::string file_path() const;
 
         const std::vector<md4_hash>& piece_hashses() const;
         void piece_hashses(const std::vector<md4_hash>& hs);
         const md4_hash& hash_for_piece(size_t piece) const;
+        add_transfer_params params() const;
 
         transfer_handle handle();
         void start();
         void abort();
         void set_state(transfer_status::state_t s);
-        void update_collection(const fs::path pc);
 
         aux::session_impl& session() { return m_ses; }
 
@@ -214,7 +219,7 @@ namespace libed2k {
 
         piece_manager& filesystem() { return *m_storage; }
         storage_interface* get_storage();
-        void move_storage(const fs::path& save_path);
+        void move_storage(const std::string& save_path);
         bool rename_file(const std::string& name);
         void delete_files();
 
@@ -307,10 +312,7 @@ namespace libed2k {
         // the network interface all outgoing connections
         // are opened through
         tcp::endpoint m_net_interface;
-
-        fs::path m_filepath;
-        fs::path m_collectionpath;
-
+        std::string   m_save_path;     //!< file save path
         // the number of seconds we've been in upload mode
         unsigned int m_upload_mode_time;
 
@@ -401,7 +403,6 @@ namespace libed2k {
         error_code m_error;
     };
 
-    extern std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
     extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
 }
 

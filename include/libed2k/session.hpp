@@ -19,66 +19,12 @@ namespace libed2k {
 
     class session_settings;
     struct transfer_handle;
-    namespace aux {
+    class add_transfer_params;
+
+    namespace aux
+    {
         class session_impl;
     }
-
-    class add_transfer_params
-    {
-    public:
-        add_transfer_params() { reset(); }
-
-        add_transfer_params(
-            const md4_hash& hash, size_type nSize, const fs::path& cpath,
-            const fs::path& fpath, const std::vector<md4_hash>& hset)
-        {
-            reset();
-            file_hash = hash;
-            file_path = fpath;
-            collection_path = cpath;
-            file_size = nSize;
-            piece_hashses = hset;
-            seed_mode = true;
-        }
-
-        md4_hash file_hash;
-        fs::path file_path; // in UTF8 always!
-        fs::path collection_path;
-        size_type  file_size;
-        std::vector<md4_hash> piece_hashses;
-        bool seed_mode;
-        std::vector<char>* resume_data;
-        storage_mode_t storage_mode;
-        bool duplicate_is_error;
-        int num_complete_sources;
-        int num_incomplete_sources;
-
-        boost::uint32_t accepted;
-        boost::uint32_t requested;
-        boost::uint64_t transferred;
-        boost::uint8_t  priority;
-
-        bool operator==(const add_transfer_params& t) const
-        {
-            return (file_hash == t.file_hash &&
-                    file_path == t.file_path &&
-                    file_size == t.file_size &&
-                    piece_hashses == t.piece_hashses &&
-                    accepted == t.accepted &&
-                    requested == t.requested &&
-                    transferred == t.transferred &&
-                    priority  == t.priority &&
-                    collection_path == t.collection_path
-                    );
-        }
-
-        void dump() const;
-
-    private:
-        void reset();
-    };
-
-    typedef boost::function<void (const add_transfer_params&)> add_transfer_handler;
 
 
     // Once it's created, the session object will spawn the main thread
@@ -146,22 +92,8 @@ namespace libed2k {
 
         void pause();
         void resume();
-
-        /**
-          * share single file, collection is empty
-         */
-        void share_file(const std::string& strFilename, bool unshare = false);
-        void unshare_file(const std::string& strFilename) { share_file(strFilename, true); }
-
-        /**
-          * share directory, when root < path - collection name will generate
-         */
-        void share_dir(const std::string& strRoot, const std::string& strPath,
-                       const std::deque<std::string>& excludes, bool unshare = false);
-        void unshare_dir(const std::string& strRoot, const std::string& strPath,
-                         const std::deque<std::string>& excludes) {
-            share_dir(strRoot, strPath, excludes, true);
-        }
+        void make_transfer_parameters(const std::string& filepath);
+        void cancel_transfer_parameters(const std::string& filepath);
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

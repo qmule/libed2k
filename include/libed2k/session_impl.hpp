@@ -35,12 +35,8 @@ namespace libed2k {
     struct transfer_handle;
     struct listen_socket_t;
 
-    extern std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path);
-
     namespace aux
     {
-        bool paths_filter(std::deque<fs::path>& vp, const fs::path& p);
-
         struct listen_socket_t
         {
             listen_socket_t(): external_port(0), ssl(false) {}
@@ -94,7 +90,7 @@ namespace libed2k {
             virtual void post_transfer(add_transfer_params const& );
 
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
-            virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path) = 0;
+            virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename) = 0;
             virtual void remove_transfer(const transfer_handle& h, int options) = 0;
 
             virtual std::vector<transfer_handle> get_transfers() = 0;
@@ -103,28 +99,6 @@ namespace libed2k {
               * load transfers from disk
              */
             void load_state();
-
-            /**
-              * share single file - do not prepare collection
-              * @param strFilename - in UTF-8 code page
-              * @param bUnshare - remove transfer if it exists on this file
-             */
-            void share_file(const std::string& strFilename, bool bUnshare);
-
-            /**
-              * share directory and generate collection
-              * all parameters in UTF-8
-              * @param strRoot - must equal strPath from 0 to strRoot.size()
-              * @param excludes must contains only filenames
-              * @param bUnshare - if we need un-share directory set parameter to true
-             */
-            void share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare);
-
-            /**
-              * update collection entry in collection
-              * @param bRemove - do not update entry - remove it
-             */
-            void update_pendings(const add_transfer_params& atp, bool remove);
 
             /**
               * alerts
@@ -157,19 +131,13 @@ namespace libed2k {
             // statistics gathered from all transfers.
             stat m_stat;
 
+            // handles delayed alerts
+            alert_manager m_alerts;
+
             /**
               * file hasher closed in self thread
              */
-            file_hasher    m_file_hasher;
-
-            /**
-              * pending collections list - when collection changes status from pending
-              * it will remove from deque
-             */
-            std::deque<pending_collection>  m_pending_collections;
-
-            // handles delayed alerts
-            alert_manager m_alerts;
+            transfer_params_maker    m_tpm;
         };
 
 
@@ -205,7 +173,7 @@ namespace libed2k {
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
-            virtual boost::weak_ptr<transfer> find_transfer(const fs::path& path);
+            virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename);
             transfer_handle find_transfer_handle(const md4_hash& hash);
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);

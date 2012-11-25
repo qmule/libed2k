@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 #include "libed2k/session.hpp"
 #include "libed2k/session_settings.hpp"

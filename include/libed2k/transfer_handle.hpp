@@ -3,7 +3,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-#include <libed2k/peer_info.hpp>
+
+#include "libed2k/peer_info.hpp"
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/storage_defs.hpp"
@@ -13,6 +14,7 @@
 namespace libed2k
 {
     class transfer;
+    class add_transfer_params;
     namespace aux
     {
         class session_impl_base;
@@ -269,8 +271,11 @@ namespace libed2k
         bool is_valid() const;
 
         md4_hash hash() const;
-        fs::path filepath() const;
-        size_type filesize() const;
+        std::string name() const;
+        std::string save_path() const;
+        size_type size() const;
+        add_transfer_params params() const;
+
         bool is_seed() const;
         bool is_finished() const;
         bool is_paused() const;
@@ -297,10 +302,9 @@ namespace libed2k
         size_t num_pieces() const;
         int num_peers() const;
         int num_seeds() const;
-        fs::path save_path() const;
         void save_resume_data() const;
 
-        void move_storage(fs::path const& save_path) const;
+        void move_storage(std::string const& save_path) const;
         bool rename_file(const std::string& name) const;
 
         bool operator==(const transfer_handle& h) const

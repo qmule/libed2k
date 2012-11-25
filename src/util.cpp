@@ -5,9 +5,13 @@
 #include <iconv.h>
 #endif
 
-#include <libed2k/utf8.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/file.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
+#include "libed2k/size_type.hpp"
+#include "libed2k/utf8.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/file.hpp"
 
 namespace libed2k 
 {
@@ -32,8 +36,8 @@ namespace libed2k
     {
         size_type begin = piece * PIECE_SIZE + block * BLOCK_SIZE;
         size_type align_size = (piece + 1) * PIECE_SIZE;
-        size_type end = std::min<size_type>(begin + BLOCK_SIZE, std::min(align_size, size));
-        assert(begin < end);
+        size_type end = std::min<size_type>(begin + BLOCK_SIZE, std::min<size_type>(align_size, size));
+        LIBED2K_ASSERT(begin < end);
         return std::make_pair(begin, end);
     }
 
@@ -115,29 +119,55 @@ namespace libed2k
 #endif
 
 
-const char HEX2DEC[256] = 
-{
-    /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
-    /* 0 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 1 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 2 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 3 */  0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+    const char HEX2DEC[256] =
+    {
+        /*       0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F */
+        /* 0 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 1 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 2 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 3 */  0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
+
+        /* 4 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 5 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 6 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 7 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+
+        /* 8 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* 9 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* A */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* B */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+
+        /* C */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* D */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* E */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+        /* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
+    };
     
-    /* 4 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 5 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 6 */ -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 7 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    
-    /* 8 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* 9 */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* A */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* B */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    
-    /* C */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* D */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* E */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    /* F */ -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1
-};
+    // Only alphanum is safe.
+    const char SAFE[256] =
+    {
+        /*      0 1 2 3  4 5 6 7  8 9 A B  C D E F */
+        /* 0 */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* 1 */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* 2 */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* 3 */ 1,1,1,1, 1,1,1,1, 1,1,0,0, 0,0,0,0,
+
+        /* 4 */ 0,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+        /* 5 */ 1,1,1,1, 1,1,1,1, 1,1,1,0, 0,0,0,0,
+        /* 6 */ 0,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1,
+        /* 7 */ 1,1,1,1, 1,1,1,1, 1,1,1,0, 0,0,0,0,
+
+        /* 8 */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* 9 */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* A */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* B */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+
+        /* C */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* D */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* E */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+        /* F */ 0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
+    };
+
 
     std::string url_decode(const std::string& s)
     {      
@@ -174,5 +204,45 @@ const char HEX2DEC[256] =
         }
 
         return (strRes);
+    }
+
+    std::string url_encode(const std::string & s)
+    {
+        const char DEC2HEX[16 + 1] = "0123456789ABCDEF";
+        const unsigned char* pSrc = (const unsigned char *)s.c_str();
+        const int SRC_LEN = s.length();
+        unsigned char * const pStart = new unsigned char[SRC_LEN * 3];
+        unsigned char * pEnd = pStart;
+        const unsigned char * const SRC_END = pSrc + SRC_LEN;
+
+        for (; pSrc < SRC_END; ++pSrc)
+        {
+            if (SAFE[*pSrc])
+                *pEnd++ = *pSrc;
+            else
+            {
+                // escape this char
+                *pEnd++ = '%';
+                *pEnd++ = DEC2HEX[*pSrc >> 4];
+                *pEnd++ = DEC2HEX[*pSrc & 0x0F];
+            }
+        }
+
+        std::string sResult((char *)pStart, (char *)pEnd);
+        delete [] pStart;
+        return sResult;
+    }
+
+    std::string collection_dir(const std::string& colname)
+    {
+        std::string res;
+
+        if (boost::algorithm::ends_with(colname, ".emulecollection"))
+        {
+            res = boost::algorithm::replace_all_copy(
+                colname.substr(0, colname.find_last_of("-")), "-", "\\");
+        }
+
+        return res;
     }
 }

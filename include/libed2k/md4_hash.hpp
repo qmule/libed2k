@@ -34,6 +34,7 @@ namespace libed2k{
         static const md4_hash terminal;
         static const md4_hash libed2k;
         static const md4_hash emule;
+        static const md4_hash invalid;
 
         enum { hash_size = MD4_HASH_SIZE };
 
@@ -105,7 +106,7 @@ namespace libed2k{
 
             if (!from_hex(strHash.c_str(), MD4_HASH_SIZE*2, (char*)hash.m_hash))
             {
-                return (md4_hash());
+                hash = invalid;
             }
 
             return (hash);
@@ -125,20 +126,13 @@ namespace libed2k{
 
         boost::uint8_t operator[](size_t n) const
         {
-            if (n >= MD4_HASH_SIZE)
-            {
-                throw libed2k_exception(errors::md4_hash_index_error);
-            }
-
+            LIBED2K_ASSERT(n < MD4_HASH_SIZE);
             return (m_hash[n]);
         }
 
         boost::uint8_t& operator[](size_t n)
         {
-            if (n >= MD4_HASH_SIZE)
-            {
-                throw libed2k_exception(errors::md4_hash_index_error);
-            }
+            LIBED2K_ASSERT(n < MD4_HASH_SIZE);
             return (m_hash[n]);
         }
 

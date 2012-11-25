@@ -30,6 +30,7 @@ void generate_file(size_t nSize, const char* pchFilename)
 int main(int argc, char* argv[])
 {
     LOGGER_INIT(LOG_ALL) 
+#if 0
 
     if (argc < 2)
     {
@@ -145,5 +146,6 @@ int main(int argc, char* argv[])
     }
 
     DBG("Result hash: " << hResult.toString());
+#endif
     return 0;
 }

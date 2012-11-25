@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <boost/filesystem.hpp>
-#include <libed2k/utf8.hpp>
+#include "libed2k/utf8.hpp"
 
 #include "libed2k/constants.hpp"
 #include "libed2k/packet_struct.hpp"
@@ -9,6 +9,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/archive.hpp"
 
+namespace fs = boost::filesystem;
 using namespace libed2k;
 
 int main(int argc, char* argv[])

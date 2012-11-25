@@ -113,7 +113,7 @@ namespace libed2k
         dispatcher(*alert_);
     }
 
-    void alert_manager::post_alert(const alert& alert_)
+    bool alert_manager::post_alert(const alert& alert_)
     {
         boost::mutex::scoped_lock lock(m_mutex);
 
@@ -121,12 +121,13 @@ namespace libed2k
         {
             //LIBED2K_ASSERT(m_alerts.empty());
             m_ios.post(boost::bind(&dispatch_alert, m_dispatch, alert_.clone().release()));
-            return;
+            return true;
         }
 
-        if (m_alerts.size() >= m_queue_size_limit) return;
+        if (m_alerts.size() >= m_queue_size_limit) return false;
         m_alerts.push(alert_.clone().release());
         m_condition.notify_all();
+        return true;
     }
 
     std::auto_ptr<alert> alert_manager::get()

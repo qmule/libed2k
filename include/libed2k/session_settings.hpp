@@ -32,7 +32,7 @@ namespace libed2k
             , upload_rate_limit(-1)
             , unchoke_slots_limit(8)
             , m_version(0x3c)
-            , m_max_announces_per_call(100)
+            , m_max_announces_per_call(198)
             , m_announce_timeout(-1)
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)

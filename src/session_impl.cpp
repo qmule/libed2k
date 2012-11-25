@@ -6,13 +6,12 @@
 #include <algorithm>
 #include <boost/format.hpp>
 
+#include "libed2k/session_impl.hpp"
+#include "libed2k/session.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/socket.hpp"
-#include "libed2k/session.hpp"
-#include "libed2k/session_impl.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/transfer.hpp"
-#include "libed2k/peer_connection.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
@@ -21,50 +20,6 @@
 #include "libed2k/util.hpp"
 
 namespace libed2k{
-
-    /**
-      * never set root as path with last directory separator because it will be implemented as additional directory
-      * for example /home/apavlov/ = /home/apavlov/.
-     */
-    std::pair<std::string, std::string> extract_base_collection(const fs::path& root, const fs::path& path)
-    {
-        std::string strBase;
-        std::string strCollection;
-
-        fs::path::const_iterator path_itr = path.begin();
-        for (fs::path::const_iterator root_itr = root.begin(); root_itr != root.end(); ++root_itr)
-        {
-            // error - root great than path or root != path in begin
-            if (path_itr == path.end() || *path_itr != *root_itr)
-            {
-                return (std::pair<std::string, std::string>());
-            }
-
-            // pass all delimeters
-            if (*root_itr != "/" && *root_itr != ".")
-            {
-                strBase += *root_itr;
-            }
-
-            ++path_itr;
-        }
-
-        while(path_itr != path.end())
-        {
-            if (*path_itr != "/" && *path_itr != ".")
-            {
-                strCollection += (strCollection.empty())?"":"-";
-                strCollection += *path_itr;
-            }
-
-            ++path_itr;
-        }
-
-        // remove disk :
-        strBase.erase(std::remove(strBase.begin(), strBase.end(), ':'), strBase.end());
-        return std::make_pair(strBase, strCollection);
-    }
-
 namespace aux{
 
 
@@ -73,8 +28,8 @@ session_impl_base::session_impl_base(const session_settings& settings) :
         m_abort(false),
         m_settings(settings),
         m_transfers(),
-        m_file_hasher(boost::bind(&session_impl_base::post_transfer, this, _1), settings.m_known_file),
-        m_alerts(m_io_service)
+        m_alerts(m_io_service),
+        m_tpm(m_alerts, settings.m_known_file)
 {
 }
 
@@ -87,7 +42,7 @@ void session_impl_base::abort()
 {
     if (m_abort) return;
     m_abort = true;
-    m_file_hasher.stop();
+    m_tpm.stop();
 }
 
 void session_impl_base::post_transfer(add_transfer_params const& params)
@@ -95,250 +50,6 @@ void session_impl_base::post_transfer(add_transfer_params const& params)
     DBG("session_impl_base::post_transfer");
     error_code ec;
     m_io_service.post(boost::bind(&session_impl_base::add_transfer, this, params, ec));
-}
-
-// resolve reference to reference and overloading problems
-bool dref_is_regular_file(fs::path p)
-{
-    return fs::is_regular_file(p);
-}
-
-void session_impl_base::share_file(const std::string& strFilename, bool bUnshare)
-{
-    DBG("share_file{" << strFilename << "}{" << ((bUnshare)?"unshare":"share") << "}");
-    fs::path p(convert_to_native(bom_filter(strFilename)));
-
-    // verify parameter
-    if (!fs::exists(p) || !fs::is_regular_file(p))
-    {
-        DBG("file not exists or it is not file: " << p.string());
-        return;
-    }
-
-    if (boost::shared_ptr<transfer> p = find_transfer(fs::path(strFilename)).lock())
-    {
-        if (bUnshare) remove_transfer(p->handle(), 0);
-    }
-    else if (!bUnshare)
-    {
-        // hash file with empty collection
-        m_file_hasher.m_order.push(std::make_pair(fs::path(), fs::path(strFilename)));
-    }
-}
-
-fs::path string2path(const std::string& strRoot, const std::string strName)
-{
-    fs::path p(convert_to_native(bom_filter(strRoot)));
-    p /= convert_to_native(bom_filter(strName));
-    return p;
-}
-
-bool paths_filter(std::deque<fs::path>& vp, const fs::path& p)
-{
-    // pass all directories
-    if (!fs::is_regular_file(p))
-    {
-        return false;
-    }
-
-    for(std::deque<fs::path>::iterator itr = vp.begin(); itr != vp.end(); ++itr)
-    {
-        if (*itr == p)
-        {
-            vp.erase(itr);
-            return (false);
-        }
-    }
-
-    return true;
-}
-
-void session_impl_base::share_dir(const std::string& strRoot, const std::string& strPath, const std::deque<std::string>& excludes, bool bUnshare)
-{
-    DBG("share_dir {" << strRoot << "}{" << strPath << "}{" << ((bUnshare)?"unshare":"share") << "}");
-    fs::path p(convert_to_native(bom_filter(strPath)));
-
-    // verify parameter
-    if (!fs::exists(p) || !fs::is_directory(p))
-    {
-        DBG("directory not exists or it is not directory: " << p.string());
-        return;
-    }
-
-    std::pair<std::string, std::string> bc = extract_base_collection(fs::path(strRoot), fs::path(strPath));
-
-    if (bc.first.empty())
-    {
-        return;
-    }
-
-    std::deque<fs::path> ex_paths;
-    std::deque<fs::path> fpaths;
-    std::transform(excludes.begin(), excludes.end(), std::back_inserter(ex_paths), boost::bind(&string2path, strPath, _1));
-    std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(fpaths));
-    fpaths.erase(std::remove_if(fpaths.begin(), fpaths.end(), !boost::bind(&paths_filter, ex_paths, _1)), fpaths.end());
-
-    // generate collection name
-    fs::path collection_path; // utf-8
-
-    if (!bc.second.empty() && !m_settings.m_collections_directory.empty())
-    {
-        collection_path /= m_settings.m_collections_directory;
-        collection_path /= bc.first;
-
-        // temp fix - we can't manipulate in file system in utf8 codepage
-        fs::path collection_path_native;
-        collection_path_native = convert_to_native(collection_path.string());
-
-        // if directory is not exists - attempt create it and generate full collection name
-        if (fs::exists(collection_path_native) || fs::create_directory(collection_path_native))
-        {
-            std::stringstream sstr;
-            sstr << bc.second << "_" << fpaths.size() << ".emulecollection";
-            collection_path /= sstr.str();
-        }
-        else
-        {
-            collection_path.clear();
-        }
-    }
-
-    pending_collection pc(collection_path);
-
-    for (std::deque<fs::path>::iterator itr = fpaths.begin(); itr != fpaths.end(); itr++)
-    {
-        fs::path upath = convert_from_native(itr->string());
-
-        if (boost::shared_ptr<transfer> p = find_transfer(upath).lock())
-        {
-            if (bUnshare)
-            {
-                DBG("unshare transfer " << convert_to_native(p->filepath().string()));
-                remove_transfer(p->handle(), 0);
-            }
-            else
-            {
-                if (!collection_path.empty())
-                {
-                    p->update_collection(collection_path);  // update collection path
-                    pc.m_files.push_back(pending_file(upath, p->filesize(), p->hash()));
-                }
-                else
-                {
-                    p->update_collection(fs::path());   // collection is not avaliable - erase it from transfer
-                }
-            }
-
-            continue;
-        }
-
-        // add file to hasher only on share operation
-        if (!bUnshare)
-        {
-            if (!collection_path.empty()) pc.m_files.push_back(pending_file(upath));    //!< add pending file to collection
-            m_file_hasher.m_order.push(std::make_pair(collection_path, upath));         //!< hash file
-        }
-    }
-
-    // collections works
-    // on unshare operation we check collections transfer and simple remove it if
-    if (bUnshare && !collection_path.empty())
-    {
-        remove_transfer(find_transfer(collection_path), session::delete_files);
-        return;
-    }
-
-    if (!pc.m_files.empty())
-    {
-        DBG("collection not empty");
-        // when we collect pending collection - add it to pending list for public after hashes were completed
-        if (pc.is_pending())
-        {
-            DBG("pending collection");
-            // first - search file in transfers
-            remove_transfer(find_transfer(pc.m_path), session::delete_files);
-            // add current collection to pending list
-            m_pending_collections.push_back(pc);
-        }
-        else
-        {
-            DBG("collection not pending");
-            // load collection
-            emule_collection ecoll = emule_collection::fromFile(convert_to_native(bom_filter(pc.m_path.string())));
-
-            // we already have collection on disk
-            if (boost::shared_ptr<transfer> p = find_transfer(pc.m_path).lock())
-            {
-                if (ecoll != pc.m_files)
-                {
-                    // transfer exists but collection changed
-                    remove_transfer(p->handle(), session::delete_files);
-                    // save collection to disk and run hasher
-                    emule_collection::fromPending(pc).save(convert_to_native(pc.m_path.string()), false);
-                    // run hash
-                    m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
-                }
-            }
-            else
-            {
-                if (ecoll != pc.m_files)
-                {
-                    // replace collection on disc with our collection
-                    emule_collection::fromPending(pc).save(pc.m_path.string(), false);
-                }
-
-                m_file_hasher.m_order.push(std::make_pair(fs::path(), pc.m_path));
-            }
-        }
-    }
-
-    //catch(fs::basic_filesystem_error<fs::path>& e)
-    //{
-    //    DBG("Error on share dir: " << e.what());
-    //    DBG("p1: " << e.path1().string() << " p2: " << e.path2().string());
-    //}
-}
-
-void session_impl_base::update_pendings(const add_transfer_params& atp, bool remove)
-{
-    // check pending collections only when transfer has collection link
-    if (!atp.collection_path.empty())
-    {
-        for (std::deque<pending_collection>::iterator itr = m_pending_collections.begin();
-                itr != m_pending_collections.end(); ++itr)
-        {
-            DBG("scan: " << convert_to_native(bom_filter(itr->m_path.string())));
-            if (itr->m_path == atp.collection_path)                // find collection
-            {
-                DBG("update_pendings=found collection: " << convert_to_native(bom_filter(atp.collection_path.string())));
-                if (itr->update(atp.file_path, atp.file_size, atp.file_hash, remove))    // update file in collection
-                {
-                    DBG("session_impl_base::update_pendings completed");
-                    if (!itr->is_pending())                             // if collection changes status we will save it
-                    {
-                        DBG("save collection and hash it: " << convert_to_native(bom_filter(itr->m_path.string())));
-
-                        if (emule_collection::fromPending(*itr).save(convert_to_native(bom_filter(itr->m_path.string())), false))
-                        {
-                            DBG("collection saves succesfully");
-                            m_file_hasher.m_order.push(std::make_pair(fs::path(), itr->m_path));
-                        }
-                        m_pending_collections.erase(itr);               // remove collection from pending list
-                    }
-                }
-                else
-                {
-                    ERR("collection in transfer doesn't exists in pending list! ");
-                }
-
-                break;
-            }
-        }
-    }
-    else
-    {
-        DBG("collection name empty on: " << convert_to_native(bom_filter(atp.file_path.string())));
-    }
 }
 
 alert const* session_impl_base::wait_for_alert(time_duration max_wait)
@@ -532,7 +243,7 @@ void session_impl::operator()()
         m_server_connection->start();
     }
 
-    m_file_hasher.start();
+    m_tpm.start();
 
 
     bool stop_loop = false;
@@ -750,13 +461,13 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const md4_hash& hash)
     return boost::weak_ptr<transfer>();
 }
 
-boost::weak_ptr<transfer> session_impl::find_transfer(const fs::path& path)
+boost::weak_ptr<transfer> session_impl::find_transfer(const std::string& filename)
 {
     transfer_map::iterator itr = m_transfers.begin();
 
     while(itr != m_transfers.end())
     {
-        if (itr->second->filepath() == path)
+        if (combine_path(itr->second->save_path(), itr->second->name()) == filename)
         {
             return itr->second;
         }
@@ -863,10 +574,9 @@ void session_impl::close_connection(const peer_connection* p, const error_code& 
     if (i != m_connections.end()) m_connections.erase(i);
 }
 
-transfer_handle session_impl::add_transfer(
-    add_transfer_params const& params, error_code& ec)
+transfer_handle session_impl::add_transfer(add_transfer_params const& params, error_code& ec)
 {
-    APP("add transfer: {hash: " << params.file_hash << ", path: " << convert_to_native(params.file_path.string())
+    APP("add transfer: {hash: " << params.file_hash << ", path: " << convert_to_native(params.file_path)
         << ", size: " << params.file_size << "}");
 
     if (is_aborted())
@@ -877,17 +587,14 @@ transfer_handle session_impl::add_transfer(
 
     // is the transfer already active?
     boost::shared_ptr<transfer> transfer_ptr = find_transfer(params.file_hash).lock();
+
     if (transfer_ptr)
     {
         if (!params.duplicate_is_error)
         {
-            DBG("update pendings for change state for pending collections return existing transfer with same hash");
-            update_pendings(params, false);
             return transfer_handle(transfer_ptr);
         }
 
-        DBG("return invalid transfer");
-        update_pendings(params, false);
         ec = errors::duplicate_transfer;
         return transfer_handle();
     }
@@ -899,9 +606,6 @@ transfer_handle session_impl::add_transfer(
         int pos = i->second->queue_position();
         if (pos >= queue_pos) queue_pos = pos + 1;
     }
-
-    // check pending collections only when transfer has collection link
-    update_pendings(params, false);
 
     transfer_ptr.reset(new transfer(*this, m_listen_interface, queue_pos, params));
     transfer_ptr->start();
@@ -1437,7 +1141,7 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
 
 void session_impl::announce(int tick_interval_ms)
 {
-    // check announces avaliable
+    // check announces available
     if (m_settings.m_announce_timeout == -1)
     {
         return;
@@ -1454,22 +1158,16 @@ void session_impl::announce(int tick_interval_ms)
     m_last_announce_duration = 0;
 
     shared_files_list offer_list;
-    __file_size total_size;
-    total_size.nQuadPart = 0;
-    bool new_announces = false;  // check we have new announces
-
 
     for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {
-        // we send no more m_max_announces_per_call elements in one package
+        // we send no more m_max_announces_per_call elements in one packet
         if (offer_list.m_collection.size() >= m_settings.m_max_announces_per_call)
         {
-            m_server_connection->post_announce(offer_list);
-            offer_list.clear();
+            break;
         }
 
         transfer& t = *i->second;
-        total_size.nQuadPart += t.filesize();
 
         // add transfer to announce list when it has one piece at least and it is not announced yet
         if (!t.is_announced())
@@ -1480,17 +1178,30 @@ void session_impl::announce(int tick_interval_ms)
             {
                 offer_list.add(se);
                 t.set_announced(true); // mark transfer as announced
-                new_announces = true;
             }
         }
-
     }
 
-    // generate announce for user as transfer when new announces or user is not announced yet(when transfers list empty)
-    // NOTE - new_announces doesn't work since server doesn't update users transfer information after first announce
-    if (new_announces || !m_user_announced)
+    if (offer_list.m_size > 0)
     {
-        DBG("new announces exist - re-announce user with correct size");
+        DBG("session_impl::announce: " << offer_list.m_size);
+        m_server_connection->post_announce(offer_list);
+    }
+
+    // generate announce for user as transfer when all transfers were announced but user wasn't
+    // NOTE - new_announces don't work since server doesn't update users transfer information after first announce
+    if ((offer_list.m_size == 0) && !m_user_announced)
+    {
+        DBG("all transfer probably ware announced - announce user with correct size");
+        __file_size total_size;
+        total_size.nQuadPart = 0;
+
+        for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+        {
+            transfer& t = *i->second;
+            total_size.nQuadPart += t.size();
+        }
+
         shared_file_entry se;
         se.m_hFile = m_settings.user_agent;
 
@@ -1523,13 +1234,8 @@ void session_impl::announce(int tick_interval_ms)
         }
 
         offer_list.add(se);
-        m_user_announced = true;
-    }
-
-    if (offer_list.m_size > 0)
-    {
-        DBG("session_impl::announce: " << offer_list.m_size);
         m_server_connection->post_announce(offer_list);
+        m_user_announced = true;
     }
 }
 

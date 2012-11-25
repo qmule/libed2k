@@ -178,6 +178,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\unit\common.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\unit\run_tests.cpp"
 				>
 			</File>
@@ -194,15 +198,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\unit\test_known_file.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\unit\test_md4hash.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\unit\test_search_request.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\unit\test_share_files.cpp"
 				>
 			</File>
 		</Filter>
