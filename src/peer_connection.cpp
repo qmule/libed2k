@@ -237,6 +237,11 @@ void peer_connection::init()
 {
 }
 
+unsigned short peer_connection::user_port() const
+{
+    return m_active ? m_remote.port() : m_options.m_nPort;
+}
+
 void peer_connection::get_peer_info(peer_info& p) const
 {
     p.down_speed = m_statistics.download_rate();
@@ -247,7 +252,7 @@ void peer_connection::get_peer_info(peer_info& p) const
 
     p.total_download = m_statistics.total_payload_download();
     p.total_upload = m_statistics.total_payload_upload();
-    p.ip = m_remote;
+    p.ip = tcp::endpoint(m_remote.address(), user_port());
     p.connection_type = STANDARD_EDONKEY;
     p.client = !m_options.m_strName.empty() && m_options.m_strName[0] == '[' ?
         m_options.m_strName :
@@ -855,7 +860,7 @@ int peer_connection::picker_options() const
 
 net_identifier peer_connection::get_network_point() const
 {
-    return net_identifier(address2int(m_remote.address()), (m_active)?m_remote.port():m_options.m_nPort);
+    return net_identifier(address2int(m_remote.address()), user_port());
 }
 
 void peer_connection::on_error(const error_code& error)
@@ -914,19 +919,7 @@ const std::vector<pending_block>& peer_connection::request_queue() const
 
 bool peer_connection::has_network_point(const net_identifier& np) const
 {
-    bool bRet = false;
-
-    if (m_active)
-    {
-        bRet = (address2int(m_remote.address()) == np.m_nIP && m_remote.port() == np.m_nPort);
-    }
-    else
-    {
-        // for incoming connections we don't know real user port - use port from hello answer
-        bRet = (address2int(m_remote.address()) == np.m_nIP && m_options.m_nPort == np.m_nPort);
-    }
-
-    return (bRet);
+    return address2int(m_remote.address()) == np.m_nIP && user_port() == np.m_nPort;
 }
 
 bool peer_connection::has_hash(const md4_hash& hash) const
@@ -1317,7 +1310,7 @@ void peer_connection::write_hello_answer()
             m_ses.settings().mod_name,
             m_ses.settings().m_version);
     cha.dump();
-    DBG(" ==> " << m_remote);
+    DBG("hello answer ==> " << m_remote);
     do_write(cha);
     m_handshake_complete = true;
 }
