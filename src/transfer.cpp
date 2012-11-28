@@ -172,7 +172,8 @@ namespace libed2k
 
     bool transfer::want_more_peers() const
     {
-        return !is_finished() && m_policy.num_peers() == 0;
+        return !is_paused() && m_state == transfer_status::downloading &&
+            m_policy.num_peers() == 0 && !m_abort;
     }
 
     void transfer::request_peers()
@@ -188,7 +189,7 @@ namespace libed2k
 
     bool transfer::want_more_connections() const
     {
-        return !m_abort && !is_paused() && !is_seed();
+        return !m_abort && !is_paused() && m_state == transfer_status::downloading;
     }
 
     bool transfer::connect_to_peer(peer* peerinfo)
