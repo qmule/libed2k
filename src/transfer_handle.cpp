@@ -4,7 +4,6 @@
 
 using libed2k::aux::session_impl;
 
-#ifdef BOOST_NO_EXCEPTIONS
 
 #define LIBED2K_FORWARD(call) \
     boost::shared_ptr<transfer> t = m_transfer.lock(); \
@@ -24,7 +23,7 @@ using libed2k::aux::session_impl;
     session_impl::mutex_t::scoped_lock l(t->session().m_mutex); \
     t->call
 
-#else
+#if 0
 
 #define LIBED2K_FORWARD(call) \
     boost::shared_ptr<transfer> t = m_transfer.lock(); \
@@ -67,14 +66,24 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(hash(), empty_hash);
     }
 
-    fs::path transfer_handle::filepath() const
+    std::string transfer_handle::name() const
     {
-        LIBED2K_FORWARD_RETURN(filepath(), fs::path());
+        LIBED2K_FORWARD_RETURN(name(), std::string());
     }
 
-    size_type transfer_handle::filesize() const
+    std::string transfer_handle::save_path() const
     {
-        LIBED2K_FORWARD_RETURN(filesize(), 0);
+        LIBED2K_FORWARD_RETURN(save_path(), std::string());
+    }
+
+    size_type transfer_handle::size() const
+    {
+        LIBED2K_FORWARD_RETURN(size(), 0);
+    }
+
+    add_transfer_params transfer_handle::params() const
+    {
+        LIBED2K_FORWARD_RETURN(params(), add_transfer_params());
     }
 
     bool transfer_handle::is_seed() const
@@ -125,6 +134,13 @@ namespace libed2k
     int transfer_handle::piece_priority(int index) const
     {
         LIBED2K_FORWARD_RETURN(piece_priority(index), 0);
+    }
+
+	std::vector<int> transfer_handle::piece_priorities() const
+    {
+        std::vector<int> ret;
+        LIBED2K_FORWARD_RETURN2(piece_priorities(&ret), std::vector<int>());
+        return ret;
     }
 
     bool transfer_handle::is_sequential_download() const
@@ -187,17 +203,12 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(num_seeds(), 0);
     }
 
-    fs::path transfer_handle::save_path() const
-    {
-        LIBED2K_FORWARD_RETURN(filepath().parent_path(), fs::path());
-    }
-
     void transfer_handle::save_resume_data() const
     {
         LIBED2K_FORWARD(save_resume_data());
     }
 
-    void transfer_handle::move_storage(const fs::path& save_path) const
+    void transfer_handle::move_storage(const std::string& save_path) const
     {
         LIBED2K_FORWARD(move_storage(save_path));
     }

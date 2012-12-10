@@ -1,7 +1,7 @@
 BIN=file
 
 OBJF += $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
-LIBED2K = ../../src/libed2k.a
+LIBED2K = ../../src/libed2k.a -lboost_filesystem
 CXXFLAGS = -g -I../../include
 
 .PHONY: all clean

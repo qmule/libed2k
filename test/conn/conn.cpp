@@ -488,7 +488,7 @@ int main(int argc, char* argv[])
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
                     params.file_path = strIncomingDirectory;
-                    params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
+                    params.file_path = libed2k::combine_path(params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
                     if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
@@ -515,7 +515,7 @@ int main(int argc, char* argv[])
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
                     params.file_path = strIncomingDirectory;
-                    params.file_path /= vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME);
+                    params.file_path = libed2k::combine_path(params.file_path, vSF.m_collection[nIndex].m_list.getStringTagByNameId(libed2k::FT_FILENAME));
                     params.file_size = vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE)->asInt();
 
                     if (vSF.m_collection[nIndex].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI))
@@ -625,7 +625,7 @@ int main(int argc, char* argv[])
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.filepath(), rd->m_handle.filesize(), vFastResumeData);
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.save_path(), rd->m_handle.name(), rd->m_handle.size(), vFastResumeData);
 
                     // prepare storage filename
                     std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
@@ -660,7 +660,7 @@ int main(int argc, char* argv[])
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.file_path = trd.m_filepath.m_collection;
+                        params.file_path= trd.m_filepath.m_collection;
                         params.file_size = trd.m_filesize;
 
                         if (trd.m_fast_resume_data.count() > 0)
@@ -678,26 +678,26 @@ int main(int argc, char* argv[])
             {
                 DBG("share " << strArg);
                 std::deque<std::string> v;
-                ses.share_dir(strArg, strArg, v);
+                //ses.share_dir(strArg, strArg, v);
                 break;
             }
             case cc_unshare:
             {
                 DBG("unshare " << strArg);
                 std::deque<std::string> v;
-                ses.unshare_dir(strArg, strArg, v);
+                //ses.unshare_dir(strArg, strArg, v);
                 break;
             }
             case cc_sharef:
             {
                 DBG("share file " << strArg);
-                ses.share_file(strArg);
+                //ses.share_file(strArg);
                 break;
             }
             case cc_unsharef:
             {
                 DBG("unshare file " << strArg);
-                ses.unshare_file(strArg);
+                //ses.unshare_file(strArg);
                 break;
             }
             case cc_dump:
@@ -706,8 +706,9 @@ int main(int argc, char* argv[])
                 for (std::vector<libed2k::transfer_handle>::iterator i = v.begin(); i != v.end(); ++i)
                 {
                     DBG("transfer: {" << i->hash().toString() << "}{"
-                            << libed2k::convert_to_native(i->filepath().string()) << "}{"
-                            << i->filesize() << "}{"
+                            << libed2k::convert_to_native(i->save_path()) << "}{"
+                            << libed2k::convert_to_native(i->name()) << "}{"
+                            << i->size() << "}{"
                             << libed2k::transfer_status2string(i->status()) << "}{A/S:" << ((i->is_announced())?"Y":"N") << "}");
                 }
                 break;

@@ -3,7 +3,7 @@ OBJF += $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
 LIBED2K = ../../src/libed2k.a
 
 CXXFLAGS = -g -I../../include
-LDFLAGS = -lboost_program_options 
+LDFLAGS = -lboost_program_options  -lboost_filesystem
 
 
 .PHONY: all clean

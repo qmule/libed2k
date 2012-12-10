@@ -126,7 +126,7 @@ namespace libed2k
         alert_manager(io_service& ios);
         ~alert_manager();
 
-        void post_alert(const alert& alert_);
+        bool post_alert(const alert& alert_);
         bool pending() const;
         std::auto_ptr<alert> get();
 

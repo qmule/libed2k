@@ -1,41 +1,11 @@
-
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/transfer_handle.hpp"
-#include "libed2k/file.hpp"
 
 namespace libed2k
 {
-
-    void add_transfer_params::dump() const
-    {
-        DBG("add_transfer_params::dump");
-        DBG("file hash: " << file_hash << " all hashes size: " << piece_hashses.size());
-        DBG("file path: " << convert_to_native(file_path.string()));
-        DBG("file size: " << file_size);
-        DBG("accepted: " << accepted <<
-            " requested: " << requested <<
-            " transf: " << transferred <<
-            " priority: " << priority);
-    }
-
-    void add_transfer_params::reset()
-    {
-        file_size = 0;
-        seed_mode = false;
-        num_complete_sources = -1;
-        num_incomplete_sources = -1;
-        resume_data = 0;
-        storage_mode = storage_mode_sparse;
-        duplicate_is_error = false;
-        accepted = 0;
-        requested = 0;
-        transferred = 0;
-        priority = 0;
-    }
-
     void session::init(const fingerprint& id, const char* listen_interface,
                        const session_settings& settings)
     {
@@ -233,16 +203,13 @@ namespace libed2k
         m_impl->resume();
     }
 
-    void session::share_file(const std::string& strFilename, bool unshare)
+    void session::make_transfer_parameters(const std::string& filepath)
     {
-        m_impl->m_io_service.post(
-            boost::bind(&aux::session_impl::share_file, m_impl, strFilename, unshare));
+        m_impl->m_tpm.make_transfer_params(filepath);
     }
 
-    void session::share_dir(const std::string& strRoot, const std::string& strPath,
-                            const std::deque<std::string>& excludes, bool unshare)
+    void session::cancel_transfer_parameters(const std::string& filepath)
     {
-        m_impl->m_io_service.post(
-            boost::bind(&aux::session_impl::share_dir, m_impl, strRoot, strPath, excludes, unshare));
+        m_impl->m_tpm.cancel_transfer_params(filepath);
     }
 }

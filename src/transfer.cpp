@@ -1,4 +1,3 @@
-
 #include "libed2k/version.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
@@ -17,13 +16,14 @@ namespace libed2k
     /**
       * fake constructor
      */
-    transfer::transfer(aux::session_impl& ses, const md4_hash& hash, const fs::path p, size_type size):
+    transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
+                       const md4_hash& hash, const std::string& filepath, size_type size):
         m_ses(ses),
-        m_filepath(p),
+        m_save_path(parent_path(filepath)),
         m_complete(-1),
         m_incomplete(-1),
         m_policy(this),
-        m_info(new transfer_info(hash, p.filename(), size)),
+        m_info(new transfer_info(hash, filename(filepath), size)),
         m_minute_timer(minutes(1), min_time())
     {}
 
@@ -36,8 +36,7 @@ namespace libed2k
         m_sequential_download(false),
         m_sequence_number(seq),
         m_net_interface(net_interface.address(), 0),
-        m_filepath(p.file_path),
-        m_collectionpath(p.collection_path),
+        m_save_path(parent_path(p.file_path)),
         m_upload_mode_time(0),
         m_storage_mode(p.storage_mode),
         m_state(transfer_status::checking_resume_data),
@@ -47,7 +46,7 @@ namespace libed2k
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
         m_policy(this),
-        m_info(new transfer_info(p.file_hash, p.file_path.filename(), p.file_size, p.piece_hashses)),
+        m_info(new transfer_info(p.file_hash, filename(p.file_path), p.file_size, p.piece_hashses)),
         m_accepted(p.accepted),
         m_requested(p.requested),
         m_transferred(p.transferred),
@@ -70,16 +69,42 @@ namespace libed2k
     }
 
     const md4_hash& transfer::hash() const { return m_info->info_hash(); }
-    size_type transfer::filesize() const { return m_info->file_at(0).size; }
+    const md4_hash transfer::collection_hash() const { return md4_hash(); }
+    size_type transfer::size() const { return m_info->file_at(0).size; }
+    const std::string& transfer::name() const { return m_info->name(); }
+    const std::string& transfer::save_path() const { return m_save_path; }
+    std::string transfer::file_path() const { return combine_path(save_path(), name()); }
     const std::vector<md4_hash>& transfer::piece_hashses() const { return m_info->piece_hashses(); }
     void transfer::piece_hashses(const std::vector<md4_hash>& hs) {
         LIBED2K_ASSERT(hs.size() > 0);
         m_info->piece_hashses(hs);
     }
+
     const md4_hash& transfer::hash_for_piece(size_t piece) const
     {
         return m_info->hash_for_piece(piece);
     }
+
+    add_transfer_params transfer::params() const
+    {
+        add_transfer_params res;
+        res.file_hash = hash();
+        res.file_path = file_path();
+        res.file_size = size();
+        res.piece_hashses = piece_hashses();
+        //res.resume_data = &m_resume_data;
+        res.storage_mode = m_storage_mode;
+        //res.duplicate_is_error = ???
+        res.seed_mode = m_seed_mode;
+        res.num_complete_sources = m_complete;
+        res.num_incomplete_sources = m_incomplete;
+        res.accepted = m_accepted;
+        res.requested = m_requested;
+        res.transferred = m_transferred;
+        res.priority = m_priority;
+        return res;
+    }
+
     transfer_handle transfer::handle()
     {
         return transfer_handle(shared_from_this());
@@ -100,7 +125,7 @@ namespace libed2k
                              m_resume_entry, ec) != 0)
             {
                 ERR("fast resume parse error: "
-                    "{file: " << m_filepath.filename() << ", error: " << ec.message() << "}");
+                    "{file: " << name() << ", error: " << ec.message() << "}");
                 std::vector<char>().swap(m_resume_data);
                 m_ses.m_alerts.post_alert_should(
                     fastresume_rejected_alert(handle(), errors::fast_resume_parse_error));
@@ -145,20 +170,16 @@ namespace libed2k
         m_state = s;
     }
 
-    void transfer::update_collection(const fs::path pc)
-    {
-        m_collectionpath = pc;
-    }
-
     bool transfer::want_more_peers() const
     {
-        return !is_finished() && m_policy.num_peers() == 0;
+        return !is_paused() && m_state == transfer_status::downloading &&
+            m_policy.num_peers() == 0 && !m_abort;
     }
 
     void transfer::request_peers()
     {
-        APP("request peers by hash: " << hash() << ", size: " << filesize());
-        m_ses.m_server_connection->post_sources_request(hash(), filesize());
+        APP("request peers by hash: " << hash() << ", size: " << size());
+        m_ses.m_server_connection->post_sources_request(hash(), size());
     }
 
     void transfer::add_peer(const tcp::endpoint& peer)
@@ -168,7 +189,7 @@ namespace libed2k
 
     bool transfer::want_more_connections() const
     {
-        return !m_abort && !is_paused() && !is_seed();
+        return !m_abort && !is_paused() && m_state == transfer_status::downloading;
     }
 
     bool transfer::connect_to_peer(peer* peerinfo)
@@ -381,8 +402,7 @@ namespace libed2k
     // pieces have been downloaded)
     void transfer::finished()
     {
-        DBG("transfer finished: {hash: " << hash() << ", file: " << filepath() << "}");
-
+        DBG("file transfer '" << hash() << ", " << name() << "' completed");
         set_state(transfer_status::finished);
         //set_queue_position(-1);
 
@@ -515,24 +535,24 @@ namespace libed2k
         return m_owning_storage->get_storage_impl();
     }
 
-    void transfer::move_storage(const fs::path& save_path)
+    void transfer::move_storage(const std::string& save_path)
     {
         if (m_owning_storage.get())
         {
             m_owning_storage->async_move_storage(
-                save_path.string(), boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
+                save_path, boost::bind(&transfer::on_storage_moved, shared_from_this(), _1, _2));
         }
         else
         {
-            m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), save_path.string()));
-            m_filepath = save_path / m_filepath.filename();
+            m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), save_path));
+            m_save_path = save_path;
         }
     }
 
     bool transfer::rename_file(const std::string& name)
     {
         DBG("renaming file in transfer {hash: " << hash() <<
-            ", from: " << m_filepath.filename() << ", to: " << name << "}");
+            ", from: " << transfer::name() << ", to: " << name << "}");
         if (!m_owning_storage.get()) return false;
 
         m_owning_storage->async_rename_file(
@@ -542,8 +562,7 @@ namespace libed2k
 
     void transfer::delete_files()
     {
-        DBG("deleting file in transfer {hash: " << hash() << ", files: " << m_filepath << "}");
-
+        DBG("deleting file in transfer {hash: " << hash() << ", files: " << name() << "}");
         disconnect_all(errors::transfer_removed);
 
         if (m_owning_storage.get())
@@ -589,6 +608,19 @@ namespace libed2k
         if (index < 0 || index >= int(num_pieces())) return 0;
 
         return m_picker->piece_priority(index);
+    }
+
+	void transfer::piece_priorities(std::vector<int>* pieces) const
+    {
+        if (is_seed())
+        {
+            pieces->clear();
+            pieces->resize(num_pieces(), 1);
+            return;
+        }
+
+        LIBED2K_ASSERT(m_picker.get());
+        m_picker->piece_priorities(*pieces);
     }
 
     void transfer::set_sequential_download(bool sd) { m_sequential_download = sd; }
@@ -653,13 +685,18 @@ namespace libed2k
         }
     }
 
+    int transfer::num_peers() const
+    {
+        return (int)std::count_if(
+            m_connections.begin(), m_connections.end(),
+            !boost::bind(&peer_connection::is_connecting, _1));
+    }
+
     int transfer::num_seeds() const
     {
-        int ret = 0;
-        for (std::set<peer_connection*>::const_iterator i = m_connections.begin(),
-                 end(m_connections.end()); i != end; ++i)
-            if ((*i)->is_seed()) ++ret;
-        return ret;
+        return (int)std::count_if(
+            m_connections.begin(), m_connections.end(),
+            boost::bind(&peer_connection::is_seed, _1));
     }
 
     bool transfer::is_paused() const
@@ -703,9 +740,8 @@ namespace libed2k
         st.download_payload_rate = m_stat.download_payload_rate();
         st.upload_payload_rate = m_stat.upload_payload_rate();
 
-        st.num_peers = (int)std::count_if(
-            m_connections.begin(), m_connections.end(),
-            !boost::bind(&peer_connection::is_connecting, _1));
+        st.num_seeds = num_seeds();
+        st.num_peers = num_peers();
 
         st.list_peers = m_policy.num_peers();
         //st.list_seeds = m_policy.num_seeds();
@@ -750,7 +786,7 @@ namespace libed2k
     // fills in total_wanted, total_wanted_done and total_done
     void transfer::bytes_done(transfer_status& st) const
     {
-        st.total_wanted = filesize();
+        st.total_wanted = size();
         st.total_done = std::min<size_type>(num_have() * PIECE_SIZE, st.total_wanted);
         st.total_wanted_done = st.total_done;
 
@@ -763,7 +799,7 @@ namespace libed2k
         // assumed all pieces were of equal size
         if (m_picker->have_piece(last_piece))
         {
-            int corr = filesize() % PIECE_SIZE - PIECE_SIZE;
+            int corr = size() % PIECE_SIZE - PIECE_SIZE;
             LIBED2K_ASSERT(corr <= 0);
             LIBED2K_ASSERT(corr > -int(PIECE_SIZE));
             st.total_done += corr;
@@ -877,7 +913,6 @@ namespace libed2k
         {
             DBG("file successfully renamed {hash: " << hash() << ", to: " << j.str << "}");
             m_ses.m_alerts.post_alert_should(file_renamed_alert(handle(), j.str));
-            m_filepath.remove_filename() /= j.str;
         }
         else
         {
@@ -895,7 +930,7 @@ namespace libed2k
         {
             DBG("storage successfully moved {hash: " << hash() << ", to: " << j.str << "}");
             m_ses.m_alerts.post_alert_should(storage_moved_alert(handle(), j.str));
-            m_filepath = fs::path(j.str) / m_filepath.filename();
+            m_save_path = j.str;
         }
         else
         {
@@ -919,7 +954,7 @@ namespace libed2k
 
     void transfer::init()
     {
-        DBG("init transfer: {hash: " << hash() << ", file: " << filepath() << "}");
+        DBG("init transfer: {hash: " << hash() << ", file: " << name() << "}");
 
         // we have only one file with normal priority
         std::vector<boost::uint8_t> file_prio;
@@ -928,14 +963,14 @@ namespace libed2k
         // the shared_from_this() will create an intentional
         // cycle of ownership, see the hpp file for description.
         m_owning_storage = new piece_manager(
-            shared_from_this(), m_info, m_filepath.parent_path().string(), m_ses.m_filepool,
+            shared_from_this(), m_info, m_save_path, m_ses.m_filepool,
             m_ses.m_disk_thread, default_storage_constructor, m_storage_mode, file_prio);
         m_storage = m_owning_storage.get();
 
         if (has_picker())
         {
             int blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
-            int blocks_in_last_piece = div_ceil(filesize() % PIECE_SIZE, BLOCK_SIZE);
+            int blocks_in_last_piece = div_ceil(size() % PIECE_SIZE, BLOCK_SIZE);
             m_picker->init(blocks_per_piece, blocks_in_last_piece, num_pieces());
         }
 
@@ -945,7 +980,7 @@ namespace libed2k
 
             if (m_resume_entry.type() == lazy_entry::dict_t)
             {
-                DBG("read resume data: {hash: " << hash() << ", file: " << filepath() << "}");
+                DBG("read resume data: {hash: " << hash() << ", file: " << name() << "}");
                 int ev = 0;
                 if (m_resume_entry.dict_find_string_value("file-format") != "libed2k resume file")
                     ev = errors::invalid_file_tag;
@@ -977,7 +1012,7 @@ namespace libed2k
         }
         else
         {
-            DBG("don't read resume data: {hash: " << hash() << ", file: " << filepath() << "}");
+            DBG("don't read resume data: {hash: " << hash() << ", file: " << name() << "}");
             set_state(transfer_status::seeding);
         }
     }
@@ -1006,7 +1041,7 @@ namespace libed2k
         // that when the resume data check fails.
         if (ret == 0)
         {
-            DBG("resume data check succeed: {hash: " << hash() << ", file: " << filepath() << "}");
+            DBG("resume data check succeed: {hash: " << hash() << ", file: " << name() << "}");
             // pieces count will calculate by length pieces string
             int num_pieces = 0;
 
@@ -1085,8 +1120,7 @@ namespace libed2k
         }
         else if (m_info->is_valid())
         {
-            DBG("resume data check fails: {hash: " << hash() << ", file: " << filepath() <<
-                ", metadata: valid}");
+            DBG("resume data check fails: {hash: " << hash() << ", file: " << name() << "}, metadata: valid");
             set_state(transfer_status::queued_for_checking);
             if (should_check_file())
                 queue_transfer_check();
@@ -1094,7 +1128,7 @@ namespace libed2k
         else
         {
             // TODO: we might request the metadata for checking
-            DBG("resume data check fails: {hash: " << hash() << ", file: " << filepath() <<
+            DBG("resume data check fails: {hash: " << hash() << ", file: " << name() <<
                 ", metadata: invalid}");
             file_checked();
         }
@@ -1250,8 +1284,6 @@ namespace libed2k
         entry.m_hFile = hash();
         if (m_ses.m_server_connection->tcp_flags() & SRV_TCPFLG_COMPRESSION)
         {
-            DBG("server support compression");
-
             if (!is_seed())
             {
                 // publishing an incomplete file
@@ -1267,15 +1299,14 @@ namespace libed2k
         }
         else
         {
-            DBG("servers isn't support compression");
             entry.m_network_point.m_nIP     = m_ses.m_server_connection->client_id();
             entry.m_network_point.m_nPort   = m_ses.settings().listen_port;
         }
 
-        entry.m_list.add_tag(make_string_tag(m_filepath.filename(), FT_FILENAME, true));
+        entry.m_list.add_tag(make_string_tag(name(), FT_FILENAME, true));
 
         __file_size fs;
-        fs.nQuadPart = filesize();
+        fs.nQuadPart = size();
         entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
 
         if (fs.nHighPart > 0)
@@ -1288,7 +1319,7 @@ namespace libed2k
         if (m_ses.m_server_connection->tcp_flags() & SRV_TCPFLG_TYPETAGINTEGER)
         {
             // Send integer file type tags to newer servers
-            boost::uint32_t eFileType = GetED2KFileTypeSearchID(GetED2KFileTypeID(m_filepath.string()));
+            boost::uint32_t eFileType = GetED2KFileTypeSearchID(GetED2KFileTypeID(name()));
 
             if (eFileType >= ED2KFT_AUDIO && eFileType <= ED2KFT_EMULECOLLECTION)
             {
@@ -1303,7 +1334,7 @@ namespace libed2k
             //  - newer servers, in case there is no integer type available for the file type (e.g. emulecollection)
             //  - older servers
             //  - all clients
-            std::string strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(m_filepath.string())));
+            std::string strED2KFileType(GetED2KFileTypeSearchTerm(GetED2KFileTypeID(name())));
 
             if (!strED2KFileType.empty())
             {
@@ -1369,7 +1400,7 @@ namespace libed2k
     {
         if (m_abort) return;
 
-        DBG("file checked: {hash: " << hash() << ", file: " << filepath() << "}");
+        DBG("file checked: {hash: " << hash() << ", file: " << name() << "}");
 
         // we might be finished already, in which case we should
         // not switch to downloading mode. If all files are
@@ -1406,7 +1437,7 @@ namespace libed2k
 
     void transfer::start_checking()
     {
-        DBG("start checking: {hash: " << hash() << ", file: " << filepath() << "}");
+        DBG("start checking: {hash: " << hash() << ", file: " << name() << "}");
         LIBED2K_ASSERT(should_check_file());
         set_state(transfer_status::checking_files);
 
@@ -1426,7 +1457,7 @@ namespace libed2k
         }
         if (ret == piece_manager::fatal_disk_error)
         {
-            ERR("fatal disk error: {hash: " << hash() << ", file: " << filepath() <<
+            ERR("fatal disk error: {hash: " << hash() << ", file: " << name() <<
                 ", error: " << j.error.message() << "}");
             m_ses.m_alerts.post_alert_should(file_error_alert(j.error_file, handle(), j.error));
 
@@ -1457,7 +1488,7 @@ namespace libed2k
     void transfer::queue_transfer_check()
     {
         if (m_queued_for_checking) return;
-        DBG("queue transfer check: {hash: " << hash() << ", file: " << filepath() << "}");
+        DBG("queue transfer check: {hash: " << hash() << ", file: " << name() << "}");
         m_queued_for_checking = true;
         m_ses.queue_check_transfer(shared_from_this());
     }
@@ -1465,7 +1496,7 @@ namespace libed2k
     void transfer::dequeue_transfer_check()
     {
         if (!m_queued_for_checking) return;
-        DBG("dequeue transfer check: {hash: " << hash() << ", file: " << filepath() << "}");
+        DBG("dequeue transfer check: {hash: " << hash() << ", file: " << name() << "}");
         m_queued_for_checking = false;
         m_ses.dequeue_check_transfer(shared_from_this());
     }
@@ -1668,16 +1699,6 @@ namespace libed2k
         // put the torrent in an error-state
         set_error(j.error);
         pause();
-    }
-
-    std::string transfer2catalog(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)
-    {
-        if (tran.second->collectionpath().empty())
-        {
-            return std::string("");
-        }
-
-        return tran.second->filepath().directory_string();
     }
 
     shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

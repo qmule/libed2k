@@ -2,13 +2,14 @@
 #define __LIBED2K_ALERT_TYPES__
 
 // for print_endpoint
-#include <libed2k/socket.hpp>
-#include <libed2k/alert.hpp>
-#include <libed2k/error_code.hpp>
-#include <libed2k/packet_struct.hpp>
-#include <libed2k/transfer_handle.hpp>
+#include "libed2k/socket.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/error_code.hpp"
+#include "libed2k/packet_struct.hpp"
+#include "libed2k/transfer_handle.hpp"
 #include "libed2k/socket_io.hpp"
 #include "libed2k/entry.hpp"
+#include "libed2k/add_transfer_params.hpp"
 
 namespace libed2k
 {
@@ -792,6 +793,28 @@ namespace libed2k
             return transfer_alert::message() + " piece check failed";
         }
     };
+
+    struct transfer_params_alert : alert
+    {
+        const static int static_category = alert::status_notification;
+        transfer_params_alert(const add_transfer_params& atp, const error_code& ec) :
+            m_atp(atp), m_ec(ec)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+                { return std::auto_ptr<alert>(new transfer_params_alert(*this)); }
+
+        virtual char const* what() const { return "transfer parameters ready"; }
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            return m_atp.file_path + " params ready";
+        }
+
+        add_transfer_params m_atp;
+        error_code          m_ec;
+    };
+
 
 }
 

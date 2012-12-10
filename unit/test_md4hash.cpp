@@ -12,9 +12,12 @@
 #include <boost/test/unit_test.hpp>
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
-#include <libed2k/md4_hash.hpp>
-#include <libed2k/hasher.hpp>
-#include <libed2k/peer_connection.hpp>
+
+#include "libed2k/md4_hash.hpp"
+#include "libed2k/peer_connection.hpp"
+#include "libed2k/hasher.hpp"
+#include "common.hpp"
+
 
 BOOST_AUTO_TEST_SUITE(test_md4_hash)
 
@@ -26,21 +29,6 @@ struct test_md4_hash
 
     libed2k::md4_hash m_test;
 };
-
-void generate_test_file(size_t nSize, const char* pchFilename)
-{
-    std::ofstream of(pchFilename, std::ios_base::binary | std::ios_base::out);
-
-    if (of)
-    {
-        // generate small file
-        for (size_t i = 0; i < nSize; i++)
-        {
-            of << 'X';
-        }
-    }
-}
-
 
 BOOST_FIXTURE_TEST_CASE(test_conversion, test_md4_hash)
 {
@@ -64,7 +52,6 @@ BOOST_AUTO_TEST_CASE(test_compare)
     BOOST_CHECK(h2[0] == '\x00');
     BOOST_CHECK(h1 == h2);
     BOOST_CHECK(h3 > h2);
-    BOOST_CHECK_THROW(h3[16], libed2k::libed2k_exception);
 }
 
 BOOST_AUTO_TEST_CASE(test_user_agent)
@@ -84,6 +71,7 @@ BOOST_AUTO_TEST_CASE(test_user_agent)
 
 BOOST_AUTO_TEST_CASE(test_partial_hashing)
 {
+    test_files_holder tfh;
     std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> > vtf;
     vtf.push_back(std::make_pair(100, libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5")));
     vtf.push_back(std::make_pair(libed2k::PIECE_SIZE, libed2k::md4_hash::fromString("E76BADB8F958D7685B4549D874699EE9")));
@@ -92,33 +80,36 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
 
     for (std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> >::const_iterator itr = vtf.begin(); itr != vtf.end(); ++itr)
     {
-        generate_test_file(itr->first, "./thfile.bin");
-        char* chFullBuffer = new char[itr->first];  // allocate buffer for file data
+        BOOST_REQUIRE(generate_test_file(itr->first, "./thfile.bin"));
+        tfh.hold("./thfile.bin");
+
+        char* chFullBuffer = new char[static_cast<unsigned int>(itr->first)];  // allocate buffer for file data
         FILE* fh = fopen("./thfile.bin", "rb");
         BOOST_REQUIRE(fh);
-        BOOST_REQUIRE(fread(chFullBuffer, 1, itr->first, fh) == itr->first);
+        BOOST_REQUIRE(fread(chFullBuffer, 1, static_cast<unsigned int>(itr->first), fh) == itr->first);
         fclose(fh);
 
-        int pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);
+        libed2k::size_type pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);
         std::vector<libed2k::md4_hash> hashset;
         hashset.resize(pieces);
         libed2k::size_type capacity = itr->first;
 
-        std::vector<libed2k::hasher> vlh;
+        std::deque<libed2k::hasher*> vlh;
         CryptoPP::Weak1::MD4 md4_hasher;
 
-        for (int i = 0; i < pieces; ++i)
+        for (libed2k::size_type i = 0; i < pieces; ++i)
         {
             md4_hasher.CalculateDigest(hashset[i].getContainer(),
                    reinterpret_cast<const unsigned char*>(chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity));
-            vlh.push_back(libed2k::hasher((chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity)));
+            vlh.push_back(new libed2k::hasher((chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity)));
             capacity -= std::min(libed2k::PIECE_SIZE, capacity);
         }
 
         // simple compare hashes
-        for (int i = 0; i < pieces; ++i)
+        for (libed2k::size_type i = 0; i < pieces; ++i)
         {
-            BOOST_CHECK(hashset[i] == vlh[i].final());
+            BOOST_CHECK(hashset[i] == vlh[i]->final());
+            delete vlh[i];
         }
 
         if (itr->first/libed2k::PIECE_SIZE == libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE))

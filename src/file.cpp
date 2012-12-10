@@ -6,18 +6,16 @@
 #include <locale>
 
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/bind.hpp>
 
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 #include <cryptopp/md4.h>
-#include <cassert>
-
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
-#include "libed2k/md4_hash.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/hasher.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/thread.hpp"
 
 namespace libed2k
 {
@@ -558,7 +556,7 @@ namespace libed2k
 
     known_file_entry::known_file_entry(const md4_hash& hFile,
                                         const std::vector<md4_hash>& hSet,
-                                        const fs::path& p,
+                                        const std::string& filename,
                                         size_type nFilesize,
                                         boost::uint32_t nAccepted,
                                         boost::uint32_t nRequested,
@@ -567,21 +565,25 @@ namespace libed2k
                                         m_nLastChanged(0),
                                         m_hFile(hFile)
     {
-        fs::path native_p = convert_to_native(p.string());
-        m_nLastChanged = fs::last_write_time(native_p);
-        boost::uint64_t nFileSize       = nFilesize;
-        __file_size fs_trans;
-        fs_trans.nQuadPart = nTransferred;
+        file_status fs;
+        error_code ec;
+        stat_file(filename, &fs, ec);
 
-        m_hash_list.m_collection.assign(hSet.begin(), hSet.end());
-        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));
-        m_list.add_tag(make_string_tag(p.leaf(), FT_FILENAME, true));  // write same name for backward compatibility
-        m_list.add_tag(make_typed_tag(nFileSize, FT_FILESIZE, true));
-        m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
-        m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
-        m_list.add_tag(make_typed_tag(nRequested, FT_ATREQUESTED, true));
-        m_list.add_tag(make_typed_tag(nAccepted, FT_ATACCEPTED, true));
-        m_list.add_tag(make_typed_tag(nPriority, FT_ULPRIORITY, true));
+        if (!ec)
+        {
+            __file_size fs_trans;
+            fs_trans.nQuadPart = nTransferred;
+
+            m_hash_list.m_collection.assign(hSet.begin(), hSet.end());
+            m_list.add_tag(make_string_tag(libed2k::filename(filename), FT_FILENAME, true));
+            m_list.add_tag(make_string_tag(libed2k::filename(filename), FT_FILENAME, true));  // write same name for backward compatibility
+            m_list.add_tag(make_typed_tag(static_cast<boost::uint32_t>(libed2k::file_size(filename)), FT_FILESIZE, true));
+            m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
+            m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
+            m_list.add_tag(make_typed_tag(nRequested, FT_ATREQUESTED, true));
+            m_list.add_tag(make_typed_tag(nAccepted, FT_ATACCEPTED, true));
+            m_list.add_tag(make_typed_tag(nPriority, FT_ULPRIORITY, true));
+        }
     }
 
     void known_file_entry::dump() const
@@ -596,6 +598,86 @@ namespace libed2k
     {
     }
 
+    add_transfer_params known_file_collection::extract_transfer_params(time_t write_ts, const std::string& filepath)
+    {
+        add_transfer_params atp;
+
+        for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
+        {
+            // pass files when change time isn't equal
+            if (write_ts != static_cast<time_t>(m_known_file_list.m_collection[n].m_nLastChanged))
+            {
+                continue;
+            }
+
+            // ok, we have equal change time - let's check filepath
+            if (bom_filter(filename(filepath)) != bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
+            {
+                DBG("orig: " << convert_to_native(filepath)
+                    << " isn't equal: " << convert_to_native(bom_filter(m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
+                continue;
+            }
+
+            atp.file_path = filepath;
+            atp.file_hash = m_known_file_list.m_collection[n].m_hFile;
+
+            if (m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
+            {
+                // when file contain only one hash - we save main hash directly into container
+                atp.piece_hashses.push_back(m_known_file_list.m_collection[n].m_hFile);
+            }
+            else
+            {
+                atp.piece_hashses = m_known_file_list.m_collection[n].m_hash_list.m_collection;
+            }
+
+            for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.count(); j++)
+            {
+                const boost::shared_ptr<base_tag> p = m_known_file_list.m_collection[n].m_list[j];
+                // we process only int tags - check only ints
+                if (!is_int_tag(p))
+                    continue;
+
+                switch(p->getNameId())
+                {
+                    case FT_FILESIZE:
+                        atp.file_size = p->asInt();
+                        break;
+                    case FT_ATTRANSFERRED:
+                        atp.transferred += p->asInt();
+                        break;
+                    case FT_ATTRANSFERREDHI:
+                        atp.transferred += (p->asInt() << 32);
+                        break;
+                    case FT_ATREQUESTED:
+                        atp.requested = p->asInt();
+                        break;
+                    case FT_ATACCEPTED:
+                        atp.accepted = p->asInt();
+                        break;
+                    case FT_ULPRIORITY:
+                        atp.priority = p->asInt();
+                        break;
+                    default:
+                        // ignore unused tags like
+                        // FT_PERMISSIONS
+                        // FT_AICH_HASH:
+                        // and all kad tags
+                        // also FT_FILENAME was already checked
+                        break;
+                }
+            }
+
+            atp.file_path = filepath;
+            atp.seed_mode  = true;
+            DBG("metadata was migrated for {" << convert_to_native(filepath) << "}{"
+                    << atp.file_hash.toString() << "}{" << atp.file_size << "}");
+            break;
+        }
+
+        return atp;
+    }
+
     void known_file_collection::dump() const
     {
         for (size_t n = 0; n < m_known_file_list.m_collection.size(); n++)
@@ -604,8 +686,12 @@ namespace libed2k
         }
     }
 
-    transfer_resume_data::transfer_resume_data(const md4_hash& hash, const fs::path& path, size_type size, const std::vector<char>& fr_data):
-            m_hash(hash), m_filepath(path.string()), m_filesize(size)
+    transfer_resume_data::transfer_resume_data(const md4_hash& hash,
+            const std::string& save_path,
+            const std::string& filename,
+            size_type size,
+            const std::vector<char>& fr_data):
+            m_hash(hash), m_filepath(combine_path(save_path, filename)), m_filesize(size)
     {
         if (!fr_data.empty())
         {
@@ -616,275 +702,291 @@ namespace libed2k
     transfer_resume_data::transfer_resume_data()
     {}
 
-    file_hasher::file_hasher(add_transfer_handler handler, const std::string& known_filename) :
-            m_bCancel(false),
-            m_add_transfer(handler),
-            m_known_filename(known_filename)
+    transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) :
+            m_am(am),
+            m_abort(false),
+            m_abort_current(false),
+            m_current_filepath(""),
+            m_known_filepath(known_filepath)
     {
-
     }
 
-    void file_hasher::start()
+    bool transfer_params_maker::start()
     {
+        LIBED2K_ASSERT(!m_thread);
         m_thread.reset(new boost::thread(boost::ref(*this)));
+        return true;
     }
 
-    void file_hasher::stop()
+    transfer_params_maker::~transfer_params_maker()
     {
-        m_order.cancel();
-        m_bCancel   = true;
+        stop();
+    }
+
+    void transfer_params_maker::stop()
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_order.clear();
+        m_abort_current = true;
+        m_abort = true;
+        m_condition.notify_one();
+
+        lock.unlock();
 
         // when thread exists - wait it
         if (m_thread.get())
         {
             m_thread->join();
         }
+
+        m_thread.reset();   //!< remove thread
+        m_abort = false;
     }
 
-    void file_hasher::operator()()
+    size_t transfer_params_maker::order_size()
     {
-        try
-        {            
-            // prepare migration structure
-            known_file_collection kfc;
+        boost::mutex::scoped_lock lock(m_mutex);
+        return m_order.size();
+    }
 
-            if (!m_known_filename.empty())
+    std::string transfer_params_maker::current_filepath()
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        return m_current_filepath;
+    }
+
+    void transfer_params_maker::make_transfer_params(const std::string& filepath)
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_order.push_front(filepath);
+        m_condition.notify_one();
+    }
+
+    void transfer_params_maker::cancel_transfer_params(const std::string& filepath)
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        std::deque<std::string>::iterator itr = std::remove(m_order.begin(), m_order.end(), filepath);
+
+        // we got target in order - simply erase it and exit
+        // it doesn't claim any signals
+        if (itr != m_order.end())
+        {
+            m_order.erase(itr, m_order.end());
+            return;
+        }
+
+        if (m_current_filepath == filepath)
+        {
+            m_abort_current = true;               // erase flag available only on current iteration
+        }
+
+        m_cancel_order.push(filepath);  // this alert will emit after current file processing completed
+    }
+
+    void transfer_params_maker::operator()()
+    {
+        // when we have known filepath path - attempt to extract its content
+        if (!m_known_filepath.empty())
+        {
+            std::ifstream fstream(convert_to_native(m_known_filepath).c_str(), std::ios_base::binary | std::ios_base::in);
+
+            if (fstream)
             {
-                std::ifstream fstream(convert_to_native(m_known_filename).c_str(), std::ios_base::binary | std::ios_base::in);
-
-                if (fstream)
-                {
-                    libed2k::archive::ed2k_iarchive ifa(fstream);
-
-                    try
-                    {
-                        ifa >> kfc;
-                    }
-                    catch(libed2k_exception&)
-                    {
-                        kfc.m_known_file_list.m_collection.clear();
-                    }
-                }
-            }
-
-            while(1)
-            {
-                // we have UTF-8 strings in path pair pair
-                std::pair<fs::path, fs::path> pp = m_order.popWait(); 
-
-                DBG("{file_hasher: " << convert_to_native(bom_filter(pp.second.string())) << "}");
+                libed2k::archive::ed2k_iarchive ifa(fstream);
 
                 try
                 {
-                    add_transfer_params atp;
-                    // since transfers work in UTF-8 code page we save paths in this code page
-                    atp.collection_path = pp.first;   // store collection path as is - in UTF-8
-                    atp.file_path       = pp.second;  // store file path as is in UTF-8
-                    atp.seed_mode       = true;       // it is seed!
-
-                    // generate operations path in native code page
-                    fs::path p = convert_to_native(bom_filter(pp.second.string()));
-
-                    if (!fs::exists(p) || !fs::is_regular_file(p))
-                    {
-                        throw libed2k_exception(errors::file_unavaliable);
-                    }
-
-                    size_type nFileSize = fs::file_size(p);
-
-                    if (nFileSize == 0)
-                    {
-                        throw libed2k_exception(errors::filesize_is_zero);
-                    }
-
-                    atp.file_size = nFileSize;
-
-                    // search file in migration container
-                    for (size_t n = 0; n < kfc.m_known_file_list.m_collection.size(); n++)
-                    {
-                        // pass file when change time isn't equal
-                        if ((fs::last_write_time(p)) != kfc.m_known_file_list.m_collection[n].m_nLastChanged)
-                        {
-                            continue;
-                        }
-
-                        // ok, we have equal change time - let's check filename
-                        if (bom_filter(pp.second.filename()) != bom_filter(kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME)))
-                        {
-                            DBG("orig: " << convert_to_native(pp.second.filename()) 
-                                << " isn't equal: " << convert_to_native(bom_filter(kfc.m_known_file_list.m_collection[n].m_list.getStringTagByNameId(FT_FILENAME))));
-                            continue;
-                        }
-
-                        atp.file_hash = kfc.m_known_file_list.m_collection[n].m_hFile;
-
-                        if (kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection.empty())
-                        {
-                            // when file contain only one hash - we save main hash directly into container
-                            atp.piece_hashses.push_back(kfc.m_known_file_list.m_collection[n].m_hFile);
-                        }
-                        else
-                        {
-                            atp.piece_hashses = kfc.m_known_file_list.m_collection[n].m_hash_list.m_collection;
-                        }
-
-                        for (size_t j = 0; j < kfc.m_known_file_list.m_collection[n].m_list.count(); j++)
-                        {
-                            const boost::shared_ptr<base_tag> p = kfc.m_known_file_list.m_collection[n].m_list[j];
-
-                            switch(p->getNameId())
-                            {
-                                case FT_FILESIZE:
-                                    //atp.file_size = p->asInt();
-                                    break;
-                                case FT_ATTRANSFERRED:
-                                    atp.transferred += p->asInt();
-                                    break;
-                                case FT_ATTRANSFERREDHI:
-                                    atp.transferred += (p->asInt() << 32);
-                                    break;
-                                case FT_ATREQUESTED:
-                                    atp.requested = p->asInt();
-                                    break;
-                                case FT_ATACCEPTED:
-                                    atp.accepted = p->asInt();
-                                    break;
-                                case FT_ULPRIORITY:
-                                    atp.priority = p->asInt();
-                                    break;
-                                default:
-                                    // ignore unused tags like
-                                    // FT_PERMISSIONS
-                                    // FT_AICH_HASH:
-                                    // and all kad tags
-                                    // also FT_FILENAME was already checked
-                                    break;
-                            }
-                        }
-
-                        DBG("metadata was migrated for {" << convert_to_native(atp.file_path.string()) << "}");
-                        break;
-                    }
-
-                    // execute real hashing when migration got nothing
-                    if (!atp.file_hash.defined())
-                    {
-                        namespace bio = boost::iostreams;
-                        bool    bPartial = false; // check last part in file not full
-                        bio::mapped_file_params mf_param;
-                        mf_param.flags  = bio::mapped_file_base::readonly;
-                        mf_param.path   = p.string();
-                        mf_param.length = 0;
-
-
-                        bio::mapped_file_source fsource;
-
-                        size_type nCurrentOffset = 0;
-                        CryptoPP::Weak1::MD4 md4_hasher;
-
-                        while(nCurrentOffset < nFileSize)
-                        {
-                            if (m_bCancel)
-                            {
-                                break;
-                            }
-
-                            size_type nMapPosition = (nCurrentOffset / bio::mapped_file::alignment()) * bio::mapped_file::alignment();    // calculate appropriate mapping start position
-                            size_type nDataCorrection = nCurrentOffset - nMapPosition;                                          // offset to data start
-
-                            // calculate map size
-                            size_type nMapLength = PIECE_SIZE*PIECE_COUNT_ALLOC;
-
-                            // correct map length
-                            if (nMapLength > (nFileSize - nCurrentOffset))
-                            {
-                                nMapLength = nFileSize - nCurrentOffset + nDataCorrection;
-                            }
-                            else
-                            {
-                                nMapLength += nDataCorrection;
-                            }
-
-                            mf_param.offset = nMapPosition;
-                            mf_param.length = nMapLength;
-                            fsource.open(mf_param);
-
-                            size_type nLocalOffset = nDataCorrection; // start from data correction offset
-
-                            DBG("{mpos: " << nMapPosition << "} {dt corr: "
-                                    << nDataCorrection << "} {map len: "
-                                    << nMapLength << "} {mpc: " << nMapLength / PIECE_SIZE << "}");
-
-                            while(nLocalOffset < nMapLength)
-                            {
-                                if (m_bCancel)
-                                {
-                                    break;
-                                }
-
-                                // calculate current part size size
-                                size_type nLength = PIECE_SIZE;
-
-                                if (PIECE_SIZE > nMapLength - nLocalOffset)
-                                {
-                                    nLength = nMapLength-nLocalOffset;
-                                    bPartial = true;
-                                }
-
-                                libed2k::md4_hash hash;
-                                md4_hasher.CalculateDigest(
-                                    hash.getContainer(),
-                                    reinterpret_cast<const unsigned char*>(fsource.data() + nLocalOffset), nLength);
-                                atp.piece_hashses.push_back(hash);
-                                // generate hash
-                                nLocalOffset    += nLength;
-                                nCurrentOffset  += nLength;
-                            }
-
-                            fsource.close();
-
-                        }
-
-                        if (m_bCancel)
-                        {
-                            break;
-                        }
-
-                        // when we don't have last partial piece - add special hash
-                        if (!bPartial)
-                        {
-                            atp.piece_hashses.push_back(md4_hash::terminal);
-                        }
-
-                        if (atp.piece_hashses.size() > 1)
-                        {
-                            md4_hasher.CalculateDigest(
-                                atp.file_hash.getContainer(),
-                                reinterpret_cast<const unsigned char*>(&atp.piece_hashses[0]),
-                                atp.piece_hashses.size()*libed2k::MD4_HASH_SIZE);
-                        }
-                        else
-                        {
-                            atp.file_hash = atp.piece_hashses[0];
-                        }
-                    }
-
-                    m_add_transfer(atp);
+                    ifa >> m_kfc;
                 }
-                catch(libed2k_exception& e)
+                catch(libed2k_exception&)
                 {
-                    ERR("libed2k error on hashing: " << e.what());
-                }
-                catch(...) // hide all possible exceptions
-                {
-                    ERR("unhandled exception on hashing file: " << convert_to_native(bom_filter(pp.second.string())));
+                    m_kfc.m_known_file_list.m_collection.clear();
                 }
             }
         }
-        catch(libed2k_exception&)
+
+
+        while(1)
         {
-            // exit signal received
+            boost::mutex::scoped_lock lock(m_mutex);
+            m_current_filepath.clear();
+            m_abort_current = false;
+
+            if (m_abort) { break; }
+
+            // ok, alert all cancels
+            while(!m_cancel_order.empty())
+            {
+                m_am.post_alert_should(transfer_params_alert(add_transfer_params(m_cancel_order.front()), errors::file_params_making_was_cancelled));
+                m_cancel_order.pop();
+            }
+
+            if(m_order.empty())
+            {
+                m_condition.wait(lock);
+            }
+
+            if (!m_order.empty())
+            {
+                m_current_filepath = m_order.back();
+                m_order.pop_back();
+            }
+
+            lock.unlock();
+
+            if (!m_current_filepath.empty()) process_item();
         }
+
+        DBG("transfer_params_maker {thread exit}");
+    }
+
+    /**
+      * small shared resources handler for close file handles
+     */
+    class shared_file
+    {
+    public:
+        shared_file(const std::string& filepath)
+        {
+            m_ph = fopen(filepath.c_str(), "rb");
+        }
+
+        ~shared_file()
+        {
+            if (m_ph)
+            {
+                fclose(m_ph);
+            }
+        }
+
+        FILE* get() { return m_ph; }
+
+    private:
+        FILE* m_ph;
+    };
+
+    std::pair<add_transfer_params, error_code> file2atp::operator()(const std::string& filepath, const bool& cancel)
+    {
+        std::pair<add_transfer_params, error_code> res_pair;
+        // references
+        add_transfer_params& atp = res_pair.first;
+        error_code& ec = res_pair.second;
+
+        size_type filesize = file_size(filepath);
+
+        // store filepath always for search node ability!
+        atp.file_path = filepath;
+
+        if (filesize != 0)
+        {
+            int pieces_count = div_ceil(filesize, PIECE_SIZE);
+            LIBED2K_ASSERT(pieces_count != 0);
+            DBG("stat file: {" << convert_to_native(filepath) << ", pieces: " << pieces_count  << "}");
+            shared_file sh(convert_to_native(filepath));
+
+            if (sh.get())
+            {
+                // I don't know how i can leave cycle simple without exception
+                try
+                {
+                    // prepare results vector
+                    atp.piece_hashses.resize(pieces_count);
+                    size_type capacity = filesize;
+                    char chBlock[BLOCK_SIZE];
+                    hasher hproc;
+
+                    for (int i = 0; i < pieces_count; ++i)
+                    {
+                        size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
+
+                        while(in_piece_capacity > 0)
+                        {
+                            size_type current_block_size =  std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
+
+                            if (fread(chBlock, current_block_size, 1, sh.get()) != 1)
+                            {
+                                // was file truncated?
+                                throw libed2k_exception(errors::file_was_truncated);
+                            }
+
+                            if (cancel)
+                            {
+                                throw libed2k_exception(errors::file_params_making_was_cancelled);
+                            }
+
+                            hproc.update(chBlock, current_block_size);
+                            capacity -= current_block_size;
+                            in_piece_capacity -= current_block_size;
+                        }
+
+                        atp.piece_hashses[i] = hproc.final();
+                        hproc.reset();
+                    }
+
+                    if (pieces_count*libed2k::PIECE_SIZE == filesize)
+                    {
+                        atp.piece_hashses.push_back(libed2k::md4_hash::terminal);
+                    }
+                    // calculate full file hash
+                    if (atp.piece_hashses.size() > 1)
+                    {
+                        hproc.update(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_HASH_SIZE);
+                        atp.file_hash = hproc.final();
+                    }
+                    else
+                    {
+                        atp.file_hash = atp.piece_hashses[0];
+                    }
+                }
+                catch(libed2k_exception& e)
+                {
+                    DBG("file {" << convert_to_native(filepath) << "} was truncated/cancelled");
+                    ec = e.error();
+                }
+            }
+            else
+            {
+                ec.assign(errno, boost::system::get_generic_category());
+            }
+
+            // common result
+            atp.file_size   = filesize;
+            atp.seed_mode   = true;
+        }
+        else
+        {
+            ec = errors::filesize_is_zero;
+        }
+
+        DBG("file2atp res: {" << ec.message() << "}");
+        return res_pair;
+    }
+
+    void transfer_params_maker::process_item()
+    {
+        error_code ec;
+        file_status fs;
+        stat_file(m_current_filepath, &fs, ec);
+        add_transfer_params atp;
+        atp.file_path = m_current_filepath;
+
+        if (!ec)
+        {
+            atp = m_kfc.extract_transfer_params(fs.mtime, m_current_filepath);
+
+            if (!atp.file_hash.defined() || (atp.file_size == 0)) // avoid some fails on zero lengths
+            {
+                file2atp fatp;
+                std::pair<add_transfer_params, error_code> rp = fatp(m_current_filepath, m_abort_current);
+                atp = rp.first;
+                ec =  rp.second;
+            }
+        }
+
+        if (m_am.pending()) libed2k::sleep(100);
+
+        if (!m_am.post_alert(transfer_params_alert(atp, ec)))
+            ERR("add transfer parameters for {" << atp.file_path << "} waren't added because order overflow!");
     }
 
     void emule_binary_collection::dump() const
@@ -990,15 +1092,26 @@ namespace libed2k
     }
 
     // static
-    std::string emule_collection::toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile)
+    std::string emule_collection::toLink(const std::string& strFilename, size_type nFilesize, const md4_hash& hFile, bool uencode /* = false*/)
     {
         std::stringstream retvalue;
         // ed2k://|file|fileName|fileSize|fileHash|/
-        retvalue
-        << "ed2k://|file|" << strFilename
-        << "|" << nFilesize
-        << "|" << hFile.toString()
-        << "|/";
+        if (uencode)
+        {
+            retvalue << "ed2k://"
+            << url_encode("|file|") << url_encode(strFilename)
+            << url_encode("|") << nFilesize
+            << url_encode("|") << hFile.toString()
+            << url_encode("|") << "/";
+        }
+        else
+        {
+            retvalue
+            << "ed2k://|file|" << strFilename
+            << "|" << nFilesize
+            << "|" << hFile.toString()
+            << "|/";
+        }
 
         return (retvalue.str());
     }
@@ -1048,25 +1161,6 @@ namespace libed2k
         std::string fileHash = strLink.substr(iSize+1,32);
 
         return emule_collection_entry(fileName, fileSize, md4_hash::fromString(fileHash));
-    }
-
-    emule_collection_entry pending2collectionentry(const pending_file& f)
-    {
-        if (!f.m_hash.defined())
-        {
-            // internal error
-            throw libed2k_exception(errors::pending_file_entry_in_transform);
-        }
-
-        return emule_collection_entry(f.m_path.filename(), f.m_size, f.m_hash);
-    }
-
-    //static
-    emule_collection emule_collection::fromPending(const pending_collection& pending)
-    {
-        emule_collection ecoll;
-        std::transform(pending.m_files.begin(), pending.m_files.end(), std::back_inserter(ecoll.m_files), std::ptr_fun(&pending2collectionentry));
-        return ecoll;
     }
 
     bool emule_collection::save(const std::string& strFilename, bool binary /*false*/)
@@ -1140,7 +1234,7 @@ namespace libed2k
     {
         md4_hash hash;
 
-        if (strFilename.empty() || nFilesize == 0 || nFilesize > 0xffffffffLL || strFilehash.size() != md4_hash::hash_size*2)
+        if (strFilename.empty() || nFilesize == 0 || strFilehash.size() != md4_hash::hash_size*2)
         {
             return false;
         }
@@ -1165,35 +1259,6 @@ namespace libed2k
         }
 
         return std::string("");
-    }
-
-    bool emule_collection::operator==(const std::deque<pending_file>& files) const
-    {
-        if (files.size() != m_files.size())
-        {
-            return false;
-        }
-
-        std::deque<md4_hash> hashes;
-        hashes.resize(files.size());
-
-        std::transform(files.begin(), files.end(), hashes.begin(), std::mem_fun_ref(&pending_file::get_hash));
-
-        for (std::deque<emule_collection_entry>::const_iterator itr = m_files.begin();
-                itr != m_files.end(); ++itr)
-        {
-            if (std::find(hashes.begin(), hashes.end(), itr->m_filehash) == hashes.end())
-            {
-                return false;
-            }
-        }
-
-        return (true);
-    }
-
-    bool emule_collection::operator!=(const std::deque<pending_file>& files) const
-    {
-        return (!(*this == files));
     }
 
     bool emule_collection::operator==(const emule_collection& ecoll) const

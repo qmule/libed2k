@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libboost_iostreams-vc90-mt-gd-1_49.lib cryptlib.lib cryptopp.lib libed2kd.lib libeay32MDd.lib ssleay32MDd.lib"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2kd.lib libeay32MDd.lib ssleay32MDd.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\Debug&quot;;&quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\Debug&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;;&quot;$(OPENSSL_ROOT)\lib\VC&quot;"
 				IgnoreAllDefaultLibraries="false"
@@ -138,7 +138,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libboost_iostreams-vc90-mt-1_49.lib cryptlib.lib cryptopp.lib libed2k.lib libeay32MD.lib ssleay32MD.lib"
+				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libeay32MD.lib ssleay32MD.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\release&quot;;&quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\release&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"

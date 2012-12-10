@@ -142,7 +142,7 @@ namespace libed2k
 
         peer* get_peer() const { return m_peer; }
         void set_peer(peer* pi) { m_peer = pi; }
-
+        unsigned short user_port() const;
         const tcp::endpoint& remote() const { return m_remote; }
         const bitfield& remote_pieces() const { return m_remote_pieces; }
 
@@ -324,6 +324,7 @@ namespace libed2k
         void on_shared_files_denied(const error_code& error);
         void on_shared_directories_request(const error_code& error);
         void on_shared_directories_answer(const error_code& error);
+        void on_shared_directory_files_request(const error_code& error);
         void on_shared_directory_files_answer(const error_code& error);
         void on_ismod_directory_files(const error_code& error);
         void on_client_message(const error_code& error);

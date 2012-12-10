@@ -20,8 +20,6 @@ namespace libed2k
             no_error = 0,
             no_memory,
             // serialization errors
-            md4_hash_index_error,
-            md4_hash_convert_error,
             tag_type_mismatch,
             unexpected_ostream_error,
             unexpected_istream_error,
@@ -77,6 +75,7 @@ namespace libed2k
             transfer_not_ready,
             // service errors
             filesize_is_zero,
+            file_was_truncated,
             file_unavaliable,
             file_too_short,
             file_collision,
@@ -106,6 +105,7 @@ namespace libed2k
             hashes_dont_match_pieces,
             failed_hash_check,
             invalid_escaped_string,
+            file_params_making_was_cancelled,
             num_errors
         };
     }

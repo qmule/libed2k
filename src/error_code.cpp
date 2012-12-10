@@ -14,8 +14,6 @@ namespace libed2k
             "no error",
             "no memory",
             // serialization errors
-            "md4_hash index error",
-            "md4_hash convert error",
             "tag has incorrect type",
             "unexpected output stream error",
             "unexpected input stream error",
@@ -71,6 +69,7 @@ namespace libed2k
             "transfer not ready",
             // service errors
             "file size is zero",
+            "file was truncated",
             "file not exists or is not regular file",
             "file is too short",
             "file collision",
@@ -99,7 +98,8 @@ namespace libed2k
             "mismatching transfer hash",
             "hashes dont match pieces",
             "failed hash check",
-            "invalid escaped string"
+            "invalid escaped string",
+            "file parameters making was cancelled"
         };
 
         if (ev < 0 || ev >= static_cast<int>(sizeof(msgs)/sizeof(msgs[0])))

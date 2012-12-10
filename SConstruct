@@ -25,18 +25,17 @@ args = {
     'ENV'     : os.environ,
     'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot]],
     'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
-                 '-DBOOST_FILESYSTEM_VERSION=2', '-DLIBED2K_USE_BOOST_DATE_TIME'],
+                 '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
-    'LIBS'    : ['boost_system', 'boost_program_options', 'boost_iostreams',
-                 'boost_thread', 'boost_signals', 'boost_filesystem',
-                 'cryptopp', 'ssl', 'pthread', 'rt']
+    'LIBS'    : ['boost_system', 'boost_thread', 'cryptopp', 'ssl', 'pthread', 'rt']
     }
 
 env = Environment(**args)
 sources = globrec('src', '*.cpp')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
-env.Program(join('bin', 'ed2k_client'), [join('test', 'ed2k_client', 'ed2k_client.cpp'), lib])
 
-uenv = Environment(**unionArgs(args, {'CXXFLAGS': ['-Wno-sign-compare'], 'LIBS': ['boost_unit_test_framework']}))
+uenv = Environment(**unionArgs(args,
+                               {'CXXFLAGS': ['-Wno-sign-compare', '-DBOOST_FILESYSTEM_VERSION=2'],
+                                'LIBS': ['boost_unit_test_framework', 'boost_filesystem']}))
 utests = globrec('unit', '*.cpp')
 uenv.Program(join('unit', 'run_tests'), utests + [lib])
