@@ -89,6 +89,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_filepool(40),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), m_filepool, BLOCK_SIZE),
     m_half_open(m_io_service),
+    m_download_rate(peer_connection::download_channel),
+    m_upload_rate(peer_connection::upload_channel),
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
     m_paused(false),
@@ -204,6 +206,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
         DBG("max files: " << m_filepool.size_limit());
     }
 #endif // LIBED2K_BSD || LIBED2K_LINUX
+
+    m_bandwidth_channel[peer_connection::download_channel] = &m_download_channel;
+    m_bandwidth_channel[peer_connection::upload_channel] = &m_upload_channel;
 
     m_io_service.post(boost::bind(&session_impl::on_tick, this, ec));
 

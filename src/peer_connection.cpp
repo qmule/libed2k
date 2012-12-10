@@ -163,7 +163,6 @@ void peer_connection::reset()
     m_last_sent = time_now();
     m_timeout = seconds(m_ses.settings().peer_timeout);
 
-    m_disconnecting = false;
     m_connection_ticket = -1;
     m_speed = slow;
     m_desired_queue_size = 3;
@@ -779,8 +778,7 @@ void peer_connection::disconnect(error_code const& ec, int error)
              end(m_ses.m_transfers.end()); i != end; ++i)
         assert(!i->second->has_peer(this));
 
-    m_disconnecting = true;
-    base_connection::close(ec); // close transport
+    base_connection::disconnect(ec); // close transport
     m_ses.close_connection(this, ec);
     m_ses.m_alerts.post_alert_should(
         peer_disconnected_alert(get_network_point(), get_connection_hash(), ec));
@@ -866,11 +864,6 @@ net_identifier peer_connection::get_network_point() const
 void peer_connection::on_error(const error_code& error)
 {
     disconnect(error);
-}
-
-void peer_connection::close(const error_code& ec)
-{
-    disconnect(ec);
 }
 
 bool peer_connection::can_write() const

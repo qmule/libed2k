@@ -22,7 +22,7 @@
     packet_struct name;                          \
     if (!decode_packet(name))                    \
     {                                            \
-        close(errors::decode_packet_error);      \
+        disconnect(errors::decode_packet_error); \
     }
 
 namespace libed2k
@@ -172,9 +172,7 @@ namespace libed2k
         char* release_disk_receive_buffer();
 
         void on_timeout();
-        // this will cause this peer_connection to be disconnected.
-        void disconnect(error_code const& ec, int error = 0);
-        bool is_disconnecting() const { return m_disconnecting; }
+        virtual void disconnect(const error_code& ec, int error = 0);
 
         // returns true if this connection is still waiting to
         // finish the connection attempt
@@ -185,7 +183,6 @@ namespace libed2k
         // to false, and stop monitor writability
         void on_connect(const error_code& e);
         void on_error(const error_code& e);
-        virtual void close(const error_code& ec);
 
         // called when it's time for this peer_conncetion to actually
         // initiate the tcp connection. This may be postponed until
@@ -240,6 +237,13 @@ namespace libed2k
 
         void send_block_requests();
         void cancel_all_requests();
+
+        enum channels
+        {
+            upload_channel,
+            download_channel,
+            num_channels
+        };
 
     private:
 
@@ -412,23 +416,12 @@ namespace libed2k
         // could be considered: true = local, false = remote
         bool m_active;
 
-        // this is true if this connection has been added
-        // to the list of connections that will be closed.
-        bool m_disconnecting;
-
         int m_disk_recv_buffer_size;
 
         // this flag will active after hello -> hello_answer order
         bool m_handshake_complete;
 
         std::deque<message> m_deferred;
-
-        enum channels
-        {
-            upload_channel,
-            download_channel,
-            num_channels
-        };
 
         // bw_idle: the channel is not used
         // bw_limit: the channel is waiting for quota

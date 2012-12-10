@@ -17,8 +17,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include "libed2k/intrusive_ptr_base.hpp"
-#include <libed2k/stat.hpp>
-
+#include "libed2k/stat.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/size_type.hpp"
@@ -45,16 +44,16 @@ namespace libed2k{
                         const tcp::endpoint& remote);
         virtual ~base_connection();
 
-        virtual void close(const error_code& ec);
+        virtual void disconnect(const error_code& ec, int error = 0);
+        bool is_disconnecting() const { return m_disconnecting; }
 
-        /**
-         * connection closed when his socket is not opened
-         */
+        /** connection closed when his socket is not opened */
         bool is_closed() const { return !m_socket || !m_socket->is_open(); }
         const tcp::endpoint& remote() const { return m_remote; }
         boost::shared_ptr<tcp::socket> socket() { return m_socket; }
 
         const stat& statistics() const { return m_statistics; }
+        void assign_bandwidth(int channel, int amount);
 
         typedef boost::iostreams::basic_array_source<char> Device;
 
@@ -194,6 +193,10 @@ namespace libed2k{
 
         bool m_write_in_progress; //!< write indicator
         bool m_read_in_progress;  //!< read indicator
+
+        // this is true if this connection has been added
+        // to the list of connections that will be closed.
+        bool m_disconnecting;
 
         handler_map m_handlers;
 

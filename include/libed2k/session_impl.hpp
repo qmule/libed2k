@@ -22,6 +22,7 @@
 #include "libed2k/file.hpp"
 #include "libed2k/disk_io_thread.hpp"
 #include "libed2k/file_pool.hpp"
+#include "libed2k/bandwidth_manager.hpp"
 #include "libed2k/connection_queue.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/io_service.hpp"
@@ -343,6 +344,19 @@ namespace libed2k {
             // this has to be one of the last
             // members to be destructed
             libed2k::connection_queue m_half_open;
+
+            // the bandwidth manager is responsible for
+            // handing out bandwidth to connections that
+            // asks for it, it can also throttle the
+            // rate.
+            bandwidth_manager m_download_rate;
+            bandwidth_manager m_upload_rate;
+
+            // the global rate limiter bandwidth channels
+            bandwidth_channel m_download_channel;
+            bandwidth_channel m_upload_channel;
+
+            bandwidth_channel* m_bandwidth_channel[2];
 
             // ed2k server connection
             boost::intrusive_ptr<server_connection> m_server_connection;

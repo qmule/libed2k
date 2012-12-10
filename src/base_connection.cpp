@@ -28,13 +28,31 @@ namespace libed2k
         m_deadline.expires_at(max_time());
         m_write_in_progress = false;
         m_read_in_progress = false;
+        m_disconnecting = false;
     }
 
-    void base_connection::close(const error_code& ec)
+    void base_connection::disconnect(const error_code& ec, int error)
     {
         DBG("close connection {remote: " << m_remote << ", msg: "<< ec.message() << "}");
+        m_disconnecting = true;
         m_socket->close();
         m_deadline.cancel();
+    }
+
+    void base_connection::assign_bandwidth(int channel, int amount)
+    {
+        LIBED2K_ASSERT(amount > 0);
+        m_quota[channel] += amount;
+        LIBED2K_ASSERT(m_channel_state[channel] & peer_info::bw_limit);
+        m_channel_state[channel] &= ~peer_info::bw_limit;
+        if (channel == upload_channel)
+        {
+            setup_send();
+        }
+        else if (channel == download_channel)
+        {
+            setup_receive();
+        }
     }
 
     void base_connection::do_read()
@@ -162,7 +180,7 @@ namespace libed2k
         }
         else
         {
-            close(ec);
+            disconnect(ec);
         }
 
     }
@@ -216,7 +234,7 @@ namespace libed2k
         }
         else
         {
-            close(error);
+            disconnect(error);
         }
     }
 
@@ -236,7 +254,7 @@ namespace libed2k
             do_write();
         }
         else
-            close(error);
+            disconnect(error);
     }
 
     void base_connection::check_deadline()
