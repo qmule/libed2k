@@ -194,10 +194,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\unit\test_crypto.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\unit\test_md4hash.cpp"
 				>
 			</File>

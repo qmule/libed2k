@@ -233,14 +233,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\is_crypto.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\is_https_auth.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\lazy_bdecode.cpp"
 				>
 			</File>
@@ -488,14 +480,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\io_service.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\is_crypto.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\is_https_auth.hpp"
 				>
 			</File>
 			<File
