@@ -27,6 +27,7 @@
 #include "libed2k/archive.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/deadline_timer.hpp"
+#include "libed2k/bandwidth_limit.hpp"
 
 namespace libed2k{
 
@@ -38,7 +39,9 @@ namespace libed2k{
                            public boost::noncopyable
     {
         friend class aux::session_impl;
+
     public:
+
         base_connection(aux::session_impl& ses);
         base_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s,
                         const tcp::endpoint& remote);
@@ -56,6 +59,13 @@ namespace libed2k{
         void assign_bandwidth(int channel, int amount);
 
         typedef boost::iostreams::basic_array_source<char> Device;
+
+        enum channels
+        {
+            upload_channel,
+            download_channel,
+            num_channels
+        };
 
     protected:
 
@@ -191,14 +201,21 @@ namespace libed2k{
         chained_buffer m_send_buffer;  //!< buffer for outgoing messages
         tcp::endpoint m_remote;
 
-        bool m_write_in_progress; //!< write indicator
-        bool m_read_in_progress;  //!< read indicator
+        // upload and download channel state
+        char m_channel_state[2];
 
         // this is true if this connection has been added
         // to the list of connections that will be closed.
         bool m_disconnecting;
 
         handler_map m_handlers;
+
+        // the bandwidth channels, upload and download
+        // keeps track of the current quotas
+        bandwidth_channel m_bandwidth_channel[num_channels];
+
+        // number of bytes this peer can send and receive
+        int m_quota[2];
 
         // statistics about upload and download speeds
         // and total amount of uploads and downloads for

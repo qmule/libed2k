@@ -26,9 +26,11 @@ namespace libed2k
     void base_connection::reset()
     {
         m_deadline.expires_at(max_time());
-        m_write_in_progress = false;
-        m_read_in_progress = false;
+        m_channel_state[upload_channel] = peer_info::bw_idle;
+        m_channel_state[download_channel] = peer_info::bw_idle;
         m_disconnecting = false;
+        m_quota[upload_channel] = 0;
+        m_quota[download_channel] = 0;
     }
 
     void base_connection::disconnect(const error_code& ec, int error)
@@ -47,28 +49,31 @@ namespace libed2k
         m_channel_state[channel] &= ~peer_info::bw_limit;
         if (channel == upload_channel)
         {
-            setup_send();
+            do_write();
         }
         else if (channel == download_channel)
         {
-            setup_receive();
+            do_read();
         }
     }
 
     void base_connection::do_read()
     {
-        if (is_closed() || m_read_in_progress) return;
+        if (is_closed()) return;
+        if (m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
         m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
         boost::asio::async_read(
             *m_socket, boost::asio::buffer(&m_in_header, header_size),
             boost::bind(&base_connection::on_read_header, self(), _1, _2));
-        m_read_in_progress = true;
+        m_channel_state[download_channel] |= peer_info::bw_network;
     }
 
     void base_connection::do_write()
     {
-        if (is_closed() || m_write_in_progress || m_send_buffer.empty()) return;
+        if (is_closed() || m_send_buffer.empty()) return;
+
+        if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
         // check quota here
         int amount_to_send = m_send_buffer.size();
@@ -80,7 +85,7 @@ namespace libed2k
             m_send_buffer.build_iovec(amount_to_send);
         boost::asio::async_write(*m_socket, buffers, make_write_handler(
                                      boost::bind(&base_connection::on_write, self(), _1, _2)));
-        m_write_in_progress = true;
+        m_channel_state[upload_channel] |= peer_info::bw_network;
     }
 
     void base_connection::do_write_message(const message& msg) {
@@ -198,21 +203,8 @@ namespace libed2k
 
         if (!error)
         {
-            m_read_in_progress = false;
-/*
-            if (m_in_header.m_protocol == OP_PACKEDPROT)
-            {
-                // unzip data
-                int nRet = inflate_gzip(m_in_gzip_container, m_in_container, LIBED2K_SERVER_CONN_MAX_SIZE);
+            m_channel_state[download_channel] &= ~peer_info::bw_network;
 
-                if (nRet != Z_STREAM_END)
-                {
-                    //unpack error - pass packet
-                    do_read();
-                    return;
-                }
-            }
-*/
             //!< search appropriate dispatcher
             handler_map::iterator itr = m_handlers.find(std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
 
@@ -250,7 +242,7 @@ namespace libed2k
 
         if (!error) {
             m_send_buffer.pop_front(nSize);
-            m_write_in_progress = false;
+            m_channel_state[upload_channel] &= ~peer_info::bw_network;
             do_write();
         }
         else

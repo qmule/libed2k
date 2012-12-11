@@ -238,13 +238,6 @@ namespace libed2k
         void send_block_requests();
         void cancel_all_requests();
 
-        enum channels
-        {
-            upload_channel,
-            download_channel,
-            num_channels
-        };
-
     private:
 
         // constructor method
@@ -277,7 +270,7 @@ namespace libed2k
         template<typename T>
         void do_write(T& t)
         {
-            if (m_channel_state[upload_channel] == bw_idle)
+            if ((m_channel_state[upload_channel] & peer_info::bw_network) == 0)
                 base_connection::do_write(t);
             else
                 defer_write(t);
@@ -422,17 +415,6 @@ namespace libed2k
         bool m_handshake_complete;
 
         std::deque<message> m_deferred;
-
-        // bw_idle: the channel is not used
-        // bw_limit: the channel is waiting for quota
-        // bw_network: the channel is waiting for an async write
-        //   for read operation to complete
-        // bw_disk: the peer is waiting for the disk io thread
-        //   to catch up
-        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
-
-        // upload and download channel state
-        char m_channel_state[2];
 
         // client information
         md4_hash        m_hClient;
