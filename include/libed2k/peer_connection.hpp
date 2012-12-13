@@ -270,7 +270,7 @@ namespace libed2k
         template<typename T>
         void do_write(T& t)
         {
-            if ((m_channel_state[upload_channel] & peer_info::bw_network) == 0)
+            if ((m_channel_state[upload_channel] & peer_info::bw_seq) == 0)
                 base_connection::do_write(t);
             else
                 defer_write(t);

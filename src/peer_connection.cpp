@@ -556,7 +556,7 @@ bool peer_connection::add_request(const piece_block& block, int flags)
 
 void peer_connection::send_block_requests()
 {
-    if (m_channel_state[upload_channel] & peer_info::bw_network) return;
+    if (m_channel_state[upload_channel] & peer_info::bw_seq) return;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t || m_disconnecting) return;
@@ -974,7 +974,7 @@ void peer_connection::request_ismod_directory_files(const md4_hash& hash)
 
 void peer_connection::send_deferred()
 {
-    LIBED2K_ASSERT((m_channel_state[upload_channel] & peer_info::bw_network) == 0);
+    LIBED2K_ASSERT((m_channel_state[upload_channel] & peer_info::bw_seq) == 0);
 
     while (!m_deferred.empty())
     {
@@ -985,7 +985,7 @@ void peer_connection::send_deferred()
 
 void peer_connection::fill_send_buffer()
 {
-    if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
+    if (m_channel_state[upload_channel] & peer_info::bw_seq) return;
 
     if (m_handshake_complete) { send_deferred(); }
 
@@ -1011,11 +1011,11 @@ void peer_connection::send_data(const peer_request& req)
     {
         t->filesystem().async_read(r, boost::bind(&peer_connection::on_disk_read_complete,
                                                   self_as<peer_connection>(), _1, _2, r, left));
-        m_channel_state[upload_channel] |= peer_info::bw_network;
+        m_channel_state[upload_channel] |= peer_info::bw_seq;
     }
     else
     {
-        m_channel_state[upload_channel] &= ~peer_info::bw_network;
+        m_channel_state[upload_channel] &= ~peer_info::bw_seq;
         fill_send_buffer();
     }
 }
@@ -1066,7 +1066,7 @@ void peer_connection::receive_data(const peer_request& req)
 
     if (r.length > 0)
     {
-        m_channel_state[download_channel] |= peer_info::bw_network;
+        m_channel_state[download_channel] |= (peer_info::bw_network | peer_info::bw_seq);
 
         std::vector<pending_block>::iterator b =
             std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(block));
@@ -1103,7 +1103,7 @@ void peer_connection::receive_data(const peer_request& req)
     }
     else
     {
-        m_channel_state[download_channel] &= ~peer_info::bw_network;
+        m_channel_state[download_channel] &= ~peer_info::bw_seq;
         do_read();
     }
 }
@@ -1122,7 +1122,7 @@ void peer_connection::on_receive_data(
     if (m_disconnecting || is_closed()) return;
 
     LIBED2K_ASSERT(int(bytes_transferred) == r.length);
-    LIBED2K_ASSERT(m_channel_state[download_channel] & peer_info::bw_network);
+    LIBED2K_ASSERT(m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_seq));
 
     m_channel_state[download_channel] &= ~peer_info::bw_network;
     m_last_receive = time_now();
@@ -1195,7 +1195,7 @@ void peer_connection::on_receive_data(
             }
         }
 
-        m_channel_state[download_channel] &= ~peer_info::bw_network;
+        m_channel_state[download_channel] &= ~peer_info::bw_seq;
         do_read();
         request_block();
         send_block_requests();
@@ -1206,7 +1206,7 @@ void peer_connection::on_skip_data(const error_code& error, peer_request r)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
-    m_channel_state[download_channel] &= ~peer_info::bw_network;
+    m_channel_state[download_channel] &= ~(peer_info::bw_network | peer_info::bw_seq);
 
     do_read();
     request_block();
