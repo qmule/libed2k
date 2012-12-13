@@ -400,10 +400,15 @@ namespace libed2k {
             // the timer used to fire the tick
             deadline_timer m_timer;
 
-            int m_last_connect_duration;        //!< duration in milliseconds since last server connection was executed
-            int m_last_announce_duration;       //!< duration in milliseconds since last announce check was performed
-            bool m_user_announced;              //!< ismod extension - share user as file
-            char m_server_connection_state;     //!< last measured server connection state
+            ptime m_last_tick;
+            // duration in milliseconds since last server connection was executed
+            int m_last_connect_duration;
+            // duration in milliseconds since last announce check was performed
+            int m_last_announce_duration;
+            // ismod extension - share user as file
+            bool m_user_announced;
+            // last measured server connection state
+            char m_server_connection_state;
 
             // total redundant and failed bytes
             size_type m_total_failed_bytes;

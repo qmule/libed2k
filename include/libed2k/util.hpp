@@ -101,7 +101,7 @@ namespace libed2k
     {
     public:
         duration_timer(const time_duration& duration, const ptime& last_tick = time_now_hires());
-        bool expires();
+        bool expired(const ptime& now);
         const time_duration& tick_interval() const { return m_tick_interval; }
     private:
         time_duration m_duration;

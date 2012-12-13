@@ -97,6 +97,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_max_connections(200),
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
+    m_last_tick(time_now_hires()),
     m_last_connect_duration(0),
     m_last_announce_duration(0),
     m_user_announced(false),
@@ -742,11 +743,11 @@ session_status session_impl::status() const
     //s.total_redundant_bytes = m_total_redundant_bytes;
     //s.total_failed_bytes = m_total_failed_bytes;
 
-    //s.up_bandwidth_queue = m_upload_rate.queue_size();
-    //s.down_bandwidth_queue = m_download_rate.queue_size();
+    s.up_bandwidth_queue = m_upload_rate.queue_size();
+    s.down_bandwidth_queue = m_download_rate.queue_size();
 
-    //s.up_bandwidth_bytes_queue = m_upload_rate.queued_bytes();
-    //s.down_bandwidth_bytes_queue = m_download_rate.queued_bytes();
+    s.up_bandwidth_bytes_queue = m_upload_rate.queued_bytes();
+    s.down_bandwidth_bytes_queue = m_download_rate.queued_bytes();
 
     s.has_incoming_connections = false;
 
@@ -836,6 +837,9 @@ void session_impl::abort()
 
     DBG("connection queue: " << m_half_open.size());
 
+    m_download_rate.close();
+    m_upload_rate.close();
+
     m_disk_thread.abort();
 }
 
@@ -899,14 +903,20 @@ void session_impl::on_tick(error_code const& e)
         return;
     }
 
-    aux::g_current_time = time_now_hires();
+    ptime now = time_now_hires();
+    aux::g_current_time = now;
 
     error_code ec;
     m_timer.expires_from_now(milliseconds(100), ec);
     m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
 
+    m_download_rate.update_quotas(now - m_last_tick);
+    m_upload_rate.update_quotas(now - m_last_tick);
+
+    m_last_tick = now;
+
     // only tick the following once per second
-    if (!m_second_timer.expires()) return;
+    if (!m_second_timer.expired(now)) return;
 
     int tick_interval_ms = total_milliseconds(m_second_timer.tick_interval());
 
@@ -944,7 +954,7 @@ void session_impl::on_tick(error_code const& e)
         LIBED2K_ASSERT(!t.is_aborted());
         if (t.state() == transfer_status::checking_files) ++num_checking;
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
-        t.second_tick(m_stat, tick_interval_ms);
+        t.second_tick(m_stat, tick_interval_ms, now);
 
         // when server connection changes its state to offline - we drop announces status for all transfers
         if (server_conn_change_state)

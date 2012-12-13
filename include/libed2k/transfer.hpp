@@ -135,7 +135,7 @@ namespace libed2k
 
         int queue_position() const { return m_sequence_number; }
 
-        void second_tick(stat& accumulator, int tick_interval_ms);
+        void second_tick(stat& accumulator, int tick_interval_ms, const ptime& now);
 
         // this is called wheh the transfer has completed
         // the download. It will post an event, disconnect

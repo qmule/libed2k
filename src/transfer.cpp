@@ -1137,9 +1137,10 @@ namespace libed2k
         lazy_entry().swap(m_resume_entry);
     }
 
-    void transfer::second_tick(stat& accumulator, int tick_interval_ms)
+    void transfer::second_tick(stat& accumulator, int tick_interval_ms, const ptime& now)
     {
-        if (m_minute_timer.expires() && want_more_peers()) request_peers();
+        if (m_minute_timer.expired(now) && want_more_peers())
+            request_peers();
 
         // if we're in upload only mode and we're auto-managed
         // leave upload mode every 10 minutes hoping that the error
