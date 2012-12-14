@@ -22,14 +22,13 @@
 namespace libed2k{
 namespace aux{
 
-
 session_impl_base::session_impl_base(const session_settings& settings) :
-        m_io_service(),
-        m_abort(false),
-        m_settings(settings),
-        m_transfers(),
-        m_alerts(m_io_service),
-        m_tpm(m_alerts, settings.m_known_file)
+    m_io_service(),
+    m_abort(false),
+    m_settings(settings),
+    m_transfers(),
+    m_alerts(m_io_service),
+    m_tpm(m_alerts, settings.m_known_file)
 {
 }
 
@@ -83,7 +82,8 @@ void session_impl_base::set_alert_dispatch(boost::function<void(alert const&)> c
 }
 
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
-                           const session_settings& settings): session_impl_base(settings),
+                           const session_settings& settings):
+    session_impl_base(settings),
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_filepool(40),
@@ -94,7 +94,6 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_transfers),
     m_paused(false),
-    m_max_connections(200),
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
     m_last_tick(time_now_hires()),
@@ -199,11 +198,11 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
         rl.rlim_cur -= 20;
 
         // 80% of the available file descriptors should go
-        m_max_connections = (std::min)(m_max_connections, int(rl.rlim_cur * 8 / 10));
+        m_settings.connections_limit = (std::min)(m_settings.connections_limit, int(rl.rlim_cur * 8 / 10));
         // 20% goes towards regular files
         m_filepool.resize((std::min)(m_filepool.size_limit(), int(rl.rlim_cur * 2 / 10)));
 
-        DBG("max connections: " << m_max_connections);
+        DBG("max connections: " << m_settings.connections_limit);
         DBG("max files: " << m_filepool.size_limit());
     }
 #endif // LIBED2K_BSD || LIBED2K_LINUX
@@ -234,6 +233,67 @@ session_impl::~session_impl()
     m_thread->join();
 
     DBG("shutdown complete!");
+}
+
+const session_settings& session_impl::settings() const
+{
+    return m_settings;
+}
+
+void session_impl::set_settings(const session_settings& s)
+{
+    LIBED2K_ASSERT_VAL(s.file_pool_size > 0, s.file_pool_size);
+
+    // if disk io thread settings were changed
+    // post a notification to that thread
+    bool update_disk_io_thread = false;
+    if (m_settings.cache_size != s.cache_size
+        || m_settings.cache_expiry != s.cache_expiry
+        || m_settings.optimize_hashing_for_speed != s.optimize_hashing_for_speed
+        || m_settings.file_checks_delay_per_block != s.file_checks_delay_per_block
+        || m_settings.disk_cache_algorithm != s.disk_cache_algorithm
+        || m_settings.read_cache_line_size != s.read_cache_line_size
+        || m_settings.write_cache_line_size != s.write_cache_line_size
+        || m_settings.coalesce_writes != s.coalesce_writes
+        || m_settings.coalesce_reads != s.coalesce_reads
+        || m_settings.max_queued_disk_bytes != s.max_queued_disk_bytes
+        || m_settings.max_queued_disk_bytes_low_watermark != s.max_queued_disk_bytes_low_watermark
+        || m_settings.disable_hash_checks != s.disable_hash_checks
+        || m_settings.explicit_read_cache != s.explicit_read_cache
+#ifndef LIBED2K_DISABLE_MLOCK
+        || m_settings.lock_disk_cache != s.lock_disk_cache
+#endif
+        || m_settings.use_read_cache != s.use_read_cache
+        || m_settings.disk_io_write_mode != s.disk_io_write_mode
+        || m_settings.disk_io_read_mode != s.disk_io_read_mode
+        || m_settings.allow_reordered_disk_operations != s.allow_reordered_disk_operations
+        || m_settings.file_pool_size != s.file_pool_size
+        || m_settings.volatile_read_cache != s.volatile_read_cache
+        || m_settings.no_atime_storage!= s.no_atime_storage
+        || m_settings.ignore_resume_timestamps != s.ignore_resume_timestamps
+        || m_settings.no_recheck_incomplete_resume != s.no_recheck_incomplete_resume
+        || m_settings.low_prio_disk != s.low_prio_disk
+        || m_settings.lock_files != s.lock_files)
+        update_disk_io_thread = true;
+
+    bool connections_limit_changed = m_settings.connections_limit != s.connections_limit;
+
+    if (m_settings.alert_queue_size != s.alert_queue_size)
+        m_alerts.set_alert_queue_size_limit(s.alert_queue_size);
+
+    m_settings = s;
+
+    if (m_settings.cache_buffer_chunk_size <= 0)
+        m_settings.cache_buffer_chunk_size = 1;
+
+    update_rate_settings();
+
+    if (connections_limit_changed) update_connections_limit();
+
+    if (m_settings.connection_speed < 0) m_settings.connection_speed = 200;
+
+    if (update_disk_io_thread)
+        update_disk_thread_settings();
 }
 
 void session_impl::operator()()
@@ -486,7 +546,8 @@ boost::weak_ptr<transfer> session_impl::find_transfer(const std::string& filenam
 
 boost::intrusive_ptr<peer_connection> session_impl::find_peer_connection(const net_identifier& np) const
 {
-    connection_map::const_iterator itr = std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_network_point, _1, np));
+    connection_map::const_iterator itr = std::find_if(
+        m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_network_point, _1, np));
     if (itr != m_connections.end())  {  return *itr; }
     return boost::intrusive_ptr<peer_connection>();
 }
@@ -494,7 +555,7 @@ boost::intrusive_ptr<peer_connection> session_impl::find_peer_connection(const n
 boost::intrusive_ptr<peer_connection> session_impl::find_peer_connection(const md4_hash& hash) const
 {
     connection_map::const_iterator itr =
-            std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_hash, _1, hash));
+        std::find_if(m_connections.begin(), m_connections.end(), boost::bind(&peer_connection::has_hash, _1, hash));
     if (itr != m_connections.end())  {  return *itr; }
     return boost::intrusive_ptr<peer_connection>();
 }
@@ -1003,7 +1064,7 @@ void session_impl::connect_new_peers()
 
     int free_slots = m_half_open.free_slots();
     if (!m_transfers.empty() && free_slots > -m_half_open.limit() &&
-        num_connections() < m_max_connections && !m_abort)
+        num_connections() < m_settings.connections_limit && !m_abort)
     {
         // this is the maximum number of connections we will
         // attempt this tick
@@ -1031,8 +1092,8 @@ void session_impl::connect_new_peers()
                     // we ran out of memory trying to connect to a peer
                     // lower the global limit to the number of peers
                     // we already have
-                    m_max_connections = num_connections();
-                    if (m_max_connections < 2) m_max_connections = 2;
+                    m_settings.connections_limit = num_connections();
+                    if (m_settings.connections_limit < 2) m_settings.connections_limit = 2;
                 }
             }
 
@@ -1048,7 +1109,7 @@ void session_impl::connect_new_peers()
             // attempts this tick, abort
             if (max_connections_per_second == 0) break;
             // maintain the global limit on number of connections
-            if (num_connections() >= m_max_connections) break;
+            if (num_connections() >= m_settings.connections_limit) break;
         }
     }
 }
@@ -1298,5 +1359,95 @@ void session_impl::server_conn_stop()
 
     m_user_announced = false;
 }
+
+void session_impl::update_connections_limit()
+{
+    if (m_settings.connections_limit <= 0)
+    {
+        m_settings.connections_limit = (std::numeric_limits<int>::max)();
+#if TORRENT_USE_RLIMIT
+        rlimit l;
+        if (getrlimit(RLIMIT_NOFILE, &l) == 0
+            && l.rlim_cur != RLIM_INFINITY)
+        {
+            m_settings.connections_limit = l.rlim_cur - m_settings.file_pool_size;
+            if (m_settings.connections_limit < 5) m_settings.connections_limit = 5;
+        }
+#endif
+    }
+
+    if (num_connections() > m_settings.connections_limit && !m_transfers.empty())
+    {
+        // if we have more connections that we're allowed, disconnect
+        // peers from the torrents so that they are all as even as possible
+
+        int to_disconnect = num_connections() - m_settings.connections_limit;
+
+        int last_average = 0;
+        int average = m_settings.connections_limit / m_transfers.size();
+
+        // the number of slots that are unused by torrents
+        int extra = m_settings.connections_limit % m_transfers.size();
+
+        // run 3 iterations of this, then we're probably close enough
+        for (int iter = 0; iter < 4; ++iter)
+        {
+            // the number of torrents that are above average
+            int num_above = 0;
+            for (transfer_map::iterator i = m_transfers.begin(),
+                     end(m_transfers.end()); i != end; ++i)
+            {
+                int num = i->second->num_peers();
+                if (num <= last_average) continue;
+                if (num > average) ++num_above;
+                if (num < average) extra += average - num;
+            }
+
+            // distribute extra among the torrents that are above average
+            if (num_above == 0) num_above = 1;
+            last_average = average;
+            average += extra / num_above;
+            if (extra == 0) break;
+            // save the remainder for the next iteration
+            extra = extra % num_above;
+        }
+
+        for (transfer_map::iterator i = m_transfers.begin(),
+                 end(m_transfers.end()); i != end; ++i)
+        {
+            int num = i->second->num_peers();
+            if (num <= average) continue;
+
+            // distribute the remainder
+            int my_average = average;
+            if (extra > 0)
+            {
+                ++my_average;
+                --extra;
+            }
+
+            int disconnect = (std::min)(to_disconnect, num - my_average);
+            to_disconnect -= disconnect;
+            i->second->disconnect_peers(
+                disconnect, error_code(errors::too_many_connections, get_libed2k_category()));
+        }
+    }
+}
+
+void session_impl::update_rate_settings()
+{
+    if (m_settings.half_open_limit <= 0)
+        m_settings.half_open_limit = (std::numeric_limits<int>::max)();
+    m_half_open.limit(m_settings.half_open_limit);
+
+    if (m_settings.download_rate_limit < 0)
+        m_settings.download_rate_limit = 0;
+    m_download_channel.throttle(m_settings.download_rate_limit);
+
+    if (m_settings.upload_rate_limit < 0)
+        m_settings.upload_rate_limit = 0;
+    m_upload_channel.throttle(m_settings.upload_rate_limit);
+}
+
 }
 }

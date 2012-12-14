@@ -83,26 +83,17 @@ namespace libed2k {
 
             virtual void abort();
 
-            const session_settings& settings() const { return m_settings; }
-
             /**
-              *  add transfer from another thread
+             *  add transfer from another thread
              */
             virtual void post_transfer(add_transfer_params const& );
-
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
             virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename) = 0;
             virtual void remove_transfer(const transfer_handle& h, int options) = 0;
-
             virtual std::vector<transfer_handle> get_transfers() = 0;
 
             /**
-              * load transfers from disk
-             */
-            void load_state();
-
-            /**
-              * alerts
+             * alerts
              */
             std::auto_ptr<alert> pop_alert();
             void set_alert_mask(boost::uint32_t m);
@@ -136,23 +127,25 @@ namespace libed2k {
             alert_manager m_alerts;
 
             /**
-              * file hasher closed in self thread
+             * file hasher closed in self thread
              */
             transfer_params_maker    m_tpm;
         };
 
-
-        class session_impl: public session_impl_base
+        class session_impl : public session_impl_base
         {
         public:
+
             // the size of each allocation that is chained in the send buffer
             enum { send_buffer_size = 128 };
-
             typedef std::set<boost::intrusive_ptr<peer_connection> > connection_map;
 
             session_impl(const fingerprint& id, const char* listen_interface,
                          const session_settings& settings);
             ~session_impl();
+
+            void set_settings(const session_settings& s);
+            const session_settings& settings() const;
 
             // main thread entry point
             void operator()();
@@ -168,7 +161,7 @@ namespace libed2k {
 
             void async_accept(boost::shared_ptr<tcp::acceptor> const& listener);
             void on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
-                                      boost::weak_ptr<tcp::acceptor> listener, 
+                                      boost::weak_ptr<tcp::acceptor> listener,
                                       error_code const& e);
 
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
@@ -203,20 +196,18 @@ namespace libed2k {
             void pause();
             void resume();
 
-            /**
-              * add transfer from current thread directly
-             */
+            /** add transfer from current thread directly */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
             virtual void remove_transfer(const transfer_handle& h, int options);
 
             /**
-              * find peer connections
+             * find peer connections
              */
             boost::intrusive_ptr<peer_connection> find_peer_connection(const net_identifier& np) const;
             boost::intrusive_ptr<peer_connection> find_peer_connection(const md4_hash& hash) const;
             peer_connection_handle add_peer_connection(net_identifier np, error_code& ec);
 
-            int max_connections() const { return m_max_connections; }
+            int max_connections() const { return m_settings.connections_limit; }
             int num_connections() const { return m_connections.size(); }
 
             bool has_peer(const peer_connection* p) const
@@ -307,6 +298,8 @@ namespace libed2k {
             void server_conn_start();
             void server_conn_stop();
 
+            void update_connections_limit();
+            void update_rate_settings();
 
             boost::object_pool<peer> m_peer_pool;
 
@@ -366,8 +359,6 @@ namespace libed2k {
             // This implements a round robin.
             cyclic_iterator<transfer_map> m_next_connect_transfer;
 
-            typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
-
             // this maps sockets to their peer_connection
             // object. It is the complete list of all connected
             // peers.
@@ -392,9 +383,6 @@ namespace libed2k {
 
             // is true if the session is paused
             bool m_paused;
-
-            // the max number of connections, as set by the user
-            int m_max_connections;
 
             duration_timer m_second_timer;
             // the timer used to fire the tick

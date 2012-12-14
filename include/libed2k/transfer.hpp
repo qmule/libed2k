@@ -90,6 +90,7 @@ namespace libed2k
 
         bool want_more_connections() const;
         void disconnect_all(const error_code& ec);
+        int disconnect_peers(int num, const error_code& ec);
         bool try_connect_peer();
         void give_connect_points(int points);
         bool has_error() const { return m_error; }

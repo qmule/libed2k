@@ -328,6 +328,10 @@ namespace libed2k
         }
     }
 
+    int transfer::disconnect_peers(int num, error_code const& ec)
+    {
+    }
+
     bool transfer::try_connect_peer()
     {
         return m_policy.connect_one_peer();
@@ -1210,7 +1214,7 @@ namespace libed2k
 
     void transfer::on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f)
     {
-        //TORRENT_ASSERT(m_ses.is_network_thread());
+        //LIBED2K_ASSERT(m_ses.is_network_thread());
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         // return value:
