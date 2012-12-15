@@ -29,8 +29,6 @@ namespace libed2k
         m_channel_state[upload_channel] = peer_info::bw_idle;
         m_channel_state[download_channel] = peer_info::bw_idle;
         m_disconnecting = false;
-        m_quota[upload_channel] = 0;
-        m_quota[download_channel] = 0;
     }
 
     void base_connection::disconnect(const error_code& ec, int error)
@@ -39,22 +37,6 @@ namespace libed2k
         m_disconnecting = true;
         m_socket->close();
         m_deadline.cancel();
-    }
-
-    void base_connection::assign_bandwidth(int channel, int amount)
-    {
-        LIBED2K_ASSERT(amount > 0);
-        m_quota[channel] += amount;
-        LIBED2K_ASSERT(m_channel_state[channel] & peer_info::bw_limit);
-        m_channel_state[channel] &= ~peer_info::bw_limit;
-        if (channel == upload_channel)
-        {
-            do_write();
-        }
-        else if (channel == download_channel)
-        {
-            do_read();
-        }
     }
 
     void base_connection::do_read()
@@ -69,14 +51,12 @@ namespace libed2k
         m_channel_state[download_channel] |= peer_info::bw_network;
     }
 
-    void base_connection::do_write()
+    void base_connection::do_write(size_t quota)
     {
         if (is_closed() || m_send_buffer.empty()) return;
-
         if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
-        // check quota here
-        int amount_to_send = m_send_buffer.size();
+        size_t amount_to_send = std::min<size_t>(m_send_buffer.size(), quota);
 
         // set deadline timer
         m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
@@ -88,7 +68,7 @@ namespace libed2k
         m_channel_state[upload_channel] |= peer_info::bw_network;
     }
 
-    void base_connection::do_write_message(const message& msg) {
+    void base_connection::write_message(const message& msg) {
         copy_send_buffer((char*)(&msg.header), header_size);
         copy_send_buffer(msg.body.c_str(), msg.body.size());
 

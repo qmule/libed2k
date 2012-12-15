@@ -210,6 +210,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_bandwidth_channel[peer_connection::download_channel] = &m_download_channel;
     m_bandwidth_channel[peer_connection::upload_channel] = &m_upload_channel;
 
+    update_rate_settings();
+    update_connections_limit();
+
     m_io_service.post(boost::bind(&session_impl::on_tick, this, ec));
 
     m_thread.reset(new boost::thread(boost::ref(*this)));
@@ -1028,10 +1031,10 @@ void session_impl::on_tick(error_code const& e)
     }
 
     // some people claim that there sometimes can be cases where
-    // there is no torrent being checked, but there are torrents
+    // there is no transfers being checked, but there are transfers
     // waiting to be checked. I have never seen this, and I can't
     // see a way for it to happen. But, if it does, start one of
-    // the queued torrents
+    // the queued transfers
     if (num_checking == 0 && num_queued > 0)
     {
         LIBED2K_ASSERT(false);
@@ -1365,7 +1368,7 @@ void session_impl::update_connections_limit()
     if (m_settings.connections_limit <= 0)
     {
         m_settings.connections_limit = (std::numeric_limits<int>::max)();
-#if TORRENT_USE_RLIMIT
+#if LIBED2K_USE_RLIMIT
         rlimit l;
         if (getrlimit(RLIMIT_NOFILE, &l) == 0
             && l.rlim_cur != RLIM_INFINITY)
@@ -1379,20 +1382,20 @@ void session_impl::update_connections_limit()
     if (num_connections() > m_settings.connections_limit && !m_transfers.empty())
     {
         // if we have more connections that we're allowed, disconnect
-        // peers from the torrents so that they are all as even as possible
+        // peers from the transfers so that they are all as even as possible
 
         int to_disconnect = num_connections() - m_settings.connections_limit;
 
         int last_average = 0;
         int average = m_settings.connections_limit / m_transfers.size();
 
-        // the number of slots that are unused by torrents
+        // the number of slots that are unused by transfers
         int extra = m_settings.connections_limit % m_transfers.size();
 
         // run 3 iterations of this, then we're probably close enough
         for (int iter = 0; iter < 4; ++iter)
         {
-            // the number of torrents that are above average
+            // the number of transfers that are above average
             int num_above = 0;
             for (transfer_map::iterator i = m_transfers.begin(),
                      end(m_transfers.end()); i != end; ++i)
@@ -1403,7 +1406,7 @@ void session_impl::update_connections_limit()
                 if (num < average) extra += average - num;
             }
 
-            // distribute extra among the torrents that are above average
+            // distribute extra among the transfers that are above average
             if (num_above == 0) num_above = 1;
             last_average = average;
             average += extra / num_above;

@@ -449,7 +449,7 @@ namespace libed2k
 
         m_upload_mode = b;
 
-        //state_updated();
+        state_updated();
         //send_upload_only();
 
         if (m_upload_mode)
@@ -515,22 +515,34 @@ namespace libed2k
 
     void transfer::set_upload_limit(int limit)
     {
-
+        LIBED2K_ASSERT(limit >= -1);
+        if (limit <= 0) limit = 0;
+        if (m_bandwidth_channel[peer_connection::upload_channel].throttle() != limit)
+            state_updated();
+        m_bandwidth_channel[peer_connection::upload_channel].throttle(limit);
     }
 
     int transfer::upload_limit() const
     {
-        return 0;
+        int limit = m_bandwidth_channel[peer_connection::upload_channel].throttle();
+        if (limit == (std::numeric_limits<int>::max)()) limit = -1;
+        return limit;
     }
 
     void transfer::set_download_limit(int limit)
     {
-
+        LIBED2K_ASSERT(limit >= -1);
+        if (limit <= 0) limit = 0;
+        if (m_bandwidth_channel[peer_connection::download_channel].throttle() != limit)
+            state_updated();
+        m_bandwidth_channel[peer_connection::download_channel].throttle(limit);
     }
 
     int transfer::download_limit() const
     {
-        return 0;
+        int limit = m_bandwidth_channel[peer_connection::download_channel].throttle();
+        if (limit == (std::numeric_limits<int>::max)()) limit = -1;
+        return limit;
     }
 
     storage_interface* transfer::get_storage()
@@ -785,6 +797,10 @@ namespace libed2k
         st.num_pieces = num_have();
 
         return st;
+    }
+
+    void transfer::state_updated()
+    {
     }
 
     // fills in total_wanted, total_wanted_done and total_done
@@ -1222,7 +1238,7 @@ namespace libed2k
         // -1: disk failure
         // -2: hash check failed
 
-        //state_updated();
+        state_updated();
 
         if (ret == -1) handle_disk_error(j);
         f(ret);

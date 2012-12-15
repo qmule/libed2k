@@ -19,6 +19,7 @@
 #include "libed2k/entry.hpp"
 #include "libed2k/stat.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/bandwidth_limit.hpp"
 
 namespace libed2k
 {
@@ -117,6 +118,10 @@ namespace libed2k
         void set_announced(bool announced) { m_announced = announced; }
         transfer_status::state_t state() const { return m_state; }
         transfer_status status() const;
+
+        // this torrent changed state, if the user is subscribing to
+        // it, add it to the m_state_updates list in session_impl
+        void state_updated();
 
         void pause();
         void resume();
@@ -281,6 +286,12 @@ namespace libed2k
         void on_piece_checked(int ret, disk_io_job const& j);
         void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+
+        // --------------------------------------------
+        // BANDWIDTH MANAGEMENT
+        // --------------------------------------------
+        bandwidth_channel m_bandwidth_channel[2];
+        //int bandwidth_throttle(int channel) const;
 
     private:
         // will initialize the storage and the piece-picker

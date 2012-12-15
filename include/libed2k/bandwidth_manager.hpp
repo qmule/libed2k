@@ -51,7 +51,7 @@ struct LIBED2K_EXTRA_EXPORT bandwidth_manager
     void close();
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-    bool is_queued(const base_connection* peer) const;
+    bool is_queued(const peer_connection* peer) const;
 #endif
 
     int queue_size() const;
@@ -62,7 +62,7 @@ struct LIBED2K_EXTRA_EXPORT bandwidth_manager
     // this is used by web seeds
     // returns the number of bytes to assign to the peer, or 0
     // if the peer's 'assign_bandwidth' callback will be called later
-    int request_bandwidth(const intrusive_ptr<base_connection>& peer
+    int request_bandwidth(const intrusive_ptr<peer_connection>& peer
         , int blk, int priority
         , bandwidth_channel* chan1 = 0
         , bandwidth_channel* chan2 = 0

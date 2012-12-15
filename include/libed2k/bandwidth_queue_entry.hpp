@@ -38,14 +38,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace libed2k {
 
-class base_connection;
+class peer_connection;
 
 struct LIBED2K_EXTRA_EXPORT bw_request
 {
-    bw_request(boost::intrusive_ptr<base_connection> const& pe
+    bw_request(boost::intrusive_ptr<peer_connection> const& pe
         , int blk, int prio);
 
-    boost::intrusive_ptr<base_connection> peer;
+    boost::intrusive_ptr<peer_connection> peer;
     // 1 is normal prio
     int priority;
     // the number of bytes assigned to this request so far

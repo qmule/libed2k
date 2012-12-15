@@ -56,7 +56,6 @@ namespace libed2k{
         boost::shared_ptr<tcp::socket> socket() { return m_socket; }
 
         const stat& statistics() const { return m_statistics; }
-        void assign_bandwidth(int channel, int amount);
 
         typedef boost::iostreams::basic_array_source<char> Device;
 
@@ -77,8 +76,8 @@ namespace libed2k{
         // constructor method
         void reset();
 
-        void do_read();
-        void do_write();
+        virtual void do_read();
+        virtual void do_write(size_t quota = std::numeric_limits<size_t>::max());
 
         template <typename T>
         message make_message(const T& t)
@@ -102,9 +101,9 @@ namespace libed2k{
         }
 
         template<typename T>
-        void do_write(const T& t) { do_write_message(make_message(t)); }
+        void write_struct(const T& t) { write_message(make_message(t)); }
 
-        void do_write_message(const message& msg);
+        void write_message(const message& msg);
 
         void copy_send_buffer(const char* buf, int size);
 
@@ -209,13 +208,6 @@ namespace libed2k{
         bool m_disconnecting;
 
         handler_map m_handlers;
-
-        // the bandwidth channels, upload and download
-        // keeps track of the current quotas
-        bandwidth_channel m_bandwidth_channel[num_channels];
-
-        // number of bytes this peer can send and receive
-        int m_quota[2];
 
         // statistics about upload and download speeds
         // and total amount of uploads and downloads for

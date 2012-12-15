@@ -238,13 +238,30 @@ namespace libed2k
         void send_block_requests();
         void cancel_all_requests();
 
+        void assign_bandwidth(int channel, int amount);
+        int bandwidth_throttle(int channel) const
+        { return m_bandwidth_channel[channel].throttle(); }
+
+        void set_upload_limit(int limit);
+        void set_download_limit(int limit);
+        int upload_limit() const { return m_upload_limit; }
+        int download_limit() const { return m_download_limit; }
+
     private:
 
         // constructor method
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
 
-        void do_read();
+        virtual void do_read();
+        virtual void do_write(size_t quota = std::numeric_limits<size_t>::max());
+
+        int request_upload_bandwidth(
+            bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
+            bandwidth_channel* bwc3 = 0, bandwidth_channel* bwc4 = 0);
+        int request_download_bandwidth(
+            bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
+            bandwidth_channel* bwc3 = 0, bandwidth_channel* bwc4 = 0);
 
         void request_block();
         // adds a block to the request queue
@@ -268,10 +285,10 @@ namespace libed2k
         void on_skip_data(const error_code& error, peer_request r);
 
         template<typename T>
-        void do_write(T& t)
+        void write_struct(T& t)
         {
             if ((m_channel_state[upload_channel] & peer_info::bw_seq) == 0)
-                base_connection::do_write(t);
+                base_connection::write_struct(t);
             else
                 defer_write(t);
         }
@@ -377,6 +394,20 @@ namespace libed2k
         // the maximum number of busy blocks we can
         // request at a time
         size_t m_max_busy_blocks;
+
+        // the bandwidth channels, upload and download
+        // keeps track of the current quotas
+        bandwidth_channel m_bandwidth_channel[num_channels];
+
+        // number of bytes this peer can send and receive
+        int m_quota[2];
+
+        // this is the priority with which this peer gets
+        // download bandwidth quota assigned to it.
+        int m_priority;
+
+        int m_upload_limit;
+        int m_download_limit;
 
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming

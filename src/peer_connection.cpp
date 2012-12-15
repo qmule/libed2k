@@ -164,6 +164,11 @@ void peer_connection::reset()
     m_timeout = seconds(m_ses.settings().peer_timeout);
 
     m_connection_ticket = -1;
+    m_quota[upload_channel] = 0;
+    m_quota[download_channel] = 0;
+    m_priority = 1;
+    m_upload_limit = 0;
+    m_download_limit = 0;
     m_speed = slow;
     m_desired_queue_size = 3;
     m_max_busy_blocks = 1;
@@ -248,6 +253,17 @@ void peer_connection::get_peer_info(peer_info& p) const
 
     p.total_download = m_statistics.total_payload_download();
     p.total_upload = m_statistics.total_payload_upload();
+
+    if (m_bandwidth_channel[upload_channel].throttle() == 0)
+        p.upload_limit = -1;
+    else
+        p.upload_limit = m_bandwidth_channel[upload_channel].throttle();
+
+    if (m_bandwidth_channel[download_channel].throttle() == 0)
+        p.download_limit = -1;
+    else
+        p.download_limit = m_bandwidth_channel[download_channel].throttle();
+
     p.ip = tcp::endpoint(m_remote.address(), user_port());
     p.connection_type = STANDARD_EDONKEY;
     p.client = !m_options.m_strName.empty() && m_options.m_strName[0] == '[' ?
@@ -429,6 +445,53 @@ void peer_connection::do_read()
     }
 
     base_connection::do_read();
+}
+
+void peer_connection::do_write(size_t /*quota ignored*/)
+{
+    if (is_closed() || m_send_buffer.empty()) return;
+    if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
+
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (m_quota[upload_channel] == 0 && !m_send_buffer.empty() && !m_connecting)
+    {
+        // in this case, we have data to send, but no
+        // bandwidth. So, we simply request bandwidth
+        // from the bandwidth manager
+        int ret = request_upload_bandwidth(
+            &m_ses.m_upload_channel,
+            t ? &t->m_bandwidth_channel[upload_channel] : 0,
+            &m_bandwidth_channel[upload_channel]);
+
+        if (ret == 0)
+        {
+            m_channel_state[upload_channel] |= peer_info::bw_limit;
+            return;
+        }
+
+        // we were just assigned 'ret' quota
+        LIBED2K_ASSERT(ret > 0);
+        m_quota[upload_channel] += ret;
+    }
+
+    int quota_left = m_quota[upload_channel];
+
+    if (!can_write()) return;
+
+    base_connection::do_write(quota_left);
+}
+
+int peer_connection::request_upload_bandwidth(
+    bandwidth_channel* bwc1, bandwidth_channel* bwc2,
+    bandwidth_channel* bwc3, bandwidth_channel* bwc4)
+{
+}
+
+int peer_connection::request_download_bandwidth(
+    bandwidth_channel* bwc1, bandwidth_channel* bwc2,
+    bandwidth_channel* bwc3, bandwidth_channel* bwc4)
+{
 }
 
 void peer_connection::request_block()
@@ -865,14 +928,15 @@ void peer_connection::on_error(const error_code& error)
 
 bool peer_connection::can_write() const
 {
-    // TODO - should implement
-    return (true);
+    // if we have requests or pending data to be sent or announcements to be made
+    // we want to send data
+    return !m_send_buffer.empty()
+        && m_quota[upload_channel] > 0
+        && !m_connecting;
 }
 
 bool peer_connection::can_read(char* state) const
 {
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-
     bool disk = m_ses.settings().max_queued_disk_bytes == 0 || m_ses.can_write_to_disk();
 
     if (!disk)
@@ -978,7 +1042,7 @@ void peer_connection::send_deferred()
 
     while (!m_deferred.empty())
     {
-        do_write_message(m_deferred.front());
+        write_message(m_deferred.front());
         m_deferred.pop_front();
     }
 }
@@ -1276,7 +1340,7 @@ void peer_connection::write_hello()
     hello.m_list.add_tag(make_typed_tag(mo.generate(), CT_EMULE_MISCOPTIONS1, true));
     hello.m_list.add_tag(make_typed_tag(mo2.generate(), CT_EMULE_MISCOPTIONS2, true));
 
-    do_write(hello);
+    write_struct(hello);
 }
 
 void peer_connection::write_ext_hello()
@@ -1284,7 +1348,7 @@ void peer_connection::write_ext_hello()
     client_ext_hello ceh;
     ceh.m_nVersion = m_ses.settings().m_version;
     DBG("ext hello {version: " << ceh.m_nVersion << "} ==> " << m_remote);
-    do_write(ceh);
+    write_struct(ceh);
 }
 
 void peer_connection::write_hello_answer()
@@ -1298,7 +1362,7 @@ void peer_connection::write_hello_answer()
             m_ses.settings().m_version);
     cha.dump();
     DBG("hello answer ==> " << m_remote);
-    do_write(cha);
+    write_struct(cha);
     m_handshake_complete = true;
 }
 
@@ -1307,7 +1371,7 @@ void peer_connection::write_ext_hello_answer()
     client_ext_hello_answer ceha;
     ceha.m_nVersion = m_ses.settings().m_version;  // write only version
     DBG("ext hello answer {version: " << ceha.m_nVersion << "} ==> " << m_remote);
-    do_write(ceha);
+    write_struct(ceha);
 }
 
 void peer_connection::write_file_request(const md4_hash& file_hash)
@@ -1315,7 +1379,7 @@ void peer_connection::write_file_request(const md4_hash& file_hash)
     DBG("file request " << file_hash << " ==> " << m_remote);
     client_file_request fr;
     fr.m_hFile = file_hash;
-    do_write(fr);
+    write_struct(fr);
 }
 
 void peer_connection::write_file_answer(
@@ -1325,7 +1389,7 @@ void peer_connection::write_file_answer(
     client_file_answer fa;
     fa.m_hFile = file_hash;
     fa.m_filename.m_collection = filename;
-    do_write(fa);
+    write_struct(fa);
 }
 
 void peer_connection::write_no_file(const md4_hash& file_hash)
@@ -1333,7 +1397,7 @@ void peer_connection::write_no_file(const md4_hash& file_hash)
     DBG("no file " << file_hash << " ==> " << m_remote);
     client_no_file nf;
     nf.m_hFile = file_hash;
-    do_write(nf);
+    write_struct(nf);
 }
 
 void peer_connection::write_filestatus_request(const md4_hash& file_hash)
@@ -1341,7 +1405,7 @@ void peer_connection::write_filestatus_request(const md4_hash& file_hash)
     DBG("request file status " << file_hash << " ==> " << m_remote);
     client_filestatus_request fr;
     fr.m_hFile = file_hash;
-    do_write(fr);
+    write_struct(fr);
 }
 
 void peer_connection::write_file_status(
@@ -1352,7 +1416,7 @@ void peer_connection::write_file_status(
     client_file_status fs;
     fs.m_hFile = file_hash;
     fs.m_status = status;
-    do_write(fs);
+    write_struct(fs);
 }
 
 void peer_connection::write_hashset_request(const md4_hash& file_hash)
@@ -1360,7 +1424,7 @@ void peer_connection::write_hashset_request(const md4_hash& file_hash)
     DBG("request hashset for " << file_hash << " ==> " << m_remote);
     client_hashset_request hr;
     hr.m_hFile = file_hash;
-    do_write(hr);
+    write_struct(hr);
 }
 
 void peer_connection::write_hashset_answer(
@@ -1371,7 +1435,7 @@ void peer_connection::write_hashset_answer(
     client_hashset_answer ha;
     ha.m_hFile = file_hash;
     ha.m_vhParts.m_collection = hash_set;
-    do_write(ha);
+    write_struct(ha);
 }
 
 void peer_connection::write_start_upload(const md4_hash& file_hash)
@@ -1379,7 +1443,7 @@ void peer_connection::write_start_upload(const md4_hash& file_hash)
     DBG("start upload " << file_hash << " ==> " << m_remote);
     client_start_upload su;
     su.m_hFile = file_hash;
-    do_write(su);
+    write_struct(su);
 }
 
 void peer_connection::write_queue_ranking(boost::uint16_t rank)
@@ -1387,21 +1451,21 @@ void peer_connection::write_queue_ranking(boost::uint16_t rank)
     DBG("queue ranking is " << rank << " ==> " << m_remote);
     client_queue_ranking qr;
     qr.m_nRank = rank;
-    do_write(qr);
+    write_struct(qr);
 }
 
 void peer_connection::write_accept_upload()
 {
     DBG("accept upload ==> " << m_remote);
     client_accept_upload au;
-    do_write(au);
+    write_struct(au);
 }
 
 void peer_connection::write_cancel_transfer()
 {
     DBG("cancel ==> " << m_remote);
     client_cancel_transfer ct;
-    do_write(ct);
+    write_struct(ct);
 }
 
 void peer_connection::write_request_parts(client_request_parts_64 rp)
@@ -1411,7 +1475,7 @@ void peer_connection::write_request_parts(client_request_parts_64 rp)
         << "[" << rp.m_begin_offset[1] << ", " << rp.m_end_offset[1] << "]"
         << "[" << rp.m_begin_offset[2] << ", " << rp.m_end_offset[2] << "]"
         << " ==> " << m_remote);
-    do_write(rp);
+    write_struct(rp);
 }
 
 void peer_connection::write_part(const peer_request& r)
@@ -1424,7 +1488,7 @@ void peer_connection::write_part(const peer_request& r)
     sp.m_hFile = t->hash();
     sp.m_begin_offset = range.first;
     sp.m_end_offset = range.second;
-    do_write(sp);
+    write_struct(sp);
 
     DBG("part " << sp.m_hFile << " [" << sp.m_begin_offset << ", " << sp.m_end_offset << "]"
         << " ==> " << m_remote);
@@ -2229,4 +2293,38 @@ void peer_connection::send_throw_meta_order(const T& t)
 {
     defer_write(t);
     if (!is_closed()) fill_send_buffer();
+}
+
+void peer_connection::assign_bandwidth(int channel, int amount)
+{
+    LIBED2K_ASSERT(amount > 0);
+    m_quota[channel] += amount;
+    LIBED2K_ASSERT(m_channel_state[channel] & peer_info::bw_limit);
+    m_channel_state[channel] &= ~peer_info::bw_limit;
+    if (channel == upload_channel)
+    {
+        do_write();
+    }
+    else if (channel == download_channel)
+    {
+        do_read();
+    }
+}
+
+void peer_connection::set_upload_limit(int limit)
+{
+    LIBED2K_ASSERT(limit >= -1);
+    if (limit < 0) limit = 0;
+    if (limit < 10 && limit > 0) limit = 10;
+    m_upload_limit = limit;
+    m_bandwidth_channel[upload_channel].throttle(m_upload_limit);
+}
+
+void peer_connection::set_download_limit(int limit)
+{
+    LIBED2K_ASSERT(limit >= -1);
+    if (limit < 0) limit = 0;
+    if (limit < 10 && limit > 0) limit = 10;
+    m_download_limit = limit;
+    m_bandwidth_channel[download_channel].throttle(m_download_limit);
 }

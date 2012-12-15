@@ -35,11 +35,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 
 #include "libed2k/bandwidth_queue_entry.hpp"
-#include "libed2k/base_connection.hpp"
+#include "libed2k/peer_connection.hpp"
 
 namespace libed2k
 {
-    bw_request::bw_request(const boost::intrusive_ptr<base_connection>& pe
+    bw_request::bw_request(const boost::intrusive_ptr<peer_connection>& pe
         , int blk, int prio)
         : peer(pe)
         , priority(prio)

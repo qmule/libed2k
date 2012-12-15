@@ -31,7 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "libed2k/bandwidth_manager.hpp"
-#include "libed2k/base_connection.hpp"
+#include "libed2k/peer_connection.hpp"
 #include "libed2k/time.hpp"
 #include "libed2k/invariant_check.hpp"
 
@@ -53,7 +53,7 @@ namespace libed2k
     }
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-    bool bandwidth_manager::is_queued(const base_connection* peer) const
+    bool bandwidth_manager::is_queued(const peer_connection* peer) const
     {
         for (queue_t::const_iterator i = m_queue.begin()
             , end(m_queue.end()); i != end; ++i)
@@ -77,7 +77,7 @@ namespace libed2k
     // non prioritized means that, if there's a line for bandwidth,
     // others will cut in front of the non-prioritized peers.
     // this is used by web seeds
-    int bandwidth_manager::request_bandwidth(const boost::intrusive_ptr<base_connection>& peer
+    int bandwidth_manager::request_bandwidth(const boost::intrusive_ptr<peer_connection>& peer
         , int blk, int priority
         , bandwidth_channel* chan1
         , bandwidth_channel* chan2
