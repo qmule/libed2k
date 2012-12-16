@@ -76,8 +76,11 @@ namespace libed2k{
         // constructor method
         void reset();
 
-        virtual void do_read();
-        virtual void do_write(size_t quota = std::numeric_limits<size_t>::max());
+        void do_read();
+        void do_write();
+
+        virtual int request_read_quota() = 0;
+        virtual int request_write_quota() = 0;
 
         template <typename T>
         message make_message(const T& t)
@@ -115,6 +118,7 @@ namespace libed2k{
         int send_buffer_capacity() const { return m_send_buffer.capacity(); }
 
         virtual void on_timeout(const error_code& e);
+        virtual void on_sent(const error_code& e, std::size_t bytes_transferred) = 0;
 
         /**
          * call when socket got packets header

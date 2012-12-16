@@ -264,6 +264,9 @@ void peer_connection::get_peer_info(peer_info& p) const
     else
         p.download_limit = m_bandwidth_channel[download_channel].throttle();
 
+    p.send_quota = m_quota[upload_channel];
+    p.receive_quota = m_quota[download_channel];
+
     p.ip = tcp::endpoint(m_remote.address(), user_port());
     p.connection_type = STANDARD_EDONKEY;
     p.client = !m_options.m_strName.empty() && m_options.m_strName[0] == '[' ?
@@ -429,29 +432,47 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
     return true;
 }
 
-void peer_connection::do_read()
+int peer_connection::request_read_quota()
 {
-    if (!can_read())
-    {
-        boost::shared_ptr<transfer> t = m_transfer.lock();
+    boost::shared_ptr<transfer> t = m_transfer.lock();
 
+    if (m_quota[download_channel] == 0 && !m_connecting)
+    {
+        // in this case, we have outstanding data to
+        // receive, but no bandwidth quota. So, we simply
+        // request bandwidth from the bandwidth manager
+        int ret = request_download_bandwidth(
+            &m_ses.m_download_channel,
+            t ? &t->m_bandwidth_channel[download_channel] : 0,
+            &m_bandwidth_channel[download_channel]);
+
+        if (ret == 0)
+        {
+            m_channel_state[download_channel] |= peer_info::bw_limit;
+            return 0;
+        }
+
+        // we were just assigned 'ret' quota
+        LIBED2K_ASSERT(ret > 0);
+        m_quota[download_channel] += ret;
+    }
+
+    if (!can_read(&m_channel_state[download_channel]))
+    {
         DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
              % m_ses.settings().max_queued_disk_bytes).str());
 
         // if we block reading, waiting for the disk, we will wake up
         // by the disk_io_thread posting a message every time it drops
         // from being at or exceeding the limit down to below the limit
-        return;
+        return 0;
     }
 
-    base_connection::do_read();
+    return m_quota[download_channel];
 }
 
-void peer_connection::do_write(size_t /*quota ignored*/)
+int peer_connection::request_write_quota()
 {
-    if (is_closed() || m_send_buffer.empty()) return;
-    if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
-
     boost::shared_ptr<transfer> t = m_transfer.lock();
 
     if (m_quota[upload_channel] == 0 && !m_send_buffer.empty() && !m_connecting)
@@ -467,7 +488,7 @@ void peer_connection::do_write(size_t /*quota ignored*/)
         if (ret == 0)
         {
             m_channel_state[upload_channel] |= peer_info::bw_limit;
-            return;
+            return 0;
         }
 
         // we were just assigned 'ret' quota
@@ -475,23 +496,51 @@ void peer_connection::do_write(size_t /*quota ignored*/)
         m_quota[upload_channel] += ret;
     }
 
-    int quota_left = m_quota[upload_channel];
+    if (!can_write()) return 0;
 
-    if (!can_write()) return;
-
-    base_connection::do_write(quota_left);
+    return m_quota[upload_channel];
 }
 
 int peer_connection::request_upload_bandwidth(
     bandwidth_channel* bwc1, bandwidth_channel* bwc2,
     bandwidth_channel* bwc3, bandwidth_channel* bwc4)
 {
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    int priority;
+    priority = 1 + (float(m_send_buffer.size()) / m_ses.settings().send_buffer_watermark) * 255;
+    if (priority > 255) priority = 255;
+    priority += t ? t->priority() << 8 : 0;
+
+    LIBED2K_ASSERT(priority <= 0xffff);
+
+    // peers that we are not interested in are non-prioritized
+    LIBED2K_ASSERT((m_channel_state[upload_channel] & peer_info::bw_limit) == 0);
+
+    return m_ses.m_upload_rate.request_bandwidth(
+        self_as<peer_connection>(),
+        std::max(m_send_buffer.size(),
+                 m_statistics.upload_rate() * 2 / (1000 / m_ses.m_settings.tick_interval)),
+        priority, bwc1, bwc2, bwc3, bwc4);
 }
 
 int peer_connection::request_download_bandwidth(
     bandwidth_channel* bwc1, bandwidth_channel* bwc2,
     bandwidth_channel* bwc3, bandwidth_channel* bwc4)
 {
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    LIBED2K_ASSERT(m_priority <= 255);
+    int priority = m_priority + (t ? (t->priority() << 8) : 0);
+    int outstanding = outstanding_bytes();
+
+    LIBED2K_ASSERT(outstanding >= 0);
+    LIBED2K_ASSERT((m_channel_state[download_channel] & peer_info::bw_limit) == 0);
+    return m_ses.m_download_rate.request_bandwidth(
+        self_as<peer_connection>(),
+        std::max(outstanding,
+                 m_statistics.download_rate() * 2 / (1000 / m_ses.m_settings.tick_interval)),
+        priority, bwc1, bwc2, bwc3, bwc4);
 }
 
 void peer_connection::request_block()
@@ -747,7 +796,7 @@ void peer_connection::cancel_all_requests()
     write_cancel_transfer();
 }
 
-bool peer_connection::requesting(const piece_block& b)
+bool peer_connection::requesting(const piece_block& b) const
 {
     return
         std::find_if(m_download_queue.begin(), m_download_queue.end(),
@@ -756,7 +805,7 @@ bool peer_connection::requesting(const piece_block& b)
                      has_block(b)) != m_request_queue.end();
 }
 
-size_t peer_connection::num_requesting_busy_blocks()
+size_t peer_connection::num_requesting_busy_blocks() const
 {
     size_t res = 0;
 
@@ -775,6 +824,23 @@ size_t peer_connection::num_requesting_busy_blocks()
     return res;
 }
 
+int peer_connection::outstanding_bytes() const
+{
+    int res = 0;
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (t)
+    {
+        size_type s = t->size();
+        for (std::vector<pending_block>::const_iterator i = m_download_queue.begin(),
+                 end(m_download_queue.end()); i != end; ++i)
+        {
+            res += block_size(i->block, s);
+        }
+    }
+
+    return res;
+}
 
 bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
 {
@@ -804,6 +870,13 @@ void peer_connection::on_timeout()
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
     disconnect(errors::timed_out, 1);
+}
+
+void peer_connection::on_sent(const error_code& e, std::size_t bytes_transferred)
+{
+    LIBED2K_ASSERT(int(bytes_transferred) <= m_quota[upload_channel]);
+    m_quota[upload_channel] -= bytes_transferred;
+    m_statistics.sent_bytes(bytes_transferred, 0);
 }
 
 void peer_connection::disconnect(error_code const& ec, int error)
@@ -937,8 +1010,10 @@ bool peer_connection::can_write() const
 
 bool peer_connection::can_read(char* state) const
 {
-    bool disk = m_ses.settings().max_queued_disk_bytes == 0 || m_ses.can_write_to_disk();
+    bool bw_limit = m_quota[download_channel] > 0;
+    if (!bw_limit) return false;
 
+    bool disk = m_ses.settings().max_queued_disk_bytes == 0 || m_ses.can_write_to_disk();
     if (!disk)
     {
         if (state) *state = peer_info::bw_disk;
@@ -1110,11 +1185,9 @@ void peer_connection::on_disk_read_complete(
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
-    base_connection::do_write();
+    do_write();
 
     send_data(left);
-
-    m_statistics.sent_bytes(r.length, 0);
 }
 
 void peer_connection::receive_data(const peer_request& req)
@@ -1184,6 +1257,9 @@ void peer_connection::on_receive_data(
     m_statistics.received_bytes(bytes_transferred, 0);
     if (error) disconnect(error);
     if (m_disconnecting || is_closed()) return;
+
+    LIBED2K_ASSERT(int(bytes_transferred) <= m_quota[download_channel]);
+    m_quota[download_channel] -= bytes_transferred;
 
     LIBED2K_ASSERT(int(bytes_transferred) == r.length);
     LIBED2K_ASSERT(m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_seq));

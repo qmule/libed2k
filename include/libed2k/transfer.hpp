@@ -136,6 +136,9 @@ namespace libed2k
         int piece_priority(int index) const;
         void piece_priorities(std::vector<int>* pieces) const;
 
+        int priority() const;
+        void set_priority(int prio);
+
         void set_sequential_download(bool sd);
         bool is_sequential_download() const { return m_sequential_download; }
 

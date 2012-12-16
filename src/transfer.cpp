@@ -639,6 +639,16 @@ namespace libed2k
         m_picker->piece_priorities(*pieces);
     }
 
+    int transfer::priority() const { return m_priority; }
+    void transfer::set_priority(int prio)
+    {
+        LIBED2K_ASSERT(prio <= 255 && prio >= 0);
+        if (prio > 255) prio = 255;
+        else if (prio < 0) prio = 0;
+        m_priority = prio;
+        state_updated();
+    }
+
     void transfer::set_sequential_download(bool sd) { m_sequential_download = sd; }
 
     void transfer::piece_failed(int index)
@@ -755,6 +765,8 @@ namespace libed2k
         st.upload_rate = m_stat.upload_rate();
         st.download_payload_rate = m_stat.download_payload_rate();
         st.upload_payload_rate = m_stat.upload_payload_rate();
+
+        st.priority = m_priority;
 
         st.num_seeds = num_seeds();
         st.num_peers = num_peers();

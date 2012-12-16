@@ -971,7 +971,7 @@ void session_impl::on_tick(error_code const& e)
     aux::g_current_time = now;
 
     error_code ec;
-    m_timer.expires_from_now(milliseconds(100), ec);
+    m_timer.expires_from_now(milliseconds(m_settings.tick_interval), ec);
     m_timer.async_wait(bind(&session_impl::on_tick, this, _1));
 
     m_download_rate.update_quotas(now - m_last_tick);

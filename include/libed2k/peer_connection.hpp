@@ -171,7 +171,9 @@ namespace libed2k
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
 
-        void on_timeout();
+        virtual void on_timeout();
+        virtual void on_sent(const error_code& e, std::size_t bytes_transferred);
+
         virtual void disconnect(const error_code& ec, int error = 0);
 
         // returns true if this connection is still waiting to
@@ -253,8 +255,8 @@ namespace libed2k
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
 
-        virtual void do_read();
-        virtual void do_write(size_t quota = std::numeric_limits<size_t>::max());
+        virtual int request_read_quota();
+        virtual int request_write_quota();
 
         int request_upload_bandwidth(
             bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
@@ -270,8 +272,9 @@ namespace libed2k
         bool add_request(const piece_block& b, int flags = 0);
         void abort_all_requests();
         void abort_expired_requests();
-        bool requesting(const piece_block& b);
-        size_t num_requesting_busy_blocks();
+        bool requesting(const piece_block& b) const;
+        size_t num_requesting_busy_blocks() const;
+        int outstanding_bytes() const;
 
         void send_deferred();
         void fill_send_buffer();

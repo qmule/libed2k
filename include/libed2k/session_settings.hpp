@@ -30,6 +30,7 @@ namespace libed2k
             , server_reconnect_timeout(5)
             , max_peerlist_size(4000)
             , download_rate_limit(-1)
+            , tick_interval(100)
             , upload_rate_limit(-1)
             , unchoke_slots_limit(8)
             , half_open_limit(0)
@@ -134,6 +135,10 @@ namespace libed2k
         // per transfer. This is the peers we know
         // about, not necessarily connected to.
         int max_peerlist_size;
+
+        // the number of milliseconds between internal ticks. Should be no
+        // more than one second (i.e. 1000).
+        int tick_interval;
 
         /**
           * session rate limits

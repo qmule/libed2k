@@ -43,6 +43,7 @@ namespace libed2k
     {
         if (is_closed()) return;
         if (m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
+        if (request_read_quota() == 0) return;
 
         m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
         boost::asio::async_read(
@@ -51,12 +52,13 @@ namespace libed2k
         m_channel_state[download_channel] |= peer_info::bw_network;
     }
 
-    void base_connection::do_write(size_t quota)
+    void base_connection::do_write()
     {
-        if (is_closed() || m_send_buffer.empty()) return;
+        if (is_closed()) return;
         if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
-        size_t amount_to_send = std::min<size_t>(m_send_buffer.size(), quota);
+        int amount_to_send = std::min<int>(m_send_buffer.size(), request_write_quota());
+        if (amount_to_send == 0) return;
 
         // set deadline timer
         m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
@@ -71,8 +73,6 @@ namespace libed2k
     void base_connection::write_message(const message& msg) {
         copy_send_buffer((char*)(&msg.header), header_size);
         copy_send_buffer(msg.body.c_str(), msg.body.size());
-
-        m_statistics.sent_bytes(0, header_size + msg.body.size());
 
         do_write();
     }
@@ -186,7 +186,8 @@ namespace libed2k
             m_channel_state[download_channel] &= ~peer_info::bw_network;
 
             //!< search appropriate dispatcher
-            handler_map::iterator itr = m_handlers.find(std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
+            handler_map::iterator itr = m_handlers.find(
+                std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
 
             if (itr != m_handlers.end())
             {
@@ -218,15 +219,21 @@ namespace libed2k
         // case we disconnect
         boost::intrusive_ptr<base_connection> me(self());
 
+        LIBED2K_ASSERT(m_channel_state[upload_channel] & peer_info::bw_network);
+
+        m_send_buffer.pop_front(nSize);
+
+        m_channel_state[upload_channel] &= ~peer_info::bw_network;
+
+        if (error) {
+            disconnect(error);
+            return;
+        }
         if (is_closed()) return;
 
-        if (!error) {
-            m_send_buffer.pop_front(nSize);
-            m_channel_state[upload_channel] &= ~peer_info::bw_network;
-            do_write();
-        }
-        else
-            disconnect(error);
+        on_sent(error, nSize);
+
+        do_write();
     }
 
     void base_connection::check_deadline()
