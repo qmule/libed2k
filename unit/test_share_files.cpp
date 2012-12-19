@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(test_add_transfer_params_maker)
 
     test_files_holder tfh;
     const size_t sz = 5;
-    const char* filename = "./test_filename";
+    const char* filename = "test_filename";
 
     std::pair<libed2k::size_type, libed2k::md4_hash> tmpl[sz] =
     {
