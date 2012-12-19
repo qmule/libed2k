@@ -43,7 +43,6 @@ namespace libed2k
     {
         if (is_closed()) return;
         if (m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
-        if (request_read_quota() == 0) return;
 
         m_deadline.expires_from_now(seconds(m_ses.settings().peer_timeout));
         boost::asio::async_read(
@@ -52,12 +51,12 @@ namespace libed2k
         m_channel_state[download_channel] |= peer_info::bw_network;
     }
 
-    void base_connection::do_write()
+    void base_connection::do_write(int quota)
     {
         if (is_closed()) return;
         if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
-        int amount_to_send = std::min<int>(m_send_buffer.size(), request_write_quota());
+        int amount_to_send = std::min<int>(m_send_buffer.size(), quota);
         if (amount_to_send == 0) return;
 
         // set deadline timer

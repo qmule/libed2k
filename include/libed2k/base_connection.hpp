@@ -76,11 +76,8 @@ namespace libed2k{
         // constructor method
         void reset();
 
-        void do_read();
-        void do_write();
-
-        virtual int request_read_quota() = 0;
-        virtual int request_write_quota() = 0;
+        virtual void do_read();
+        virtual void do_write(int quota = std::numeric_limits<int>::max());
 
         template <typename T>
         message make_message(const T& t)

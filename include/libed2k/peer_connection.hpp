@@ -255,8 +255,8 @@ namespace libed2k
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
 
-        virtual int request_read_quota();
-        virtual int request_write_quota();
+        virtual void do_read();
+        virtual void do_write(int quota = std::numeric_limits<int>::max());
 
         int request_upload_bandwidth(
             bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
@@ -281,11 +281,12 @@ namespace libed2k
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void receive_data(const peer_request& r);
+        void receive_data();
         void on_disk_write_complete(int ret, disk_io_job const& j,
-                                    peer_request req, peer_request left, boost::shared_ptr<transfer> t);
-        void on_receive_data(const error_code& error, std::size_t bytes_transferred,
-                             peer_request r, peer_request left);
-        void on_skip_data(const error_code& error, peer_request r);
+                                    peer_request req, boost::shared_ptr<transfer> t);
+        void on_receive_data(const error_code& error, std::size_t bytes_transferred);
+        void skip_data(char* buf = NULL);
+        void on_skip_data(const error_code& error, std::size_t bytes_transferred, char* buf);
 
         template<typename T>
         void write_struct(T& t)
@@ -457,6 +458,11 @@ namespace libed2k
         // initialized in hello answer
         misc_options    m_misc_options;
         misc_options2   m_misc_options2;
+
+        // the number of bytes of payload we've received so far
+        int m_recv_pos;
+        // current recuest processed
+        peer_request m_recv_req;
     };
 }
 
