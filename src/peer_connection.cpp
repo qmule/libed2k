@@ -414,42 +414,20 @@ void peer_connection::do_read()
     if (m_disconnecting) return;
     if (m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-
-    if (m_quota[download_channel] == 0 && !m_connecting)
+    if (m_channel_state[download_channel] & peer_info::bw_seq)
     {
-        // in this case, we have outstanding data to
-        // receive, but no bandwidth quota. So, we simply
-        // request bandwidth from the bandwidth manager
-        int ret = request_download_bandwidth(
-            &m_ses.m_download_channel,
-            t ? &t->m_bandwidth_channel[download_channel] : 0,
-            &m_bandwidth_channel[download_channel]);
-
-        if (ret == 0)
+        if (!can_read(&m_channel_state[download_channel]))
         {
-            m_channel_state[download_channel] |= peer_info::bw_limit;
+            DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
+                 % m_ses.settings().max_queued_disk_bytes).str());
+
+            // if we block reading, waiting for the disk, we will wake up
+            // by the disk_io_thread posting a message every time it drops
+            // from being at or exceeding the limit down to below the limit
             return;
         }
-
-        // we were just assigned 'ret' quota
-        LIBED2K_ASSERT(ret > 0);
-        m_quota[download_channel] += ret;
-    }
-
-    if (!can_read(&m_channel_state[download_channel]))
-    {
-        DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
-             % m_ses.settings().max_queued_disk_bytes).str());
-
-        // if we block reading, waiting for the disk, we will wake up
-        // by the disk_io_thread posting a message every time it drops
-        // from being at or exceeding the limit down to below the limit
-        return;
-    }
-
-    if (m_channel_state[download_channel] & peer_info::bw_seq)
         receive_data();
+    }
     else
         base_connection::do_read();
 }
@@ -458,30 +436,7 @@ void peer_connection::do_write(int /*quota ignored*/)
 {
     if (m_disconnecting) return;
     if (m_channel_state[upload_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
-
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-
-    if (m_quota[upload_channel] == 0 && !m_send_buffer.empty() && !m_connecting)
-    {
-        // in this case, we have data to send, but no
-        // bandwidth. So, we simply request bandwidth
-        // from the bandwidth manager
-        int ret = request_upload_bandwidth(
-            &m_ses.m_upload_channel,
-            t ? &t->m_bandwidth_channel[upload_channel] : 0,
-            &m_bandwidth_channel[upload_channel]);
-
-        if (ret == 0)
-        {
-            m_channel_state[upload_channel] |= peer_info::bw_limit;
-            return;
-        }
-
-        // we were just assigned 'ret' quota
-        LIBED2K_ASSERT(ret > 0);
-        m_quota[upload_channel] += ret;
-    }
-
+    if (!has_upload_bandwidth()) return;
     if (!can_write()) return;
 
     base_connection::do_write(m_quota[upload_channel]);
@@ -524,9 +479,66 @@ int peer_connection::request_download_bandwidth(
     LIBED2K_ASSERT((m_channel_state[download_channel] & peer_info::bw_limit) == 0);
     return m_ses.m_download_rate.request_bandwidth(
         self_as<peer_connection>(),
-        std::max(outstanding,
-                 m_statistics.download_rate() * 2 / (1000 / m_ses.m_settings.tick_interval)),
+        std::max(
+            std::max(outstanding, m_recv_req.length - m_recv_pos),
+            m_statistics.download_rate() * 2 / (1000 / m_ses.m_settings.tick_interval)),
         priority, bwc1, bwc2, bwc3, bwc4);
+}
+
+bool peer_connection::has_download_bandwidth()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (m_quota[download_channel] == 0 && !m_connecting)
+    {
+        // in this case, we have outstanding data to
+        // receive, but no bandwidth quota. So, we simply
+        // request bandwidth from the bandwidth manager
+        int ret = request_download_bandwidth(
+            &m_ses.m_download_channel,
+            t ? &t->m_bandwidth_channel[download_channel] : 0,
+            &m_bandwidth_channel[download_channel]);
+
+        if (ret == 0)
+        {
+            m_channel_state[download_channel] |= peer_info::bw_limit;
+            return false;
+        }
+
+        // we were just assigned 'ret' quota
+        LIBED2K_ASSERT(ret > 0);
+        m_quota[download_channel] += ret;
+    }
+
+    return true;
+}
+
+bool peer_connection::has_upload_bandwidth()
+{
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
+    if (m_quota[upload_channel] == 0 && !m_send_buffer.empty() && !m_connecting)
+    {
+        // in this case, we have data to send, but no
+        // bandwidth. So, we simply request bandwidth
+        // from the bandwidth manager
+        int ret = request_upload_bandwidth(
+            &m_ses.m_upload_channel,
+            t ? &t->m_bandwidth_channel[upload_channel] : 0,
+            &m_bandwidth_channel[upload_channel]);
+
+        if (ret == 0)
+        {
+            m_channel_state[upload_channel] |= peer_info::bw_limit;
+            return false;
+        }
+
+        // we were just assigned 'ret' quota
+        LIBED2K_ASSERT(ret > 0);
+        m_quota[upload_channel] += ret;
+    }
+
+    return true;
 }
 
 void peer_connection::request_block()
@@ -1188,11 +1200,12 @@ void peer_connection::receive_data(const peer_request& req)
 
 void peer_connection::receive_data()
 {
-    piece_block block(mk_block(m_recv_req));
+    if (!has_download_bandwidth()) return;
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t) return;
 
+    piece_block block(mk_block(m_recv_req));
     std::vector<pending_block>::iterator b =
         std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(block));
 
@@ -1243,12 +1256,12 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
     // keep ourselves alive in until this function exits in case we disconnect
     boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
 
-    m_statistics.received_bytes(bytes_transferred, 0);
     if (error) disconnect(error);
     if (m_disconnecting || is_closed()) return;
 
     LIBED2K_ASSERT(int(bytes_transferred) <= m_quota[download_channel]);
     m_quota[download_channel] -= bytes_transferred;
+    m_statistics.received_bytes(bytes_transferred, 0);
 
     m_recv_pos += bytes_transferred;
     LIBED2K_ASSERT(int(bytes_transferred) <= m_recv_req.length);
@@ -1298,9 +1311,10 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
         if (b->completed())
         {
             disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
-            fs.async_write(m_recv_req, holder,
+            peer_request req = mk_peer_request(b->block, t->size());
+            fs.async_write(req, holder,
                            boost::bind(&peer_connection::on_disk_write_complete,
-                                       self_as<peer_connection>(), _1, _2, m_recv_req, t));
+                                       self_as<peer_connection>(), _1, _2, req, t));
 
             bool was_finished = picker.is_piece_finished(m_recv_req.piece);
             picker.mark_as_writing(block_finished, get_peer());

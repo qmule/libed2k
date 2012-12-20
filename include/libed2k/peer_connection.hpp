@@ -264,6 +264,8 @@ namespace libed2k
         int request_download_bandwidth(
             bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
             bandwidth_channel* bwc3 = 0, bandwidth_channel* bwc4 = 0);
+        bool has_upload_bandwidth();
+        bool has_download_bandwidth();
 
         void request_block();
         // adds a block to the request queue
