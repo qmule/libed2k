@@ -130,7 +130,7 @@ namespace libed2k
     void session::set_settings(const session_settings& settings)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->m_settings = settings;
+        m_impl->set_settings(settings);
     }
 
     session_settings session::settings() const
