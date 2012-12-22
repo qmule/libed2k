@@ -415,19 +415,7 @@ void peer_connection::do_read()
     if (m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_limit)) return;
 
     if (m_channel_state[download_channel] & peer_info::bw_seq)
-    {
-        if (!can_read(&m_channel_state[download_channel]))
-        {
-            DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
-                 % m_ses.settings().max_queued_disk_bytes).str());
-
-            // if we block reading, waiting for the disk, we will wake up
-            // by the disk_io_thread posting a message every time it drops
-            // from being at or exceeding the limit down to below the limit
-            return;
-        }
         receive_data();
-    }
     else
         base_connection::do_read();
 }
@@ -1195,12 +1183,23 @@ void peer_connection::receive_data(const peer_request& req)
 
     m_recv_pos = 0;
     m_recv_req = req;
+    m_channel_state[download_channel] |= peer_info::bw_seq;
     receive_data();
 }
 
 void peer_connection::receive_data()
 {
     if (!has_download_bandwidth()) return;
+    if (!can_read(&m_channel_state[download_channel]))
+    {
+        DBG((boost::format("cannot read: {disk_queue_limit: %1%}")
+             % m_ses.settings().max_queued_disk_bytes).str());
+
+        // if we block reading, waiting for the disk, we will wake up
+        // by the disk_io_thread posting a message every time it drops
+        // from being at or exceeding the limit down to below the limit
+        return;
+    }
 
     boost::shared_ptr<transfer> t = m_transfer.lock();
     if (!t) return;
@@ -1237,7 +1236,7 @@ void peer_connection::receive_data()
     int max_receive = std::min<int>(remained_bytes, m_quota[download_channel]);
     if (max_receive > 0)
     {
-        m_channel_state[download_channel] |= (peer_info::bw_network | peer_info::bw_seq);
+        m_channel_state[download_channel] |= peer_info::bw_network;
         boost::asio::async_read(
             *m_socket, boost::asio::buffer(b->buffer + offset_in_block(m_recv_req) + m_recv_pos, max_receive),
             make_read_handler(boost::bind(&peer_connection::on_receive_data,
