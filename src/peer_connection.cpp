@@ -858,11 +858,49 @@ void peer_connection::on_timeout()
     disconnect(errors::timed_out, 1);
 }
 
-void peer_connection::on_sent(const error_code& e, std::size_t bytes_transferred)
+void peer_connection::on_sent(const error_code& error, std::size_t bytes_transferred)
 {
+    if (error)
+    {
+        m_statistics.sent_bytes(0, bytes_transferred);
+        return;
+    }
+
     LIBED2K_ASSERT(int(bytes_transferred) <= m_quota[upload_channel]);
     m_quota[upload_channel] -= bytes_transferred;
-    m_statistics.sent_bytes(bytes_transferred, 0);
+
+    // manage the payload markers
+    int amount_payload = 0;
+    if (!m_payloads.empty())
+    {
+        for (std::vector<range>::iterator i = m_payloads.begin();
+             i != m_payloads.end(); ++i)
+        {
+            i->start -= bytes_transferred;
+            if (i->start < 0)
+            {
+                if (i->start + i->length <= 0)
+                {
+                    amount_payload += i->length;
+                }
+                else
+                {
+                    amount_payload += -i->start;
+                    i->length -= -i->start;
+                    i->start = 0;
+                }
+            }
+        }
+    }
+
+    // TODO: move the erasing into the loop above
+    // remove all payload ranges that has been sent
+    m_payloads.erase(
+        std::remove_if(m_payloads.begin(), m_payloads.end(), range_below_zero),
+        m_payloads.end());
+
+    LIBED2K_ASSERT(amount_payload <= (int)bytes_transferred);
+    m_statistics.sent_bytes(amount_payload, bytes_transferred - amount_payload);
 }
 
 void peer_connection::disconnect(error_code const& ec, int error)
@@ -1150,8 +1188,8 @@ void peer_connection::on_disk_read_complete(
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
 
-    assert(r.piece == j.piece);
-    assert(r.start == j.offset);
+    LIBED2K_ASSERT(r.piece == j.piece);
+    LIBED2K_ASSERT(r.start == j.offset);
 
     disk_buffer_holder buffer(m_ses.m_disk_thread, j.buffer);
     boost::shared_ptr<transfer> t = m_transfer.lock();
@@ -1171,8 +1209,9 @@ void peer_connection::on_disk_read_complete(
     append_send_buffer(buffer.get(), r.length,
                        boost::bind(&aux::session_impl::free_disk_buffer, boost::ref(m_ses), _1));
     buffer.release();
-    do_write();
 
+    m_payloads.push_back(range(m_send_buffer.size() - r.length, r.length));
+    do_write();
     send_data(left);
 }
 

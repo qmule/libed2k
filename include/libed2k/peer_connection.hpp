@@ -465,6 +465,24 @@ namespace libed2k
         int m_recv_pos;
         // current recuest processed
         peer_request m_recv_req;
+
+        // this is a queue of ranges that describes
+        // where in the send buffer actual payload
+        // data is located. This is currently
+        // only used to be able to gather statistics
+        // seperately on payload and protocol data.
+        struct range
+        {
+            range(int s, int l) : start(s), length(l)
+            {
+                LIBED2K_ASSERT(s >= 0);
+                LIBED2K_ASSERT(l > 0);
+            }
+            int start;
+            int length;
+        };
+        static bool range_below_zero(const range& r) { return r.start < 0; }
+        std::vector<range> m_payloads;
     };
 }
 
