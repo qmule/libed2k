@@ -314,7 +314,6 @@ void session_impl::operator()()
 
     m_tpm.start();
 
-
     bool stop_loop = false;
     while (!stop_loop)
     {

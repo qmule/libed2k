@@ -1399,6 +1399,9 @@ void peer_connection::on_skip_data(const error_code& error, std::size_t bytes_tr
     // keep ourselves alive in until this function exits in case we disconnect
     boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
 
+    if (error) disconnect(error);
+    if (m_disconnecting || is_closed()) return;
+
     m_recv_pos += bytes_transferred;
     LIBED2K_ASSERT(m_recv_pos <= m_recv_req.length);
 
@@ -2387,8 +2390,8 @@ void peer_connection::on_request_parts(const error_code& error)
                 else
                     DBG("we haven't piece " << req.piece << " requested from " << m_remote);
             }
-            else
-                DBG("incorrect request ["
+            else if (rp.m_begin_offset[i] > rp.m_end_offset[i])
+                ERR("incorrect request ["
                     << rp.m_begin_offset[i] << ", " << rp.m_end_offset[i]
                     << "] from " << m_remote);
         }
