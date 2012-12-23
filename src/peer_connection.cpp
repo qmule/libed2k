@@ -1249,7 +1249,7 @@ void peer_connection::receive_data()
 
     if (b == m_download_queue.end())
     {
-        ERR("The block we just got from " << m_remote <<
+        ERR("The block incoming from " << m_remote <<
             " : {piece: "<< block.piece_index <<
             ", block: " << block.block_index << ", length: " << m_recv_req.length
             << "} was not in the request queue");
@@ -1380,11 +1380,11 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
 
 void peer_connection::skip_data(char* buf)
 {
+    const std::size_t skip_buf_size = 4096;
     int max_receive = m_recv_req.length - m_recv_pos;
     if (max_receive == 0) return;
 
-    const std::size_t skip_buf_size = 4096;
-    buf = new char[skip_buf_size];
+    if (!buf) buf = new char[skip_buf_size];
 
     m_channel_state[download_channel] |= (peer_info::bw_network | peer_info::bw_seq);
     m_socket->async_read_some(
