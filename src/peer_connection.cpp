@@ -1378,22 +1378,21 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
     do_read();
 }
 
-void peer_connection::skip_data(char* buf)
+void peer_connection::skip_data()
 {
-    const std::size_t skip_buf_size = 4096;
-    int max_receive = m_recv_req.length - m_recv_pos;
-    if (max_receive == 0) return;
+    char* skip_buf = &m_ses.m_skip_buffer[0];
+    int skip_bytes = std::min<int>(m_recv_req.length - m_recv_pos, m_ses.m_skip_buffer.size());
+    if (skip_bytes == 0) return;
 
-    if (!buf) buf = new char[skip_buf_size];
-
+    LIBED2K_ASSERT(skip_bytes > 0);
     m_channel_state[download_channel] |= (peer_info::bw_network | peer_info::bw_seq);
     m_socket->async_read_some(
-        boost::asio::buffer(buf, std::min<std::size_t>(skip_buf_size, max_receive)),
+        boost::asio::buffer(skip_buf, skip_bytes),
         make_read_handler(boost::bind(&peer_connection::on_skip_data,
-                                      self_as<peer_connection>(), _1, _2, buf)));
+                                      self_as<peer_connection>(), _1, _2)));
 }
 
-void peer_connection::on_skip_data(const error_code& error, std::size_t bytes_transferred, char* buf)
+void peer_connection::on_skip_data(const error_code& error, std::size_t bytes_transferred)
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
     // keep ourselves alive in until this function exits in case we disconnect
@@ -1406,10 +1405,8 @@ void peer_connection::on_skip_data(const error_code& error, std::size_t bytes_tr
     LIBED2K_ASSERT(m_recv_pos <= m_recv_req.length);
 
     if (m_recv_pos < m_recv_req.length)
-        skip_data(buf);
+        skip_data();
     else {
-        delete[] buf;
-
         m_channel_state[download_channel] &= ~(peer_info::bw_network | peer_info::bw_seq);
         do_read();
         request_block();

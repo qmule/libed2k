@@ -287,8 +287,8 @@ namespace libed2k
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request req, boost::shared_ptr<transfer> t);
         void on_receive_data(const error_code& error, std::size_t bytes_transferred);
-        void skip_data(char* buf = NULL);
-        void on_skip_data(const error_code& error, std::size_t bytes_transferred, char* buf);
+        void skip_data();
+        void on_skip_data(const error_code& error, std::size_t bytes_transferred);
 
         template<typename T>
         void write_struct(T& t)
