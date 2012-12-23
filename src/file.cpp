@@ -17,6 +17,10 @@
 #include "libed2k/util.hpp"
 #include "libed2k/thread.hpp"
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 namespace libed2k
 {
     typedef std::map<std::string, EED2KFileType> SED2KFileTypeMap;
@@ -715,6 +719,13 @@ namespace libed2k
     {
         LIBED2K_ASSERT(!m_thread);
         m_thread.reset(new boost::thread(boost::ref(*this)));
+#ifdef WIN32
+        HANDLE th = m_thread->native_handle();
+        if (!SetThreadPriority(th, THREAD_PRIORITY_IDLE))
+        {
+            ERR("Unable to set idle priority to hasher thread");
+        }
+#endif
         return true;
     }
 
