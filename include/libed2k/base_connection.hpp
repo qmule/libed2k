@@ -77,7 +77,7 @@ namespace libed2k{
         void reset();
 
         virtual void do_read();
-        virtual void do_write(int quota = std::numeric_limits<int>::max());
+        virtual void do_write(int quota = (std::numeric_limits<int>::max)());
 
         template <typename T>
         message make_message(const T& t)

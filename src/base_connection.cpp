@@ -91,7 +91,7 @@ namespace libed2k
         std::pair<char*, int> buffer = m_ses.allocate_buffer(size);
         if (buffer.first == 0)
         {
-            close(errors::no_memory);
+            disconnect(errors::no_memory);
             return;
         }
 
@@ -248,7 +248,7 @@ namespace libed2k
 
             // The deadline has passed. The socket is closed so that any outstanding
             // asynchronous operations are cancelled.
-            close(errors::timed_out);
+            disconnect(errors::timed_out);
             // There is no longer an active deadline. The expiry is set to positive
             // infinity so that the actor takes no action until a new deadline is set.
             m_deadline.expires_at(max_time());

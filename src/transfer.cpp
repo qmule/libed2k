@@ -330,6 +330,8 @@ namespace libed2k
 
     int transfer::disconnect_peers(int num, error_code const& ec)
     {
+        // FIXME - implement method
+        return 0;
     }
 
     bool transfer::try_connect_peer()
