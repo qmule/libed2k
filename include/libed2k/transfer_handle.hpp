@@ -282,6 +282,7 @@ namespace libed2k
         bool is_aborted() const;
         bool is_announced() const;
         transfer_status status() const;
+        transfer_status::state_t state() const;
         void get_peer_info(std::vector<peer_info>& infos) const;
 
         void piece_availability(std::vector<int>& avail) const;

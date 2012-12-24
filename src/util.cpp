@@ -12,6 +12,7 @@
 #include "libed2k/utf8.hpp"
 #include "libed2k/util.hpp"
 #include "libed2k/file.hpp"
+#include "libed2k/bitfield.hpp"
 
 namespace libed2k 
 {

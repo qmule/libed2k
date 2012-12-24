@@ -1102,7 +1102,7 @@ namespace libed2k
                 }
 
                 // parse unfinished pieces
-                int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+                const int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
 
                 if (lazy_entry const* unfinished_ent = m_resume_entry.dict_find_list("unfinished"))
                 {
@@ -1119,7 +1119,7 @@ namespace libed2k
                         std::string bitmask = e->dict_find_string_value("bitmask");
                         if (bitmask.empty()) continue;
 
-                        const int num_bitmask_bytes = (std::max)(num_blocks_per_piece / 8, 1);
+                        const int num_bitmask_bytes = div_ceil(num_blocks_per_piece, 8);
                         if ((int)bitmask.size() != num_bitmask_bytes) continue;
                         for (int j = 0; j < num_bitmask_bytes; ++j)
                         {
@@ -1568,7 +1568,7 @@ namespace libed2k
         ret["transfer-hash"] = hash().toString();
 
         // blocks per piece
-        int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+        const int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
 
         // if this torrent is a seed, we won't have a piece picker
         // and there will be no half-finished pieces.
@@ -1593,8 +1593,7 @@ namespace libed2k
                 piece_struct["piece"] = i->index;
 
                 std::string bitmask;
-                const int num_bitmask_bytes
-                    = (std::max)(num_blocks_per_piece / 8, 1);
+                const int num_bitmask_bytes = div_ceil(num_blocks_per_piece, 8);
 
                 for (int j = 0; j < num_bitmask_bytes; ++j)
                 {
@@ -1603,7 +1602,7 @@ namespace libed2k
                     for (int k = 0; k < bits; ++k)
                         v |= (i->info[j*8+k].state == piece_picker::block_info::state_finished)
                         ? (1 << k) : 0;
-                    bitmask.insert(bitmask.end(), v);
+                    bitmask.append(1, v);
                     LIBED2K_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
                 }
                 piece_struct["bitmask"] = bitmask;

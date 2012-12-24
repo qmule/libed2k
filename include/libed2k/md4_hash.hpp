@@ -114,14 +114,24 @@ namespace libed2k{
 
         std::string toString() const
         {
-            std::stringstream ss;
+            static const char c[MD4_HASH_SIZE] =
+                    {
+                            '\x30', '\x31', '\x32', '\x33',
+                            '\x34', '\x35', '\x36', '\x37',
+                            '\x38', '\x39', '\x41', '\x42',
+                            '\x43', '\x44', '\x45', '\x46'
+                    };
 
-            for (size_t i = 0; i < MD4_HASH_SIZE; i++)
+            std::string res(MD4_HASH_SIZE*2, '\x00');
+            LIBED2K_ASSERT(res.length() == MD4_HASH_SIZE*2);
+
+            for (size_t i = 0; i < MD4_HASH_SIZE; ++i)
             {
-                ss << std::uppercase << std::hex << (m_hash[i] >> 4) << (m_hash[i] & 0x0F);
+                res[i*2]        = c[(m_hash[i] >> 4)];
+                res[(i*2)+1]    = c[(m_hash[i] & 0x0F)];
             }
 
-            return (ss.str());
+            return res;
         }
 
         boost::uint8_t operator[](size_t n) const

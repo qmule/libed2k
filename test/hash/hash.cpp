@@ -30,6 +30,9 @@ void generate_file(size_t nSize, const char* pchFilename)
 int main(int argc, char* argv[])
 {
     LOGGER_INIT(LOG_ALL) 
+    std::cout << libed2k::md4_hash::terminal.toString() << std::endl;
+    std::cout << libed2k::md4_hash::invalid.toString() << std::endl;
+    std::cout << libed2k::md4_hash::libed2k.toString() << std::endl;
 #if 0
 
     if (argc < 2)

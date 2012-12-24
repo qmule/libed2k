@@ -116,6 +116,12 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(status(), transfer_status());
     }
 
+    transfer_status::state_t transfer_handle::state() const
+    {
+        // TODO - some default status there?
+        LIBED2K_FORWARD_RETURN(state(), transfer_status::queued_for_checking);
+    }
+
     void transfer_handle::get_peer_info(std::vector<peer_info>& infos) const
     {
         LIBED2K_FORWARD(get_peer_info(infos));
