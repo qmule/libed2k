@@ -350,12 +350,11 @@ void peer_connection::second_tick(int tick_interval_ms)
         return;
     }
 
-    abort_expired_requests();
+    if (t->num_free_blocks() == 0)
+        abort_expired_requests();
 
     if (!is_closed())
-    {
         fill_send_buffer();
-    }
 
     m_statistics.second_tick(tick_interval_ms);
 }
