@@ -12,38 +12,6 @@
 #include "libed2k/server_connection.hpp"
 #include "libed2k/peer_info.hpp"
 
-namespace libed2k
-{
-    EClientSoftware uagent2csoft(const md4_hash& ua_hash)
-    {
-        EClientSoftware cs = SO_UNKNOWN;
-
-        if ( ua_hash[5] == 13  && ua_hash[14] == 110 )
-        {
-            cs =  SO_OLDEMULE;
-        }
-        else if ( ua_hash[5] == 14  && ua_hash[14] == 111 )
-        {
-            cs = SO_EMULE;
-        }
-        else if ( ua_hash[5] == 'M' && ua_hash[14] == 'L' )
-        {
-            cs = SO_MLDONKEY;
-        }
-        else if ( ua_hash[5] == 'L' && ua_hash[14] == 'K')
-        {
-            cs = SO_LIBED2K;
-        }
-        else if ( ua_hash[5] == 'Q' && ua_hash[14] == 'M')
-        {
-            cs = SO_QMULE;
-        }
-
-        return cs;
-    }
-}
-
-
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 

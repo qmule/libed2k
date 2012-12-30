@@ -27,7 +27,7 @@ args = {
     'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
                  '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
-    'LIBS'    : ['boost_system', 'boost_thread', 'cryptopp', 'ssl', 'pthread', 'rt']
+    'LIBS'    : ['boost_system', 'boost_thread', 'pthread', 'rt']
     }
 
 env = Environment(**args)

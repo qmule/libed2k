@@ -10,12 +10,9 @@
 
 #include <fstream>
 #include <boost/test/unit_test.hpp>
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include <cryptopp/md4.h>
-
 #include "libed2k/md4_hash.hpp"
-#include "libed2k/peer_connection.hpp"
 #include "libed2k/hasher.hpp"
+#include "libed2k/packet_struct.hpp"
 #include "common.hpp"
 
 
@@ -73,7 +70,7 @@ BOOST_AUTO_TEST_CASE(test_user_agent)
     BOOST_CHECK_EQUAL(libed2k::uagent2csoft(libed2k::md4_hash::emule), libed2k::SO_EMULE);
 }
 
-BOOST_AUTO_TEST_CASE(test_partial_hashing)
+BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
 {
     test_files_holder tfh;
     std::vector<std::pair<libed2k::size_type, libed2k::md4_hash> > vtf;
@@ -94,93 +91,9 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
         fclose(fh);
 
         libed2k::size_type pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);
-        std::vector<libed2k::md4_hash> hashset;
-        hashset.resize(pieces);
-        libed2k::size_type capacity = itr->first;
-
-        std::deque<libed2k::hasher*> vlh;
-        CryptoPP::Weak1::MD4 md4_hasher;
-
-        for (libed2k::size_type i = 0; i < pieces; ++i)
-        {
-            md4_hasher.CalculateDigest(hashset[i].getContainer(),
-                   reinterpret_cast<const unsigned char*>(chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity));
-            vlh.push_back(new libed2k::hasher((chFullBuffer + (itr->first - capacity)), std::min(libed2k::PIECE_SIZE, capacity)));
-            capacity -= std::min(libed2k::PIECE_SIZE, capacity);
-        }
-
-        // simple compare hashes
-        for (libed2k::size_type i = 0; i < pieces; ++i)
-        {
-            BOOST_CHECK(hashset[i] == vlh[i]->final());
-            delete vlh[i];
-        }
-
-        if (itr->first/libed2k::PIECE_SIZE == libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE))
-        {
-            hashset.push_back(libed2k::md4_hash::terminal);
-        }
-
-        libed2k::md4_hash hash;
-
-        if (hashset.size() > 1)
-        {
-            md4_hasher.CalculateDigest(hash.getContainer(),
-                           reinterpret_cast<const unsigned char*>(&hashset[0]), hashset.size()*libed2k::MD4_HASH_SIZE);
-        }
-        else
-        {
-            hash = hashset[0];
-        }
-
-        BOOST_CHECK_EQUAL(hash, itr->second);
-
-        // clear all hashes for clean experiment
         std::vector<libed2k::md4_hash> part_hashset;
         part_hashset.resize(pieces);
-        capacity = itr->first;
-
-        // ok, prepare incremental reader
-        for (int i = 0; i < pieces; ++i)
-        {
-            CryptoPP::Weak1::MD4 partial_hasher;
-            libed2k::size_type in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
-
-            while(in_piece_capacity > 0)
-            {
-                partial_hasher.Update((unsigned char*)(chFullBuffer + (itr->first - capacity)), std::min(libed2k::BLOCK_SIZE, in_piece_capacity));
-                capacity -= std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
-                in_piece_capacity -= std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
-            }
-
-            BOOST_REQUIRE_EQUAL(partial_hasher.DigestSize(), 16);
-            partial_hasher.Final(part_hashset[i].getContainer());
-            partial_hasher.Restart();
-        }
-
-        if (pieces*libed2k::PIECE_SIZE == itr->first)
-        {
-            part_hashset.push_back(libed2k::md4_hash::terminal);
-        }
-
-        if (part_hashset.size() > 1)
-        {
-            md4_hasher.CalculateDigest(hash.getContainer(),
-                           reinterpret_cast<const unsigned char*>(&part_hashset[0]), part_hashset.size()*libed2k::MD4_HASH_SIZE);
-        }
-        else
-        {
-            hash = part_hashset[0];
-        }
-
-        BOOST_CHECK_EQUAL(hashset.size(), part_hashset.size());
-        BOOST_CHECK_EQUAL(hash, itr->second);
-
-
-        // clear all hashes for clean experiment
-        part_hashset.clear();
-        part_hashset.resize(pieces);
-        capacity = itr->first;
+        libed2k::size_type capacity = itr->first;
 
         // use hasher
         libed2k::hasher ih;
@@ -205,20 +118,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing)
             part_hashset.push_back(libed2k::md4_hash::terminal);
         }
 
-        // calculate completed hash
-        if (part_hashset.size() > 1)
-        {
-            md4_hasher.CalculateDigest(hash.getContainer(),
-                           reinterpret_cast<const unsigned char*>(&part_hashset[0]), part_hashset.size()*libed2k::MD4_HASH_SIZE);
-        }
-        else
-        {
-            hash = part_hashset[0];
-        }
-
-        BOOST_CHECK_EQUAL(hashset.size(), part_hashset.size());
-        BOOST_CHECK_EQUAL(hash, itr->second);
-
+        BOOST_CHECK_EQUAL(libed2k::md4_hash::fromHashset(part_hashset), itr->second);
         delete chFullBuffer;
     }
 }

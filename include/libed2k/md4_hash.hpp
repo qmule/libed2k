@@ -3,26 +3,18 @@
 #define __LIBED2K_MD4_HASH__
 
 #include <string>
-#include <sstream>
 #include <string.h>
-#include <algorithm>
-#include <typeinfo>
 #include <vector>
+#include <sstream>
 
-#include <boost/cstdint.hpp>
-#include <boost/assert.hpp>
-#include <boost/optional.hpp>
-
-#include "libed2k/bitfield.hpp"
+#include "libed2k/size_type.hpp"
+#include "libed2k/assert.hpp"
 #include "libed2k/escape_string.hpp"
-#include "libed2k/log.hpp"
 #include "libed2k/archive.hpp"
-#include "libed2k/error_code.hpp"
+#include "libed2k/md4.hpp"
 
-namespace libed2k{
-
-    const size_t MD4_HASH_SIZE = 16;
-
+namespace libed2k
+{
     /**
       * this class simple container for hash array
      */
@@ -155,15 +147,9 @@ namespace libed2k{
             }
         }
 
-        void dump() const
-        {
-            DBG("md4_hash::dump " << toString().c_str());
-        }
-
-        /**
-          * for using in logger output
-         */
         friend std::ostream& operator<< (std::ostream& stream, const md4_hash& hash);
+        void dump() const;
+
     private:
         md4hash_container   m_hash;
     };

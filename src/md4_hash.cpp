@@ -1,8 +1,5 @@
-
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include <cryptopp/md4.h>
-
 #include "libed2k/md4_hash.hpp"
+#include "libed2k/log.hpp"
 
 namespace libed2k
 {
@@ -13,22 +10,22 @@ namespace libed2k
 
     std::ostream& operator<< (std::ostream& stream, const md4_hash& hash)
     {
-        stream << hash.toString();
-        return stream;
+         stream << hash.toString();
+         return stream;
     }
 
     /*static*/
     md4_hash md4_hash::fromHashset(const std::vector<md4_hash>& hashset)
     {
         md4_hash result;
-        CryptoPP::Weak1::MD4 md4_hasher;
 
         if (hashset.size() > 1)
         {
-            md4_hasher.CalculateDigest(
-                result.getContainer(),
-                reinterpret_cast<const unsigned char*>(&hashset[0]),
-                hashset.size() * MD4_HASH_SIZE);
+            md4_context ctx;
+            md4_init(&ctx);
+            md4_update(&ctx, reinterpret_cast<const unsigned char*>(&hashset[0]),
+                    hashset.size() * MD4_HASH_SIZE);
+            md4_final(&ctx, result.getContainer());
         }
         else if (hashset.size() == 1)
         {
@@ -36,5 +33,10 @@ namespace libed2k
         }
 
         return result;
+    }
+
+    void md4_hash::dump() const
+    {
+        DBG("md4_hash::dump " << toString().c_str());
     }
 }

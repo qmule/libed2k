@@ -5,11 +5,6 @@
 #include <algorithm>
 #include <locale>
 
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/bind.hpp>
-
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include <cryptopp/md4.h>
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
