@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
 				PreprocessorDefinitions="WIN32;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -109,7 +109,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500;UNICODE"
 				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
@@ -302,10 +302,6 @@
 			</File>
 			<File
 				RelativePath="..\src\session_impl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\sha1.cpp"
 				>
 			</File>
 			<File
