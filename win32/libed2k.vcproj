@@ -253,6 +253,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\md4.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\md4_hash.cpp"
 				>
 			</File>
@@ -512,6 +516,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\max.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\md4.hpp"
 				>
 			</File>
 			<File

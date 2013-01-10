@@ -100,13 +100,13 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
 
         for (int i = 0; i < pieces; ++i)
         {
-            libed2k::size_type in_piece_capacity = std::min(libed2k::PIECE_SIZE, capacity);
+            libed2k::size_type in_piece_capacity = (std::min)(libed2k::PIECE_SIZE, capacity);
 
             while(in_piece_capacity > 0)
             {
-                ih.update((chFullBuffer + (itr->first - capacity)), std::min(libed2k::BLOCK_SIZE, in_piece_capacity));
-                capacity -= std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
-                in_piece_capacity -= std::min(libed2k::BLOCK_SIZE, in_piece_capacity);
+                ih.update((chFullBuffer + (itr->first - capacity)), (std::min)(libed2k::BLOCK_SIZE, in_piece_capacity));
+                capacity -= (std::min)(libed2k::BLOCK_SIZE, in_piece_capacity);
+                in_piece_capacity -= (std::min)(libed2k::BLOCK_SIZE, in_piece_capacity);
             }
 
             part_hashset[i] = ih.final();
