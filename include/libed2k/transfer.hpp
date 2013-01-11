@@ -125,6 +125,9 @@ namespace libed2k
 
         void pause();
         void resume();
+        void do_pause();
+        void do_resume();
+
         void set_upload_limit(int limit);
         int upload_limit() const;
         void set_download_limit(int limit);
