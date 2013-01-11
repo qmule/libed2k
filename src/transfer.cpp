@@ -485,10 +485,16 @@ namespace libed2k
         if (m_paused) return;
         m_paused = true;
 
-        // TODO - why so nothing when session paused?
-        //if (m_ses.is_paused()) return;
+        if (!m_ses.is_paused())
+            do_pause();
+    }
 
+    void transfer::do_pause()
+    {
+        if (!is_paused()) return;
         DBG("pause transfer {hash: " << hash() << "}");
+
+        state_updated();
 
         // this will make the storage close all
         // files and flush all cached data
@@ -505,14 +511,34 @@ namespace libed2k
         }
 
         disconnect_all(errors::transfer_paused);
+
+        if (m_queued_for_checking && !should_check_file())
+        {
+            // stop checking
+            m_storage->abort_disk_io();
+            dequeue_transfer_check();
+            set_state(transfer_status::queued_for_checking);
+            LIBED2K_ASSERT(!m_queued_for_checking);
+        }
     }
 
     void transfer::resume()
     {
         if (!m_paused) return;
-        DBG("resume transfer {hash: " << hash() << "}");
         m_paused = false;
+
+        do_resume();
+    }
+
+    void transfer::do_resume()
+    {
+        if (is_paused()) return;
+        DBG("resume transfer {hash: " << hash() << "}");
+
         m_ses.m_alerts.post_alert_should(resumed_transfer_alert(handle()));
+        state_updated();
+        if (!m_queued_for_checking && should_check_file())
+            queue_transfer_check();
     }
 
     void transfer::set_upload_limit(int limit)
@@ -1380,17 +1406,16 @@ namespace libed2k
         return entry;
     }
 
-    void transfer::save_resume_data()
+    void transfer::save_resume_data(int flags)
     {
         if (!m_owning_storage.get())
         {
-            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle()
-                , errors::destructing_transfer));
+            m_ses.m_alerts.post_alert_should(
+                save_resume_data_failed_alert(handle(), errors::destructing_transfer));
             return;
         }
 
         LIBED2K_ASSERT(m_storage);
-
         if (m_state == transfer_status::queued_for_checking
             || m_state == transfer_status::checking_files
             || m_state == transfer_status::checking_resume_data)
@@ -1400,6 +1425,9 @@ namespace libed2k
             m_ses.m_alerts.post_alert_should(save_resume_data_alert(rd, handle()));
             return;
         }
+
+        if (flags & transfer_handle::flush_disk_cache)
+            m_storage->async_release_files();
 
         m_storage->async_save_resume_data(
             boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
@@ -1420,12 +1448,12 @@ namespace libed2k
         }
     }
 
-
     bool transfer::should_check_file() const
     {
         return
-            (m_state == transfer_status::checking_files
-             || m_state == transfer_status::queued_for_checking)
+            (m_state == transfer_status::checking_files ||
+             m_state == transfer_status::queued_for_checking)
+            && !m_paused
             && !has_error()
             && !m_abort
             && !m_ses.is_paused();

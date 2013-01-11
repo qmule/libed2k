@@ -915,7 +915,7 @@ void session_impl::pause()
         , end(m_transfers.end()); i != end; ++i)
     {
         transfer& t = *i->second;
-        if (!t.is_paused()) t.pause();
+        t.do_pause();
     }
 }
 
@@ -927,7 +927,7 @@ void session_impl::resume()
         , end(m_transfers.end()); i != end; ++i)
     {
         transfer& t = *i->second;
-        t.resume();
+        t.do_resume();
     }
 }
 
