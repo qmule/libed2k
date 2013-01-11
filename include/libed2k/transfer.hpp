@@ -241,37 +241,26 @@ namespace libed2k
         boost::uint64_t getTransferred() const { return m_transferred; }
         boost::uint8_t  getPriority() const { return m_priority; }
 
-        /**
-          * async generate fast resume data and emit alert
-         */
-        void save_resume_data();
-
+        /** async generate fast resume data and emit alert */
+        void save_resume_data(int flags);
         bool should_check_file() const;
 
-        /**
-          * call after transfer checking completed
-         */
+        /** call after transfer checking completed */
         void file_checked();
         void start_checking();
 
         void set_error(error_code const& ec);
 
-        /**
-          * add transfer to check queue in session_impl
-         */
+        /** add transfer to check queue in session_impl */
         void queue_transfer_check();
 
-        /**
-          * remove transfer from check queue insession_impl
-         */
+        /** remove transfer from check queue insession_impl */
         void dequeue_transfer_check();
 
         // --------------------------------------------
         // SERVER MANAGEMENT
         // --------------------------------------------
-        /**
-          * convert transfer info into announce
-         */
+        /** convert transfer info into announce */
         shared_file_entry getAnnounce() const;
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }

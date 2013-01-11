@@ -1380,17 +1380,16 @@ namespace libed2k
         return entry;
     }
 
-    void transfer::save_resume_data()
+    void transfer::save_resume_data(int flags)
     {
         if (!m_owning_storage.get())
         {
-            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle()
-                , errors::destructing_transfer));
+            m_ses.m_alerts.post_alert_should(
+                save_resume_data_failed_alert(handle(), errors::destructing_transfer));
             return;
         }
 
         LIBED2K_ASSERT(m_storage);
-
         if (m_state == transfer_status::queued_for_checking
             || m_state == transfer_status::checking_files
             || m_state == transfer_status::checking_resume_data)
@@ -1400,6 +1399,9 @@ namespace libed2k
             m_ses.m_alerts.post_alert_should(save_resume_data_alert(rd, handle()));
             return;
         }
+
+        if (flags & transfer_handle::flush_disk_cache)
+            m_storage->async_release_files();
 
         m_storage->async_save_resume_data(
             boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
