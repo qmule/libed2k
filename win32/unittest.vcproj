@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
 				PreprocessorDefinitions="WIN32;_CONSOLE;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -61,9 +61,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2kd.lib libeay32MDd.lib ssleay32MDd.lib"
+				AdditionalDependencies="libed2kd.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\Debug&quot;;&quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\debug&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -117,7 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -136,9 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="cryptlib.lib cryptopp.lib libed2k.lib libeay32MD.lib ssleay32MD.lib"
+				AdditionalDependencies="libed2k.lib"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(CRYPTOPP_ROOT)\win32\Output\release&quot;;&quot;$(CRYPTOPP_ROOT)\win32\DLL_Output\release&quot;;&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(BOOST_ROOT)\stage\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

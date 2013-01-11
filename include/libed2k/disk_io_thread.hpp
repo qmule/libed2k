@@ -42,6 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/function/function2.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/shared_array.hpp>
+#include <boost/optional.hpp>
 #include <deque>
 #include <list>
 
