@@ -17,8 +17,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include "libed2k/intrusive_ptr_base.hpp"
-#include <libed2k/stat.hpp>
-
+#include "libed2k/stat.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/size_type.hpp"
@@ -28,6 +27,7 @@
 #include "libed2k/archive.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/deadline_timer.hpp"
+#include "libed2k/bandwidth_limit.hpp"
 
 namespace libed2k{
 
@@ -39,17 +39,18 @@ namespace libed2k{
                            public boost::noncopyable
     {
         friend class aux::session_impl;
+
     public:
+
         base_connection(aux::session_impl& ses);
         base_connection(aux::session_impl& ses, boost::shared_ptr<tcp::socket> s,
                         const tcp::endpoint& remote);
         virtual ~base_connection();
 
-        virtual void close(const error_code& ec);
+        virtual void disconnect(const error_code& ec, int error = 0);
+        bool is_disconnecting() const { return m_disconnecting; }
 
-        /**
-         * connection closed when his socket is not opened
-         */
+        /** connection closed when his socket is not opened */
         bool is_closed() const { return !m_socket || !m_socket->is_open(); }
         const tcp::endpoint& remote() const { return m_remote; }
         boost::shared_ptr<tcp::socket> socket() { return m_socket; }
@@ -57,6 +58,13 @@ namespace libed2k{
         const stat& statistics() const { return m_statistics; }
 
         typedef boost::iostreams::basic_array_source<char> Device;
+
+        enum channels
+        {
+            upload_channel,
+            download_channel,
+            num_channels
+        };
 
     protected:
 
@@ -68,8 +76,8 @@ namespace libed2k{
         // constructor method
         void reset();
 
-        void do_read();
-        void do_write();
+        virtual void do_read();
+        virtual void do_write(int quota = (std::numeric_limits<int>::max)());
 
         template <typename T>
         message make_message(const T& t)
@@ -93,9 +101,9 @@ namespace libed2k{
         }
 
         template<typename T>
-        void do_write(const T& t) { do_write_message(make_message(t)); }
+        void write_struct(const T& t) { write_message(make_message(t)); }
 
-        void do_write_message(const message& msg);
+        void write_message(const message& msg);
 
         void copy_send_buffer(const char* buf, int size);
 
@@ -107,6 +115,7 @@ namespace libed2k{
         int send_buffer_capacity() const { return m_send_buffer.capacity(); }
 
         virtual void on_timeout(const error_code& e);
+        virtual void on_sent(const error_code& e, std::size_t bytes_transferred) = 0;
 
         /**
          * call when socket got packets header
@@ -192,8 +201,12 @@ namespace libed2k{
         chained_buffer m_send_buffer;  //!< buffer for outgoing messages
         tcp::endpoint m_remote;
 
-        bool m_write_in_progress; //!< write indicator
-        bool m_read_in_progress;  //!< read indicator
+        // upload and download channel state
+        char m_channel_state[2];
+
+        // this is true if this connection has been added
+        // to the list of connections that will be closed.
+        bool m_disconnecting;
 
         handler_map m_handlers;
 

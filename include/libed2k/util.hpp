@@ -2,13 +2,13 @@
 #ifndef __LIBED2K_UTIL__
 #define __LIBED2K_UTIL__
 
-#include "libed2k/bitfield.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/ptime.hpp"
 #include "libed2k/socket.hpp"
 
 namespace libed2k
 {
+    struct bitfield;
     #define CHECK_BOM(size, x) ((size >= 3)  && (x[0] == (char)0xEF) && (x[1] == (char)0xBB) && (x[2] == (char)0xBF))
 
     template <typename A, typename B>
@@ -101,7 +101,7 @@ namespace libed2k
     {
     public:
         duration_timer(const time_duration& duration, const ptime& last_tick = time_now_hires());
-        bool expires();
+        bool expired(const ptime& now);
         const time_duration& tick_interval() const { return m_tick_interval; }
     private:
         time_duration m_duration;

@@ -328,6 +328,12 @@ namespace libed2k
         }
     }
 
+    int transfer::disconnect_peers(int num, error_code const& ec)
+    {
+        // FIXME - implement method
+        return 0;
+    }
+
     bool transfer::try_connect_peer()
     {
         return m_policy.connect_one_peer();
@@ -445,7 +451,7 @@ namespace libed2k
 
         m_upload_mode = b;
 
-        //state_updated();
+        state_updated();
         //send_upload_only();
 
         if (m_upload_mode)
@@ -479,10 +485,16 @@ namespace libed2k
         if (m_paused) return;
         m_paused = true;
 
-        // TODO - why so nothing when session paused?
-        //if (m_ses.is_paused()) return;
+        if (!m_ses.is_paused())
+            do_pause();
+    }
 
+    void transfer::do_pause()
+    {
+        if (!is_paused()) return;
         DBG("pause transfer {hash: " << hash() << "}");
+
+        state_updated();
 
         // this will make the storage close all
         // files and flush all cached data
@@ -499,34 +511,66 @@ namespace libed2k
         }
 
         disconnect_all(errors::transfer_paused);
+
+        if (m_queued_for_checking && !should_check_file())
+        {
+            // stop checking
+            m_storage->abort_disk_io();
+            dequeue_transfer_check();
+            set_state(transfer_status::queued_for_checking);
+            LIBED2K_ASSERT(!m_queued_for_checking);
+        }
     }
 
     void transfer::resume()
     {
         if (!m_paused) return;
-        DBG("resume transfer {hash: " << hash() << "}");
         m_paused = false;
+
+        do_resume();
+    }
+
+    void transfer::do_resume()
+    {
+        if (is_paused()) return;
+        DBG("resume transfer {hash: " << hash() << "}");
+
         m_ses.m_alerts.post_alert_should(resumed_transfer_alert(handle()));
+        state_updated();
+        if (!m_queued_for_checking && should_check_file())
+            queue_transfer_check();
     }
 
     void transfer::set_upload_limit(int limit)
     {
-
+        LIBED2K_ASSERT(limit >= -1);
+        if (limit <= 0) limit = 0;
+        if (m_bandwidth_channel[peer_connection::upload_channel].throttle() != limit)
+            state_updated();
+        m_bandwidth_channel[peer_connection::upload_channel].throttle(limit);
     }
 
     int transfer::upload_limit() const
     {
-        return 0;
+        int limit = m_bandwidth_channel[peer_connection::upload_channel].throttle();
+        if (limit == (std::numeric_limits<int>::max)()) limit = -1;
+        return limit;
     }
 
     void transfer::set_download_limit(int limit)
     {
-
+        LIBED2K_ASSERT(limit >= -1);
+        if (limit <= 0) limit = 0;
+        if (m_bandwidth_channel[peer_connection::download_channel].throttle() != limit)
+            state_updated();
+        m_bandwidth_channel[peer_connection::download_channel].throttle(limit);
     }
 
     int transfer::download_limit() const
     {
-        return 0;
+        int limit = m_bandwidth_channel[peer_connection::download_channel].throttle();
+        if (limit == (std::numeric_limits<int>::max)()) limit = -1;
+        return limit;
     }
 
     storage_interface* transfer::get_storage()
@@ -621,6 +665,16 @@ namespace libed2k
 
         LIBED2K_ASSERT(m_picker.get());
         m_picker->piece_priorities(*pieces);
+    }
+
+    int transfer::priority() const { return m_priority; }
+    void transfer::set_priority(int prio)
+    {
+        LIBED2K_ASSERT(prio <= 255 && prio >= 0);
+        if (prio > 255) prio = 255;
+        else if (prio < 0) prio = 0;
+        m_priority = prio;
+        state_updated();
     }
 
     void transfer::set_sequential_download(bool sd) { m_sequential_download = sd; }
@@ -740,6 +794,8 @@ namespace libed2k
         st.download_payload_rate = m_stat.download_payload_rate();
         st.upload_payload_rate = m_stat.upload_payload_rate();
 
+        st.priority = m_priority;
+
         st.num_seeds = num_seeds();
         st.num_peers = num_peers();
 
@@ -781,6 +837,10 @@ namespace libed2k
         st.num_pieces = num_have();
 
         return st;
+    }
+
+    void transfer::state_updated()
+    {
     }
 
     // fills in total_wanted, total_wanted_done and total_done
@@ -1070,7 +1130,7 @@ namespace libed2k
                 }
 
                 // parse unfinished pieces
-                int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+                const int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
 
                 if (lazy_entry const* unfinished_ent = m_resume_entry.dict_find_list("unfinished"))
                 {
@@ -1087,7 +1147,7 @@ namespace libed2k
                         std::string bitmask = e->dict_find_string_value("bitmask");
                         if (bitmask.empty()) continue;
 
-                        const int num_bitmask_bytes = (std::max)(num_blocks_per_piece / 8, 1);
+                        const int num_bitmask_bytes = div_ceil(num_blocks_per_piece, 8);
                         if ((int)bitmask.size() != num_bitmask_bytes) continue;
                         for (int j = 0; j < num_bitmask_bytes; ++j)
                         {
@@ -1137,9 +1197,10 @@ namespace libed2k
         lazy_entry().swap(m_resume_entry);
     }
 
-    void transfer::second_tick(stat& accumulator, int tick_interval_ms)
+    void transfer::second_tick(stat& accumulator, int tick_interval_ms, const ptime& now)
     {
-        if (m_minute_timer.expires() && want_more_peers()) request_peers();
+        if (m_minute_timer.expired(now) && want_more_peers())
+            request_peers();
 
         // if we're in upload only mode and we're auto-managed
         // leave upload mode every 10 minutes hoping that the error
@@ -1209,7 +1270,7 @@ namespace libed2k
 
     void transfer::on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f)
     {
-        //TORRENT_ASSERT(m_ses.is_network_thread());
+        //LIBED2K_ASSERT(m_ses.is_network_thread());
         boost::mutex::scoped_lock l(m_ses.m_mutex);
 
         // return value:
@@ -1217,7 +1278,7 @@ namespace libed2k
         // -1: disk failure
         // -2: hash check failed
 
-        //state_updated();
+        state_updated();
 
         if (ret == -1) handle_disk_error(j);
         f(ret);
@@ -1345,17 +1406,16 @@ namespace libed2k
         return entry;
     }
 
-    void transfer::save_resume_data()
+    void transfer::save_resume_data(int flags)
     {
         if (!m_owning_storage.get())
         {
-            m_ses.m_alerts.post_alert_should(save_resume_data_failed_alert(handle()
-                , errors::destructing_transfer));
+            m_ses.m_alerts.post_alert_should(
+                save_resume_data_failed_alert(handle(), errors::destructing_transfer));
             return;
         }
 
         LIBED2K_ASSERT(m_storage);
-
         if (m_state == transfer_status::queued_for_checking
             || m_state == transfer_status::checking_files
             || m_state == transfer_status::checking_resume_data)
@@ -1365,6 +1425,9 @@ namespace libed2k
             m_ses.m_alerts.post_alert_should(save_resume_data_alert(rd, handle()));
             return;
         }
+
+        if (flags & transfer_handle::flush_disk_cache)
+            m_storage->async_release_files();
 
         m_storage->async_save_resume_data(
             boost::bind(&transfer::on_save_resume_data, shared_from_this(), _1, _2));
@@ -1385,12 +1448,12 @@ namespace libed2k
         }
     }
 
-
     bool transfer::should_check_file() const
     {
         return
-            (m_state == transfer_status::checking_files
-             || m_state == transfer_status::queued_for_checking)
+            (m_state == transfer_status::checking_files ||
+             m_state == transfer_status::queued_for_checking)
+            && !m_paused
             && !has_error()
             && !m_abort
             && !m_ses.is_paused();
@@ -1535,7 +1598,7 @@ namespace libed2k
         ret["transfer-hash"] = hash().toString();
 
         // blocks per piece
-        int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
+        const int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
 
         // if this torrent is a seed, we won't have a piece picker
         // and there will be no half-finished pieces.
@@ -1560,8 +1623,7 @@ namespace libed2k
                 piece_struct["piece"] = i->index;
 
                 std::string bitmask;
-                const int num_bitmask_bytes
-                    = (std::max)(num_blocks_per_piece / 8, 1);
+                const int num_bitmask_bytes = div_ceil(num_blocks_per_piece, 8);
 
                 for (int j = 0; j < num_bitmask_bytes; ++j)
                 {
@@ -1570,7 +1632,7 @@ namespace libed2k
                     for (int k = 0; k < bits; ++k)
                         v |= (i->info[j*8+k].state == piece_picker::block_info::state_finished)
                         ? (1 << k) : 0;
-                    bitmask.insert(bitmask.end(), v);
+                    bitmask.append(1, v);
                     LIBED2K_ASSERT(bits == 8 || j == num_bitmask_bytes - 1);
                 }
                 piece_struct["bitmask"] = bitmask;

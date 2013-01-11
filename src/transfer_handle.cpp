@@ -116,6 +116,12 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(status(), transfer_status());
     }
 
+    transfer_status::state_t transfer_handle::state() const
+    {
+        // TODO - some default status there?
+        LIBED2K_FORWARD_RETURN(state(), transfer_status::queued_for_checking);
+    }
+
     void transfer_handle::get_peer_info(std::vector<peer_info>& infos) const
     {
         LIBED2K_FORWARD(get_peer_info(infos));
@@ -203,9 +209,9 @@ namespace libed2k
         LIBED2K_FORWARD_RETURN(num_seeds(), 0);
     }
 
-    void transfer_handle::save_resume_data() const
+    void transfer_handle::save_resume_data(int flags) const
     {
-        LIBED2K_FORWARD(save_resume_data());
+        LIBED2K_FORWARD(save_resume_data(flags));
     }
 
     void transfer_handle::move_storage(const std::string& save_path) const

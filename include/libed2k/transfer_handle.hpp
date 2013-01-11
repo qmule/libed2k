@@ -282,6 +282,7 @@ namespace libed2k
         bool is_aborted() const;
         bool is_announced() const;
         transfer_status status() const;
+        transfer_status::state_t state() const;
         void get_peer_info(std::vector<peer_info>& infos) const;
 
         void piece_availability(std::vector<int>& avail) const;
@@ -302,7 +303,9 @@ namespace libed2k
         size_t num_pieces() const;
         int num_peers() const;
         int num_seeds() const;
-        void save_resume_data() const;
+
+        enum save_resume_flags_t { flush_disk_cache = 1, save_info_dict = 2 };
+        void save_resume_data(int flags = 0) const;
 
         void move_storage(std::string const& save_path) const;
         bool rename_file(const std::string& name) const;

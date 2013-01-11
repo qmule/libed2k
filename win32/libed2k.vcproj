@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
-				PreprocessorDefinitions="WIN32;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;_WIN32_WINNT=0x0500"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -109,8 +109,8 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;&quot;$(OPENSSL_ROOT)\include&quot;;&quot;$(CRYPTOPP_ROOT)&quot;;../include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;BOOST_FILESYSTEM_NARROW_ONLY;BOOST_NO_STD_WSTRING;BOOST_FILESYSTEM_VERSION=2;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500"
+				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500;UNICODE"
 				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -170,6 +170,18 @@
 			</File>
 			<File
 				RelativePath="..\src\assert.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\bandwidth_limit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\bandwidth_manager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\bandwidth_queue_entry.cpp"
 				>
 			</File>
 			<File
@@ -233,19 +245,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\src\is_crypto.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\is_https_auth.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\src\lazy_bdecode.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\log.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\md4.cpp"
 				>
 			</File>
 			<File
@@ -298,10 +306,6 @@
 			</File>
 			<File
 				RelativePath="..\src\session_impl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\sha1.cpp"
 				>
 			</File>
 			<File
@@ -380,6 +384,18 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\assert.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\bandwidth_limit.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\bandwidth_manager.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\bandwidth_queue_entry.hpp"
 				>
 			</File>
 			<File
@@ -491,14 +507,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\include\libed2k\is_crypto.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\is_https_auth.hpp"
-				>
-			</File>
-			<File
 				RelativePath="..\include\libed2k\lazy_entry.hpp"
 				>
 			</File>
@@ -508,6 +516,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\max.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\md4.hpp"
 				>
 			</File>
 			<File

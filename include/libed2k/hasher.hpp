@@ -1,12 +1,7 @@
-
 #ifndef LIBED2K_HASHER_HPP_INCLUDED
 #define LIBED2K_HASHER_HPP_INCLUDED
 
-#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include <cryptopp/md4.h>
-
 #include "libed2k/md4_hash.hpp"
-#include "libed2k/peer_id.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/assert.hpp"
 
@@ -18,22 +13,25 @@ namespace libed2k
 
 		hasher()
 		{
+		    reset();
 		}
 
 		hasher(const char* data, int len)
 		{
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
+			reset();
 			update(data, len);
 		}
 
-		hasher(hasher const& h) : m_hasher(h.m_hasher)
+		hasher(hasher const& h)
 		{
+		    m_context = h.m_context;
 		}
 
 		hasher& operator=(hasher const& h)
 		{
-		    m_hasher = h.m_hasher;
+		    m_context = h.m_context;
 			return *this;
 		}
 
@@ -42,20 +40,19 @@ namespace libed2k
 		{
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
-			m_hasher.Update(reinterpret_cast<const unsigned char*>(data), len);
+			md4_update(&m_context, reinterpret_cast<const unsigned char*>(data), len);
 		}
 
 		md4_hash final()
 		{
-		    LIBED2K_ASSERT(m_hasher.DigestSize() == 16);
 			md4_hash digest;
-			m_hasher.Final(digest.getContainer());
+			md4_final(&m_context, digest.getContainer());
 			return digest;
 		}
 
 		void reset()
 		{
-		    m_hasher.Restart();
+		    md4_init(&m_context);
 		}
 
 		~hasher()
@@ -63,7 +60,7 @@ namespace libed2k
 		}
 
 	private:
-		CryptoPP::Weak1::MD4 m_hasher;
+		md4_context m_context;
 	};
 }
 

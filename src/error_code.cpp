@@ -50,7 +50,7 @@ namespace libed2k
             "invalid packet size",
             // transport errors
             "session closing",
-            "duplicate transfer",
+            "transfer already exists in session",
             "transfer paused",
             "transfer finished",
             "transfer aborted",

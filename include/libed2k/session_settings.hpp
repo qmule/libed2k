@@ -17,6 +17,7 @@ namespace libed2k
             , peer_timeout(120)
             , peer_connect_timeout(7)
             , block_request_timeout(10)
+            , connection_speed(6)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
@@ -28,9 +29,12 @@ namespace libed2k
             , server_keep_alive_timeout(200)
             , server_reconnect_timeout(5)
             , max_peerlist_size(4000)
+            , tick_interval(100)
             , download_rate_limit(-1)
             , upload_rate_limit(-1)
             , unchoke_slots_limit(8)
+            , half_open_limit(0)
+            , connections_limit(200)
             , m_version(0x3c)
             , m_max_announces_per_call(198)
             , m_announce_timeout(-1)
@@ -39,6 +43,7 @@ namespace libed2k
             , user_agent(md4_hash::emule)
             , ignore_resume_timestamps(false)
             , no_recheck_incomplete_resume(false)
+            , alert_queue_size(1000)
             // Disk IO settings
             , file_pool_size(40)
             , max_queued_disk_bytes(16*1024*1024)
@@ -91,6 +96,10 @@ namespace libed2k
         // the number of seconds to wait for block request.
         int block_request_timeout;
 
+        // the number of connection attempts that
+        // are made per second.
+        int connection_speed;
+
         // false to not allow multiple connections from the same
         // IP address. true will allow it.
         bool allow_multiple_connections_per_ip;
@@ -127,6 +136,10 @@ namespace libed2k
         // about, not necessarily connected to.
         int max_peerlist_size;
 
+        // the number of milliseconds between internal ticks. Should be no
+        // more than one second (i.e. 1000).
+        int tick_interval;
+
         /**
           * session rate limits
           * -1 unlimits
@@ -137,6 +150,12 @@ namespace libed2k
         // the max number of unchoke slots in the session (might be
         // overridden by unchoke algorithm)
         int unchoke_slots_limit;
+
+        // the max number of half-open TCP connections
+        int half_open_limit;
+
+        // the max number of connections in the session
+        int connections_limit;
 
         unsigned short m_version;
         unsigned short m_max_announces_per_call;
@@ -174,6 +193,9 @@ namespace libed2k
         // this settings is set to true, instead libed2k will assume
         // we have none of the files and go straight to download
         bool no_recheck_incomplete_resume;
+
+        // the max alert queue size
+        int alert_queue_size;
 
         /********************
          * Disk IO settings *

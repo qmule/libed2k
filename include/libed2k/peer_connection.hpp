@@ -22,38 +22,11 @@
     packet_struct name;                          \
     if (!decode_packet(name))                    \
     {                                            \
-        close(errors::decode_packet_error);      \
+        disconnect(errors::decode_packet_error); \
     }
 
 namespace libed2k
 {
-    enum EClientSoftware
-    {
-        SO_EMULE            = 0,
-        SO_CDONKEY          = 1,
-        SO_LXMULE           = 2,
-        SO_AMULE            = 3,
-        SO_SHAREAZA         = 4,
-        SO_EMULEPLUS        = 5,
-        SO_HYDRANODE        = 6,
-        SO_NEW2_MLDONKEY    = 0x0a,
-        SO_LPHANT           = 0x14,
-        SO_NEW2_SHAREAZA    = 0x28,
-        SO_EDONKEYHYBRID    = 0x32,
-        SO_EDONKEY          = 0x33,
-        SO_MLDONKEY         = 0x34,
-        SO_OLDEMULE         = 0x35,
-        SO_UNKNOWN          = 0x36,
-        SO_NEW_SHAREAZA     = 0x44,
-        SO_NEW_MLDONKEY     = 0x98,
-        SO_LIBED2K          = 0x99,
-        SO_QMULE            = 0xA0,
-        SO_COMPAT_UNK       = 0xFF
-    };
-
-    EClientSoftware uagent2csoft(const md4_hash& ua_hash);
-
-
     class peer;
     class transfer;
     class md4_hash;
@@ -171,10 +144,10 @@ namespace libed2k
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
 
-        void on_timeout();
-        // this will cause this peer_connection to be disconnected.
-        void disconnect(error_code const& ec, int error = 0);
-        bool is_disconnecting() const { return m_disconnecting; }
+        virtual void on_timeout();
+        virtual void on_sent(const error_code& e, std::size_t bytes_transferred);
+
+        virtual void disconnect(const error_code& ec, int error = 0);
 
         // returns true if this connection is still waiting to
         // finish the connection attempt
@@ -185,7 +158,6 @@ namespace libed2k
         // to false, and stop monitor writability
         void on_connect(const error_code& e);
         void on_error(const error_code& e);
-        virtual void close(const error_code& ec);
 
         // called when it's time for this peer_conncetion to actually
         // initiate the tcp connection. This may be postponed until
@@ -241,13 +213,32 @@ namespace libed2k
         void send_block_requests();
         void cancel_all_requests();
 
+        void assign_bandwidth(int channel, int amount);
+        int bandwidth_throttle(int channel) const
+        { return m_bandwidth_channel[channel].throttle(); }
+
+        void set_upload_limit(int limit);
+        void set_download_limit(int limit);
+        int upload_limit() const { return m_upload_limit; }
+        int download_limit() const { return m_download_limit; }
+
     private:
 
         // constructor method
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
 
-        void do_read();
+        virtual void do_read();
+        virtual void do_write(int quota = std::numeric_limits<int>::max());
+
+        int request_upload_bandwidth(
+            bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
+            bandwidth_channel* bwc3 = 0, bandwidth_channel* bwc4 = 0);
+        int request_download_bandwidth(
+            bandwidth_channel* bwc1, bandwidth_channel* bwc2 = 0,
+            bandwidth_channel* bwc3 = 0, bandwidth_channel* bwc4 = 0);
+        bool has_upload_bandwidth();
+        bool has_download_bandwidth();
 
         void request_block();
         // adds a block to the request queue
@@ -256,25 +247,27 @@ namespace libed2k
         bool add_request(const piece_block& b, int flags = 0);
         void abort_all_requests();
         void abort_expired_requests();
-        bool requesting(const piece_block& b);
-        size_t num_requesting_busy_blocks();
+        bool requesting(const piece_block& b) const;
+        size_t num_requesting_busy_blocks() const;
+        int outstanding_bytes() const;
 
         void send_deferred();
         void fill_send_buffer();
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
         void receive_data(const peer_request& r);
+        void receive_data();
         void on_disk_write_complete(int ret, disk_io_job const& j,
-                                    peer_request req, peer_request left, boost::shared_ptr<transfer> t);
-        void on_receive_data(const error_code& error, std::size_t bytes_transferred,
-                             peer_request r, peer_request left);
-        void on_skip_data(const error_code& error, peer_request r);
+                                    peer_request req, boost::shared_ptr<transfer> t);
+        void on_receive_data(const error_code& error, std::size_t bytes_transferred);
+        void skip_data();
+        void on_skip_data(const error_code& error, std::size_t bytes_transferred);
 
         template<typename T>
-        void do_write(T& t)
+        void write_struct(T& t)
         {
-            if (m_channel_state[upload_channel] == bw_idle)
-                base_connection::do_write(t);
+            if ((m_channel_state[upload_channel] & peer_info::bw_seq) == 0)
+                base_connection::write_struct(t);
             else
                 defer_write(t);
         }
@@ -381,6 +374,20 @@ namespace libed2k
         // request at a time
         size_t m_max_busy_blocks;
 
+        // the bandwidth channels, upload and download
+        // keeps track of the current quotas
+        bandwidth_channel m_bandwidth_channel[num_channels];
+
+        // number of bytes this peer can send and receive
+        int m_quota[2];
+
+        // this is the priority with which this peer gets
+        // download bandwidth quota assigned to it.
+        int m_priority;
+
+        int m_upload_limit;
+        int m_download_limit;
+
         // this peer's peer info struct. This may
         // be 0, in case the connection is incoming
         // and hasn't been added to a transfer yet.
@@ -412,34 +419,12 @@ namespace libed2k
         // could be considered: true = local, false = remote
         bool m_active;
 
-        // this is true if this connection has been added
-        // to the list of connections that will be closed.
-        bool m_disconnecting;
-
         int m_disk_recv_buffer_size;
 
         // this flag will active after hello -> hello_answer order
         bool m_handshake_complete;
 
         std::deque<message> m_deferred;
-
-        enum channels
-        {
-            upload_channel,
-            download_channel,
-            num_channels
-        };
-
-        // bw_idle: the channel is not used
-        // bw_limit: the channel is waiting for quota
-        // bw_network: the channel is waiting for an async write
-        //   for read operation to complete
-        // bw_disk: the peer is waiting for the disk io thread
-        //   to catch up
-        enum bw_state { bw_idle, bw_limit, bw_network, bw_disk };
-
-        // upload and download channel state
-        char m_channel_state[2];
 
         // client information
         md4_hash        m_hClient;
@@ -448,6 +433,29 @@ namespace libed2k
         // initialized in hello answer
         misc_options    m_misc_options;
         misc_options2   m_misc_options2;
+
+        // the number of bytes of payload we've received so far
+        int m_recv_pos;
+        // current recuest processed
+        peer_request m_recv_req;
+
+        // this is a queue of ranges that describes
+        // where in the send buffer actual payload
+        // data is located. This is currently
+        // only used to be able to gather statistics
+        // seperately on payload and protocol data.
+        struct range
+        {
+            range(int s, int l) : start(s), length(l)
+            {
+                LIBED2K_ASSERT(s >= 0);
+                LIBED2K_ASSERT(l > 0);
+            }
+            int start;
+            int length;
+        };
+        static bool range_below_zero(const range& r) { return r.start < 0; }
+        std::vector<range> m_payloads;
     };
 }
 

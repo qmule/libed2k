@@ -19,6 +19,7 @@
 #include "libed2k/entry.hpp"
 #include "libed2k/stat.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/bandwidth_limit.hpp"
 
 namespace libed2k
 {
@@ -90,6 +91,7 @@ namespace libed2k
 
         bool want_more_connections() const;
         void disconnect_all(const error_code& ec);
+        int disconnect_peers(int num, const error_code& ec);
         bool try_connect_peer();
         void give_connect_points(int points);
         bool has_error() const { return m_error; }
@@ -117,8 +119,15 @@ namespace libed2k
         transfer_status::state_t state() const { return m_state; }
         transfer_status status() const;
 
+        // this torrent changed state, if the user is subscribing to
+        // it, add it to the m_state_updates list in session_impl
+        void state_updated();
+
         void pause();
         void resume();
+        void do_pause();
+        void do_resume();
+
         void set_upload_limit(int limit);
         int upload_limit() const;
         void set_download_limit(int limit);
@@ -130,12 +139,15 @@ namespace libed2k
         int piece_priority(int index) const;
         void piece_priorities(std::vector<int>* pieces) const;
 
+        int priority() const;
+        void set_priority(int prio);
+
         void set_sequential_download(bool sd);
         bool is_sequential_download() const { return m_sequential_download; }
 
         int queue_position() const { return m_sequence_number; }
 
-        void second_tick(stat& accumulator, int tick_interval_ms);
+        void second_tick(stat& accumulator, int tick_interval_ms, const ptime& now);
 
         // this is called wheh the transfer has completed
         // the download. It will post an event, disconnect
@@ -232,37 +244,26 @@ namespace libed2k
         boost::uint64_t getTransferred() const { return m_transferred; }
         boost::uint8_t  getPriority() const { return m_priority; }
 
-        /**
-          * async generate fast resume data and emit alert
-         */
-        void save_resume_data();
-
+        /** async generate fast resume data and emit alert */
+        void save_resume_data(int flags);
         bool should_check_file() const;
 
-        /**
-          * call after transfer checking completed
-         */
+        /** call after transfer checking completed */
         void file_checked();
         void start_checking();
 
         void set_error(error_code const& ec);
 
-        /**
-          * add transfer to check queue in session_impl
-         */
+        /** add transfer to check queue in session_impl */
         void queue_transfer_check();
 
-        /**
-          * remove transfer from check queue insession_impl
-         */
+        /** remove transfer from check queue insession_impl */
         void dequeue_transfer_check();
 
         // --------------------------------------------
         // SERVER MANAGEMENT
         // --------------------------------------------
-        /**
-          * convert transfer info into announce
-         */
+        /** convert transfer info into announce */
         shared_file_entry getAnnounce() const;
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }
@@ -280,6 +281,12 @@ namespace libed2k
         void on_piece_checked(int ret, disk_io_job const& j);
         void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
         void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+
+        // --------------------------------------------
+        // BANDWIDTH MANAGEMENT
+        // --------------------------------------------
+        bandwidth_channel m_bandwidth_channel[2];
+        //int bandwidth_throttle(int channel) const;
 
     private:
         // will initialize the storage and the piece-picker
