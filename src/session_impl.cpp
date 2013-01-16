@@ -111,7 +111,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     error_code ec;
     m_listen_interface = tcp::endpoint(
         ip::address::from_string(listen_interface, ec), settings.listen_port);
-    assert(!ec);
+    LIBED2K_ASSERT_VAL(!ec, ec.message());
 
 #ifdef WIN32
     // windows XP has a limit on the number of
