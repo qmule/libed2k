@@ -111,6 +111,12 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     error_code ec;
     m_listen_interface = tcp::endpoint(
         ip::address::from_string(listen_interface, ec), settings.listen_port);
+
+    if (ec)
+    {
+        ERR("session_impl::session_impl{" << ec.message() << "} on iface {" << listen_interface << "}");
+    }
+
     LIBED2K_ASSERT_VAL(!ec, ec.message());
 
 #ifdef WIN32
@@ -1157,8 +1163,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //ERR("failed to open socket: " << libed2k::print_endpoint(ep)
-        //    << ": " << ec.message().c_str());
+        ERR("failed to open socket: " << libed2k::print_endpoint(ep)
+            << ": " << ec.message().c_str());
     }
 
     s.sock->bind(ep, ec);
@@ -1166,12 +1172,9 @@ session_impl::listen_socket_t session_impl::setup_listener(
     if (ec)
     {
         // post alert
-
-        char msg[200];
-        snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
-                 libed2k::print_endpoint(ep).c_str(), ec.message().c_str());
-        ERR(msg);
-
+        ERR("cannot bind to interface " << 
+            libed2k::print_endpoint(ep).c_str() << " : " <<
+            ec.message().c_str());
         return listen_socket_t();
     }
 
