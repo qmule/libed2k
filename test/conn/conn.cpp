@@ -720,7 +720,7 @@ int main(int argc, char* argv[])
                 ses.server_conn_stop();
                 break;
             case cc_listen:
-                if (ses.listen_on(atoi(strArg.c_str()), "0.0.0.0"))
+                if (ses.listen_on(settings.listen_port, strArg.c_str()))
                 {
                     DBG("Ok, listen on " << strArg);
                 }
