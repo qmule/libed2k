@@ -196,6 +196,10 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.payload_up_speed = m_statistics.upload_payload_rate();
     p.num_pieces = m_remote_pieces.count();
 
+    // GeoIP isn't supported by libed2k yet.
+    p.country[0] = 0;
+    p.country[1] = 0;
+
     p.total_download = m_statistics.total_payload_download();
     p.total_upload = m_statistics.total_payload_upload();
 
