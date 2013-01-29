@@ -27,7 +27,7 @@ args = {
     'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
                  '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
-    'LIBS'    : ['boost_system', 'boost_thread', 'pthread', 'rt']
+    'LIBS'    : ['boost_system-mt', 'boost_thread-mt', 'pthread']
     }
 
 env = Environment(**args)
@@ -35,7 +35,7 @@ sources = globrec('src', '*.cpp')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
 
 uenv = Environment(**unionArgs(args,
-                               {'CXXFLAGS': ['-Wno-sign-compare', '-DBOOST_FILESYSTEM_VERSION=2'],
-                                'LIBS': ['boost_unit_test_framework', 'boost_filesystem']}))
+                               {'CXXFLAGS': ['-Wno-sign-compare'],
+                                'LIBS': ['boost_unit_test_framework-mt', 'boost_filesystem-mt']}))
 utests = globrec('unit', '*.cpp')
 uenv.Program(join('unit', 'run_tests'), utests + [lib])

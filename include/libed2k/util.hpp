@@ -5,6 +5,7 @@
 #include "libed2k/constants.hpp"
 #include "libed2k/ptime.hpp"
 #include "libed2k/socket.hpp"
+#include "libed2k/assert.hpp"
 
 namespace libed2k
 {
@@ -113,9 +114,9 @@ namespace libed2k
     template <typename T>
     class range
     {
-    public:
         typedef typename std::pair<T,T> segment;
         typedef typename std::vector<segment> segments;
+    public:
 
         range(const segment& seg)
         {
@@ -124,7 +125,7 @@ namespace libed2k
 
         range<T>& operator-=(const segment& seg)
         {
-            check(seg);
+            LIBED2K_ASSERT(seg.first <= seg.second);                        
             segments res;
             for (typename segments::iterator i = m_segments.begin(); i != m_segments.end(); ++i)
                 appendAll(res, sub(*i, seg));
@@ -138,12 +139,10 @@ namespace libed2k
     private:
         segments m_segments;
 
-        void check(const segment& seg) { assert(seg.first <= seg.second); }
-
         segments sub(const segment& seg1, const segment& seg2)
         {
-            check(seg1);
-            check(seg2);
+            LIBED2K_ASSERT(seg1.first <= seg1.second);
+            LIBED2K_ASSERT(seg2.first <= seg2.second);
 
             segments res;
 

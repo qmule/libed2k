@@ -489,7 +489,7 @@ namespace libed2k
         std::string strExt = strFileName.substr(nPos);
 
         // simple to lower because we can't parse national extensions in file
-        std::transform(strExt.begin(), strExt.end(), strExt.begin(), boost::bind(std::tolower<char>, _1, std::locale(""))); //std::bind2nd(std::ptr_fun(std::tolower<char>), loc));
+        //std::transform(strExt.begin(), strExt.end(), strExt.begin(), boost::bind(std::tolower<char>, _1, std::locale(""))); //std::bind2nd(std::ptr_fun(std::tolower<char>), loc));
         SED2KFileTypeMap::iterator it = ED2KFileTypesMap.find(strExt);
         if (it != ED2KFileTypesMap.end())
         {

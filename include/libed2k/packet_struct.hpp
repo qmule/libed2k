@@ -299,7 +299,7 @@ namespace libed2k
       * common libed2k packet header
       *
      */
-#pragma pack(push,1)
+//#pragma pack(push,1)
     struct libed2k_header
     {
         typedef boost::uint32_t size_type;
@@ -353,7 +353,7 @@ namespace libed2k
             return res;
         }
     };
-#pragma pack(pop)
+//#pragma pack(pop)
 
     // common protocol structures
 
