@@ -7,10 +7,8 @@
 #endif
 
 #include <sstream>
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/filesystem.hpp>
 #include <locale.h>
+#include <boost/test/unit_test.hpp>
 
 #include "libed2k/constants.hpp"
 #include "libed2k/file.hpp"
@@ -20,8 +18,6 @@
 #include "libed2k/alert.hpp"
 #include "libed2k/session_impl.hpp"
 #include "common.hpp"
-
-namespace fs = boost::filesystem;
 
 namespace libed2k
 {
@@ -113,38 +109,6 @@ BOOST_AUTO_TEST_SUITE(test_share_files)
 
 const char chRussianDirectory[] = {'\xEF', '\xBB', '\xBF', '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81', '\xD1', '\x81', '\xD0', '\xBA', '\xD0', '\xB0', '\xD1', '\x8F', '\x20', '\xD0', '\xB4', '\xD0', '\xB8', '\xD1', '\x80', '\xD0', '\xB5', '\xD0', '\xBA', '\xD1', '\x82', '\xD0', '\xBE', '\xD1', '\x80', '\xD0', '\xB8', '\xD1', '\x8F', '\x00' };
 const char chRussianFilename[] = { '\xD1', '\x80', '\xD1', '\x83', '\xD1', '\x81', '\xD1', '\x81', '\xD0', '\xBA', '\xD0', '\xB8', '\xD0', '\xB9', '\x20', '\xD1', '\x84', '\xD0', '\xB0', '\xD0', '\xB9', '\xD0', '\xBB', '\x00' };
-
-void create_directory_tree()
-{
-    std::string strDirectory = chRussianDirectory;
-    std::string strFilename  = chRussianFilename;
-    fs::path p(libed2k::convert_to_native(libed2k::bom_filter(strDirectory)));
-    fs::create_directories(p);
-    p /= libed2k::convert_to_native(libed2k::bom_filter(strDirectory));
-    fs::create_directories(p);
-
-    fs::path p1 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "01.txt"));
-    fs::path p2 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "02.txt"));
-    fs::path p3 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "03.txt"));
-    fs::path p4 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "04.txt"));
-    fs::path p5 = p / libed2k::convert_to_native(libed2k::bom_filter(strFilename + "05.txt"));
-
-    generate_test_file(100, p1.string().c_str());
-    generate_test_file(libed2k::PIECE_SIZE, p2.string().c_str());
-    generate_test_file(libed2k::PIECE_SIZE+1, p3.string().c_str());
-    generate_test_file(libed2k::PIECE_SIZE*4, p4.string().c_str());
-    generate_test_file(libed2k::PIECE_SIZE+4566, p5.string().c_str());
-
-    std::ofstream fstr(p.string().c_str());
-
-}
-
-void drop_directory_tree()
-{
-    std::string strDirectory = chRussianDirectory;
-    fs::path p(libed2k::convert_to_native(libed2k::bom_filter(strDirectory)));
-    fs::remove_all(p);
-}
 
 BOOST_AUTO_TEST_CASE(test_string_conversions)
 {
