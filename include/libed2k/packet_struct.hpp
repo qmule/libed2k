@@ -299,8 +299,18 @@ namespace libed2k
       * common libed2k packet header
       *
      */
-//#pragma pack(push,1)
-    struct libed2k_header
+#if defined(__GNUC__)
+    #define _BytePacked_    __attribute__ ((packed))
+    #define Packed_Struct    struct _BytePacked_
+#else
+    #define _BytePacked_
+    #define Packed_Struct    struct
+#endif
+
+#pragma pack(push)
+#pragma pack(1)
+
+    Packed_Struct libed2k_header
     {
         typedef boost::uint32_t size_type;
 
@@ -353,7 +363,8 @@ namespace libed2k
             return res;
         }
     };
-//#pragma pack(pop)
+
+#pragma pack(pop)
 
     // common protocol structures
 
