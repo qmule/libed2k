@@ -2,6 +2,9 @@
 import os, fnmatch
 from os.path import join, basename
 
+# Options
+AddOption('--boost-mt', dest='boostmt', nargs=0, help='Using boost libraries with -mt suffix')
+
 def globrec(rootdir, wildcard):
     matches = []
     for root, dirnames, filenames in os.walk(rootdir):
@@ -17,6 +20,10 @@ def unionArgs(*args):
             res[k] = prev and prev + v or v  # for old pythons
     return res
 
+def libboost(name):
+    suffix = '' if GetOption('boostmt') == None else '-mt'
+    return 'boost_' + name + suffix
+
 # Environment
 boostRoot      = os.getenv('BOOST_ROOT')
 
@@ -27,15 +34,19 @@ args = {
     'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
                  '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
-    'LIBS'    : ['boost_system-mt', 'boost_thread-mt', 'pthread']
+    'LIBS'    : [libboost('system'), libboost('thread'), 'pthread']
     }
 
 env = Environment(**args)
 sources = globrec('src', '*.cpp')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
 
+binenv = Environment(**unionArgs(args, {'LIBS' : ['ed2k'], 'LIBPATH' : ['lib']}))
+connpath = join('test', 'conn', 'conn')
+conn = binenv.Program(connpath, [connpath + '.cpp', lib])
+
 uenv = Environment(**unionArgs(args,
                                {'CXXFLAGS': ['-Wno-sign-compare'],
-                                'LIBS': ['boost_unit_test_framework-mt', 'boost_filesystem-mt']}))
+                                'LIBS': [libboost('unit_test_framework'), libboost('filesystem')]}))
 utests = globrec('unit', '*.cpp')
 uenv.Program(join('unit', 'run_tests'), utests + [lib])
