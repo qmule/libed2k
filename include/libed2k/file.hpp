@@ -72,6 +72,9 @@ namespace libed2k
     const boost::uint8_t PR_AUTO        = 5;
     const boost::uint8_t PR_POWERSHARE  = 6;
 
+    /**
+      * this function work correctly only with lower case file extensions!
+     */
     extern EED2KFileType GetED2KFileTypeID(const std::string& strFileName);
     extern std::string GetED2KFileTypeSearchTerm(EED2KFileType iFileID);
     extern EED2KFileType GetED2KFileTypeSearchID(EED2KFileType iFileID);

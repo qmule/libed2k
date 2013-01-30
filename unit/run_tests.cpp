@@ -56,15 +56,19 @@ BOOST_AUTO_TEST_CASE(test_to_string_functions)
 
 BOOST_AUTO_TEST_CASE(test_file_functions)
 {
-    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("ff.song.mP3"), libed2k::ED2KFT_AUDIO);
-    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("..dfdf..song.AVi"), libed2k::ED2KFT_VIDEO);
+    // extensions must be in lower case
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("ff.song.mP3"), libed2k::ED2KFT_ANY);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("..dfdf..song.AVi"), libed2k::ED2KFT_ANY);
     BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("dff/..fdsong.sdsdmp3"), libed2k::ED2KFT_ANY);
     BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID("dfdf.songmp3"), libed2k::ED2KFT_ANY);
-    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID(".dddfdf.song.DOC"), libed2k::ED2KFT_DOCUMENT);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID(".dddfdf.song.DOC"), libed2k::ED2KFT_ANY);
 
     BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.mp3")), libed2k::ED2KFTSTR_AUDIO);
     BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.avi")), libed2k::ED2KFTSTR_VIDEO);
-    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.raR")), libed2k::ED2KFTSTR_PROGRAM);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeSearchTerm(libed2k::GetED2KFileTypeID("xxx.rar")), libed2k::ED2KFTSTR_PROGRAM);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID(".dddfdf.song.doc"), libed2k::ED2KFT_DOCUMENT);
+    BOOST_CHECK_EQUAL(libed2k::GetED2KFileTypeID(".dddfdf.song.iso"), libed2k::ED2KFT_CDIMAGE);
+
 
 }
 
