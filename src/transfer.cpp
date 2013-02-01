@@ -1219,11 +1219,6 @@ namespace libed2k
             return;
         }
 
-        if (m_upload_mode) ++m_upload_mode_time;
-
-        if (m_connections.empty())
-            return;
-
         for (std::set<peer_connection*>::iterator i = m_connections.begin();
              i != m_connections.end();)
         {
@@ -1241,6 +1236,8 @@ namespace libed2k
                 p->disconnect(errors::no_error, 1);
             }
         }
+
+        if (m_upload_mode) ++m_upload_mode_time;
 
         accumulator += m_stat;
         m_total_uploaded += m_stat.last_payload_uploaded();
