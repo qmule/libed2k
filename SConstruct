@@ -42,8 +42,7 @@ sources = globrec('src', '*.cpp')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
 
 binenv = Environment(**unionArgs(args, {'LIBS' : ['ed2k'], 'LIBPATH' : ['lib']}))
-connpath = join('test', 'conn', 'conn')
-conn = binenv.Program(connpath, [connpath + '.cpp', lib])
+conn = binenv.Program(join('bin', 'conn'), [join('test', 'conn', 'conn.cpp'), lib])
 
 uenv = Environment(**unionArgs(args,
                                {'CXXFLAGS': ['-Wno-sign-compare'],

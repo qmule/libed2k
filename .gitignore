@@ -2,8 +2,6 @@
 /.sconsign.dblite
 /out.txt
 /unit/run_tests
-/test/conn/conn
-/test/conn/out.txt
 
 # Compiled Object files
 *.slo
