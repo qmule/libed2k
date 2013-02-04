@@ -70,6 +70,7 @@ namespace libed2k
             self_connection,
             duplicate_peer_id,
             peer_not_constructed,
+            banned_by_ip_filter,
             too_many_connections,
             invalid_transfer_handle,
             invalid_peer_connection_handle,

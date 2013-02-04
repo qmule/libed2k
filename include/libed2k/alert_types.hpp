@@ -734,6 +734,27 @@ namespace libed2k
         }
     };
 
+    struct LIBED2K_EXPORT peer_blocked_alert: transfer_alert
+    {
+        peer_blocked_alert(transfer_handle const& h, address const& ip_)
+            : transfer_alert(h), ip(ip_)
+        {
+        }
+
+        address ip;
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new peer_blocked_alert(*this)); }
+        virtual char const* what() const { return "blocked peer"; }
+        const static int static_category = alert::status_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            error_code ec;
+            return transfer_alert::message() + ": blocked peer: " + ip.to_string(ec);
+        }
+    };
+
     struct LIBED2K_EXPORT file_error_alert: transfer_alert
     {
         file_error_alert(std::string const& f, transfer_handle const& h, error_code const& e)

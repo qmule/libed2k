@@ -24,6 +24,8 @@ namespace libed2k {
         // the given connection was just closed
         void connection_closed(const peer_connection& c);
 
+        void ip_filter_updated();
+
         size_t num_peers() const { return m_peers.size(); }
         void set_connection(peer* p, peer_connection* c);
         bool connect_one_peer();

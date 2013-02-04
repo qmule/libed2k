@@ -64,6 +64,7 @@ namespace libed2k
             "connection to itself",
             "duplicate peer id",
             "peer not constructed",
+            "banned by IP filter",
             "too many connections",
             "invalid transfer handle",
             "invalid peer connection handle",

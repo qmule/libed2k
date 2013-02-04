@@ -20,6 +20,7 @@ namespace libed2k {
     class session_settings;
     struct transfer_handle;
     class add_transfer_params;
+    class ip_filter;
 
     namespace aux
     {
@@ -65,9 +66,7 @@ namespace libed2k {
         alert const* wait_for_alert(time_duration max_wait);
         void set_alert_dispatch(boost::function<void(alert const&)> const& fun);
 
-        /**
-          * execute search file on server
-         */
+        /** execute search file on server */
         void post_search_request(search_request& sr);
         void post_search_more_result_request();
         void post_cancel_search();
@@ -77,9 +76,10 @@ namespace libed2k {
         void set_settings(const session_settings& settings);
         session_settings settings() const;
 
-        /**
-          * search sources for file
-         */
+        void set_ip_filter(const ip_filter& f);
+        const ip_filter& get_ip_filter() const;
+
+        /** search sources for file */
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
         int download_rate_limit() const;

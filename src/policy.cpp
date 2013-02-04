@@ -214,6 +214,47 @@ void policy::connection_closed(const peer_connection& c)
     // be left intact.
 }
 
+// disconnects [TODO: and removes] all peers that are now filtered
+void policy::ip_filter_updated()
+{
+    aux::session_impl& ses = m_transfer->session();
+
+    for (peers_t::iterator i = m_peers.begin(); i != m_peers.end(); ++i)
+    {
+        if ((ses.m_ip_filter.access((*i)->address()) & ip_filter::blocked) == 0)
+        {
+            //++i;
+            continue;
+        }
+
+        ses.m_alerts.post_alert_should(peer_blocked_alert(m_transfer->handle(), (*i)->address()));
+
+        //int current = i - m_peers.begin();
+        //LIBED2K_ASSERT(current >= 0);
+        LIBED2K_ASSERT(m_peers.size() > 0);
+        LIBED2K_ASSERT(i != m_peers.end());
+
+        if ((*i)->connection)
+        {
+            // disconnecting the peer here may also delete the
+            // peer_info_struct. If that is the case, just continue
+            //int count = m_peers.size();
+            peer_connection* p = (*i)->connection;
+
+            p->disconnect(errors::banned_by_ip_filter);
+            // what *i refers to has changed, i.e. cur was deleted
+            //if (m_peers.size() < count)
+            //{
+            //    i = m_peers.begin() + current;
+            //    continue;
+            //}
+            LIBED2K_ASSERT((*i)->connection == 0 || (*i)->connection->get_peer() == 0);
+        }
+
+        //erase_peer(i);
+        //i = m_peers.begin() + current;
+    }
+}
 
 void policy::set_connection(peer* p, peer_connection* c)
 {
@@ -249,7 +290,7 @@ bool policy::is_connect_candidate(peer const& p) const
 //        || p.banned
 //        || !p.connectable
 //        || (p.seed && finished)
-//        || int(p.failcount) >= m_torrent->settings().max_failcount
+//        || int(p.failcount) >= m_transfer->settings().max_failcount
         )
         return false;
 
