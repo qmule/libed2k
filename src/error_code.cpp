@@ -21,6 +21,9 @@ namespace libed2k
             "blob tag too long",
             "incompatible tag getter",
             "tag list index error",
+            "lines syntax error",
+            "levels value error",
+            "empty or commented line",
             "invalid entry type",               // derived from libtorrent
             "depth exceeded",
             "unexpected eof",

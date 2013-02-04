@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <locale.h>
+#include <cctype>
 
 #ifndef WIN32
 #include <iconv.h>
@@ -7,12 +8,16 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "libed2k/size_type.hpp"
 #include "libed2k/utf8.hpp"
 #include "libed2k/util.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/bitfield.hpp"
+#include "libed2k/log.hpp"
 
 namespace libed2k 
 {
@@ -244,5 +249,94 @@ namespace libed2k
         }
 
         return res;
+    }
+
+    filter datline2filter(const std::string& line, error_code& ec)
+    {
+        filter f;
+
+        if (!line.empty() && line.at(0) != '#')
+        {
+            int stage = 0;
+            boost::char_separator<char> comma_sep(",");
+            boost::tokenizer<boost::char_separator<char> > tokens(line, comma_sep);
+
+            BOOST_FOREACH(const std::string& str, tokens)
+            {
+                if (stage == 0) // addresses pair
+                {
+                    boost::char_separator<char> dash_sep("-");
+                    boost::tokenizer<boost::char_separator<char> > tadrs(str, dash_sep);
+
+                    int addr_level = 0;
+                    BOOST_FOREACH(std::string adr, tadrs)
+                    {
+                        adr.erase(std::remove_if(adr.begin(), adr.end(), isspace), adr.end());
+
+                        switch(addr_level)
+                        {
+                        case 0:
+                            f.begin = ip::address::from_string(adr, ec);
+                            break;
+                        case 1:
+                            f.end = ip::address::from_string(adr, ec);
+                            break;
+                        default:
+                            ec = errors::lines_syntax_error;
+                            break;
+                        }
+
+                        if (ec)
+                            break;
+
+                        ++addr_level;
+                    }
+
+                    if (!ec && addr_level != 2)
+                        ec = errors::lines_syntax_error;
+                }
+                else if (stage == 1) // level
+                {
+                    std::string level = str;
+                    level.erase(std::remove_if(level.begin(), level.end(), isspace), level.end());
+
+                    try
+                    {
+                        f.level = boost::lexical_cast<int>(level);
+                    }
+                    catch(boost::bad_lexical_cast &)
+                    {
+                        ec = errors::levels_value_error;
+                    }
+                }
+                else if (stage == 2) // comment
+                {
+                    f.comment = str;
+                }
+                else
+                {
+                    ec = errors::lines_syntax_error;
+                }
+
+                if (ec)
+                    break;
+
+                ++stage;
+            }
+
+            // check we processed all elements
+            if (!ec && stage != 3)
+                ec = errors::lines_syntax_error;
+        }
+        else
+        {
+            ec = errors::empty_or_commented_line;
+        }
+
+        DBG("filter begin: " << f.begin.to_string());
+        DBG("filter end  : " << f.end.to_string());
+        DBG("filter level: " << f.level);
+        DBG("filter comm : " << f.comment);
+        return f;
     }
 }

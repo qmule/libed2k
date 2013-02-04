@@ -6,6 +6,7 @@
 #include "libed2k/ptime.hpp"
 #include "libed2k/socket.hpp"
 #include "libed2k/assert.hpp"
+#include "libed2k/error_code.hpp"
 
 namespace libed2k
 {
@@ -219,6 +220,19 @@ namespace libed2k
      * dir1-dir2[-dirn][_uniqueprefix]-filescount.emulecollection => dir1/dir2[/dirn][_uniqueprefix]
      */
     extern std::string collection_dir(const std::string& colname);
+
+    struct filter
+    {
+        int         level;
+        std::string comment;
+        ip::address begin;
+        ip::address end;
+    };
+
+    /**
+      * this function converts line from DAT file and generate filters pair
+     */
+    extern filter datline2filter(const std::string&, error_code&);
 }
 
 #endif
