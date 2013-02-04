@@ -113,7 +113,10 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
+            // all transfers in the session
             transfer_map m_transfers;
+            // active transfers in the session
+            transfer_map m_active_transfers;
 
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
 
@@ -199,6 +202,9 @@ namespace libed2k {
             /** add transfer from current thread directly */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
             virtual void remove_transfer(const transfer_handle& h, int options);
+            /** add/remove active transfer for this session */
+            void add_active_transfer(const boost::shared_ptr<transfer>& t);
+            void remove_active_transfer(const boost::shared_ptr<transfer>& t);
 
             /**
              * find peer connections
@@ -356,7 +362,7 @@ namespace libed2k {
             // ed2k server connection
             boost::intrusive_ptr<server_connection> m_server_connection;
 
-            // the index of the torrent that will be offered to
+            // the index of the transfers that will be offered to
             // connect to a peer next time on_tick is called.
             // This implements a round robin.
             cyclic_iterator<transfer_map> m_next_connect_transfer;

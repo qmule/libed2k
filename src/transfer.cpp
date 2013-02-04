@@ -404,8 +404,7 @@ namespace libed2k
         set_state(transfer_status::seeding);
     }
 
-    // called when torrent is finished (all interesting
-    // pieces have been downloaded)
+    // called when transfer is finished (all interesting pieces have been downloaded)
     void transfer::finished()
     {
         DBG("file transfer '" << hash() << ", " << name() << "' completed");
@@ -1761,6 +1760,17 @@ namespace libed2k
         // put the torrent in an error-state
         set_error(j.error);
         pause();
+    }
+
+    bool transfer::active() const
+    {
+        return m_connections.size() > 0 || !is_seed();
+    }
+
+    void transfer::activate(bool act)
+    {
+        if (act && active()) m_ses.add_active_transfer(shared_from_this());
+        else if (!act && !active()) m_ses.remove_active_transfer(shared_from_this());
     }
 
     shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

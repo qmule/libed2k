@@ -27,6 +27,7 @@ session_impl_base::session_impl_base(const session_settings& settings) :
     m_abort(false),
     m_settings(settings),
     m_transfers(),
+    m_active_transfers(),
     m_alerts(m_io_service),
     m_tpm(m_alerts, settings.m_known_file)
 {
@@ -93,7 +94,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_download_rate(peer_connection::download_channel),
     m_upload_rate(peer_connection::upload_channel),
     m_server_connection(new server_connection(*this)),
-    m_next_connect_transfer(m_transfers),
+    m_next_connect_transfer(m_active_transfers),
     m_paused(false),
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
@@ -339,6 +340,7 @@ void session_impl::operator()()
 
     boost::mutex::scoped_lock l(m_mutex);
     m_transfers.clear();
+    m_active_transfers.clear();
 }
 
 void session_impl::open_listen_port()
@@ -699,6 +701,7 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
     boost::shared_ptr<transfer> tptr = h.m_transfer.lock();
     if (!tptr) return;
 
+    remove_active_transfer(tptr);
     transfer_map::iterator i = m_transfers.find(tptr->hash());
 
     if (i != m_transfers.end())
@@ -710,13 +713,26 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
             t.delete_files();
         t.abort();
 
-        if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
-
         //t.set_queue_position(-1);
         m_transfers.erase(i);
-        m_next_connect_transfer.validate();
 
         m_alerts.post_alert_should(deleted_transfer_alert(hash));
+    }
+}
+
+void session_impl::add_active_transfer(const boost::shared_ptr<transfer>& t)
+{
+    m_active_transfers.insert(std::make_pair(t->hash(), t));
+}
+
+void session_impl::remove_active_transfer(const boost::shared_ptr<transfer>& t)
+{
+    transfer_map::iterator i = m_active_transfers.find(t->hash());
+    if (i != m_active_transfers.end())
+    {
+        if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
+        m_active_transfers.erase(i);
+        m_next_connect_transfer.validate();
     }
 }
 
@@ -876,19 +892,13 @@ void session_impl::abort()
     for (transfer_map::iterator i = m_transfers.begin(),
              end(m_transfers.end()); i != end; ++i)
     {
-        i->second->abort();
+        transfer& t = *i->second;
+        t.abort();
     }
 
     DBG("aborting all server requests");
     //m_server_connection.abort_all_requests();
     m_server_connection->close(errors::session_closing);
-
-    for (transfer_map::iterator i = m_transfers.begin();
-         i != m_transfers.end(); ++i)
-    {
-        transfer& t = *i->second;
-        t.abort();
-    }
 
     DBG("aborting all connections (" << m_connections.size() << ")");
 
@@ -1013,12 +1023,13 @@ void session_impl::on_tick(error_code const& e)
     m_server_connection->check_keep_alive(tick_interval_ms);
 
     // --------------------------------------------------------------
-    // second_tick every transfer
+    // second_tick every active transfer
     // --------------------------------------------------------------
 
     int num_checking = 0;
     int num_queued = 0;
-    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    for (transfer_map::iterator i = m_active_transfers.begin(),
+             end(m_active_transfers.end()); i != end; ++i)
     {
         transfer& t = *i->second;
         LIBED2K_ASSERT(!t.is_aborted());
@@ -1072,14 +1083,14 @@ void session_impl::connect_new_peers()
     // equally likely to connect to a peer
 
     int free_slots = m_half_open.free_slots();
-    if (!m_transfers.empty() && free_slots > -m_half_open.limit() &&
+    if (!m_active_transfers.empty() && free_slots > -m_half_open.limit() &&
         num_connections() < m_settings.connections_limit && !m_abort)
     {
         // this is the maximum number of connections we will
         // attempt this tick
         int max_connections_per_second = 10;
         int steps_since_last_connect = 0;
-        int num_transfers = int(m_transfers.size());
+        int num_active_transfers = int(m_active_transfers.size());
         m_next_connect_transfer.validate();
 
         for (;;)
@@ -1111,7 +1122,7 @@ void session_impl::connect_new_peers()
 
             // if we have gone two whole loops without
             // handing out a single connection, break
-            if (steps_since_last_connect > num_transfers * 2) break;
+            if (steps_since_last_connect > num_active_transfers * 2) break;
             // if there are no more free connection slots, abort
             if (free_slots <= -m_half_open.limit()) break;
             // if we should not make any more connections
