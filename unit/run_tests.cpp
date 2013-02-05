@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(check_dat_filter_parser)
     // incorrect addresses
     ec = libed2k::error_code(libed2k::errors::no_error);
     libed2k::datline2filter("31.208.0.000      - 037.139.255.255  , 56   , Non-IS Net", ec);
-#ifdef WIN32
+#if defined __APPLE__ || defined WIN32
     BOOST_CHECK(!ec);
     BOOST_CHECK_EQUAL(f.begin, libed2k::ip::address::from_string("31.208.0.0", ec));
     BOOST_CHECK_EQUAL(f.end, libed2k::ip::address::from_string("37.139.255.255", ec));
