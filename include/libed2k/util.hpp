@@ -221,7 +221,7 @@ namespace libed2k
      */
     extern std::string collection_dir(const std::string& colname);
 
-    struct filter
+    struct dat_rule
     {
         int         level;
         std::string comment;
@@ -232,7 +232,7 @@ namespace libed2k
     /**
       * this function converts line from DAT file and generate filters pair
      */
-    extern filter datline2filter(const std::string&, error_code&);
+    extern dat_rule datline2filter(const std::string&, error_code&);
 }
 
 #endif

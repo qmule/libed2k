@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(check_dat_filter_parser)
 
     // full checks
     libed2k::error_code ec;
-    libed2k::filter f = libed2k::datline2filter("0.0.0.0         - 5.79.127.255    , 0   , Non-IS Net", ec);
+    libed2k::dat_rule f = libed2k::datline2filter("0.0.0.0         - 5.79.127.255    , 0   , Non-IS Net", ec);
     BOOST_REQUIRE(!ec);
     BOOST_CHECK_EQUAL(f.begin, libed2k::ip::address::from_string("0.0.0.0", ec));
     BOOST_REQUIRE(!ec);

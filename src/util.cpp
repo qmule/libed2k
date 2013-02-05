@@ -251,7 +251,7 @@ namespace libed2k
         return res;
     }
 
-    void extract_addresses(const std::string& line, filter& f, error_code& ec)
+    void extract_addresses(const std::string& line, dat_rule& f, error_code& ec)
     {
         int stage = 0;
         boost::char_separator<char> dash_sep("-");
@@ -284,9 +284,9 @@ namespace libed2k
             ec = errors::lines_syntax_error;
     }
 
-    filter datline2filter(const std::string& line, error_code& ec)
+    dat_rule datline2filter(const std::string& line, error_code& ec)
     {
-        filter f;
+        dat_rule f;
 
         if (!line.empty() && line.at(0) != '#')
         {
