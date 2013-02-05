@@ -37,6 +37,13 @@ peer* policy::add_peer(const tcp::endpoint& ep)
 {
     aux::session_impl& ses = m_transfer->session();
 
+    // if the IP is blocked, don't add it
+    if (ses.m_ip_filter.access(ep.address()) & ip_filter::blocked)
+    {
+        ses.m_alerts.post_alert_should(peer_blocked_alert(m_transfer->handle(), ep.address()));
+        return NULL;
+    }
+
     peers_t::iterator iter;
     bool found = false;
 
@@ -138,7 +145,7 @@ bool policy::new_connection(peer_connection& c)
             if (ec2)
             {
                 i->connection->disconnect(ec2);
-                assert(i->connection == 0);
+                LIBED2K_ASSERT(i->connection == 0);
             }
             else if (!i->connection->is_connecting() || c.is_local())
             {
@@ -148,7 +155,7 @@ bool policy::new_connection(peer_connection& c)
             else
             {
                 i->connection->disconnect(errors::duplicate_peer_id);
-                assert(i->connection == 0);
+                LIBED2K_ASSERT(i->connection == 0);
             }
         }
     }
@@ -188,15 +195,15 @@ void policy::connection_closed(const peer_connection& c)
 {
     peer* p = c.get_peer();
 
-    assert(
+    LIBED2K_ASSERT(
         (std::find_if
          (m_peers.begin(), m_peers.end(), match_peer_connection(c)) != m_peers.end()) == (p != 0));
 
     // if we couldn't find the connection in our list, just ignore it.
     if (p == 0) return;
 
-    assert(p->connection == &c);
-    assert(!is_connect_candidate(*p));
+    LIBED2K_ASSERT(p->connection == &c);
+    LIBED2K_ASSERT(!is_connect_candidate(*p));
 
     p->connection = 0;
 

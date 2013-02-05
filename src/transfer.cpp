@@ -143,11 +143,11 @@ namespace libed2k
         DBG("abort transfer {hash: " << hash() << "}");
 
         // disconnect all peers and close all
-        // files belonging to the torrents
+        // files belonging to the transfer
         disconnect_all(errors::transfer_aborted);
 
         // post a message to the main thread to destruct
-        // the torrent object from there
+        // the transfer object from there
         if (m_owning_storage.get())
         {
             m_storage->abort_disk_io();
@@ -203,7 +203,7 @@ namespace libed2k
     bool transfer::connect_to_peer(peer* peerinfo)
     {
         tcp::endpoint ep(peerinfo->endpoint);
-        LIBED2K_ASSERT(m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked == 0);
+        LIBED2K_ASSERT((m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked) == 0);
 
         boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_ses.m_io_service));
         m_ses.setup_socket_buffers(*sock);
@@ -369,7 +369,7 @@ namespace libed2k
             // in read only mode if needed)
             finished();
             // if we just became a seed, picker is now invalid, since it
-            // is deallocated by the torrent once it starts seeding
+            // is deallocated by the transfer once it starts seeding
         }
     }
 
@@ -414,15 +414,14 @@ namespace libed2k
         return res;
     }
 
-    // called when torrent is complete (all pieces downloaded)
+    // called when transfer is complete (all pieces downloaded)
     void transfer::completed()
     {
         m_picker.reset();
         set_state(transfer_status::seeding);
     }
 
-    // called when torrent is finished (all interesting
-    // pieces have been downloaded)
+    // called when transfer is finished (all interesting pieces have been downloaded)
     void transfer::finished()
     {
         DBG("file transfer '" << hash() << ", " << name() << "' completed");
@@ -1617,7 +1616,7 @@ namespace libed2k
         // blocks per piece
         const int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);
 
-        // if this torrent is a seed, we won't have a piece picker
+        // if this transfer is a seed, we won't have a piece picker
         // and there will be no half-finished pieces.
         if (!is_seed())
         {
@@ -1775,7 +1774,7 @@ namespace libed2k
             return;
         }
 
-        // put the torrent in an error-state
+        // put the transfer in an error-state
         set_error(j.error);
         pause();
     }
