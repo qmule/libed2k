@@ -251,6 +251,39 @@ namespace libed2k
         return res;
     }
 
+    void extract_addresses(const std::string& line, filter& f, error_code& ec)
+    {
+        int stage = 0;
+        boost::char_separator<char> dash_sep("-");
+        boost::tokenizer<boost::char_separator<char> > tokens(line, dash_sep);
+
+        BOOST_FOREACH(std::string adr, tokens)
+        {
+            adr.erase(std::remove_if(adr.begin(), adr.end(), isspace), adr.end());
+
+            switch(stage)
+            {
+            case 0:
+                f.begin = ip::address::from_string(adr, ec);
+                break;
+            case 1:
+                f.end = ip::address::from_string(adr, ec);
+                break;
+            default:
+                ec = errors::lines_syntax_error;
+                break;
+            }
+
+            if (ec)
+                break;
+
+            ++stage;
+        }
+
+        if (!ec && stage != 2)
+            ec = errors::lines_syntax_error;
+    }
+
     filter datline2filter(const std::string& line, error_code& ec)
     {
         filter f;
@@ -263,63 +296,34 @@ namespace libed2k
 
             BOOST_FOREACH(const std::string& str, tokens)
             {
-                if (stage == 0) // addresses pair
+                switch(stage)
                 {
-                    boost::char_separator<char> dash_sep("-");
-                    boost::tokenizer<boost::char_separator<char> > tadrs(str, dash_sep);
-
-                    int addr_level = 0;
-                    BOOST_FOREACH(std::string adr, tadrs)
+                    case 0:
+                        extract_addresses(str, f, ec);
+                        break;
+                    case 1:
                     {
-                        adr.erase(std::remove_if(adr.begin(), adr.end(), isspace), adr.end());
+                        std::string level = str;
+                        level.erase(std::remove_if(level.begin(), level.end(), isspace), level.end());
 
-                        switch(addr_level)
+                        try
                         {
-                        case 0:
-                            f.begin = ip::address::from_string(adr, ec);
-                            break;
-                        case 1:
-                            f.end = ip::address::from_string(adr, ec);
-                            break;
-                        default:
-                            ec = errors::lines_syntax_error;
-                            break;
+                            f.level = boost::lexical_cast<int>(level);
+                        }
+                        catch(boost::bad_lexical_cast &)
+                        {
+                            ec = errors::levels_value_error;
                         }
 
-                        if (ec)
-                            break;
-
-                        ++addr_level;
+                        break;
                     }
-
-                    if (!ec && addr_level != 2)
+                    case 2:
+                        f.comment = str;
+                        break;
+                    default:
                         ec = errors::lines_syntax_error;
+                        break;
                 }
-                else if (stage == 1) // level
-                {
-                    std::string level = str;
-                    level.erase(std::remove_if(level.begin(), level.end(), isspace), level.end());
-
-                    try
-                    {
-                        f.level = boost::lexical_cast<int>(level);
-                    }
-                    catch(boost::bad_lexical_cast &)
-                    {
-                        ec = errors::levels_value_error;
-                    }
-                }
-                else if (stage == 2) // comment
-                {
-                    f.comment = str;
-                }
-                else
-                {
-                    ec = errors::lines_syntax_error;
-                }
-
-                if (ec)
-                    break;
 
                 ++stage;
             }
