@@ -1304,7 +1304,7 @@ namespace libed2k
             {
                 i->first.callback(i->second, i->first);
             }
-            LIBED2K_CATCH(std::exception& e)
+            LIBED2K_CATCH(std::exception&)
             {}
         }
     }

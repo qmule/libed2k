@@ -20,7 +20,7 @@ namespace libed2k {
     class session_settings;
     struct transfer_handle;
     class add_transfer_params;
-    class ip_filter;
+    struct ip_filter;
 
     namespace aux
     {
