@@ -12,10 +12,7 @@
 
 namespace libed2k
 {
-
-    /**
-      * fake constructor
-     */
+    /** fake constructor */
     transfer::transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
                        const md4_hash& hash, const std::string& filepath, size_type size):
         m_ses(ses),
@@ -69,7 +66,6 @@ namespace libed2k
     }
 
     const md4_hash& transfer::hash() const { return m_info->info_hash(); }
-    const md4_hash transfer::collection_hash() const { return md4_hash(); }
     size_type transfer::size() const { return m_info->file_at(0).size; }
     const std::string& transfer::name() const { return m_info->name(); }
     const std::string& transfer::save_path() const { return m_save_path; }
