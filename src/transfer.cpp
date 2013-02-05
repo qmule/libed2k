@@ -203,7 +203,7 @@ namespace libed2k
     bool transfer::connect_to_peer(peer* peerinfo)
     {
         tcp::endpoint ep(peerinfo->endpoint);
-        LIBED2K_ASSERT(m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked == 0);
+        LIBED2K_ASSERT((m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked) == 0);
 
         boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_ses.m_io_service));
         m_ses.setup_socket_buffers(*sock);
