@@ -259,6 +259,8 @@ namespace libed2k
 
         LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
+        activate(true);
+
         return true;
     }
 
