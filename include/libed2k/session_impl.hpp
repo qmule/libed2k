@@ -199,16 +199,15 @@ namespace libed2k {
             void pause();
             void resume();
 
-            /** add transfer from current thread directly */
+            /** add/remove transfer from current thread directly */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
             virtual void remove_transfer(const transfer_handle& h, int options);
             /** add/remove active transfer for this session */
             void add_active_transfer(const boost::shared_ptr<transfer>& t);
             void remove_active_transfer(const boost::shared_ptr<transfer>& t);
+            void remove_active_transfer(transfer_map::iterator i);
 
-            /**
-             * find peer connections
-             */
+            /** find peer connections */
             boost::intrusive_ptr<peer_connection> find_peer_connection(const net_identifier& np) const;
             boost::intrusive_ptr<peer_connection> find_peer_connection(const md4_hash& hash) const;
             peer_connection_handle add_peer_connection(net_identifier np, error_code& ec);
@@ -306,6 +305,7 @@ namespace libed2k {
 
             void update_connections_limit();
             void update_rate_settings();
+            void update_active_transfers();
 
             boost::object_pool<peer> m_peer_pool;
 

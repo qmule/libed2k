@@ -729,11 +729,14 @@ void session_impl::remove_active_transfer(const boost::shared_ptr<transfer>& t)
 {
     transfer_map::iterator i = m_active_transfers.find(t->hash());
     if (i != m_active_transfers.end())
-    {
-        if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
-        m_active_transfers.erase(i);
-        m_next_connect_transfer.validate();
-    }
+        remove_active_transfer(i);
+}
+
+void session_impl::remove_active_transfer(transfer_map::iterator i)
+{
+    if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
+    m_active_transfers.erase(i);
+    m_next_connect_transfer.validate();
 }
 
 peer_connection_handle session_impl::add_peer_connection(net_identifier np, error_code& ec)
@@ -1022,6 +1025,8 @@ void session_impl::on_tick(error_code const& e)
 
     m_server_connection->check_keep_alive(tick_interval_ms);
 
+    update_active_transfers();
+
     // --------------------------------------------------------------
     // second_tick every active transfer
     // --------------------------------------------------------------
@@ -1037,7 +1042,8 @@ void session_impl::on_tick(error_code const& e)
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms, now);
 
-        // when server connection changes its state to offline - we drop announces status for all transfers
+        // when server connection changes its state to offline -
+        // we drop announces status for all transfers
         if (server_conn_change_state)
         {
             if (m_server_connection->offline())
@@ -1464,6 +1470,17 @@ void session_impl::update_rate_settings()
     if (m_settings.upload_rate_limit < 0)
         m_settings.upload_rate_limit = 0;
     m_upload_channel.throttle(m_settings.upload_rate_limit);
+}
+
+void session_impl::update_active_transfers()
+{
+    for (transfer_map::iterator i = m_active_transfers.begin(),
+             end(m_active_transfers.end()); i != end; ++i)
+    {
+        transfer& t = *i->second;
+        if (t.active()) ++i;
+        else remove_active_transfer(i++);
+    }
 }
 
 }

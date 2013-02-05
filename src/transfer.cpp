@@ -168,6 +168,9 @@ namespace libed2k
         if (m_state == s) return;
         m_ses.m_alerts.post_alert_should(state_changed_alert(handle(), s, m_state));
         m_state = s;
+
+        if (s != transfer_status::seeding)
+            activate(true);
     }
 
     bool transfer::want_more_peers() const
