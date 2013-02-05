@@ -1461,7 +1461,7 @@ void session_impl::update_rate_settings()
 void session_impl::update_active_transfers()
 {
     for (transfer_map::iterator i = m_active_transfers.begin(),
-             end(m_active_transfers.end()); i != end; ++i)
+             end(m_active_transfers.end()); i != end;)
     {
         transfer& t = *i->second;
         if (t.active()) ++i;

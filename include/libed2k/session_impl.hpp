@@ -69,9 +69,7 @@ namespace libed2k {
             initialize_timer();
         };
 
-        /**
-         * class used for testing
-         */
+        /** class used for testing */
         class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
@@ -83,18 +81,14 @@ namespace libed2k {
 
             virtual void abort();
 
-            /**
-             *  add transfer from another thread
-             */
+            /**  add transfer from another thread */
             virtual void post_transfer(add_transfer_params const& );
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
             virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename) = 0;
             virtual void remove_transfer(const transfer_handle& h, int options) = 0;
             virtual std::vector<transfer_handle> get_transfers() = 0;
 
-            /**
-             * alerts
-             */
+            /** alerts */
             std::auto_ptr<alert> pop_alert();
             void set_alert_mask(boost::uint32_t m);
             size_t set_alert_queue_size_limit(size_t queue_size_limit_);
@@ -129,9 +123,7 @@ namespace libed2k {
             // handles delayed alerts
             alert_manager m_alerts;
 
-            /**
-             * file hasher closed in self thread
-             */
+            /** file hasher closed in self thread */
             transfer_params_maker    m_tpm;
         };
 
@@ -176,14 +168,10 @@ namespace libed2k {
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
             virtual std::vector<transfer_handle> get_transfers();
 
-            /**
-              * add transfer to check queue
-             */
+            /** add transfer to check queue */
             void queue_check_transfer(boost::shared_ptr<transfer> const& t);
 
-            /**
-              * remove transfer from check queue
-             */
+            /** remove transfer from check queue */
             void dequeue_check_transfer(boost::shared_ptr<transfer> const& t);
 
             void close_connection(const peer_connection* p, const error_code& ec);
@@ -253,32 +241,22 @@ namespace libed2k {
             // if there are any trasfers and any free slots
             void connect_new_peers();
 
-            /**
-              * must be locked before access data in this class
-             */
+            /** must be locked before access data in this class */
             typedef boost::mutex mutex_t;
             mutable mutex_t m_mutex;
 
             void setup_socket_buffers(tcp::socket& s);
 
-            /**
-              * search file on server
-             */
+            /** search file on server */
             void post_search_request(search_request& sr);
 
-            /**
-              * after simple search call you can post request more search results
-             */
+            /** after simple search call you can post request more search results */
             void post_search_more_result_request();
 
-            /**
-              * this method simple send information packet to server and break search order
-             */
+            /** this method simple send information packet to server and break search order */
             void post_cancel_search();
 
-            /**
-              * request sources for file
-             */
+            /** request sources for file */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
             /**
