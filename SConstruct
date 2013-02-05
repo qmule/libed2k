@@ -31,7 +31,7 @@ boostRoot      = os.getenv('BOOST_ROOT')
 args = {
     'ENV'     : os.environ,
     'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot]],
-    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
+    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-Werror=return-type', '-g', '-D_FILE_OFFSET_BITS=64',
                  '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
     'LIBS'    : [libboost('system'), libboost('thread'), 'pthread']
