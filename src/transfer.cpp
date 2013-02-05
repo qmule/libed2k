@@ -184,6 +184,14 @@ namespace libed2k
 
     void transfer::add_peer(const tcp::endpoint& peer)
     {
+        if (m_ses.m_ip_filter.access(peer.address()) & ip_filter::blocked)
+        {
+            error_code ec;
+            DBG("blocked peer: " << peer.address().to_string(ec));
+            m_ses.m_alerts.post_alert_should(peer_blocked_alert(handle(), peer.address()));
+            return;
+        }
+
         m_policy.add_peer(peer);
     }
 
@@ -195,6 +203,8 @@ namespace libed2k
     bool transfer::connect_to_peer(peer* peerinfo)
     {
         tcp::endpoint ep(peerinfo->endpoint);
+        LIBED2K_ASSERT(m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked == 0);
+
         boost::shared_ptr<tcp::socket> sock(new tcp::socket(m_ses.m_io_service));
         m_ses.setup_socket_buffers(*sock);
 
@@ -232,6 +242,13 @@ namespace libed2k
     bool transfer::attach_peer(peer_connection* p)
     {
         LIBED2K_ASSERT(!p->has_transfer());
+
+        if (m_ses.m_ip_filter.access(p->remote().address()) & ip_filter::blocked)
+        {
+            m_ses.m_alerts.post_alert_should(peer_blocked_alert(handle(), p->remote().address()));
+            p->disconnect(errors::banned_by_ip_filter);
+            return false;
+        }
 
         if (m_state == transfer_status::queued_for_checking ||
             m_state == transfer_status::checking_files ||
