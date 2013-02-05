@@ -249,8 +249,6 @@ namespace libed2k {
 
             void on_tick(error_code const& e);
 
-            bool has_active_transfer() const;
-
             // let transfers connect to peers if they want to
             // if there are any trasfers and any free slots
             void connect_new_peers();

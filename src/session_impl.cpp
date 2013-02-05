@@ -1140,20 +1140,6 @@ void session_impl::connect_new_peers()
     }
 }
 
-bool session_impl::has_active_transfer() const
-{
-    for (transfer_map::const_iterator i = m_transfers.begin(), end(m_transfers.end());
-         i != end; ++i)
-    {
-        if (!i->second->is_paused())
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 void session_impl::setup_socket_buffers(ip::tcp::socket& s)
 {
     error_code ec;
