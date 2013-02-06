@@ -590,12 +590,27 @@ std::vector<transfer_handle> session_impl::get_transfers()
 {
     std::vector<transfer_handle> ret;
 
-    for (session_impl::transfer_map::iterator i
-        = m_transfers.begin(), end(m_transfers.end());
-        i != end; ++i)
+    for (session_impl::transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
     {
-        if (i->second->is_aborted()) continue;
-        ret.push_back(transfer_handle(i->second));
+        transfer& t = *i->second;
+        if (t.is_aborted()) continue;
+        ret.push_back(t.handle());
+    }
+
+    return ret;
+}
+
+std::vector<transfer_handle> session_impl::get_active_transfers()
+{
+    std::vector<transfer_handle> ret;
+
+    for (session_impl::transfer_map::iterator i = m_active_transfers.begin(),
+             end(m_active_transfers.end()); i != end; ++i)
+    {
+        transfer& t = *i->second;
+        if (t.is_aborted()) continue;
+        ret.push_back(t.handle());
     }
 
     return ret;

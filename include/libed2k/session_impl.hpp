@@ -166,7 +166,8 @@ namespace libed2k {
             transfer_handle find_transfer_handle(const md4_hash& hash);
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
-            virtual std::vector<transfer_handle> get_transfers();
+            std::vector<transfer_handle> get_transfers();
+            std::vector<transfer_handle> get_active_transfers();
 
             /** add transfer to check queue */
             void queue_check_transfer(boost::shared_ptr<transfer> const& t);
