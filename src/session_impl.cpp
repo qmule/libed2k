@@ -1013,10 +1013,21 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // we always check status changing because it check before reconnect processing
     bool server_conn_change_state = m_server_connection_state != m_server_connection->state();
-
     if (server_conn_change_state)
     {
         m_server_connection_state = m_server_connection->state();
+
+        // when server connection changes its state to offline -
+        // we drop announces status for all transfers
+        if (m_server_connection->offline())
+        {
+            for (transfer_map::iterator i = m_transfers.begin(),
+                     end(m_transfers.end()); i != end; ++i)
+            {
+                transfer& t = *i->second;
+                t.set_announced(false);
+            }
+        }
     }
 
     if (m_server_connection->online()) announce(tick_interval_ms);
@@ -1041,16 +1052,6 @@ void session_impl::on_tick(error_code const& e)
         if (t.state() == transfer_status::checking_files) ++num_checking;
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms, now);
-
-        // when server connection changes its state to offline -
-        // we drop announces status for all transfers
-        if (server_conn_change_state)
-        {
-            if (m_server_connection->offline())
-            {
-                t.set_announced(false);
-            }
-        }
     }
 
     // some people claim that there sometimes can be cases where
