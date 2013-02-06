@@ -52,8 +52,6 @@ namespace libed2k
         ~transfer();
 
         const md4_hash& hash() const;
-        // TODO temp code - it will be part of new share files engine
-        const md4_hash collection_hash() const;
         size_type size() const;
         const std::string& name() const;
         const std::string& save_path() const;
