@@ -192,8 +192,8 @@ namespace libed2k {
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
             virtual void remove_transfer(const transfer_handle& h, int options);
             /** add/remove active transfer for this session */
-            void add_active_transfer(const boost::shared_ptr<transfer>& t);
-            void remove_active_transfer(const boost::shared_ptr<transfer>& t);
+            bool add_active_transfer(const boost::shared_ptr<transfer>& t);
+            bool remove_active_transfer(const boost::shared_ptr<transfer>& t);
             void remove_active_transfer(transfer_map::iterator i);
 
             /** find peer connections */

@@ -54,7 +54,8 @@ namespace libed2k
         m_progress_ppm(0),
         m_total_failed_bytes(0),
         m_total_redundant_bytes(0),
-        m_minute_timer(minutes(1), min_time())
+        m_minute_timer(minutes(1), min_time()),
+        m_last_active(0)
     {
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
     }
@@ -1219,6 +1220,9 @@ namespace libed2k
             return;
         }
 
+        if (active()) m_last_active = 0;
+        else m_last_active += div_ceil(tick_interval_ms, 1000);
+
         for (std::set<peer_connection*>::iterator i = m_connections.begin();
              i != m_connections.end();)
         {
@@ -1770,7 +1774,8 @@ namespace libed2k
 
     void transfer::activate(bool act)
     {
-        if (act && active()) m_ses.add_active_transfer(shared_from_this());
+        if (act && active() && m_ses.add_active_transfer(shared_from_this()))
+            m_last_active = 0;
         else if (!act && !active()) m_ses.remove_active_transfer(shared_from_this());
     }
 
