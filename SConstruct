@@ -57,6 +57,6 @@ conn = binenv.Program(join('bin', 'conn'), [join('test', 'conn', 'conn.cpp'), li
 
 uenv = Environment(**unionArgs(args,
                                {'CXXFLAGS': ['-Wno-sign-compare'],
-                                'LIBS': [libboost('unit_test_framework'), libboost('filesystem')]}))
+                                'LIBS': [libboost('unit_test_framework')]}))
 utests = globrec('unit', '*.cpp')
 uenv.Program(join('unit', 'run_tests'), utests + [lib])
