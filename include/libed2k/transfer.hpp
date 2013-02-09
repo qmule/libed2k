@@ -160,6 +160,8 @@ namespace libed2k
         stat statistics() const { return m_stat; }
         void add_stats(const stat& s);
 
+        void ip_filter_updated() { m_policy.ip_filter_updated(); }
+
         void set_upload_mode(bool b);
         bool upload_mode() const { return m_upload_mode; }
 

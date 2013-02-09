@@ -27,6 +27,9 @@ namespace libed2k
             blob_tag_too_long,
             incompatible_tag_getter,
             tag_list_index_error,
+            lines_syntax_error,
+            levels_value_error,
+            empty_or_commented_line,
             invalid_entry_type,         // derived from libtorrent
             depth_exceeded,
             unexpected_eof,
@@ -67,6 +70,7 @@ namespace libed2k
             self_connection,
             duplicate_peer_id,
             peer_not_constructed,
+            banned_by_ip_filter,
             too_many_connections,
             invalid_transfer_handle,
             invalid_peer_connection_handle,

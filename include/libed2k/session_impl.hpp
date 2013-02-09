@@ -3,7 +3,6 @@
 #define __LIBED2K_SESSION_IMPL__
 
 #include <string>
-
 #include <map>
 #include <set>
 
@@ -15,6 +14,7 @@
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/peer_connection_handle.hpp"
+#include "libed2k/ip_filter.hpp"
 #include "libed2k/session_settings.hpp"
 #include "libed2k/util.hpp"
 #include "libed2k/alert.hpp"
@@ -146,6 +146,9 @@ namespace libed2k {
             void operator()();
 
             void open_listen_port();
+
+            void set_ip_filter(const ip_filter& f);
+            const ip_filter& get_ip_filter() const;
 
             bool listen_on(int port, const char* net_interface);
             bool is_listening() const;
@@ -348,6 +351,9 @@ namespace libed2k {
             // object. It is the complete list of all connected
             // peers.
             connection_map m_connections;
+
+            // filters incoming connections
+            ip_filter m_ip_filter;
 
             // the ip-address of the interface
             // we are supposed to listen on.

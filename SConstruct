@@ -4,6 +4,7 @@ from os.path import join, basename
 
 # Options
 AddOption('--boost-mt', dest='boostmt', nargs=0, help='Using boost libraries with -mt suffix')
+AddOption('--dbg', dest='dbg', nargs=0, help='Build library with debug options')
 
 def globrec(rootdir, wildcard):
     matches = []
@@ -25,17 +26,27 @@ def libboost(name):
     return 'boost_' + name + suffix
 
 # Environment
-boostRoot      = os.getenv('BOOST_ROOT')
+boostRoot = os.getenv('BOOST_ROOT')
 
 # Arguments
-args = {
+commonArgs = {
     'ENV'     : os.environ,
     'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot]],
-    'CXXFLAGS': ['-DLIBED2K_DEBUG', '-Wall', '-g', '-D_FILE_OFFSET_BITS=64',
+    'CXXFLAGS': ['-Wall', '-Werror=return-type', '-D_FILE_OFFSET_BITS=64',
                  '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
     'LIBS'    : [libboost('system'), libboost('thread'), 'pthread']
     }
+
+debugArgs = {
+    'CXXFLAGS': ['-g', '-O0', '-rdynamic', '-DLIBED2K_DEBUG']
+    }
+
+releaseArgs = {
+    'CXXFLAGS': ['-O2']
+    }
+
+args = unionArgs(commonArgs, releaseArgs if GetOption('dbg') == None else debugArgs)
 
 env = Environment(**args)
 sources = globrec('src', '*.cpp')
@@ -46,6 +57,6 @@ conn = binenv.Program(join('bin', 'conn'), [join('test', 'conn', 'conn.cpp'), li
 
 uenv = Environment(**unionArgs(args,
                                {'CXXFLAGS': ['-Wno-sign-compare'],
-                                'LIBS': [libboost('unit_test_framework'), libboost('filesystem')]}))
+                                'LIBS': [libboost('unit_test_framework')]}))
 utests = globrec('unit', '*.cpp')
 uenv.Program(join('unit', 'run_tests'), utests + [lib])

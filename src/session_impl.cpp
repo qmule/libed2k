@@ -360,6 +360,22 @@ void session_impl::open_listen_port()
     }
 }
 
+void session_impl::set_ip_filter(const ip_filter& f)
+{
+    m_ip_filter = f;
+
+    // Close connections whose endpoint is filtered
+    // by the new ip-filter
+    for (transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
+        i->second->ip_filter_updated();
+}
+
+const ip_filter& session_impl::get_ip_filter() const
+{
+    return m_ip_filter;
+}
+
 bool session_impl::listen_on(int port, const char* net_interface)
 {
     DBG("listen_on(" << ((net_interface)?net_interface:"null") << ":" << port);
@@ -489,6 +505,12 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
 
 void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 {
+    if (m_paused)
+    {
+        DBG("INCOMING CONNECTION [ ignored, paused ]");
+        return;
+    }
+
     error_code ec;
     // we got a connection request!
     tcp::endpoint endp = s->remote_endpoint(ec);
@@ -500,6 +522,13 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
     }
 
     DBG("<== INCOMING CONNECTION " << endp);
+
+    if (m_ip_filter.access(endp.address()) & ip_filter::blocked)
+    {
+        DBG("filtered blocked ip " << endp);
+        m_alerts.post_alert_should(peer_blocked_alert(transfer_handle(), endp.address()));
+        return;
+    }
 
     // don't allow more connections than the max setting
     if (num_connections() >= max_connections())

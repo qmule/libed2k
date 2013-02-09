@@ -3,6 +3,7 @@
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/server_connection.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/ip_filter.hpp"
 
 namespace libed2k
 {
@@ -137,6 +138,18 @@ namespace libed2k
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
         return m_impl->m_settings;
+    }
+
+    void session::set_ip_filter(const ip_filter& f)
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->set_ip_filter(f);
+    }
+
+    const ip_filter& session::get_ip_filter() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->get_ip_filter();
     }
 
     transfer_handle session::find_transfer(const md4_hash & hash) const
