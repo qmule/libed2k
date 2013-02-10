@@ -1,7 +1,8 @@
 /bin/
 /.sconsign.dblite
 /out.txt
-unit/run_tests
+/unit/run_tests
+
 # Compiled Object files
 *.slo
 *.lo

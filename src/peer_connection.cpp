@@ -196,6 +196,10 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.payload_up_speed = m_statistics.upload_payload_rate();
     p.num_pieces = m_remote_pieces.count();
 
+    // GeoIP isn't supported by libed2k yet.
+    p.country[0] = 0;
+    p.country[1] = 0;
+
     p.total_download = m_statistics.total_payload_download();
     p.total_upload = m_statistics.total_payload_upload();
 
@@ -1413,6 +1417,21 @@ void peer_connection::on_disk_write_complete(
     picker.mark_as_finished(block_finished, get_peer());
 }
 
+void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
+{
+    misc_options mo(0);
+    mo.m_nUnicodeSupport = 1;
+    mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
+
+    misc_options2 mo2(0);
+    mo2.set_captcha();
+    mo2.set_large_files();
+    mo2.set_source_ext2();
+
+    t.add_tag(make_typed_tag(mo.generate(), CT_EMULE_MISCOPTIONS1, true));
+    t.add_tag(make_typed_tag(mo2.generate(), CT_EMULE_MISCOPTIONS2, true));
+}
+
 void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
@@ -1428,19 +1447,7 @@ void peer_connection::write_hello()
     hello.m_nHashLength = MD4_HASH_SIZE;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
-
-    misc_options mo(0);
-    mo.m_nUnicodeSupport = 1;
-    mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
-
-    misc_options2 mo2(0);
-    mo2.set_captcha();
-    mo2.set_large_files();
-    mo2.set_source_ext2();
-
-    hello.m_list.add_tag(make_typed_tag(mo.generate(), CT_EMULE_MISCOPTIONS1, true));
-    hello.m_list.add_tag(make_typed_tag(mo2.generate(), CT_EMULE_MISCOPTIONS2, true));
-
+    append_misc_info(hello.m_list);
     write_struct(hello);
 }
 
@@ -1461,6 +1468,7 @@ void peer_connection::write_hello_answer()
             m_ses.settings().client_name,
             m_ses.settings().mod_name,
             m_ses.settings().m_version);
+    append_misc_info(cha.m_list);
     cha.dump();
     DBG("hello answer ==> " << m_remote);
     write_struct(cha);

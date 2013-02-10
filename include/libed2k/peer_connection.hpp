@@ -272,6 +272,9 @@ namespace libed2k
                 defer_write(t);
         }
 
+        // add some predefined tags into list, used to hello/hello answer packets
+        void append_misc_info(tag_list<boost::uint32_t>&);
+
         // the following functions appends messages
         // to the send buffer
         void write_hello();

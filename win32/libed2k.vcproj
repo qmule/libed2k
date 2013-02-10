@@ -245,6 +245,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ip_filter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lazy_bdecode.cpp"
 				>
 			</File>
@@ -504,6 +508,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\io_service.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\ip_filter.hpp"
 				>
 			</File>
 			<File

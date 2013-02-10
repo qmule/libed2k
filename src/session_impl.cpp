@@ -111,7 +111,13 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     error_code ec;
     m_listen_interface = tcp::endpoint(
         ip::address::from_string(listen_interface, ec), settings.listen_port);
-    assert(!ec);
+
+    if (ec)
+    {
+        ERR("session_impl::session_impl{" << ec.message() << "} on iface {" << listen_interface << "}");
+    }
+
+    LIBED2K_ASSERT_VAL(!ec, ec.message());
 
 #ifdef WIN32
     // windows XP has a limit on the number of
@@ -352,6 +358,22 @@ void session_impl::open_listen_port()
     }
 }
 
+void session_impl::set_ip_filter(const ip_filter& f)
+{
+    m_ip_filter = f;
+
+    // Close connections whose endpoint is filtered
+    // by the new ip-filter
+    for (transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
+        i->second->ip_filter_updated();
+}
+
+const ip_filter& session_impl::get_ip_filter() const
+{
+    return m_ip_filter;
+}
+
 bool session_impl::listen_on(int port, const char* net_interface)
 {
     DBG("listen_on(" << ((net_interface)?net_interface:"null") << ":" << port);
@@ -481,6 +503,12 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
 
 void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 {
+    if (m_paused)
+    {
+        DBG("INCOMING CONNECTION [ ignored, paused ]");
+        return;
+    }
+
     error_code ec;
     // we got a connection request!
     tcp::endpoint endp = s->remote_endpoint(ec);
@@ -492,6 +520,13 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
     }
 
     DBG("<== INCOMING CONNECTION " << endp);
+
+    if (m_ip_filter.access(endp.address()) & ip_filter::blocked)
+    {
+        DBG("filtered blocked ip " << endp);
+        m_alerts.post_alert_should(peer_blocked_alert(transfer_handle(), endp.address()));
+        return;
+    }
 
     // don't allow more connections than the max setting
     if (num_connections() >= max_connections())
@@ -1157,8 +1192,8 @@ session_impl::listen_socket_t session_impl::setup_listener(
 
     if (ec)
     {
-        //ERR("failed to open socket: " << libed2k::print_endpoint(ep)
-        //    << ": " << ec.message().c_str());
+        ERR("failed to open socket: " << libed2k::print_endpoint(ep)
+            << ": " << ec.message().c_str());
     }
 
     s.sock->bind(ep, ec);
@@ -1166,12 +1201,9 @@ session_impl::listen_socket_t session_impl::setup_listener(
     if (ec)
     {
         // post alert
-
-        char msg[200];
-        snprintf(msg, 200, "cannot bind to interface \"%s\": %s",
-                 libed2k::print_endpoint(ep).c_str(), ec.message().c_str());
-        ERR(msg);
-
+        ERR("cannot bind to interface " << 
+            libed2k::print_endpoint(ep).c_str() << " : " <<
+            ec.message().c_str());
         return listen_socket_t();
     }
 
