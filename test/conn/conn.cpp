@@ -720,15 +720,18 @@ int main(int argc, char* argv[])
                 ses.server_conn_stop();
                 break;
             case cc_listen:
-                if (ses.listen_on(settings.listen_port, strArg.c_str()))
                 {
-                    DBG("Ok, listen on " << strArg);
+                    settings.listen_port = atoi(strArg.c_str());
+                    if (ses.listen_on(settings.listen_port))
+                    {
+                        DBG("Ok, listen on " << strArg);
+                    }
+                    else
+                    {
+                        DBG("Unable to reset port");
+                    }
+                    break;
                 }
-                else
-                {
-                    DBG("Unable to reset port");
-                }
-                break;
             case cc_tr:
             {
                 std::vector<libed2k::transfer_handle> vth = ses.get_transfers();

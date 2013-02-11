@@ -62,6 +62,8 @@ namespace libed2k
     void server_connection::close(const error_code& ec)
     {
         DBG("server_connection::close()");
+        if (m_state == SC_OFFLINE)
+            return;
         m_state = SC_OFFLINE;
         m_write_order.clear();  // remove all incoming messages
         m_socket.close();
