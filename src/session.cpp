@@ -164,6 +164,12 @@ namespace libed2k
         return m_impl->get_transfers();
     }
 
+    std::vector<transfer_handle> session::get_active_transfers() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->get_active_transfers();
+    }
+
     void session::remove_transfer(const transfer_handle& h, int options)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);

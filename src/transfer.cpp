@@ -54,7 +54,8 @@ namespace libed2k
         m_progress_ppm(0),
         m_total_failed_bytes(0),
         m_total_redundant_bytes(0),
-        m_minute_timer(minutes(1), min_time())
+        m_minute_timer(minutes(1), min_time()),
+        m_last_active(0)
     {
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
     }
@@ -164,6 +165,9 @@ namespace libed2k
         if (m_state == s) return;
         m_ses.m_alerts.post_alert_should(state_changed_alert(handle(), s, m_state));
         m_state = s;
+
+        if (s != transfer_status::seeding)
+            activate(true);
     }
 
     bool transfer::want_more_peers() const
@@ -269,6 +273,8 @@ namespace libed2k
 
         LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
+        activate(true);
+
         return true;
     }
 
@@ -1231,6 +1237,9 @@ namespace libed2k
             return;
         }
 
+        if (active()) m_last_active = 0;
+        else m_last_active += div_ceil(tick_interval_ms, 1000);
+
         for (std::set<peer_connection*>::iterator i = m_connections.begin();
              i != m_connections.end();)
         {
@@ -1773,6 +1782,18 @@ namespace libed2k
         // put the transfer in an error-state
         set_error(j.error);
         pause();
+    }
+
+    bool transfer::active() const
+    {
+        return m_connections.size() > 0 || !is_seed();
+    }
+
+    void transfer::activate(bool act)
+    {
+        if (act && active() && m_ses.add_active_transfer(shared_from_this()))
+            m_last_active = 0;
+        else if (!act && !active()) m_ses.remove_active_transfer(shared_from_this());
     }
 
     shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)

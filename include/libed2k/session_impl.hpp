@@ -69,9 +69,7 @@ namespace libed2k {
             initialize_timer();
         };
 
-        /**
-         * class used for testing
-         */
+        /** class used for testing */
         class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
@@ -83,18 +81,14 @@ namespace libed2k {
 
             virtual void abort();
 
-            /**
-             *  add transfer from another thread
-             */
+            /**  add transfer from another thread */
             virtual void post_transfer(add_transfer_params const& );
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec) = 0;
             virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename) = 0;
             virtual void remove_transfer(const transfer_handle& h, int options) = 0;
             virtual std::vector<transfer_handle> get_transfers() = 0;
 
-            /**
-             * alerts
-             */
+            /** alerts */
             std::auto_ptr<alert> pop_alert();
             void set_alert_mask(boost::uint32_t m);
             size_t set_alert_queue_size_limit(size_t queue_size_limit_);
@@ -113,7 +107,10 @@ namespace libed2k {
 
             // the settings for the client
             session_settings m_settings;
+            // all transfers in the session
             transfer_map m_transfers;
+            // active transfers in the session
+            transfer_map m_active_transfers;
 
             typedef std::list<boost::shared_ptr<transfer> > check_queue_t;
 
@@ -126,9 +123,7 @@ namespace libed2k {
             // handles delayed alerts
             alert_manager m_alerts;
 
-            /**
-             * file hasher closed in self thread
-             */
+            /** file hasher closed in self thread */
             transfer_params_maker    m_tpm;
         };
 
@@ -174,16 +169,13 @@ namespace libed2k {
             transfer_handle find_transfer_handle(const md4_hash& hash);
             peer_connection_handle find_peer_connection_handle(const net_identifier& np);
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
-            virtual std::vector<transfer_handle> get_transfers();
+            std::vector<transfer_handle> get_transfers();
+            std::vector<transfer_handle> get_active_transfers();
 
-            /**
-              * add transfer to check queue
-             */
+            /** add transfer to check queue */
             void queue_check_transfer(boost::shared_ptr<transfer> const& t);
 
-            /**
-              * remove transfer from check queue
-             */
+            /** remove transfer from check queue */
             void dequeue_check_transfer(boost::shared_ptr<transfer> const& t);
 
             void close_connection(const peer_connection* p, const error_code& ec);
@@ -199,13 +191,15 @@ namespace libed2k {
             void pause();
             void resume();
 
-            /** add transfer from current thread directly */
+            /** add/remove transfer from current thread directly */
             virtual transfer_handle add_transfer(add_transfer_params const&, error_code& ec);
             virtual void remove_transfer(const transfer_handle& h, int options);
+            /** add/remove active transfer for this session */
+            bool add_active_transfer(const boost::shared_ptr<transfer>& t);
+            bool remove_active_transfer(const boost::shared_ptr<transfer>& t);
+            void remove_active_transfer(transfer_map::iterator i);
 
-            /**
-             * find peer connections
-             */
+            /** find peer connections */
             boost::intrusive_ptr<peer_connection> find_peer_connection(const net_identifier& np) const;
             boost::intrusive_ptr<peer_connection> find_peer_connection(const md4_hash& hash) const;
             peer_connection_handle add_peer_connection(net_identifier np, error_code& ec);
@@ -247,38 +241,26 @@ namespace libed2k {
 
             void on_tick(error_code const& e);
 
-            bool has_active_transfer() const;
-
             // let transfers connect to peers if they want to
             // if there are any trasfers and any free slots
             void connect_new_peers();
 
-            /**
-              * must be locked before access data in this class
-             */
+            /** must be locked before access data in this class */
             typedef boost::mutex mutex_t;
             mutable mutex_t m_mutex;
 
             void setup_socket_buffers(tcp::socket& s);
 
-            /**
-              * search file on server
-             */
+            /** search file on server */
             void post_search_request(search_request& sr);
 
-            /**
-              * after simple search call you can post request more search results
-             */
+            /** after simple search call you can post request more search results */
             void post_search_more_result_request();
 
-            /**
-              * this method simple send information packet to server and break search order
-             */
+            /** this method simple send information packet to server and break search order */
             void post_cancel_search();
 
-            /**
-              * request sources for file
-             */
+            /** request sources for file */
             void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
 
             /**
@@ -303,6 +285,7 @@ namespace libed2k {
 
             void update_connections_limit();
             void update_rate_settings();
+            void update_active_transfers();
 
             boost::object_pool<peer> m_peer_pool;
 
@@ -359,7 +342,7 @@ namespace libed2k {
             // ed2k server connection
             boost::intrusive_ptr<server_connection> m_server_connection;
 
-            // the index of the torrent that will be offered to
+            // the index of the transfers that will be offered to
             // connect to a peer next time on_tick is called.
             // This implements a round robin.
             cyclic_iterator<transfer_map> m_next_connect_transfer;
