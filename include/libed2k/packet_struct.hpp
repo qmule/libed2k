@@ -262,6 +262,7 @@ namespace libed2k
             ar & m_size;
 
             // avoid huge memory allocation
+            // TODO - fix this size to compatibility with 16-bit integers
             if (m_size > MAX_ED2K_PACKET_LEN)
             {
                 throw libed2k::libed2k_exception(libed2k::errors::decode_packet_error);
