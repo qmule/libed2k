@@ -47,7 +47,6 @@ namespace libed2k
         transfer(aux::session_impl& ses, const std::vector<peer_entry>& pl,
                  const md4_hash& hash, const std::string& filename, size_type size);
 
-
         transfer(aux::session_impl& ses, tcp::endpoint const& net_interface,
                  int seq, add_transfer_params const& p);
         ~transfer();
@@ -191,10 +190,7 @@ namespace libed2k
         // this is done when a piece fails
         void restore_piece_state(int index);
 
-        bool has_picker() const
-        {
-            return m_picker.get() != 0;
-        }
+        bool has_picker() const { return m_picker.get() != 0; }
         piece_picker& picker() { return *m_picker; }
 
         // returns true if we have downloaded the given piece
@@ -256,9 +252,12 @@ namespace libed2k
 
         /** add transfer to check queue in session_impl */
         void queue_transfer_check();
-
         /** remove transfer from check queue insession_impl */
         void dequeue_transfer_check();
+
+        bool active() const;
+        void activate(bool a);
+        boost::uint16_t last_active() const { return m_last_active; }
 
         // --------------------------------------------
         // SERVER MANAGEMENT
@@ -398,16 +397,15 @@ namespace libed2k
 
         duration_timer m_minute_timer;
 
-        /**
-          * previously saved resume data
-         */
+        /** previously saved resume data */
         std::vector<char>  m_resume_data;
         lazy_entry m_resume_entry;
 
-        /**
-          * current error on this transfer
-         */
+        /** current error on this transfer */
         error_code m_error;
+
+        // the number of seconds since the last active state
+        boost::uint16_t m_last_active;
     };
 
     extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);

@@ -27,6 +27,7 @@ session_impl_base::session_impl_base(const session_settings& settings) :
     m_abort(false),
     m_settings(settings),
     m_transfers(),
+    m_active_transfers(),
     m_alerts(m_io_service),
     m_tpm(m_alerts, settings.m_known_file)
 {
@@ -93,7 +94,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_download_rate(peer_connection::download_channel),
     m_upload_rate(peer_connection::upload_channel),
     m_server_connection(new server_connection(*this)),
-    m_next_connect_transfer(m_transfers),
+    m_next_connect_transfer(m_active_transfers),
     m_paused(false),
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
@@ -339,6 +340,7 @@ void session_impl::operator()()
 
     boost::mutex::scoped_lock l(m_mutex);
     m_transfers.clear();
+    m_active_transfers.clear();
 }
 
 void session_impl::open_listen_port()
@@ -617,12 +619,27 @@ std::vector<transfer_handle> session_impl::get_transfers()
 {
     std::vector<transfer_handle> ret;
 
-    for (session_impl::transfer_map::iterator i
-        = m_transfers.begin(), end(m_transfers.end());
-        i != end; ++i)
+    for (session_impl::transfer_map::iterator i = m_transfers.begin(),
+             end(m_transfers.end()); i != end; ++i)
     {
-        if (i->second->is_aborted()) continue;
-        ret.push_back(transfer_handle(i->second));
+        transfer& t = *i->second;
+        if (t.is_aborted()) continue;
+        ret.push_back(t.handle());
+    }
+
+    return ret;
+}
+
+std::vector<transfer_handle> session_impl::get_active_transfers()
+{
+    std::vector<transfer_handle> ret;
+
+    for (session_impl::transfer_map::iterator i = m_active_transfers.begin(),
+             end(m_active_transfers.end()); i != end; ++i)
+    {
+        transfer& t = *i->second;
+        if (t.is_aborted()) continue;
+        ret.push_back(t.handle());
     }
 
     return ret;
@@ -728,6 +745,7 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
     boost::shared_ptr<transfer> tptr = h.m_transfer.lock();
     if (!tptr) return;
 
+    remove_active_transfer(tptr);
     transfer_map::iterator i = m_transfers.find(tptr->hash());
 
     if (i != m_transfers.end())
@@ -739,14 +757,36 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
             t.delete_files();
         t.abort();
 
-        if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
-
         //t.set_queue_position(-1);
         m_transfers.erase(i);
-        m_next_connect_transfer.validate();
 
         m_alerts.post_alert_should(deleted_transfer_alert(hash));
     }
+}
+
+bool session_impl::add_active_transfer(const boost::shared_ptr<transfer>& t)
+{
+    return m_active_transfers.insert(std::make_pair(t->hash(), t)).second;
+}
+
+bool session_impl::remove_active_transfer(const boost::shared_ptr<transfer>& t)
+{
+    bool removed = false;
+    transfer_map::iterator i = m_active_transfers.find(t->hash());
+    if (i != m_active_transfers.end())
+    {
+        remove_active_transfer(i);
+        removed = true;
+    }
+
+    return removed;
+}
+
+void session_impl::remove_active_transfer(transfer_map::iterator i)
+{
+    if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
+    m_active_transfers.erase(i);
+    m_next_connect_transfer.validate();
 }
 
 peer_connection_handle session_impl::add_peer_connection(net_identifier np, error_code& ec)
@@ -905,19 +945,13 @@ void session_impl::abort()
     for (transfer_map::iterator i = m_transfers.begin(),
              end(m_transfers.end()); i != end; ++i)
     {
-        i->second->abort();
+        transfer& t = *i->second;
+        t.abort();
     }
 
     DBG("aborting all server requests");
     //m_server_connection.abort_all_requests();
     m_server_connection->close(errors::session_closing);
-
-    for (transfer_map::iterator i = m_transfers.begin();
-         i != m_transfers.end(); ++i)
-    {
-        transfer& t = *i->second;
-        t.abort();
-    }
 
     DBG("aborting all connections (" << m_connections.size() << ")");
 
@@ -1029,10 +1063,21 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // we always check status changing because it check before reconnect processing
     bool server_conn_change_state = m_server_connection_state != m_server_connection->state();
-
     if (server_conn_change_state)
     {
         m_server_connection_state = m_server_connection->state();
+
+        // when server connection changes its state to offline -
+        // we drop announces status for all transfers
+        if (m_server_connection->offline())
+        {
+            for (transfer_map::iterator i = m_transfers.begin(),
+                     end(m_transfers.end()); i != end; ++i)
+            {
+                transfer& t = *i->second;
+                t.set_announced(false);
+            }
+        }
     }
 
     if (m_server_connection->online()) announce(tick_interval_ms);
@@ -1041,28 +1086,22 @@ void session_impl::on_tick(error_code const& e)
 
     m_server_connection->check_keep_alive(tick_interval_ms);
 
+    update_active_transfers();
+
     // --------------------------------------------------------------
-    // second_tick every transfer
+    // second_tick every active transfer
     // --------------------------------------------------------------
 
     int num_checking = 0;
     int num_queued = 0;
-    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
+    for (transfer_map::iterator i = m_active_transfers.begin(),
+             end(m_active_transfers.end()); i != end; ++i)
     {
         transfer& t = *i->second;
         LIBED2K_ASSERT(!t.is_aborted());
         if (t.state() == transfer_status::checking_files) ++num_checking;
         else if (t.state() == transfer_status::queued_for_checking && !t.is_paused()) ++num_queued;
         t.second_tick(m_stat, tick_interval_ms, now);
-
-        // when server connection changes its state to offline - we drop announces status for all transfers
-        if (server_conn_change_state)
-        {
-            if (m_server_connection->offline())
-            {
-                t.set_announced(false);
-            }
-        }
     }
 
     // some people claim that there sometimes can be cases where
@@ -1101,14 +1140,14 @@ void session_impl::connect_new_peers()
     // equally likely to connect to a peer
 
     int free_slots = m_half_open.free_slots();
-    if (!m_transfers.empty() && free_slots > -m_half_open.limit() &&
+    if (!m_active_transfers.empty() && free_slots > -m_half_open.limit() &&
         num_connections() < m_settings.connections_limit && !m_abort)
     {
         // this is the maximum number of connections we will
         // attempt this tick
         int max_connections_per_second = 10;
         int steps_since_last_connect = 0;
-        int num_transfers = int(m_transfers.size());
+        int num_active_transfers = int(m_active_transfers.size());
         m_next_connect_transfer.validate();
 
         for (;;)
@@ -1140,7 +1179,7 @@ void session_impl::connect_new_peers()
 
             // if we have gone two whole loops without
             // handing out a single connection, break
-            if (steps_since_last_connect > num_transfers * 2) break;
+            if (steps_since_last_connect > num_active_transfers * 2) break;
             // if there are no more free connection slots, abort
             if (free_slots <= -m_half_open.limit()) break;
             // if we should not make any more connections
@@ -1150,20 +1189,6 @@ void session_impl::connect_new_peers()
             if (num_connections() >= m_settings.connections_limit) break;
         }
     }
-}
-
-bool session_impl::has_active_transfer() const
-{
-    for (transfer_map::const_iterator i = m_transfers.begin(), end(m_transfers.end());
-         i != end; ++i)
-    {
-        if (!i->second->is_paused())
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 void session_impl::setup_socket_buffers(ip::tcp::socket& s)
@@ -1482,6 +1507,17 @@ void session_impl::update_rate_settings()
     if (m_settings.upload_rate_limit < 0)
         m_settings.upload_rate_limit = 0;
     m_upload_channel.throttle(m_settings.upload_rate_limit);
+}
+
+void session_impl::update_active_transfers()
+{
+    for (transfer_map::iterator i = m_active_transfers.begin(),
+             end(m_active_transfers.end()); i != end;)
+    {
+        transfer& t = *i->second;
+        if (!t.active() && t.last_active() > 5) remove_active_transfer(i++);
+        else ++i;
+    }
 }
 
 }

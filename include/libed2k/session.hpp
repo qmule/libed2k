@@ -54,6 +54,7 @@ namespace libed2k {
         transfer_handle add_transfer(const add_transfer_params& params);
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
+        std::vector<transfer_handle> get_active_transfers() const;
         void remove_transfer(const transfer_handle& h, int options = none);
 
         peer_connection_handle add_peer_connection(const net_identifier& np);
