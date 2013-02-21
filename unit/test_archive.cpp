@@ -205,6 +205,25 @@ BOOST_AUTO_TEST_CASE(test_memory_archive)
     BOOST_CHECK_EQUAL(sstream.str().length(), sizeof(SerialStruct) + sizeof(boost::uint16_t) + sizeof(bool) + sizeof(boost::uint16_t) + strData.size());
 }
 
+BOOST_AUTO_TEST_CASE(test_container_holder)
+{
+
+    // correct string container contains string "01"
+    const boost::uint8_t m_source_archive[] = {'\x02', '\x00', '\x00', '\x00', '\x30', '\x31' };
+    libed2k::container_holder<boost::uint32_t, std::string>  string1;
+    boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer((const char*)m_source_archive, sizeof(m_source_archive));
+    std::istream in_array_stream(&array_source_buffer);
+    libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
+    in_array_archive >> string1;
+    BOOST_CHECK_EQUAL(string1.m_collection, "01");
+
+    // incorrect string container with enormous string
+    const boost::uint8_t m_source_archive_inc[] = {'\x02', '\x00', '\x00', '\x0F', '\x30', '\x31', '\x11', '\x11', '\x11', '\x11', '\x11' };
+    boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer_inc((const char*)m_source_archive_inc, sizeof(m_source_archive_inc));
+    std::istream in_array_stream_inc(&array_source_buffer_inc);
+    libed2k::archive::ed2k_iarchive in_array_archive_inc(in_array_stream_inc);
+    BOOST_CHECK_THROW(in_array_archive_inc >> string1, libed2k::libed2k_exception);
+}
 
 BOOST_AUTO_TEST_CASE(test_file_archive)
 {

@@ -262,7 +262,7 @@ namespace libed2k
             ar & m_size;
 
             // avoid huge memory allocation
-            if (m_size > MAX_ED2K_PACKET_LEN)
+            if (static_cast<size_t>(m_size) > MAX_COLLECTION_SIZE)
             {
                 throw libed2k::libed2k_exception(libed2k::errors::decode_packet_error);
             }
@@ -294,6 +294,8 @@ namespace libed2k
 
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
+
+
 
     /**
       * common libed2k packet header
