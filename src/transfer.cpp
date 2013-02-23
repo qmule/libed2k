@@ -1357,7 +1357,7 @@ namespace libed2k
         if (m_state == transfer_status::queued_for_checking
                 || m_state == transfer_status::checking_files
                 || m_state == transfer_status::checking_resume_data ||
-                num_pieces() == 0)
+                num_have() == 0)
         {
             return entry;
         }
