@@ -238,6 +238,7 @@ namespace libed2k
     {
         m_type      = SEARCH_TYPE_STR;
         m_strValue  = strValue;
+        m_operator  = SRE_END;
     }
 
     search_request_entry::search_request_entry(tg_type nMetaTagId, const std::string& strValue)
@@ -245,6 +246,7 @@ namespace libed2k
         m_type      = SEARCH_TYPE_STR_TAG;
         m_strValue  = strValue;
         m_meta_type = nMetaTagId;
+        m_operator  = SRE_END;
     }
 
     search_request_entry::search_request_entry(const std::string strMetaTagName, const std::string& strValue)
@@ -252,6 +254,7 @@ namespace libed2k
         m_type          = SEARCH_TYPE_STR_TAG;
         m_strValue      = strValue;
         m_strMetaName   = strMetaTagName;
+        m_operator  = SRE_END;
     }
 
     search_request_entry::search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue)
@@ -354,7 +357,12 @@ namespace libed2k
 
     }
 
-    bool search_request_entry::isOperand() const
+    bool search_request_entry::isLogic() const
+    {
+        return (m_type == SEARCH_TYPE_BOOL && m_operator <= SRE_NOT);
+    }
+
+    bool search_request_entry::isOperator() const
     {
         return (m_type == SEARCH_TYPE_BOOL);
     }
@@ -402,6 +410,22 @@ namespace libed2k
             DBG("Something weird");
         }
 
+    }
+
+    std::string sre_operation2string(boost::uint8_t oper)
+    {
+        static const char* s[] =
+                {
+                    "SRE_AND",
+                    "SRE_OR",
+                    "SRE_NOT",
+                    "SRE_OBR",
+                    "SRE_CBR",
+                    "SRE_END"
+                };
+
+        LIBED2K_ASSERT(static_cast<size_t>(oper) < sizeof(s)/sizeof(s[0]));
+        return s[oper];
     }
 
     global_server_state_res::global_server_state_res(size_t nMaxSize) :

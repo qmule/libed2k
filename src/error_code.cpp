@@ -92,6 +92,8 @@ namespace libed2k
             "no files in resume data",
             "unclosed quotation mark",
             "operator incorrect place",
+            "empty brackets",
+            "incorrect brackets count",
             "known file has invalid header on save/load",
             "input string too large",
             "search expression too complex",

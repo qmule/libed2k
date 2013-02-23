@@ -1,4 +1,4 @@
-
+#include <stack>
 #include "libed2k/search.hpp"
 #include "libed2k/file.hpp"
 
@@ -28,6 +28,30 @@ namespace libed2k
     bool is_quote(char c)
     {
         return (c == '"');
+    }
+
+    void item_append(std::vector<search_request_entry>& dst, const search_request_entry& sre)
+    {
+        if (!sre.isLogic())
+        {
+            if (!dst.empty())
+            {
+                if ((!dst.back().isOperator() && !sre.isOperator()) ||                                                              // xxx xxx
+                (!dst.back().isOperator() && sre.getOperator() == search_request_entry::SRE_OBR) ||                                 // xxx (
+                (dst.back().getOperator() == search_request_entry::SRE_CBR && !sre.isOperator()) ||                                 // ) xxx
+                (dst.back().getOperator() == search_request_entry::SRE_CBR && sre.getOperator() == search_request_entry::SRE_OBR))  // ) (
+                {
+                    dst.push_back(search_request_entry(search_request_entry::SRE_AND));
+                }
+
+                if (dst.back().getOperator() == search_request_entry::SRE_OBR && sre.getOperator() == search_request_entry::SRE_CBR)
+                {
+                    throw libed2k_exception(errors::empty_brackets);
+                }
+            }
+        }
+
+        dst.push_back(sre);
     }
 
     search_request generateSearchRequest(boost::uint64_t nMinSize,
@@ -157,9 +181,11 @@ namespace libed2k
         {
             char c = strQuery.at(n);
 
-            switch(strQuery.at(n))
+            switch(c)
             {
                 case ' ':
+                case '(':
+                case ')':
                 {
                     if (bVerbatim)
                     {
@@ -167,35 +193,40 @@ namespace libed2k
                     }
                     else if (!strItem.empty())
                     {
+                        DBG("item:{" << strItem << "}c{" << c << "}");
                         search_request_entry::SRE_Operation so = string2OperType(strItem);
 
                         if (so != search_request_entry::SRE_END)
                         {
                             // add boolean operator
-                            if (vResult.empty() || vResult.back().isOperand())
+                            if (vResult.empty() || vResult.back().isLogic() || (c == ')'))
                             {
-                               throw libed2k_exception(errors::operator_incorrect_place);
+                                // operator in begin, operator before previous operator and operator before close bracket is error
+                                throw libed2k_exception(errors::operator_incorrect_place);
                             }
                             else
                             {
-                                vResult.push_back(search_request_entry(so));
+                                item_append(vResult, search_request_entry(so));
                             }
                         }
                         else
                         {
                             strItem.erase(std::remove_if(strItem.begin(), strItem.end(), is_quote), strItem.end()); // remove all quotation marks
-
-                            if (!vResult.empty() && !vResult.back().isOperand())
-                            {
-                                // explicitly add AND operand when we have two splitted strings
-                                vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
-                            }
-
-                            vResult.push_back(strItem);
+                            item_append(vResult, strItem);
                         }
 
                         strItem.clear();
 
+                    }
+
+                    if (c == '(')
+                    {
+                        item_append(vResult, search_request_entry(search_request_entry::SRE_OBR));
+                    }
+
+                    if (c == ')')
+                    {
+                        item_append(vResult, search_request_entry(search_request_entry::SRE_CBR));
                     }
 
                     break;
@@ -224,7 +255,7 @@ namespace libed2k
             }
             else
             {
-                if (!vResult.empty() && !vResult.back().isOperand())
+                if (!vResult.empty() && !vResult.back().isLogic())
                 {
                     // explicitly add AND operand when we have two splitted strings
                     vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
@@ -240,20 +271,70 @@ namespace libed2k
             throw libed2k_exception(errors::search_expression_too_complex);
         }
 
-        std::vector<search_request_entry>::iterator itr = vResult.begin();
+        std::stack<search_request_entry> operators_stack;
 
-        while(itr != vResult.end())
+        // temp dump
+        for(std::vector<search_request_entry>::const_reverse_iterator itr = vResult.rbegin();
+                itr != vResult.rend(); ++itr)
         {
-            if (itr->isOperand())
+            DBG("value{" << itr->getStrValue() << "} oper {" << sre_operation2string(itr->getOperator()) << "}");
+        }
+
+        for(std::vector<search_request_entry>::const_reverse_iterator itr = vResult.rbegin();
+                itr != vResult.rend(); ++itr)
+        {
+            if (itr->isOperator())
             {
-                vPrefResult.push_front(*itr);
+                if (itr->getOperator() == search_request_entry::SRE_OBR)
+                {
+                    if (operators_stack.empty())
+                    {
+                        throw libed2k_exception(errors::incorrect_brackets_count);
+                    }
+
+                    // roll up
+                    while(operators_stack.top().getOperator() != search_request_entry::SRE_CBR)
+                    {
+                        vPrefResult.push_front(operators_stack.top());
+                        operators_stack.pop();
+
+                        if (operators_stack.empty())
+                        {
+                            throw libed2k_exception(errors::incorrect_brackets_count);
+                        }
+                    }
+
+                    // pull close bracket entry
+                    operators_stack.pop();
+                    continue;
+                }
+
+                // we have normal operator and on stack top we have normal operator
+                // prepare result - move operator from top to result and replace top
+                if ((itr->getOperator() <= search_request_entry::SRE_NOT) &&
+                        !operators_stack.empty() &&
+                        (operators_stack.top().getOperator() <= search_request_entry::SRE_NOT))
+                {
+                    vPrefResult.push_front(operators_stack.top());
+                    operators_stack.pop();
+                }
+
+                operators_stack.push(*itr);
             }
             else
             {
-                vPrefResult.push_back(*itr);
+                vPrefResult.push_front(*itr);
+            }
+        }
+
+        if (!operators_stack.empty())
+        {
+            if (operators_stack.top().getOperator() > search_request_entry::SRE_NOT)
+            {
+                throw libed2k_exception(errors::incorrect_brackets_count);
             }
 
-            ++itr;
+            vPrefResult.push_front(operators_stack.top());
         }
 
         return (vPrefResult);
