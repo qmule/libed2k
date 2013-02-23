@@ -111,7 +111,8 @@ enum CONN_CMD
     cc_disconnect,
     cc_listen,
     cc_empty,
-    cc_tr
+    cc_tr,
+    cc_search_test
 };
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
@@ -199,6 +200,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "tr")
     {
         return cc_tr;
+    }
+    else if (strCommand == "sst")
+    {
+        return cc_search_test;
     }
 
     return cc_empty;
@@ -465,6 +470,22 @@ int main(int argc, char* argv[])
                 // execute search
                 DBG("Execute search request: " << strArg);
                 search_request sr = libed2k::generateSearchRequest(1000000000,0,1,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
+                ses.post_search_request(sr);
+                break;
+            }
+            case cc_search_test:
+            {
+                DBG("Execute search test");
+                search_request sr;
+                sr.push_back(search_request_entry(search_request_entry::SRE_NOT));
+                sr.push_back(search_request_entry(search_request_entry::SRE_OR));
+                sr.push_back(search_request_entry(search_request_entry::SRE_AND));
+                sr.push_back(search_request_entry("a"));
+                sr.push_back(search_request_entry("b"));
+                sr.push_back(search_request_entry(search_request_entry::SRE_AND));
+                sr.push_back(search_request_entry("c"));
+                sr.push_back(search_request_entry("d"));
+                sr.push_back(search_request_entry("+++"));
                 ses.post_search_request(sr);
                 break;
             }
