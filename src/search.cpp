@@ -65,13 +65,6 @@ namespace libed2k
                 unsigned int nMediaBitrate,
                 const std::string& strQuery)
     {
-
-#define ADD_AND() \
-        if (!vResult.empty())\
-        {\
-            vResult.push_back(search_request_entry(search_request_entry::SRE_AND));\
-        }
-
         // check parameters
         if (strFileType.length() > SEARCH_REQ_ELEM_LENGTH ||
                 strFileExtension.length() > SEARCH_REQ_ELEM_LENGTH ||
@@ -92,14 +85,13 @@ namespace libed2k
         // for users pass any parameters
         if (strFileType == ED2KFTSTR_USER)
         {
-            vResult.push_back(search_request_entry("'+++USERNICK+++'"));
-            vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
+            item_append(vResult, search_request_entry("'+++USERNICK+++'"));
         }
         else if (strFileType == ED2KFTSTR_FOLDER) // for folders we search emule collections exclude ed2k links
         {
-            vResult.push_back(search_request_entry(FT_FILETYPE, ED2KFTSTR_EMULECOLLECTION));
-            vResult.push_back(search_request_entry(search_request_entry::SRE_NOT));
-            vResult.push_back(search_request_entry("ED2K:\\"));
+            item_append(vResult, search_request_entry(FT_FILETYPE, ED2KFTSTR_EMULECOLLECTION));
+            item_append(vResult, search_request_entry(search_request_entry::SRE_NOT));
+            item_append(vResult, search_request_entry("ED2K:\\"));
         }
         else
         {
@@ -107,67 +99,40 @@ namespace libed2k
             {
                 if ((strFileType == ED2KFTSTR_ARCHIVE) || (strFileType == ED2KFTSTR_CDIMAGE))
                 {
-                    vResult.push_back(search_request_entry(FT_FILETYPE, ED2KFTSTR_PROGRAM));
+                    item_append(vResult, search_request_entry(FT_FILETYPE, ED2KFTSTR_PROGRAM));
                 }
                 else
                 {
-                    vResult.push_back(search_request_entry(FT_FILETYPE, strFileType)); // I don't check this value!
+                    item_append(vResult, search_request_entry(FT_FILETYPE, strFileType)); // I don't check this value!
                 }
             }
 
             // if type is not folder - process file parameters now
             if (strFileType != ED2KFTSTR_EMULECOLLECTION)
             {
-
                 if (nMinSize != 0)
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, nMinSize));
-                }
+                    item_append(vResult, search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_GREATER, nMinSize));
 
                 if (nMaxSize != 0)
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_LESS, nMaxSize));
-                }
+                    item_append(vResult, search_request_entry(FT_FILESIZE, ED2K_SEARCH_OP_LESS, nMaxSize));
 
                 if (nSourcesCount != 0)
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
-                }
+                    item_append(vResult, search_request_entry(FT_SOURCES, ED2K_SEARCH_OP_GREATER, nSourcesCount));
 
                 if (nCompleteSourcesCount != 0)
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_COMPLETE_SOURCES, ED2K_SEARCH_OP_GREATER, nCompleteSourcesCount));
-                }
+                    item_append(vResult, search_request_entry(FT_COMPLETE_SOURCES, ED2K_SEARCH_OP_GREATER, nCompleteSourcesCount));
 
                 if (!strFileExtension.empty())
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_FILEFORMAT, strFileExtension)); // I don't check this value!
-                }
+                    item_append(vResult, search_request_entry(FT_FILEFORMAT, strFileExtension)); // I don't check this value!
 
                 if (!strCodec.empty())
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_MEDIA_CODEC, strCodec)); // I don't check this value!
-                }
+                    item_append(vResult, search_request_entry(FT_MEDIA_CODEC, strCodec)); // I don't check this value!
 
                 if (nMediaLength != 0)
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_MEDIA_LENGTH, ED2K_SEARCH_OP_GREATER_EQUAL, nMediaLength)); // I don't check this value!
-                }
+                    item_append(vResult, search_request_entry(FT_MEDIA_LENGTH, ED2K_SEARCH_OP_GREATER_EQUAL, nMediaLength)); // I don't check this value!
 
                 if (nMediaBitrate != 0)
-                {
-                    ADD_AND()
-                    vResult.push_back(search_request_entry(FT_MEDIA_BITRATE, ED2K_SEARCH_OP_GREATER_EQUAL, nMediaBitrate)); // I don't check this value!
-                }
-
-
+                    item_append(vResult, search_request_entry(FT_MEDIA_BITRATE, ED2K_SEARCH_OP_GREATER_EQUAL, nMediaBitrate)); // I don't check this value!
             }
         }
 
@@ -240,6 +205,7 @@ namespace libed2k
 
         }
 
+        // check unclosed quotes
         if (bVerbatim)
         {
             throw libed2k_exception(errors::unclosed_quotation_mark);
@@ -247,22 +213,17 @@ namespace libed2k
 
         if (!strItem.empty())
         {
-            // add last item
+            // add last item - check it is not operator
             search_request_entry::SRE_Operation so = string2OperType(strItem);
+
             if (so != search_request_entry::SRE_END)
             {
                 throw libed2k_exception(errors::operator_incorrect_place);
             }
             else
             {
-                if (!vResult.empty() && !vResult.back().isLogic())
-                {
-                    // explicitly add AND operand when we have two splitted strings
-                    vResult.push_back(search_request_entry(search_request_entry::SRE_AND));
-                }
-
-                strItem.erase(std::remove_if(strItem.begin(), strItem.end(), is_quote), strItem.end()); // remove all quotation marks
-                vResult.push_back(search_request_entry(strItem));
+                strItem.erase(std::remove_if(strItem.begin(), strItem.end(), is_quote), strItem.end());
+                item_append(vResult, search_request_entry(strItem));
             }
         }
 
