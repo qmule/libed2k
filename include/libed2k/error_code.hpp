@@ -98,6 +98,8 @@ namespace libed2k
             no_files_in_resume_data,
             unclosed_quotation_mark,
             operator_incorrect_place,
+            empty_brackets,
+            incorrect_brackets_count,
             known_file_invalid_header,
             input_string_too_large,
             search_expression_too_complex,
