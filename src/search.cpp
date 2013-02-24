@@ -87,11 +87,13 @@ namespace libed2k
         {
             item_append(vResult, search_request_entry("'+++USERNICK+++'"));
         }
-        else if (strFileType == ED2KFTSTR_FOLDER) // for folders we search emule collections exclude ed2k links
+        else if (strFileType == ED2KFTSTR_FOLDER) // for folders we search emule collections exclude ed2k links - user brackets to correct expr
         {
+            item_append(vResult, search_request_entry(search_request_entry::SRE_OBR));
             item_append(vResult, search_request_entry(FT_FILETYPE, ED2KFTSTR_EMULECOLLECTION));
             item_append(vResult, search_request_entry(search_request_entry::SRE_NOT));
             item_append(vResult, search_request_entry("ED2K:\\"));
+            item_append(vResult, search_request_entry(search_request_entry::SRE_CBR));
         }
         else
         {
@@ -233,14 +235,6 @@ namespace libed2k
         }
 
         std::stack<search_request_entry> operators_stack;
-
-        // temp dump
-        for(std::vector<search_request_entry>::const_reverse_iterator itr = vResult.rbegin();
-                itr != vResult.rend(); ++itr)
-        {
-            DBG("value{" << itr->getStrValue() << "} oper {" << sre_operation2string(itr->getOperator()) << "}");
-        }
-
         for(std::vector<search_request_entry>::const_reverse_iterator itr = vResult.rbegin();
                 itr != vResult.rend(); ++itr)
         {
