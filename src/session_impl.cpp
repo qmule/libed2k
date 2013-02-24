@@ -1308,7 +1308,7 @@ void session_impl::announce(int tick_interval_ms)
         // add transfer to announce list when it has one piece at least and it is not announced yet
         if (!t.is_announced())
         {
-            shared_file_entry se = t.getAnnounce();
+            shared_file_entry se = t.getAnnounce(); // return empty entry on checking transfers and when num_have = 0
 
             if (!se.is_empty())
             {
