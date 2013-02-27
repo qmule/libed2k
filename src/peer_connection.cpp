@@ -2038,7 +2038,7 @@ void peer_connection::on_end_download(const error_code& error)
 template <typename DirContainer>
 std::vector<std::string> dirlist(const DirContainer& dirs) {
     std::vector<std::string> res;
-    for (int i = 0; i < dirs.m_collection.size(); ++i)
+    for (size_t i = 0; i < dirs.m_collection.size(); ++i)
         res.push_back(dirs.m_collection[i].m_collection);
     return res;
 }
@@ -2046,8 +2046,8 @@ std::vector<std::string> dirlist(const DirContainer& dirs) {
 template <typename FileContainer>
 std::vector<std::string> filelist(const FileContainer& files) {
     std::vector<std::string> res;
-    for (int i = 0; i < files.m_collection.size(); ++i)
-        for (int j = 0; j < files.m_collection[i].m_list.count(); ++j)
+    for (size_t i = 0; i < files.m_collection.size(); ++i)
+        for (size_t j = 0; j < files.m_collection[i].m_list.count(); ++j)
         {
             boost::shared_ptr<libed2k::base_tag> ptag = files.m_collection[i].m_list[j];
             switch(ptag->getNameId())
@@ -2358,14 +2358,20 @@ void peer_connection::on_request_parts(const error_code& error)
             {
                 peer_request req = mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]);
                 if (t->have_piece(req.piece))
+                {
                     m_requests.push_back(req);
+                }
                 else
+                {
                     DBG("we haven't piece " << req.piece << " requested from " << m_remote);
+                }
             }
             else if (rp.m_begin_offset[i] > rp.m_end_offset[i])
+            {
                 ERR("incorrect request ["
                     << rp.m_begin_offset[i] << ", " << rp.m_end_offset[i]
                     << "] from " << m_remote);
+            }
         }
         fill_send_buffer();
     }

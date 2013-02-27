@@ -320,11 +320,11 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                 DBG("ALERT: DIR: " << p->m_dirs[n]);
             }
         }
-        else if (save_resume_data_alert* p = dynamic_cast<save_resume_data_alert*>(a.get()))
+        else if (dynamic_cast<save_resume_data_alert*>(a.get()))
         {
             DBG("ALERT: save_resume_data_alert");
         }
-        else if (save_resume_data_failed_alert* p = dynamic_cast<save_resume_data_failed_alert*>(a.get()))
+        else if (dynamic_cast<save_resume_data_failed_alert*>(a.get()))
         {
             DBG("ALERT: save_resume_data_failed_alert");
         }
@@ -503,7 +503,7 @@ int main(int argc, char* argv[])
 
                 DBG("execute load for " << nIndex);
 
-                if (vSF.m_collection.size() > nIndex)
+                if (vSF.m_collection.size() > static_cast<size_t>(nIndex))
                 {
                     DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
                     libed2k::add_transfer_params params;
@@ -527,7 +527,7 @@ int main(int argc, char* argv[])
                 DBG("Load first " << nBorder);
                 for (size_t nIndex = 0; nIndex < vSF.m_collection.size(); ++nIndex)
                 {
-                    if (nIndex >= nBorder)
+                    if (nIndex >= static_cast<size_t>(nBorder))
                     {
                         break;
                     }
