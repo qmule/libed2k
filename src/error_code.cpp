@@ -94,7 +94,7 @@ namespace libed2k
             "operator incorrect place",
             "empty brackets",
             "incorrect brackets count",
-            "known file has invalid header on save/load",
+            "met file invalid header byte",
             "input string too large",
             "search expression too complex",
             "pending file entry in transform",

@@ -1,5 +1,6 @@
 #include "libed2k/ctag.hpp"
 #include "libed2k/util.hpp"
+#include <boost/lexical_cast.hpp>
 
 namespace libed2k{
 
@@ -61,9 +62,9 @@ const char* tagTypetoString(tg_type ttp)
 
 std::string tagIdtoString(tg_nid_type tid)
 {
-    const std::string strUnknown = "TID not found";
     const std::pair<tg_nid_type, std::string> stypes[] =
             {
+                    std::make_pair(FT_UNDEFINED,            std::string("FT_UNDEFINED")),
                     std::make_pair(FT_FILENAME,             std::string("FT_FILENAME")),
                     std::make_pair(FT_FILESIZE,             std::string("FT_FILESIZE")),
                     std::make_pair(FT_FILESIZE_HI,          std::string("FT_FILESIZE_HI")),
@@ -155,7 +156,7 @@ std::string tagIdtoString(tg_nid_type tid)
         }
     }
 
-    return (strUnknown);
+    return (std::string("TID unknown: ") + boost::lexical_cast<std::string>(static_cast<int>(tid)));
 }
 
 // base tag

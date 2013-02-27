@@ -24,6 +24,7 @@ if (!x)\
 typedef boost::uint8_t tg_nid_type;
 typedef boost::uint8_t tg_type;
 
+const tg_nid_type FT_UNDEFINED          = '\x00';    // undefined tag
 const tg_nid_type FT_FILENAME           = '\x01';    // <string>
 const tg_nid_type FT_FILESIZE           = '\x02';    // <uint32>
 const tg_nid_type FT_FILESIZE_HI        = '\x3A';    // <uint32>

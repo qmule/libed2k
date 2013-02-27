@@ -593,7 +593,7 @@ namespace libed2k
                 << " tag list size: " << m_list.count());
     }
 
-    known_file_collection::known_file_collection() : m_nHeader(MET_HEADER_WITH_LARGEFILES)
+    known_file_collection::known_file_collection()
     {
     }
 

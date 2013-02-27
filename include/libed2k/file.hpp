@@ -105,6 +105,21 @@ namespace libed2k
     const boost::uint8_t  MET_HEADER                  = 0x0E;
     const boost::uint8_t  MET_HEADER_WITH_LARGEFILES  = 0x0F;
 
+    // one byte header for met files
+    struct met_file_header
+    {
+        boost::uint8_t m_header;
+        met_file_header() : m_header(MET_HEADER_WITH_LARGEFILES){}
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_header;
+            if (m_header != MET_HEADER && m_header != MET_HEADER_WITH_LARGEFILES)
+                throw libed2k_exception(errors::met_file_invalid_header_byte);
+        }
+    };
+
     typedef container_holder<boost::uint16_t, std::vector<md4_hash> > hash_list;
 
     /**
@@ -147,43 +162,20 @@ namespace libed2k
      */
     struct known_file_collection
     {
-        boost::uint8_t  m_nHeader;
-        known_file_list m_known_file_list;
+        met_file_header     m_header;
+        known_file_list     m_known_file_list;
 
         known_file_collection();
         add_transfer_params extract_transfer_params(time_t, const std::string&);
 
         template<typename Archive>
-        void save(Archive& ar)
+        void serialize(Archive& ar)
         {
-            if (m_nHeader != MET_HEADER && m_nHeader != MET_HEADER_WITH_LARGEFILES)
-            {
-                // incorrect header
-                throw libed2k_exception(errors::known_file_invalid_header);
-            }
-
-            ar & m_nHeader;
+            ar & m_header;
             ar & m_known_file_list;
         }
-
-        template<typename Archive>
-        void load(Archive& ar)
-        {
-            ar & m_nHeader;
-
-            if (m_nHeader != MET_HEADER && m_nHeader != MET_HEADER_WITH_LARGEFILES)
-            {
-                // incorrect header
-                throw libed2k_exception(errors::known_file_invalid_header);
-            }
-
-            ar & m_known_file_list;
-        }
-
 
         void dump() const;
-
-        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
     /**
@@ -330,6 +322,33 @@ namespace libed2k
         bool operator==(const emule_collection& ecoll) const;
         std::string                         m_name;
         std::deque<emule_collection_entry>  m_files;
+    };
+
+    // server identifier in server.met file
+    struct server_met_entry
+    {
+        net_identifier              m_network_point;
+        tag_list<boost::uint32_t>   m_list;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_network_point;
+            ar & m_list;
+        }
+    };
+
+    struct server_met
+    {
+        met_file_header                                                     m_header;
+        container_holder<boost::uint32_t, std::deque<server_met_entry> >    m_servers;
+
+        template<typename Archive>
+        void serialize(Archive& ar)
+        {
+            ar & m_header;
+            ar & m_servers;
+        }
     };
 }
 

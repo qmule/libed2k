@@ -100,7 +100,7 @@ namespace libed2k
             operator_incorrect_place,
             empty_brackets,
             incorrect_brackets_count,
-            known_file_invalid_header,
+            met_file_invalid_header_byte,
             input_string_too_large,
             search_expression_too_complex,
             pending_file_entry_in_transform,
