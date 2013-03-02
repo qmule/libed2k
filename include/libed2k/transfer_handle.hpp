@@ -129,11 +129,11 @@ namespace libed2k
         int download_payload_rate;
         int upload_payload_rate;
 
-        // the number of peers this torrent is connected to
+        // the number of peers this transfer is connected to
         // that are seeding.
         int num_seeds;
 
-        // the number of peers this torrent
+        // the number of peers this transfer
         // is connected to (including seeds).
         int num_peers;
 
@@ -176,7 +176,7 @@ namespace libed2k
         size_type total_wanted_done;
 
         // the total number of bytes we want to download
-        // this may be smaller than the total torrent size
+        // this may be smaller than the total transfer size
         // in case any pieces are filtered as not wanted
         size_type total_wanted;
 
@@ -200,7 +200,7 @@ namespace libed2k
 
         float distributed_copies;
 
-        // the block size that is used in this torrent. i.e.
+        // the block size that is used in this transfer. i.e.
         // the number of bytes each piece request asks for
         // and each bit in the download queue bitfield represents
         int block_size;
@@ -210,14 +210,14 @@ namespace libed2k
         int uploads_limit;
         int connections_limit;
 
-        // true if the torrent is saved in compact mode
+        // true if the transfer is saved in compact mode
         // false if it is saved in full allocation mode
         storage_mode_t storage_mode;
 
         int up_bandwidth_queue;
         int down_bandwidth_queue;
 
-        // number of bytes downloaded since torrent was started
+        // number of bytes downloaded since transfer was started
         // saved and restored from resume data
         size_type all_time_upload;
         size_type all_time_download;
@@ -237,21 +237,21 @@ namespace libed2k
         int last_scrape;
 
         // true if there are incoming connections to this
-        // torrent
+        // transfer
         bool has_incoming;
 
-        // the number of "holes" in the torrent
+        // the number of "holes" in the transfer
         int sparse_regions;
 
-        // is true if this torrent is (still) in seed_mode
+        // is true if this transfer is (still) in seed_mode
         bool seed_mode;
 
-        // this is set to true when the torrent is blocked
+        // this is set to true when the transfer is blocked
         // from downloading, typically caused by a file
         // write operation failing
         bool upload_mode;
 
-        // the priority of this torrent
+        // the priority of this transfer
         int priority;
     };
 
