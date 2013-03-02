@@ -284,15 +284,6 @@ namespace libed2k
             ++m_size;
         }
 
-        /**
-          * small helper and check consistency
-         */
-        size_type count() const
-        {
-            LIBED2K_ASSERT(m_size == m_collection.size());
-            return (m_size);
-        }
-
         void dump() const
         {
             DBG("container_holder::dump");

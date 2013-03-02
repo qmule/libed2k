@@ -336,6 +336,21 @@ namespace libed2k
             ar & m_network_point;
             ar & m_list;
         }
+
+        bool operator==(const server_met_entry& e) const
+        {
+            return m_network_point == e.m_network_point;
+        }
+
+        bool operator<(const server_met_entry& e) const
+        {
+            return m_network_point < e.m_network_point;
+        }
+
+        bool operator!=(const server_met_entry& e) const
+        {
+            return m_network_point != e.m_network_point;
+        }
     };
 
     struct server_met
