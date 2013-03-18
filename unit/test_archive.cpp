@@ -740,11 +740,7 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
 
 BOOST_AUTO_TEST_CASE(test_links_parsing)
 {
-    std::string strLink1 = libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, true);
-    BOOST_CHECK_EQUAL(strLink1, "ed2k://%7Cfile%7Csome%5Ffile%7C100%7C31D6CFE0D16AE931B73C59D7E0C089C0%7C/");
-    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false),
-            "ed2k://|file|some_file|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
-    BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode(strLink1)).defined());
+    BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://|file|some%5Ffile|100|31D6CFE0D16AE931B73C59D7E0C089C0|/")).defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false)).defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more3|fd|ggfgfg|/").defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|more2|10|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
@@ -752,6 +748,16 @@ BOOST_AUTO_TEST_CASE(test_links_parsing)
     BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|Code Geass.emulecollection|1568|6462EAFF860B98A0592BB0284225F85B|h=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM|/").defined()); 
     BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://%7Cfile%7C%D0%A1%D0%BF%D0%B5%D1%88%D0%B0%D0%BB%D1%8B%20Code%20Geass.emulecollection%7C1568%7C6462EAFF860B98A0592BB0284225F85B%7Ch=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM%7C/")).defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://%7Cfile%7C%D0%A1%D0%BF%D0%B5%D1%88%D0%B0%D0%BB%D1%8B%20Code%20Geass.emulecollection%7C1568%7C6462EAFF860B98A0592BB0284225F85B%7Ch=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM%7C/ ")).defined());
+}
+
+BOOST_AUTO_TEST_CASE(test_links_generation)
+{
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false),
+            "ed2k://|file|some_file|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("xxx.avi", 100, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), true),
+            "ed2k://|file|xxx%2Eavi|100|DB48A1C00CC972488C29D3FEC9F16A79|/");
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, true),
+            "ed2k://|file|some%5Ffile|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
 }
 
 BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)

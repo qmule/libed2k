@@ -1077,11 +1077,12 @@ namespace libed2k
         // ed2k://|file|fileName|fileSize|fileHash|/
         if (uencode)
         {
-            retvalue << "ed2k://"
-            << url_encode("|file|") << url_encode(strFilename)
-            << url_encode("|") << nFilesize
-            << url_encode("|") << hFile.toString()
-            << url_encode("|") << "/";
+            // never encode "|"
+            retvalue << "ed2k://|file|"
+            << url_encode(strFilename)
+            << "|" << nFilesize
+            << "|" << hFile.toString()
+            << "|/";
         }
         else
         {
