@@ -1432,6 +1432,91 @@ void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
     t.add_tag(make_typed_tag(mo2.generate(), CT_EMULE_MISCOPTIONS2, true));
 }
 
+void peer_connection::parse_misc_info(const tag_list<boost::uint32_t>& list)
+{
+    try
+    {
+        // extract user info from tag list
+        for (size_t n = 0; n < list.count(); ++n)
+        {
+            const boost::shared_ptr<base_tag> p = list[n];
+
+            switch(p->getNameId())
+            {
+                case CT_NAME:
+                    m_options.m_strName = p->asString();
+                    break;
+
+                case CT_VERSION:
+                    m_options.m_nVersion  = p->asInt();
+                    break;
+
+                case ET_MOD_VERSION:
+                    if (is_string_tag(p))
+                    {
+                        m_options.m_strModVersion = p->asString();
+                    }
+                    else if (is_int_tag(p))
+                    {
+                        m_options.m_nModVersion = p->asInt();
+                    }
+                    break;
+
+                case CT_PORT:
+                    m_options.m_nPort = p->asInt();
+                    break;
+
+                case CT_EMULE_UDPPORTS:
+                    m_options.m_nUDPPort = p->asInt() & 0xFFFF;
+                    //dwEmuleTags |= 1;
+                    break;
+
+                case CT_EMULE_BUDDYIP:
+                    // 32 BUDDY IP
+                    m_options.m_buddy_point.m_nIP = p->asInt();
+                    break;
+
+                case CT_EMULE_BUDDYUDP:
+                    m_options.m_buddy_point.m_nPort = p->asInt();
+                    break;
+
+                case CT_EMULE_MISCOPTIONS1:
+                    m_misc_options.load(p->asInt());
+                    break;
+
+                case CT_EMULE_MISCOPTIONS2:
+                    m_misc_options2.load(p->asInt());
+                    break;
+
+                // Special tag for Compat. Clients Misc options.
+                case CT_EMULECOMPAT_OPTIONS:
+                    //  1 Operative System Info
+                    //  1 Value-based-type int tags (experimental!)
+                    m_options.m_bValueBasedTypeTags   = (p->asInt() >> 1*1) & 0x01;
+                    m_options.m_bOsInfoSupport        = (p->asInt() >> 1*0) & 0x01;
+                    break;
+
+                case CT_EMULE_VERSION:
+                    //  8 Compatible Client ID
+                    //  7 Mjr Version (Doesn't really matter..)
+                    //  7 Min Version (Only need 0-99)
+                    //  3 Upd Version (Only need 0-5)
+                    //  7 Bld Version (Only need 0-99)
+                    m_options.m_nCompatibleClient = (p->asInt() >> 24);
+                    m_options.m_nClientVersion = p->asInt() & 0x00ffffff;
+
+                    break;
+                default:
+                    break;
+            }
+        }// for
+    }
+    catch(const libed2k_exception& e)
+    {
+        ERR("misc information parse error: " << e.what());
+    }
+}
+
 void peer_connection::write_hello()
 {
     DBG("hello ==> " << m_remote);
@@ -1611,14 +1696,10 @@ void peer_connection::on_hello(const error_code& error)
         // store user info
         m_hClient = hello.m_hClient;
         m_options.m_nPort = hello.m_network_point.m_nPort;
+        parse_misc_info(hello.m_list);
         DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
         write_hello_answer();
-
-        //write hello only if we didn't send it yet - when we isn't active peer
-        if (!m_active)
-        {
-            write_hello();
-        }
+        m_handshake_complete = true;
     }
     else
     {
@@ -1631,81 +1712,7 @@ void peer_connection::on_hello_answer(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(client_hello_answer, packet);
-
-        // extract user info from packet
-        for (size_t n = 0; n < packet.m_list.count(); ++n)
-        {
-            const boost::shared_ptr<base_tag> p = packet.m_list[n];
-
-            switch(p->getNameId())
-            {
-                case CT_NAME:
-                    m_options.m_strName = p->asString();
-                    break;
-
-                case CT_VERSION:
-                    m_options.m_nVersion  = p->asInt();
-                    break;
-
-                case ET_MOD_VERSION:
-                    if (is_string_tag(p))
-                    {
-                        m_options.m_strModVersion = p->asString();
-                    }
-                    else if (is_int_tag(p))
-                    {
-                        m_options.m_nModVersion = p->asInt();
-                    }
-                    break;
-
-                case CT_PORT:
-                    m_options.m_nPort = p->asInt();
-                    break;
-
-                case CT_EMULE_UDPPORTS:
-                    m_options.m_nUDPPort = p->asInt() & 0xFFFF;
-                    //dwEmuleTags |= 1;
-                    break;
-
-                case CT_EMULE_BUDDYIP:
-                    // 32 BUDDY IP
-                    m_options.m_buddy_point.m_nIP = p->asInt();
-                    break;
-
-                case CT_EMULE_BUDDYUDP:
-                    m_options.m_buddy_point.m_nPort = p->asInt();
-                    break;
-
-                case CT_EMULE_MISCOPTIONS1:
-                    m_misc_options.load(p->asInt());
-                    break;
-
-                case CT_EMULE_MISCOPTIONS2:
-                    m_misc_options2.load(p->asInt());
-                    break;
-
-                // Special tag for Compat. Clients Misc options.
-                case CT_EMULECOMPAT_OPTIONS:
-                    //  1 Operative System Info
-                    //  1 Value-based-type int tags (experimental!)
-                    m_options.m_bValueBasedTypeTags   = (p->asInt() >> 1*1) & 0x01;
-                    m_options.m_bOsInfoSupport        = (p->asInt() >> 1*0) & 0x01;
-                    break;
-
-                case CT_EMULE_VERSION:
-                    //  8 Compatible Client ID
-                    //  7 Mjr Version (Doesn't really matter..)
-                    //  7 Min Version (Only need 0-99)
-                    //  3 Upd Version (Only need 0-5)
-                    //  7 Bld Version (Only need 0-99)
-                    m_options.m_nCompatibleClient = (p->asInt() >> 24);
-                    m_options.m_nClientVersion = p->asInt() & 0x00ffffff;
-
-                    break;
-                default:
-                    break;
-            }
-        }// for
+        parse_misc_info(packet.m_list);
 
         m_hClient = packet.m_hClient;
         DBG("hello answer {name: " << m_options.m_strName
@@ -1716,8 +1723,6 @@ void peer_connection::on_hello_answer(const error_code& error)
             peer_connected_alert(get_network_point(),
                                  get_connection_hash(),
                                  m_active));
-
-        //write_ext_hello();
         m_handshake_complete = true;
     }
     else
