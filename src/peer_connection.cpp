@@ -1956,15 +1956,9 @@ void peer_connection::on_start_upload(const error_code& error)
         boost::shared_ptr<transfer> t = m_transfer.lock();
         if (!t) return;
 
-        if (t->hash() == su.m_hFile)
-        {
-            write_accept_upload();
-        }
-        else
-        {
-            write_no_file(su.m_hFile);
-            disconnect(errors::file_unavaliable, 2);
-        }
+        // do not check a hash, due to mldonkey's weirdness
+        // mldonkey sends zero hash here
+        write_accept_upload();
     }
     else
     {
