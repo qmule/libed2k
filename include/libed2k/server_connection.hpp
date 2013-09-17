@@ -24,7 +24,7 @@ namespace libed2k
     {
         friend class aux::session_impl;
     public:
-        server_connection(aux::session_impl& ses);
+        server_connection(aux::session_impl& ses, const std::pair<std::string, int>& sa = std::make_pair(std::string(), 0));
         ~server_connection();
 
         /**
@@ -110,6 +110,7 @@ namespace libed2k
         socket_buffer                   m_in_container;         //!< buffer for incoming messages
         socket_buffer                   m_in_gzip_container;    //!< special container for compressed data
         tcp::endpoint                   m_target;
+        std::pair<std::string, int>		m_server_attrs;
 
         std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order
     };

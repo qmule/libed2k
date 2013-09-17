@@ -17,7 +17,7 @@ namespace libed2k
 
     typedef boost::iostreams::basic_array_source<char> Device;
 
-    server_connection::server_connection(aux::session_impl& ses):
+    server_connection::server_connection(aux::session_impl& ses, const std::pair<std::string, int>& sa):
         m_last_keep_alive_packet(0),
         m_state(SC_OFFLINE),
         m_nClientId(0),
@@ -27,7 +27,8 @@ namespace libed2k
         m_nAuxPort(0),
         m_bInitialization(false),
         m_socket(ses.m_io_service),
-        m_deadline(ses.m_io_service)
+        m_deadline(ses.m_io_service),
+        m_server_attrs(sa)
     {
     }
 
@@ -45,8 +46,8 @@ namespace libed2k
 
         m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
 
-        tcp::resolver::query q(settings.server_hostname,
-                               boost::lexical_cast<std::string>(settings.server_port));
+        tcp::resolver::query q(m_server_attrs.first.empty()?settings.server_hostname:m_server_attrs.first,
+                               boost::lexical_cast<std::string>(m_server_attrs.first.empty()?settings.server_port:m_server_attrs.second));
 
         m_name_lookup.async_resolve(
             q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
@@ -143,8 +144,9 @@ namespace libed2k
 
         if (error || i == tcp::resolver::iterator())
         {
-            ERR("server name: " << settings.server_hostname
-                << ", resolve failed: " << error);
+			ERR("server name: " << (m_server_attrs.first.empty()?settings.server_hostname:m_server_attrs.first)
+					<< ", resolve failed: " << error);
+
             close(error);
             return;
         }

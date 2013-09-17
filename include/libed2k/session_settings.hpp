@@ -2,6 +2,7 @@
 #define __LIBED2K_SESSION_SETTINGS__
 
 #include <limits>
+#include <deque>
 #include <libed2k/md4_hash.hpp>
 #include <libed2k/constants.hpp>
 
@@ -363,6 +364,7 @@ namespace libed2k
 		// to foreground tasks, while bittorrent runs
 		// in the background
         bool low_prio_disk;
+        std::deque<std::pair<std::string, int> > server_attrs;
 
     };
 
