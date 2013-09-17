@@ -221,6 +221,12 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     update_rate_settings();
     update_connections_limit();
 
+    // create additional server connections
+    for(std::deque<std::pair<std::string,int> >::const_iterator itr = m_settings.server_attrs.begin(); itr != m_settings.server_attrs.end(); ++itr)
+    {
+    	m_servers.push_back(boost::intrusive_ptr<server_connection>(new server_connection(*this, *itr)));
+    }
+
     m_io_service.post(boost::bind(&session_impl::on_tick, this, ec));
 
     m_thread.reset(new boost::thread(boost::ref(*this)));
@@ -1405,6 +1411,11 @@ void session_impl::reconnect(int tick_interval_ms)
 void session_impl::server_conn_start()
 {
     m_server_connection->start();
+
+    for(std::deque<boost::intrusive_ptr<server_connection> >::const_iterator itr = m_servers.begin(); itr != m_servers.end(); ++itr)
+	{
+    	(*itr)->start();
+	}
 }
 
 void session_impl::server_conn_stop()
