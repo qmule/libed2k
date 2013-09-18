@@ -14,6 +14,7 @@
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/filesystem.hpp"
+#include "libed2k/server_connection.hpp"
 
 namespace libed2k {
 
@@ -55,6 +56,7 @@ namespace libed2k {
         transfer_handle find_transfer(const md4_hash& hash) const;
         std::vector<transfer_handle> get_transfers() const;
         std::vector<transfer_handle> get_active_transfers() const;
+        const std::deque<boost::intrusive_ptr<server_connection> >& get_servers() const;
         void remove_transfer(const transfer_handle& h, int options = none);
 
         peer_connection_handle add_peer_connection(const net_identifier& np);

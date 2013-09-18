@@ -171,6 +171,7 @@ namespace libed2k {
             peer_connection_handle find_peer_connection_handle(const md4_hash& np);
             std::vector<transfer_handle> get_transfers();
             std::vector<transfer_handle> get_active_transfers();
+            const std::deque<boost::intrusive_ptr<server_connection> >& get_servers() const { return m_servers; }
 
             /** add transfer to check queue */
             void queue_check_transfer(boost::shared_ptr<transfer> const& t);

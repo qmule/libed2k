@@ -74,7 +74,7 @@ namespace libed2k
         m_nClientId = 0;
         m_nTCPFlags = 0;
         m_nAuxPort  = 0;
-        m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
+        m_ses.m_alerts.post_alert_should(server_connection_closed(net_identifier(m_target), ec));
     }
 
     const tcp::endpoint& server_connection::serverEndpoint() const
@@ -357,7 +357,7 @@ namespace libed2k
                     {
                         server_message smsg;
                         ia >> smsg;
-                        m_ses.m_alerts.post_alert_should(server_message_alert(smsg.m_strMessage));
+                        m_ses.m_alerts.post_alert_should(server_message_alert(net_identifier(m_target), smsg.m_strMessage));
                         break;
                     }
                     case OP_SERVERLIST:
@@ -370,7 +370,7 @@ namespace libed2k
                     {
                         server_status sss;
                         ia >> sss;
-                        m_ses.m_alerts.post_alert_should(server_status_alert(sss.m_nFilesCount, sss.m_nUserCount));
+                        m_ses.m_alerts.post_alert_should(server_status_alert(net_identifier(m_target), sss.m_nFilesCount, sss.m_nUserCount));
                         break;
                     }
                     case OP_USERS_LIST:
@@ -386,7 +386,7 @@ namespace libed2k
                         m_nAuxPort  = idc.m_nAuxPort;
                         DBG("server connection opened {cid:" << m_nClientId << "}{tcp:" << idc.m_nTCPFlags << "}{port: " << idc.m_nAuxPort<< "}");
                         m_state = SC_ONLINE;
-                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(m_nClientId, m_nTCPFlags, m_nAuxPort));
+                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(net_identifier(m_target), m_nClientId, m_nTCPFlags, m_nAuxPort));
                         break;
                     }
                     case OP_SERVERIDENT:

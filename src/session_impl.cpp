@@ -554,11 +554,27 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
 
     if (!c->is_disconnecting())
     {
+    	bool real_peer = true;
         // store connection in map only for real peers
-        if (m_server_connection->m_target.address() != endp.address())
+        if (m_server_connection->m_target.address() == endp.address())
         {
-            m_connections.insert(c);
+        	real_peer = false;
         }
+        else
+        {
+        	// scan all additional servers to check incoming peer address
+        	for (std::deque<boost::intrusive_ptr<server_connection> >::const_iterator itr = m_servers.begin(); itr != m_servers.end(); ++itr)
+        	{
+        		if ((*itr)->m_target.address() == endp.address())
+        		{
+        			real_peer = false;
+        			break;
+        		}
+        	}
+        }
+
+        if (real_peer)
+        	m_connections.insert(c);
 
         c->start();
     }
