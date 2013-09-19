@@ -144,8 +144,8 @@ namespace libed2k
 
         if (error || i == tcp::resolver::iterator())
         {
-			ERR("server name: " << (m_server_attrs.first.empty()?settings.server_hostname:m_server_attrs.first)
-					<< ", resolve failed: " << error);
+            ERR("server name: " << (m_server_attrs.first.empty()?settings.server_hostname:m_server_attrs.first) <<
+                ", resolve failed: " << error);
 
             close(error);
             return;
