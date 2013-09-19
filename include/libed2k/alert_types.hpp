@@ -37,8 +37,9 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification;
 
-        server_connection_initialized_alert(boost::uint32_t nClientId,
+        server_connection_initialized_alert(net_identifier address, boost::uint32_t nClientId,
                 boost::uint32_t nTCPFlags, boost::uint32_t nAuxPort) :
+                    m_address(address),
                     m_nClientId(nClientId),
                     m_nTCPFlags(nTCPFlags),
                     m_nAuxPort(nAuxPort)
@@ -54,6 +55,7 @@ namespace libed2k
         virtual std::string message() const { return std::string("server connection was initialized"); }
         virtual char const* what() const { return "server notification"; }
 
+        net_identifier  m_address;
         boost::uint32_t m_nClientId;
         boost::uint32_t m_nTCPFlags;
         boost::uint32_t m_nAuxPort;
@@ -66,7 +68,7 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification | alert::server_notification;
 
-        server_status_alert(boost::uint32_t nFilesCount, boost::uint32_t nUsersCount) :
+        server_status_alert(net_identifier address, boost::uint32_t nFilesCount, boost::uint32_t nUsersCount) : m_address(address),
             m_nFilesCount(nFilesCount), m_nUsersCount(nUsersCount)
         {
         }
@@ -81,6 +83,7 @@ namespace libed2k
         virtual std::string message() const { return std::string("server status information"); }
         virtual char const* what() const { return "server status information"; }
 
+        net_identifier  m_address;
         boost::uint32_t m_nFilesCount;
         boost::uint32_t m_nUsersCount;
     };
@@ -121,7 +124,9 @@ namespace libed2k
     {
         const static int static_category = alert::server_notification;
 
-        server_message_alert(const std::string& strMessage) : m_strMessage(strMessage){}
+        server_message_alert(net_identifier address, const std::string& strMessage) :
+            m_address(address),
+            m_strMessage(strMessage){}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return m_strMessage; }
@@ -132,7 +137,8 @@ namespace libed2k
             return (std::auto_ptr<alert>(new server_message_alert(*this)));
         }
 
-        std::string m_strMessage;
+        net_identifier  m_address;
+        std::string     m_strMessage;
     };
 
     /**
@@ -142,7 +148,7 @@ namespace libed2k
     {
         const static int static_category = alert::status_notification | alert::server_notification;
 
-        server_connection_closed(const error_code& error) : m_error(error){}
+        server_connection_closed(net_identifier address, const error_code& error) : m_address(address), m_error(error){}
         virtual int category() const { return static_category; }
 
         virtual std::string message() const { return m_error.message(); }
@@ -153,7 +159,8 @@ namespace libed2k
             return (std::auto_ptr<alert>(new server_connection_closed(*this)));
         }
 
-        error_code m_error;
+        net_identifier  m_address;
+        error_code      m_error;
     };
 
     struct mule_listen_failed_alert: alert

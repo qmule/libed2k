@@ -971,14 +971,14 @@ void session_impl::abort()
         t.abort();
     }
 
-    DBG("aborting all server requests");
-    //m_server_connection.abort_all_requests();
     m_server_connection->close(errors::session_closing);
 
     for(std::deque<boost::intrusive_ptr<server_connection> >::const_iterator itr = m_servers.begin(); itr != m_servers.end(); ++itr)
-	{
-    	(*itr)->close(errors::session_closing);
-	}
+    {
+        (*itr)->close(errors::session_closing);
+    }
+
+    m_servers.clear();
 
     DBG("aborting all connections (" << m_connections.size() << ")");
 
