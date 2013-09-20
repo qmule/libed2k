@@ -449,6 +449,7 @@ namespace libed2k
 
         bool empty() const {return ((m_nIP == 0) || (m_nPort == 0)); }
         void dump() const;
+        std::string toString() const;
     };
 
     /**

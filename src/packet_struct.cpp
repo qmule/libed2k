@@ -1,3 +1,5 @@
+#include <boost/format.hpp>
+
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/util.hpp"
 
@@ -138,6 +140,11 @@ namespace libed2k
     void net_identifier::dump() const
     {
         DBG("net_identifier::dump(IP=" << int2ipstr(m_nIP) << " port=" << m_nPort << ")");
+    }
+
+    std::string net_identifier::toString() const
+    {
+        return (boost::format("%1%:%2%") % int2ipstr(m_nIP) % m_nPort).str();
     }
 
     void server_info_entry::dump() const
