@@ -170,12 +170,6 @@ namespace libed2k
         return m_impl->get_active_transfers();
     }
 
-    const std::deque<boost::intrusive_ptr<server_connection> >& session::get_servers() const
-    {
-    	boost::mutex::scoped_lock l(m_impl->m_mutex);
-       	return m_impl->get_servers();
-    }
-
     void session::remove_transfer(const transfer_handle& h, int options)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);

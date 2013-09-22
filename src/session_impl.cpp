@@ -1450,6 +1450,11 @@ void session_impl::server_conn_stop()
     }
 
     m_user_announced = false;
+
+    for(std::deque<boost::intrusive_ptr<server_connection> >::const_iterator itr = m_servers.begin(); itr != m_servers.end(); ++itr)
+    {
+        (*itr)->stop();
+    }
 }
 
 void session_impl::update_connections_limit()
