@@ -242,6 +242,8 @@ namespace libed2k
 
         /** async generate fast resume data and emit alert */
         void save_resume_data(int flags);
+		bool need_save_resume_data() const { return m_need_save_resume_data; }
+
         bool should_check_file() const;
 
         /** call after transfer checking completed */
@@ -400,6 +402,10 @@ namespace libed2k
         /** previously saved resume data */
         std::vector<char>  m_resume_data;
         lazy_entry m_resume_entry;
+
+        // set to false when saving resume data. Set to true
+        // whenever something is downloaded
+        bool m_need_save_resume_data;
 
         /** current error on this transfer */
         error_code m_error;

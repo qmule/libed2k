@@ -55,6 +55,7 @@ namespace libed2k
         m_total_failed_bytes(0),
         m_total_redundant_bytes(0),
         m_minute_timer(minutes(1), min_time()),
+        m_need_save_resume_data(true),
         m_last_active(0)
     {
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
@@ -362,6 +363,7 @@ namespace libed2k
     {
         bool was_finished = (num_have() == num_pieces());
         we_have(index);
+        m_need_save_resume_data = true;
 
         if (!was_finished && is_finished())
         {
@@ -503,6 +505,9 @@ namespace libed2k
         if (m_paused) return;
         m_paused = true;
 
+        // we need to save this new state
+        m_need_save_resume_data = true;
+
         if (!m_ses.is_paused())
             do_pause();
     }
@@ -544,6 +549,9 @@ namespace libed2k
     {
         if (!m_paused) return;
         m_paused = false;
+
+        // we need to save this new state
+        m_need_save_resume_data = true;
 
         do_resume();
     }
@@ -656,7 +664,8 @@ namespace libed2k
         LIBED2K_ASSERT(index < int(num_pieces()));
         if (index < 0 || index >= int(num_pieces())) return;
 
-        m_picker->set_piece_priority(index, priority);
+        if (m_picker->set_piece_priority(index, priority))
+            m_need_save_resume_data = true;
     }
 
     int transfer::piece_priority(int index) const
@@ -1081,6 +1090,7 @@ namespace libed2k
                 else
                 {
                     read_resume_data(m_resume_entry);
+                    m_need_save_resume_data = false;
                 }
             }
 
@@ -1436,6 +1446,8 @@ namespace libed2k
             return;
         }
 
+        m_need_save_resume_data = false;
+
         LIBED2K_ASSERT(m_storage);
         if (m_state == transfer_status::queued_for_checking
             || m_state == transfer_status::checking_files
@@ -1464,6 +1476,7 @@ namespace libed2k
         }
         else
         {
+            m_need_save_resume_data = false;
             write_resume_data(*j.resume_data);
             m_ses.m_alerts.post_alert_should(save_resume_data_alert(j.resume_data, handle()));
         }

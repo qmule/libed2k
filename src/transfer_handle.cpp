@@ -214,6 +214,11 @@ namespace libed2k
         LIBED2K_FORWARD(save_resume_data(flags));
     }
 
+    bool transfer_handle::need_save_resume_data() const
+    {
+        LIBED2K_FORWARD_RETURN(need_save_resume_data(), false);
+    }
+
     void transfer_handle::move_storage(const std::string& save_path) const
     {
         LIBED2K_FORWARD(move_storage(save_path));
