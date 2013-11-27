@@ -1410,11 +1410,7 @@ void peer_connection::on_disk_write_complete(
     // to allow to receive more data
     do_read();
 
-    if (t->is_seed()) return;
-
-    piece_block block_finished(mk_block(req));
-    piece_picker& picker = t->picker();
-    picker.mark_as_finished(block_finished, get_peer());
+    t->handle_disk_write(j, this);
 }
 
 void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)

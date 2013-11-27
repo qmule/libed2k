@@ -1743,6 +1743,18 @@ namespace libed2k
         if (paused_ != -1) m_paused = paused_;
     }
 
+    void transfer::handle_disk_write(const disk_io_job& j, peer_connection* c)
+    {
+        if (is_seed()) return;
+
+        LIBED2K_ASSERT(j.piece >= 0);
+        LIBED2K_ASSERT(m_picker);
+
+        piece_block block_finished(j.piece, j.offset/BLOCK_SIZE);
+        m_picker->mark_as_finished(block_finished, c->get_peer());
+        m_need_save_resume_data = true;
+    }
+
     void transfer::handle_disk_error(disk_io_job const& j, peer_connection* c)
     {
         if (!j.error) return;

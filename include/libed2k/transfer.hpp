@@ -281,7 +281,9 @@ namespace libed2k
         void on_resume_data_checked(int ret, disk_io_job const& j);
         void on_piece_checked(int ret, disk_io_job const& j);
         void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
-        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+
+        void handle_disk_write(const disk_io_job& j, peer_connection* c);
+        void handle_disk_error(const disk_io_job& j, peer_connection* c = 0);
 
         // --------------------------------------------
         // BANDWIDTH MANAGEMENT
