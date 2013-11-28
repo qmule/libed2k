@@ -184,6 +184,11 @@ namespace libed2k
         LIBED2K_FORWARD(set_upload_mode(b));
     }
 
+    void transfer_handle::set_eager_mode(bool b) const
+    {
+        LIBED2K_FORWARD(set_eager_mode(b));
+    }
+
     void transfer_handle::pause() const
     {
         LIBED2K_FORWARD(pause());

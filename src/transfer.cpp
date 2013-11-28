@@ -39,6 +39,7 @@ namespace libed2k
         m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
         m_upload_mode(false),
+        m_eager_mode(false),
         m_auto_managed(false),
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),

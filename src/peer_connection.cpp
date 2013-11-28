@@ -322,7 +322,7 @@ void peer_connection::second_tick(int tick_interval_ms)
         return;
     }
 
-    if (t->num_free_blocks() == 0)
+    if (t->eager_mode() || t->num_free_blocks() == 0)
         abort_expired_requests();
 
     if (!is_closed())

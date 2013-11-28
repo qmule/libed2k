@@ -165,6 +165,9 @@ namespace libed2k
         void set_upload_mode(bool b);
         bool upload_mode() const { return m_upload_mode; }
 
+        bool eager_mode() const { return m_eager_mode; }
+        void set_eager_mode(bool b) { m_eager_mode = b; }
+
         // --------------------------------------------
         // PIECE MANAGEMENT
         // --------------------------------------------
@@ -340,6 +343,9 @@ namespace libed2k
 
         // set to true when this transfer may not download anything
         bool m_upload_mode;
+
+        // in eager mode all timeout requests will be aborted
+        bool m_eager_mode;
 
         // if this is true, libed2k may pause and resume
         // this transfer depending on queuing rules. Transfers
