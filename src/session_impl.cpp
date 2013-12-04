@@ -104,7 +104,8 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_user_announced(false),
     m_server_connection_state(SC_OFFLINE),
     m_total_failed_bytes(0),
-    m_total_redundant_bytes(0)
+    m_total_redundant_bytes(0),
+    m_queue_pos(0)
 {
     DBG("*** create ed2k session ***");
 
@@ -721,15 +722,7 @@ transfer_handle session_impl::add_transfer(add_transfer_params const& params, er
         return transfer_handle();
     }
 
-    int queue_pos = 0;
-    for (transfer_map::const_iterator i = m_transfers.begin(),
-             end(m_transfers.end()); i != end; ++i)
-    {
-        int pos = i->second->queue_position();
-        if (pos >= queue_pos) queue_pos = pos + 1;
-    }
-
-    transfer_ptr.reset(new transfer(*this, m_listen_interface, queue_pos, params));
+    transfer_ptr.reset(new transfer(*this, m_listen_interface, ++m_queue_pos, params));
     transfer_ptr->start();
 
     m_transfers.insert(std::make_pair(params.file_hash, transfer_ptr));

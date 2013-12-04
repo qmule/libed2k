@@ -960,7 +960,7 @@ namespace libed2k
             }
         }
 
-        if (m_am.pending()) libed2k::sleep(300);
+        if (m_am.pending()) libed2k::sleep(500);
 
         if (!m_am.post_alert(transfer_params_alert(atp, ec)))
         {
