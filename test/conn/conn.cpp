@@ -328,6 +328,14 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         {
             DBG("ALERT: save_resume_data_failed_alert");
         }
+        else if(transfer_params_alert* p = dynamic_cast<transfer_params_alert*>(a.get()))
+        {
+        	if (!p->m_ec)
+        	{
+        		DBG("ALERT: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
+        		ps->add_transfer(p->m_atp);
+        	}
+        }
         else
         {
             DBG("ALERT: Unknown alert: " << a.get()->message());
@@ -697,8 +705,22 @@ int main(int argc, char* argv[])
             }
             case cc_share:
             {
-                DBG("share " << strArg);
-                std::deque<std::string> v;
+                DBG("share directory: " << strArg);
+                libed2k::error_code ec;
+                libed2k::directory dir(strArg, ec);
+                if (!ec)
+                {
+                	while(!dir.done())
+                	{
+                		dir.next(ec);
+                		ses.make_transfer_parameters(libed2k::combine_path(strArg, dir.file()));
+                	}
+                }
+                else
+                {
+                	DBG(ec.message());
+                }
+
                 //ses.share_dir(strArg, strArg, v);
                 break;
             }
