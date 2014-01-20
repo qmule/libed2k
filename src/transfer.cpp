@@ -39,6 +39,7 @@ namespace libed2k
         m_state(transfer_status::checking_resume_data),
         m_seed_mode(p.seed_mode),
         m_upload_mode(false),
+        m_eager_mode(false),
         m_auto_managed(false),
         m_complete(p.num_complete_sources),
         m_incomplete(p.num_incomplete_sources),
@@ -55,6 +56,7 @@ namespace libed2k
         m_total_failed_bytes(0),
         m_total_redundant_bytes(0),
         m_minute_timer(minutes(1), min_time()),
+        m_need_save_resume_data(true),
         m_last_active(0)
     {
         if (p.resume_data) m_resume_data.swap(*p.resume_data);
@@ -362,6 +364,7 @@ namespace libed2k
     {
         bool was_finished = (num_have() == num_pieces());
         we_have(index);
+        m_need_save_resume_data = true;
 
         if (!was_finished && is_finished())
         {
@@ -503,6 +506,9 @@ namespace libed2k
         if (m_paused) return;
         m_paused = true;
 
+        // we need to save this new state
+        m_need_save_resume_data = true;
+
         if (!m_ses.is_paused())
             do_pause();
     }
@@ -544,6 +550,9 @@ namespace libed2k
     {
         if (!m_paused) return;
         m_paused = false;
+
+        // we need to save this new state
+        m_need_save_resume_data = true;
 
         do_resume();
     }
@@ -656,7 +665,8 @@ namespace libed2k
         LIBED2K_ASSERT(index < int(num_pieces()));
         if (index < 0 || index >= int(num_pieces())) return;
 
-        m_picker->set_piece_priority(index, priority);
+        if (m_picker->set_piece_priority(index, priority))
+            m_need_save_resume_data = true;
     }
 
     int transfer::piece_priority(int index) const
@@ -1081,6 +1091,7 @@ namespace libed2k
                 else
                 {
                     read_resume_data(m_resume_entry);
+                    m_need_save_resume_data = false;
                 }
             }
 
@@ -1436,6 +1447,8 @@ namespace libed2k
             return;
         }
 
+        m_need_save_resume_data = false;
+
         LIBED2K_ASSERT(m_storage);
         if (m_state == transfer_status::queued_for_checking
             || m_state == transfer_status::checking_files
@@ -1464,6 +1477,7 @@ namespace libed2k
         }
         else
         {
+            m_need_save_resume_data = false;
             write_resume_data(*j.resume_data);
             m_ses.m_alerts.post_alert_should(save_resume_data_alert(j.resume_data, handle()));
         }
@@ -1728,6 +1742,18 @@ namespace libed2k
 
         int paused_ = rd.dict_find_int_value("paused", -1);
         if (paused_ != -1) m_paused = paused_;
+    }
+
+    void transfer::handle_disk_write(const disk_io_job& j, peer_connection* c)
+    {
+        if (is_seed()) return;
+
+        LIBED2K_ASSERT(j.piece >= 0);
+        LIBED2K_ASSERT(m_picker);
+
+        piece_block block_finished(j.piece, j.offset/BLOCK_SIZE);
+        m_picker->mark_as_finished(block_finished, c->get_peer());
+        m_need_save_resume_data = true;
     }
 
     void transfer::handle_disk_error(disk_io_job const& j, peer_connection* c)

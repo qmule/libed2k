@@ -184,6 +184,11 @@ namespace libed2k
         LIBED2K_FORWARD(set_upload_mode(b));
     }
 
+    void transfer_handle::set_eager_mode(bool b) const
+    {
+        LIBED2K_FORWARD(set_eager_mode(b));
+    }
+
     void transfer_handle::pause() const
     {
         LIBED2K_FORWARD(pause());
@@ -212,6 +217,11 @@ namespace libed2k
     void transfer_handle::save_resume_data(int flags) const
     {
         LIBED2K_FORWARD(save_resume_data(flags));
+    }
+
+    bool transfer_handle::need_save_resume_data() const
+    {
+        LIBED2K_FORWARD_RETURN(need_save_resume_data(), false);
     }
 
     void transfer_handle::move_storage(const std::string& save_path) const

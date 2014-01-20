@@ -39,6 +39,12 @@ namespace libed2k
         return ret;
     }
 
+    void session::post_transfer(const add_transfer_params& params)
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->post_transfer(params);
+    }
+
     peer_connection_handle session::add_peer_connection(const net_identifier& np)
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);

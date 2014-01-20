@@ -296,6 +296,7 @@ namespace libed2k
         void set_download_limit(int limit) const;
         int download_limit() const;
         void set_upload_mode(bool b) const;
+        void set_eager_mode(bool b) const;
 
         void pause() const;
         void resume() const;
@@ -306,6 +307,7 @@ namespace libed2k
 
         enum save_resume_flags_t { flush_disk_cache = 1, save_info_dict = 2 };
         void save_resume_data(int flags = 0) const;
+        bool need_save_resume_data() const;
 
         void move_storage(std::string const& save_path) const;
         bool rename_file(const std::string& name) const;
