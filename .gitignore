@@ -1,3 +1,4 @@
+/.dir-locals.el
 /bin/
 /.sconsign.dblite
 /out.txt

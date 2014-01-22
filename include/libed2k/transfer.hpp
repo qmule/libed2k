@@ -165,6 +165,9 @@ namespace libed2k
         void set_upload_mode(bool b);
         bool upload_mode() const { return m_upload_mode; }
 
+        bool eager_mode() const { return m_eager_mode; }
+        void set_eager_mode(bool b) { m_eager_mode = b; }
+
         // --------------------------------------------
         // PIECE MANAGEMENT
         // --------------------------------------------
@@ -242,6 +245,8 @@ namespace libed2k
 
         /** async generate fast resume data and emit alert */
         void save_resume_data(int flags);
+		bool need_save_resume_data() const { return m_need_save_resume_data; }
+
         bool should_check_file() const;
 
         /** call after transfer checking completed */
@@ -279,7 +284,9 @@ namespace libed2k
         void on_resume_data_checked(int ret, disk_io_job const& j);
         void on_piece_checked(int ret, disk_io_job const& j);
         void on_piece_verified(int ret, disk_io_job const& j, boost::function<void(int)> f);
-        void handle_disk_error(disk_io_job const& j, peer_connection* c = 0);
+
+        void handle_disk_write(const disk_io_job& j, peer_connection* c);
+        void handle_disk_error(const disk_io_job& j, peer_connection* c = 0);
 
         // --------------------------------------------
         // BANDWIDTH MANAGEMENT
@@ -336,6 +343,9 @@ namespace libed2k
 
         // set to true when this transfer may not download anything
         bool m_upload_mode;
+
+        // in eager mode all timeout requests will be aborted
+        bool m_eager_mode;
 
         // if this is true, libed2k may pause and resume
         // this transfer depending on queuing rules. Transfers
@@ -400,6 +410,10 @@ namespace libed2k
         /** previously saved resume data */
         std::vector<char>  m_resume_data;
         lazy_entry m_resume_entry;
+
+        // set to false when saving resume data. Set to true
+        // whenever something is downloaded
+        bool m_need_save_resume_data;
 
         /** current error on this transfer */
         error_code m_error;

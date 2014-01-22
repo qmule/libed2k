@@ -593,7 +593,7 @@ namespace libed2k
                 << " tag list size: " << m_list.count());
     }
 
-    known_file_collection::known_file_collection() : m_nHeader(MET_HEADER_WITH_LARGEFILES)
+    known_file_collection::known_file_collection()
     {
     }
 
@@ -960,7 +960,7 @@ namespace libed2k
             }
         }
 
-        if (m_am.pending()) libed2k::sleep(300);
+        if (m_am.pending()) libed2k::sleep(500);
 
         if (!m_am.post_alert(transfer_params_alert(atp, ec)))
         {
@@ -1077,11 +1077,12 @@ namespace libed2k
         // ed2k://|file|fileName|fileSize|fileHash|/
         if (uencode)
         {
-            retvalue << "ed2k://"
-            << url_encode("|file|") << url_encode(strFilename)
-            << url_encode("|") << nFilesize
-            << url_encode("|") << hFile.toString()
-            << url_encode("|") << "/";
+            // never encode "|"
+            retvalue << "ed2k://|file|"
+            << url_encode(strFilename)
+            << "|" << nFilesize
+            << "|" << hFile.toString()
+            << "|/";
         }
         else
         {

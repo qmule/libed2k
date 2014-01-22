@@ -205,6 +205,25 @@ BOOST_AUTO_TEST_CASE(test_memory_archive)
     BOOST_CHECK_EQUAL(sstream.str().length(), sizeof(SerialStruct) + sizeof(boost::uint16_t) + sizeof(bool) + sizeof(boost::uint16_t) + strData.size());
 }
 
+BOOST_AUTO_TEST_CASE(test_container_holder)
+{
+
+    // correct string container contains string "01"
+    const boost::uint8_t m_source_archive[] = {'\x02', '\x00', '\x00', '\x00', '\x30', '\x31' };
+    libed2k::container_holder<boost::uint32_t, std::string>  string1;
+    boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer((const char*)m_source_archive, sizeof(m_source_archive));
+    std::istream in_array_stream(&array_source_buffer);
+    libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
+    in_array_archive >> string1;
+    BOOST_CHECK_EQUAL(string1.m_collection, "01");
+
+    // incorrect string container with enormous string
+    const boost::uint8_t m_source_archive_inc[] = {'\x02', '\x00', '\x00', '\x0F', '\x30', '\x31', '\x11', '\x11', '\x11', '\x11', '\x11' };
+    boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer_inc((const char*)m_source_archive_inc, sizeof(m_source_archive_inc));
+    std::istream in_array_stream_inc(&array_source_buffer_inc);
+    libed2k::archive::ed2k_iarchive in_array_archive_inc(in_array_stream_inc);
+    BOOST_CHECK_THROW(in_array_archive_inc >> string1, libed2k::libed2k_exception);
+}
 
 BOOST_AUTO_TEST_CASE(test_file_archive)
 {
@@ -721,11 +740,7 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
 
 BOOST_AUTO_TEST_CASE(test_links_parsing)
 {
-    std::string strLink1 = libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, true);
-    BOOST_CHECK_EQUAL(strLink1, "ed2k://%7Cfile%7Csome%5Ffile%7C100%7C31D6CFE0D16AE931B73C59D7E0C089C0%7C/");
-    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false),
-            "ed2k://|file|some_file|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
-    BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode(strLink1)).defined());
+    BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://|file|some%5Ffile|100|31D6CFE0D16AE931B73C59D7E0C089C0|/")).defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false)).defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink("ed2k://|file|more3|fd|ggfgfg|/").defined());
     BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|more2|10|DB48A1C00CC972488C29D3FEC9F16A79|/").defined());
@@ -733,6 +748,16 @@ BOOST_AUTO_TEST_CASE(test_links_parsing)
     BOOST_CHECK(libed2k::emule_collection::fromLink("ed2k://|file|Code Geass.emulecollection|1568|6462EAFF860B98A0592BB0284225F85B|h=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM|/").defined()); 
     BOOST_CHECK(libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://%7Cfile%7C%D0%A1%D0%BF%D0%B5%D1%88%D0%B0%D0%BB%D1%8B%20Code%20Geass.emulecollection%7C1568%7C6462EAFF860B98A0592BB0284225F85B%7Ch=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM%7C/")).defined());
     BOOST_CHECK(!libed2k::emule_collection::fromLink(libed2k::url_decode("ed2k://%7Cfile%7C%D0%A1%D0%BF%D0%B5%D1%88%D0%B0%D0%BB%D1%8B%20Code%20Geass.emulecollection%7C1568%7C6462EAFF860B98A0592BB0284225F85B%7Ch=52HRRJC7CCJBUZNP5JM6RQWYEDAM3YQM%7C/ ")).defined());
+}
+
+BOOST_AUTO_TEST_CASE(test_links_generation)
+{
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, false),
+            "ed2k://|file|some_file|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("xxx.avi", 100, libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), true),
+            "ed2k://|file|xxx%2Eavi|100|DB48A1C00CC972488C29D3FEC9F16A79|/");
+    BOOST_CHECK_EQUAL(libed2k::emule_collection::toLink("some_file", 100, libed2k::md4_hash::terminal, true),
+            "ed2k://|file|some%5Ffile|100|31D6CFE0D16AE931B73C59D7E0C089C0|/");
 }
 
 BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)

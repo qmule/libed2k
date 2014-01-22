@@ -262,8 +262,7 @@ namespace libed2k
             ar & m_size;
 
             // avoid huge memory allocation
-            // TODO - fix this size to compatibility with 16-bit integers
-            if (m_size > MAX_ED2K_PACKET_LEN)
+            if (static_cast<size_t>(m_size) > MAX_COLLECTION_SIZE)
             {
                 throw libed2k::libed2k_exception(libed2k::errors::decode_packet_error);
             }
@@ -295,6 +294,8 @@ namespace libed2k
 
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
+
+
 
     /**
       * common libed2k packet header
@@ -640,10 +641,12 @@ namespace libed2k
     public:
         enum SRE_Operation
         {
-            SRE_AND     = 0,
+            SRE_AND     = 0,    // explicitly set because these values will send to server
             SRE_OR      = 1,
             SRE_NOT     = 2,
-            SRE_END     = 3
+            SRE_OBR,
+            SRE_CBR,
+            SRE_END
         };
 
         search_request_entry(SRE_Operation soper);
@@ -663,7 +666,12 @@ namespace libed2k
         /**
           * return true when entry is AND/OR/NOT expression
          */
-        bool isOperand() const;
+        bool isLogic() const;
+
+        /**
+          * return true when entry is BOOL expression
+         */
+        bool isOperator() const;
 
         /**
           * methods for testing
@@ -690,6 +698,8 @@ namespace libed2k
         boost::optional<tg_type>         m_meta_type;    //!< meta type
         boost::optional<std::string>     m_strMetaName;  //!< meta name
     };
+
+    extern std::string sre_operation2string(boost::uint8_t);
 
     typedef std::deque<search_request_entry> search_request;
 

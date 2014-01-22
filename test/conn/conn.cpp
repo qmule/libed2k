@@ -111,7 +111,8 @@ enum CONN_CMD
     cc_disconnect,
     cc_listen,
     cc_empty,
-    cc_tr
+    cc_tr,
+    cc_search_test
 };
 
 CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
@@ -199,6 +200,10 @@ CONN_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
     else if (strCommand == "tr")
     {
         return cc_tr;
+    }
+    else if (strCommand == "sst")
+    {
+        return cc_search_test;
     }
 
     return cc_empty;
@@ -315,13 +320,21 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                 DBG("ALERT: DIR: " << p->m_dirs[n]);
             }
         }
-        else if (save_resume_data_alert* p = dynamic_cast<save_resume_data_alert*>(a.get()))
+        else if (dynamic_cast<save_resume_data_alert*>(a.get()))
         {
             DBG("ALERT: save_resume_data_alert");
         }
-        else if (save_resume_data_failed_alert* p = dynamic_cast<save_resume_data_failed_alert*>(a.get()))
+        else if (dynamic_cast<save_resume_data_failed_alert*>(a.get()))
         {
             DBG("ALERT: save_resume_data_failed_alert");
+        }
+        else if(transfer_params_alert* p = dynamic_cast<transfer_params_alert*>(a.get()))
+        {
+        	if (!p->m_ec)
+        	{
+        		DBG("ALERT: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
+        		ps->add_transfer(p->m_atp);
+        	}
         }
         else
         {
@@ -468,6 +481,22 @@ int main(int argc, char* argv[])
                 ses.post_search_request(sr);
                 break;
             }
+            case cc_search_test:
+            {
+                DBG("Execute search test");
+                search_request sr;
+                sr.push_back(search_request_entry(search_request_entry::SRE_NOT));
+                sr.push_back(search_request_entry(search_request_entry::SRE_OR));
+                sr.push_back(search_request_entry(search_request_entry::SRE_AND));
+                sr.push_back(search_request_entry("a"));
+                sr.push_back(search_request_entry("b"));
+                sr.push_back(search_request_entry(search_request_entry::SRE_AND));
+                sr.push_back(search_request_entry("c"));
+                sr.push_back(search_request_entry("d"));
+                sr.push_back(search_request_entry("+++"));
+                ses.post_search_request(sr);
+                break;
+            }
             case cc_simplesearch:
             {
                 DBG("Execute simple search request: " << strArg);
@@ -482,7 +511,7 @@ int main(int argc, char* argv[])
 
                 DBG("execute load for " << nIndex);
 
-                if (vSF.m_collection.size() > nIndex)
+                if (vSF.m_collection.size() > static_cast<size_t>(nIndex))
                 {
                     DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
                     libed2k::add_transfer_params params;
@@ -506,7 +535,7 @@ int main(int argc, char* argv[])
                 DBG("Load first " << nBorder);
                 for (size_t nIndex = 0; nIndex < vSF.m_collection.size(); ++nIndex)
                 {
-                    if (nIndex >= nBorder)
+                    if (nIndex >= static_cast<size_t>(nBorder))
                     {
                         break;
                     }
@@ -676,8 +705,22 @@ int main(int argc, char* argv[])
             }
             case cc_share:
             {
-                DBG("share " << strArg);
-                std::deque<std::string> v;
+                DBG("share directory: " << strArg);
+                libed2k::error_code ec;
+                libed2k::directory dir(strArg, ec);
+                if (!ec)
+                {
+                	while(!dir.done())
+                	{
+                		dir.next(ec);
+                		ses.make_transfer_parameters(libed2k::combine_path(strArg, dir.file()));
+                	}
+                }
+                else
+                {
+                	DBG(ec.message());
+                }
+
                 //ses.share_dir(strArg, strArg, v);
                 break;
             }

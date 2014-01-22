@@ -188,7 +188,8 @@ namespace libed2k
                 if (s[index] == '%')
                 {
                     char dec1, dec2;
-                    if (-1 != (dec1 = HEX2DEC[s[index+1]]) && -1 != (dec2 = HEX2DEC[s[index+2]]))
+                    if (-1 != (dec1 = HEX2DEC[static_cast<size_t>(s[index+1])]) &&
+                        -1 != (dec2 = HEX2DEC[static_cast<size_t>(s[index+2])]))
                     {
                         char c = (dec1 << 4) + dec2;
                         strRes += c;

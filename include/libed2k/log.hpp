@@ -1,8 +1,9 @@
 #ifndef __LOG__
 #define __LOG__
 
-#include <boost/logging/format_fwd.hpp>
+#ifdef LIBED2K_DEBUG
 
+#include <boost/logging/format_fwd.hpp>
 
 // Step 1: Optimize : use a cache string, to make formatting the message faster
 BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
@@ -11,8 +12,6 @@ BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 #include <boost/logging/format.hpp>
 #include <boost/logging/writer/ts_write.hpp>
 #endif
-
-#ifdef LIBED2K_DEBUG
 
 using namespace boost::logging;
 

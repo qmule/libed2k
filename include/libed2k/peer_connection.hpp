@@ -274,6 +274,7 @@ namespace libed2k
 
         // add some predefined tags into list, used to hello/hello answer packets
         void append_misc_info(tag_list<boost::uint32_t>&);
+        void parse_misc_info(const tag_list<boost::uint32_t>&);
 
         // the following functions appends messages
         // to the send buffer

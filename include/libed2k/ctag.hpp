@@ -24,6 +24,7 @@ if (!x)\
 typedef boost::uint8_t tg_nid_type;
 typedef boost::uint8_t tg_type;
 
+const tg_nid_type FT_UNDEFINED          = '\x00';    // undefined tag
 const tg_nid_type FT_FILENAME           = '\x01';    // <string>
 const tg_nid_type FT_FILESIZE           = '\x02';    // <uint32>
 const tg_nid_type FT_FILESIZE_HI        = '\x3A';    // <uint32>
@@ -658,10 +659,13 @@ public:
     const boost::shared_ptr<base_tag> getTagByName(const std::string& strName) const;
     
     /**
-      * return special tag as string
-      * if tag not exists or his type is not string returns empty string
+      * return special tag as string or int
+      * if tag not exists or his type is not string returns empty string or zero int
      */
     std::string getStringTagByNameId(tg_nid_type nId) const;
+    std::string getStringTagByName(const std::string strName) const;
+    boost::uint64_t getIntTagByNameId(tg_nid_type nId) const;
+    boost::uint64_t getIntTagByName(const std::string strName) const;
 
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
@@ -761,6 +765,60 @@ std::string tag_list<size_type>::getStringTagByNameId(tg_nid_type nId) const
     }
 
     return (std::string(""));
+}
+
+template<typename size_type>
+std::string tag_list<size_type>::getStringTagByName(const std::string strName) const
+{
+    if (boost::shared_ptr<base_tag> p = getTagByName(strName))
+    {
+        try
+        {
+            return (p->asString());
+        }
+        catch(libed2k_exception& e)
+        {
+            ERR("Incorrect type conversion: " << e.what());
+        }
+    }
+
+    return (std::string(""));
+}
+
+template<typename size_type>
+boost::uint64_t tag_list<size_type>::getIntTagByNameId(tg_nid_type nId) const
+{
+    if (boost::shared_ptr<base_tag> p = getTagByNameId(nId))
+    {
+        try
+        {
+            return (p->asInt());
+        }
+        catch(libed2k_exception& e)
+        {
+            ERR("Incorrect type conversion: " << e.what());
+        }
+    }
+
+    return 0;
+}
+
+template<typename size_type>
+boost::uint64_t tag_list<size_type>::getIntTagByName(const std::string strName) const
+{
+    if (boost::shared_ptr<base_tag> p = getTagByName(strName))
+    {
+        try
+        {
+            return (p->asInt());
+        }
+        catch(libed2k_exception& e)
+        {
+            ERR("Incorrect type conversion: " << e.what());
+        }
+    }
+
+    return 0;
 }
 
 template<typename size_type>
