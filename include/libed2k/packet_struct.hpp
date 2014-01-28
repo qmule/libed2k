@@ -582,7 +582,7 @@ namespace libed2k
     };
 
     /**
-      * callback request from server to client
+      * call back request from server to client
      */
     struct callback_request_in
     {
@@ -596,20 +596,18 @@ namespace libed2k
     };
 
     /**
-      * callback request failed
+      * call back request failed
      */
     struct callback_req_fail
     {
-        boost::uint32_t m_nClientId;
     };
 
     /**
-      * callback request from client to server
+      * call back request from client to server
      */
     struct callback_request_out
     {
         client_id_type      m_nClientId;
-
         template<typename Archive>
         void serialize(Archive& ar)
         {

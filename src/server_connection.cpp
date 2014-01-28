@@ -113,6 +113,14 @@ namespace libed2k
         do_write(offer_list);
     }
 
+    void server_connection::post_callback_request(boost::uint32_t client_id)
+    {
+        DBG("server_connection::post_callback_request: " << client_id);
+        STATE_CMP(SC_TO_SERVER);
+        callback_request_out cbo = {client_id};
+        do_write(cbo);
+    }
+
     void server_connection::check_keep_alive(int tick_interval_ms)
     {
         // keep alive only on online server and settings set keep alive packets
@@ -417,6 +425,14 @@ namespace libed2k
                         break;
                     }
                     case OP_CALLBACKREQUESTED:
+                    {
+                        callback_request_in cb;
+                        ia >> cb;
+                        // connect to requested client
+                        break;
+                    }
+                    case OP_CALLBACK_FAIL:
+                        DBG("Call back request fail");
                         break;
                     default:
                         ERR("ignore unhandled packet: " << m_in_header.m_type);

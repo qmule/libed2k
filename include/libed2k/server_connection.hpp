@@ -50,6 +50,7 @@ namespace libed2k
         void post_search_more_result_request();
         void post_sources_request(const md4_hash& hFile, boost::uint64_t nSize);
         void post_announce(shared_files_list& offer_list);
+        void post_callback_request(client_id_type);
         void check_keep_alive(int tick_interval_ms);
     private:
 
@@ -96,7 +97,7 @@ namespace libed2k
 
         int                             m_last_keep_alive_packet;
         char                            m_state;
-        boost::uint32_t                 m_nClientId;
+        client_id_type                  m_nClientId;
         tcp::resolver                   m_name_lookup;
         aux::session_impl&              m_ses;
         boost::uint32_t                 m_nTCPFlags;
