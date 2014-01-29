@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
         char* chFullBuffer = new char[static_cast<unsigned int>(itr->first)];  // allocate buffer for file data
         FILE* fh = fopen("./thfile.bin", "rb");
         BOOST_REQUIRE(fh);
-        BOOST_REQUIRE(fread(chFullBuffer, 1, static_cast<unsigned int>(itr->first), fh) == itr->first);
+        BOOST_REQUIRE(fread(chFullBuffer, 1, static_cast<unsigned int>(itr->first), fh) == static_cast<size_t>(itr->first));
         fclose(fh);
 
         libed2k::size_type pieces = libed2k::div_ceil(itr->first, libed2k::PIECE_SIZE);

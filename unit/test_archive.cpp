@@ -295,10 +295,10 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
                     /*variable string*/ static_cast<boost::uint8_t>(libed2k::TAGTYPE_STRING), '\x04', '\x00', 'A', 'B', 'C', 'D', '\x06', '\x00', 'S', 'T', 'R', 'I', 'N', 'G',
                     /*defined string*/  static_cast<boost::uint8_t>(libed2k::TAGTYPE_STR5), '\x04', '\x00', 'I', 'V', 'A', 'N', 'A', 'P', 'P', 'L', 'E',
                     /*blob*/            static_cast<boost::uint8_t>(libed2k::TAGTYPE_BLOB | 0x80), '\x0A', '\x03', '\x00', '\x00', '\x00', '\x0D', '\x0A', '\x0B',
-                    /*float*/           static_cast<boost::uint8_t>(libed2k::TAGTYPE_FLOAT32 | 0x80), '\x15', *pData, *(pData+1), *(pData + 2), *(pData + 3),
+                    /*float*/           static_cast<boost::uint8_t>(libed2k::TAGTYPE_FLOAT32 | 0x80), '\x15', static_cast<boost::uint8_t>(*pData), static_cast<boost::uint8_t>(*(pData+1)), static_cast<boost::uint8_t>(*(pData + 2)), static_cast<boost::uint8_t>(*(pData + 3)),
                     /*bool*/            static_cast<boost::uint8_t>(libed2k::TAGTYPE_BOOL | 0x80), '\x15', '\x01',
                     /*hash*/            static_cast<boost::uint8_t>(libed2k::TAGTYPE_HASH16 | 0x80), '\x20', '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x09', '\x0A', '\x0B', '\x0C', '\x0D', '\x0E', '\x0F',
-                    /*invalid blob*/    static_cast<boost::uint8_t>(libed2k::TAGTYPE_BLOB | 0x80), '\x0A', '\xFF', '\xFF', '\xEE', '\xFF', '\x0D', '\x0A', '\x0B',};
+                    /*invalid blob*/    static_cast<boost::uint8_t>(libed2k::TAGTYPE_BLOB | 0x80), '\x0A', '\xFF', '\xFF', '\xEE', '\xFF', '\x0D', '\x0A', '\x0B'};
 
     const char* dataPtr = (const char*)&m_source_archive[0];
     boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer(dataPtr, sizeof(m_source_archive));
