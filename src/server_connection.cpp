@@ -225,8 +225,17 @@ namespace libed2k
         {
             tcp::endpoint peer(
                 ip::address::from_string(int2ipstr(i->m_nIP)), i->m_nPort);
-            APP("found peer: " << peer);
-            t->add_peer(peer);
+
+            if (isLowId(i->m_nIP) && !isLowId(m_nClientId))
+            {
+                // peer LowID and we is not LowID - send callback request
+                post_callback_request(i->m_nIP);
+            }
+            else
+            {
+                APP("found HiID peer: " << peer);
+                t->add_peer(peer);
+            }
         }
     }
 
