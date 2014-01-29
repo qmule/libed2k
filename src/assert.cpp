@@ -49,43 +49,43 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <cxxabi.h>
 
 namespace libed2k {
-std::string demangle(char const* name)
-{
-// in case this string comes
-	// this is needed on linux
-	char const* start = strchr(name, '(');
-	if (start != 0)
-	{
-		++start;
-	}
-	else
-	{
-		// this is needed on macos x
-		start = strstr(name, "0x");
-		if (start != 0)
-		{
-			start = strchr(start, ' ');
-			if (start != 0) ++start;
-			else start = name;
-		}
-		else start = name;
-	}
+    std::string demangle(char const* name)
+    {
+    // in case this string comes
+        // this is needed on linux
+        char const* start = strchr(name, '(');
+        if (start != 0)
+        {
+            ++start;
+        }
+        else
+        {
+            // this is needed on macos x
+            start = strstr(name, "0x");
+            if (start != 0)
+            {
+                start = strchr(start, ' ');
+                if (start != 0) ++start;
+                else start = name;
+            }
+            else start = name;
+        }
 
-	char const* end = strchr(start, '+');
-	if (end) while (*(end-1) == ' ') --end;
+        char const* end = strchr(start, '+');
+        if (end) while (*(end-1) == ' ') --end;
 
-	std::string in;
-	if (end == 0) in.assign(start);
-	else in.assign(start, end);
+        std::string in;
+        if (end == 0) in.assign(start);
+        else in.assign(start, end);
 
-	size_t len;
-	int status;
-	char* unmangled = ::abi::__cxa_demangle(in.c_str(), 0, &len, &status);
-	if (unmangled == 0) return in;
-	std::string ret(unmangled);
-	free(unmangled);
-	return ret;
-}
+        size_t len;
+        int status;
+        char* unmangled = ::abi::__cxa_demangle(in.c_str(), 0, &len, &status);
+        if (unmangled == 0) return in;
+        std::string ret(unmangled);
+        free(unmangled);
+        return ret;
+    }
 }
 #elif defined WIN32
 
@@ -96,13 +96,13 @@ std::string demangle(char const* name)
 #include "dbghelp.h"
 
 namespace libed2k {
-std::string demangle(char const* name)
-{ 
-	char demangled_name[256];
-	if (UnDecorateSymbolName(name, demangled_name, sizeof(demangled_name), UNDNAME_NO_THROW_SIGNATURES) == 0)
-		demangled_name[0] = 0;
-	return demangled_name;
-}
+    std::string demangle(char const* name)
+    {
+        char demangled_name[256];
+        if (UnDecorateSymbolName(name, demangled_name, sizeof(demangled_name), UNDNAME_NO_THROW_SIGNATURES) == 0)
+            demangled_name[0] = 0;
+        return demangled_name;
+    }
 }
 #else
 namespace libed2k {
@@ -206,13 +206,13 @@ namespace libed2k {
 
 #else
 namespace libed2k {
-    void libed2k::print_backtrace(char* out, int len, int max_depth) {}
+    void print_backtrace(char* out, int len, int max_depth) {}
 }
 
 #endif
 
 #if LIBED2K_PRODUCTION_ASSERTS
-char const* libtorrent_assert_log = "asserts.log";
+char const* libed2k_assert_log = "asserts.log";
 #endif
 
 namespace libed2k {
@@ -220,7 +220,7 @@ namespace libed2k {
         , char const* function, char const* value)
     {
     #if LIBED2K_PRODUCTION_ASSERTS
-        FILE* out = fopen(libtorrent_assert_log, "a+");
+        FILE* out = fopen(libed2k_assert_log, "a+");
         if (out == 0) out = stderr;
     #else
         FILE* out = stderr;
@@ -260,7 +260,7 @@ namespace libed2k {
 #else
 
 namespace libed2k {
-    LIBED2K_EXPORT void libed2k::assert_fail(char const* expr, int line, char const* file, char const* function) {}
+    LIBED2K_EXPORT void libed2k::assert_fail(char const* expr, int line, char const* file, char const* function, char const* val) {}
 }
 
 #endif

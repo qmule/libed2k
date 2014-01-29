@@ -41,14 +41,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #else
 
 #if LIBED2K_PRODUCTION_ASSERTS
-extern char const* libtorrent_assert_log;
+extern char const* libed2k_assert_log;
 #endif
 
 #include <string>
 
 namespace libed2k{
-std::string demangle(char const* name);
-LIBED2K_EXPORT void print_backtrace(char* out, int len, int max_depth = 0);
+    std::string demangle(char const* name);
+    LIBED2K_EXPORT void print_backtrace(char* out, int len, int max_depth = 0);
 }
 
 #if (defined __linux__ || defined __MACH__) && defined __GNUC__ && !LIBED2K_USE_SYSTEM_ASSERT
@@ -58,8 +58,8 @@ LIBED2K_EXPORT void print_backtrace(char* out, int len, int max_depth = 0);
 #endif
 
 namespace libed2k{
-LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
-    , char const* function, char const* val);
+    LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
+            , char const* function, char const* val);
 }
 
 #define LIBED2K_ASSERT(x) do { if (x) {} else libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
