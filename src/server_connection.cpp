@@ -439,6 +439,12 @@ namespace libed2k
                         callback_request_in cb;
                         ia >> cb;
                         // connect to requested client
+                        error_code ec;
+                        m_ses.add_peer_connection(cb.m_network_point, ec);
+                        if (ec)
+                        {
+                            ERR("Unable to connect to {" << cb.m_network_point.m_nIP << ":" << cb.m_network_point.m_nPort << "} by callback request");
+                        }
                         break;
                     }
                     case OP_CALLBACK_FAIL:
