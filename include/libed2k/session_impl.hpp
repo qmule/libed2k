@@ -97,6 +97,7 @@ namespace libed2k {
             alert const* wait_for_alert(time_duration max_wait);
             md4_hash callbacked_lowid(client_id_type);
             bool register_callback(client_id_type, md4_hash);
+            void cleanup_callbacks();
 
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on

@@ -78,6 +78,11 @@ bool session_impl_base::register_callback(client_id_type id, md4_hash filehash)
     return ret.second;
 }
 
+void session_impl_base::cleanup_callbacks()
+{
+    lowid_conn_dict.clear();
+}
+
 void session_impl_base::set_alert_mask(boost::uint32_t m)
 {
     m_alerts.set_alert_mask(m);

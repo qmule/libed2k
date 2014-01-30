@@ -448,7 +448,7 @@ namespace libed2k
                         break;
                     }
                     case OP_CALLBACK_FAIL:
-                        DBG("Call back request fail");
+                        DBG("callback request failed - cleanup callbacks? ");
                         break;
                     default:
                         ERR("ignore unhandled packet: " << m_in_header.m_type);
