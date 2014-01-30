@@ -179,6 +179,30 @@ peer_connection::~peer_connection()
     assert(m_download_queue.empty());
 }
 
+void peer_connection::finalize_handshake()
+{
+    if (m_handshake_complete)
+        return;
+
+    m_handshake_complete = true;
+
+    if (m_active)
+    {
+        DBG("handshake completed on active peer");
+
+        // peer handshake completed
+        boost::shared_ptr<transfer> t = m_transfer.lock();
+
+        if (t && !t->is_finished()) write_file_request(t->hash());
+        else fill_send_buffer();
+    }
+    else
+    {
+        DBG("handshake completed on passive peer");
+    }
+
+}
+
 void peer_connection::init()
 {
 }
@@ -1553,7 +1577,7 @@ void peer_connection::write_hello_answer()
     cha.dump();
     DBG("hello answer ==> " << m_remote);
     write_struct(cha);
-    m_handshake_complete = true;
+    finalize_handshake();
 }
 
 void peer_connection::write_ext_hello_answer()
@@ -1693,9 +1717,20 @@ void peer_connection::on_hello(const error_code& error)
         m_hClient = hello.m_hClient;
         m_options.m_nPort = hello.m_network_point.m_nPort;
         parse_misc_info(hello.m_list);
-        DBG("hello {port: " << m_options.m_nPort << "} <== " << m_remote);
+        DBG("hello {"
+                << " sp=" << hello.m_server_network_point
+                << " pp=" << hello.m_network_point
+                << "} <== " << m_remote);
+        md4_hash file_hash = m_ses.callbacked_lowid(hello.m_network_point.m_nIP);
+
+        if (file_hash != md4_hash::invalid)
+        {
+            DBG("lowid peer detected for " << file_hash.toString());
+            m_active = true;
+            attach_to_transfer(file_hash);
+        }
+
         write_hello_answer();
-        m_handshake_complete = true;
     }
     else
     {
@@ -1719,18 +1754,12 @@ void peer_connection::on_hello_answer(const error_code& error)
             peer_connected_alert(get_network_point(),
                                  get_connection_hash(),
                                  m_active));
-        m_handshake_complete = true;
+        finalize_handshake();
     }
     else
     {
         ERR("hello error " << error.message() << " <== " << m_remote);
     }
-
-    // peer handshake completed
-    boost::shared_ptr<transfer> t = m_transfer.lock();
-
-    if (t && !t->is_finished()) write_file_request(t->hash());
-	else fill_send_buffer();
 }
 
 void peer_connection::on_ext_hello(const error_code& error)
@@ -2045,13 +2074,8 @@ std::vector<std::string> filelist(const FileContainer& files) {
         for (size_t j = 0; j < files.m_collection[i].m_list.count(); ++j)
         {
             boost::shared_ptr<libed2k::base_tag> ptag = files.m_collection[i].m_list[j];
-            switch(ptag->getNameId())
-            {
-            case FT_FILENAME:
+            if (ptag->getNameId() == FT_FILENAME)
                 res.push_back(ptag->asString());
-            default:
-                break;
-            }
         }
     return res;
 }

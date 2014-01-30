@@ -196,7 +196,6 @@ namespace libed2k
         misc_options get_misc_options() const { return m_misc_options; }
         misc_options2 get_misc_options2() const { return m_misc_options2; }
 
-        bool is_active() const { return m_active; }
         net_identifier get_network_point() const;
         md4_hash get_connection_hash() const { return m_hClient; }
         peer_connection_options get_options() const { return m_options; }
@@ -221,11 +220,12 @@ namespace libed2k
         void set_download_limit(int limit);
         int upload_limit() const { return m_upload_limit; }
         int download_limit() const { return m_download_limit; }
-        bool attach_to_transfer(const md4_hash& hash);
     private:
 
         // constructor method
         void reset();
+        bool attach_to_transfer(const md4_hash& hash);
+        void finalize_handshake();
 
         virtual void do_read();
         virtual void do_write(int quota = std::numeric_limits<int>::max());

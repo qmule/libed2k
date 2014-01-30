@@ -10,6 +10,7 @@
 #include <libed2k/ctag.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/assert.hpp>
+#include <sstream>
 
 namespace libed2k
 {
@@ -448,8 +449,11 @@ namespace libed2k
         }
 
         bool empty() const {return ((m_nIP == 0) || (m_nPort == 0)); }
+        std::string to_string() const;
         void dump() const;
     };
+
+    extern std::ostream& operator<<(std::ostream&, const net_identifier& np);
 
     /**
       * shared file item structure in offer list

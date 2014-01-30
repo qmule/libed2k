@@ -576,11 +576,6 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
             m_connections.insert(c);
         }
 
-        md4_hash file_hash = callbacked_lowid(address2int(endp.address()));
-
-        if (file_hash != md4_hash::invalid)
-            c->attach_to_transfer(file_hash);
-
         c->start();
     }
 }

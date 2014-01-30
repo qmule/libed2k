@@ -135,11 +135,6 @@ namespace libed2k
         LIBED2K_PC_FORWARD_RETURN(get_misc_options2(), misc_options2())
     }
 
-    bool peer_connection_handle::is_active() const
-    {
-        LIBED2K_PC_FORWARD_RETURN(is_active(), false)
-    }
-
     bool peer_connection_handle::empty() const
     {
         if (!m_pses)
