@@ -165,7 +165,7 @@ void peer_connection::reset()
     add_handler(/*OP_MESSAGE*/get_proto_pair<client_message>(), boost::bind(&peer_connection::on_client_message, this, _1));
     add_handler(/*OP_CHATCAPTCHAREQ*/get_proto_pair<client_captcha_request>(), boost::bind(&peer_connection::on_client_captcha_request, this, _1));
     add_handler(/*OP_CHATCAPTCHARES*/get_proto_pair<client_captcha_result>(), boost::bind(&peer_connection::on_client_captcha_result, this, _1));
-
+    add_handler(/*OP_PUBLICIP_RE*/get_proto_pair<client_public_ip_request>(), boost::bind(&peer_connection::on_client_public_ip_request, this, _1));
 }
 
 peer_connection::~peer_connection()
@@ -2326,6 +2326,21 @@ void peer_connection::on_client_captcha_result(const error_code& error)
     else
     {
         ERR("on client captcha result error: " << error.message());
+    }
+}
+
+void peer_connection::on_client_public_ip_request(const error_code& error)
+{
+    if (!error)
+    {
+        DECODE_PACKET(client_public_ip_request, packet);
+        DBG("request public ip: <====" << m_remote);
+        DBG("answer " << m_ses.m_server_connection->client_id() << " ===> " << m_remote);
+        send_throw_meta_order(client_public_ip_answer(m_ses.m_server_connection->client_id()));
+    }
+    else
+    {
+        ERR("on request public ip error: " << error.message());
     }
 }
 

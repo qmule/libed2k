@@ -326,6 +326,7 @@ namespace libed2k
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
+        void on_client_public_ip_request(const error_code& error);
         template <typename Struct> void on_request_parts(const error_code& error);
         template <typename Struct> void on_sending_part(const error_code& error);
 

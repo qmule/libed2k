@@ -1460,6 +1460,20 @@ namespace libed2k
         }
     };
 
+    struct client_public_ip_request{
+        template<typename Archive> void serialize(Archive& ar) { }
+    };
+
+    struct client_public_ip_answer{
+        client_id_type  client_id;
+        client_public_ip_answer(client_id_type id) : client_id(id)
+        {}
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id;
+        }
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1596,6 +1610,17 @@ namespace libed2k
         static const proto_type value   = OP_CHATCAPTCHARES;
         static const proto_type protocol= OP_EMULEPROT;
     };
+
+    template<> struct packet_type<client_public_ip_request>{
+        static const proto_type value   = OP_PUBLICIP_REQ;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+
+    template<> struct packet_type<client_public_ip_answer>{
+        static const proto_type value   = OP_PUBLICIP_ANSWER;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+
     template<> struct packet_type<client_directory_answer>{
         static const proto_type value       = OP_ASKSHAREDFILESANSWER;
         static const proto_type protocol    = OP_EDONKEYPROT;
