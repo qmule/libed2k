@@ -186,14 +186,6 @@ namespace libed2k
 
     void transfer::add_peer(const tcp::endpoint& peer)
     {
-        if (m_ses.m_ip_filter.access(peer.address()) & ip_filter::blocked)
-        {
-            error_code ec;
-            DBG("blocked peer: " << peer.address().to_string(ec));
-            m_ses.m_alerts.post_alert_should(peer_blocked_alert(handle(), peer.address()));
-            return;
-        }
-
         m_policy.add_peer(peer);
     }
 

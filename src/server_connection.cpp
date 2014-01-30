@@ -229,7 +229,8 @@ namespace libed2k
             if (isLowId(i->m_nIP) && !isLowId(m_nClientId))
             {
                 // peer LowID and we is not LowID - send callback request
-                post_callback_request(i->m_nIP);
+                if (m_ses.register_callback(i->m_nIP, sources.m_hFile))
+                    post_callback_request(i->m_nIP);
             }
             else
             {

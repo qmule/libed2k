@@ -40,6 +40,8 @@ peer* policy::add_peer(const tcp::endpoint& ep)
     // if the IP is blocked, don't add it
     if (ses.m_ip_filter.access(ep.address()) & ip_filter::blocked)
     {
+        error_code ec;
+        DBG("blocked peer: " << ep.address().to_string(ec));
         ses.m_alerts.post_alert_should(peer_blocked_alert(m_transfer->handle(), ep.address()));
         return NULL;
     }

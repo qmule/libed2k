@@ -57,6 +57,27 @@ alert const* session_impl_base::wait_for_alert(time_duration max_wait)
     return m_alerts.wait_for_alert(max_wait);
 }
 
+md4_hash session_impl_base::callbacked_lowid(client_id_type id)
+{
+    md4_hash res(md4_hash::invalid);
+    lowid_callbacks_map::iterator itr = lowid_conn_dict.find(id);
+
+    if (itr != lowid_conn_dict.end())
+    {
+        res = itr->second;
+        lowid_conn_dict.erase(itr);
+    }
+
+    return res;
+}
+
+bool session_impl_base::register_callback(client_id_type id, md4_hash filehash)
+{
+    LIBED2K_ASSERT(filehash != md4_hash::invalid);
+    std::pair<lowid_callbacks_map::iterator, bool> ret = lowid_conn_dict.insert(std::make_pair(id, filehash));
+    return ret.second;
+}
+
 void session_impl_base::set_alert_mask(boost::uint32_t m)
 {
     m_alerts.set_alert_mask(m);
@@ -554,6 +575,11 @@ void session_impl::incoming_connection(boost::shared_ptr<tcp::socket> const& s)
         {
             m_connections.insert(c);
         }
+
+        md4_hash file_hash = callbacked_lowid(address2int(endp.address()));
+
+        if (file_hash != md4_hash::invalid)
+            c->attach_to_transfer(file_hash);
 
         c->start();
     }

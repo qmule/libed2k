@@ -73,8 +73,9 @@ namespace libed2k {
         class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
-            typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
-            typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
+            typedef std::map<std::pair<std::string, boost::uint32_t>,   md4_hash> transfer_filename_map;
+            typedef std::map<md4_hash, boost::shared_ptr<transfer> >    transfer_map;
+            typedef std::map<client_id_type, md4_hash>                  lowid_callbacks_map;
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
@@ -94,6 +95,8 @@ namespace libed2k {
             size_t set_alert_queue_size_limit(size_t queue_size_limit_);
             void set_alert_dispatch(boost::function<void(alert const&)> const&);
             alert const* wait_for_alert(time_duration max_wait);
+            md4_hash callbacked_lowid(client_id_type);
+            bool register_callback(client_id_type, md4_hash);
 
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
@@ -124,7 +127,8 @@ namespace libed2k {
             alert_manager m_alerts;
 
             /** file hasher closed in self thread */
-            transfer_params_maker    m_tpm;
+            transfer_params_maker   m_tpm;
+            lowid_callbacks_map     lowid_conn_dict;
         };
 
         class session_impl : public session_impl_base

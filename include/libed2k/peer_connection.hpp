@@ -221,12 +221,11 @@ namespace libed2k
         void set_download_limit(int limit);
         int upload_limit() const { return m_upload_limit; }
         int download_limit() const { return m_download_limit; }
-
+        bool attach_to_transfer(const md4_hash& hash);
     private:
 
         // constructor method
         void reset();
-        bool attach_to_transfer(const md4_hash& hash);
 
         virtual void do_read();
         virtual void do_write(int quota = std::numeric_limits<int>::max());
