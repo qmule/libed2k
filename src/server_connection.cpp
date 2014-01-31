@@ -113,6 +113,14 @@ namespace libed2k
         do_write(offer_list);
     }
 
+    void server_connection::post_callback_request(boost::uint32_t client_id)
+    {
+        DBG("server_connection::post_callback_request: " << client_id);
+        STATE_CMP(SC_TO_SERVER);
+        callback_request_out cbo = {client_id};
+        do_write(cbo);
+    }
+
     void server_connection::check_keep_alive(int tick_interval_ms)
     {
         // keep alive only on online server and settings set keep alive packets
@@ -217,8 +225,18 @@ namespace libed2k
         {
             tcp::endpoint peer(
                 ip::address::from_string(int2ipstr(i->m_nIP)), i->m_nPort);
-            APP("found peer: " << peer);
-            t->add_peer(peer);
+
+            if (isLowId(i->m_nIP) && !isLowId(m_nClientId))
+            {
+                // peer LowID and we is not LowID - send callback request
+                if (m_ses.register_callback(i->m_nIP, sources.m_hFile))
+                    post_callback_request(i->m_nIP);
+            }
+            else
+            {
+                APP("found HiID peer: " << peer);
+                t->add_peer(peer);
+            }
         }
     }
 
@@ -417,6 +435,20 @@ namespace libed2k
                         break;
                     }
                     case OP_CALLBACKREQUESTED:
+                    {
+                        callback_request_in cb;
+                        ia >> cb;
+                        // connect to requested client
+                        error_code ec;
+                        m_ses.add_peer_connection(cb.m_network_point, ec);
+                        if (ec)
+                        {
+                            ERR("Unable to connect to {" << cb.m_network_point.m_nIP << ":" << cb.m_network_point.m_nPort << "} by callback request");
+                        }
+                        break;
+                    }
+                    case OP_CALLBACK_FAIL:
+                        DBG("callback request failed - cleanup callbacks? ");
                         break;
                     default:
                         ERR("ignore unhandled packet: " << m_in_header.m_type);

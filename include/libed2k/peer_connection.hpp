@@ -196,7 +196,6 @@ namespace libed2k
         misc_options get_misc_options() const { return m_misc_options; }
         misc_options2 get_misc_options2() const { return m_misc_options2; }
 
-        bool is_active() const { return m_active; }
         net_identifier get_network_point() const;
         md4_hash get_connection_hash() const { return m_hClient; }
         peer_connection_options get_options() const { return m_options; }
@@ -221,12 +220,12 @@ namespace libed2k
         void set_download_limit(int limit);
         int upload_limit() const { return m_upload_limit; }
         int download_limit() const { return m_download_limit; }
-
     private:
 
         // constructor method
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
+        void finalize_handshake();
 
         virtual void do_read();
         virtual void do_write(int quota = std::numeric_limits<int>::max());
@@ -327,6 +326,7 @@ namespace libed2k
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
+        void on_client_public_ip_request(const error_code& error);
         template <typename Struct> void on_request_parts(const error_code& error);
         template <typename Struct> void on_sending_part(const error_code& error);
 

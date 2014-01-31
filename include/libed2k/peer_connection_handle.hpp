@@ -50,7 +50,6 @@ namespace libed2k
         misc_options            get_misc_options() const;
         misc_options2           get_misc_options2() const;
 
-        bool is_active() const;
         bool empty() const;
 
         bool operator==(const peer_connection_handle& ph) const

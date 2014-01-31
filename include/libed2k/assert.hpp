@@ -41,13 +41,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #else
 
 #if LIBED2K_PRODUCTION_ASSERTS
-extern char const* libtorrent_assert_log;
+extern char const* libed2k_assert_log;
 #endif
 
 #include <string>
 
-std::string demangle(char const* name);
-void print_backtrace(char* out, int len, int max_depth = 0);
+namespace libed2k{
+    std::string demangle(char const* name);
+    LIBED2K_EXPORT void print_backtrace(char* out, int len, int max_depth = 0);
+}
 
 #if (defined __linux__ || defined __MACH__) && defined __GNUC__ && !LIBED2K_USE_SYSTEM_ASSERT
 
@@ -55,12 +57,14 @@ void print_backtrace(char* out, int len, int max_depth = 0);
 #include <sstream>
 #endif
 
-LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
-    , char const* function, char const* val);
+namespace libed2k{
+    LIBED2K_EXPORT void assert_fail(const char* expr, int line, char const* file
+            , char const* function, char const* val);
+}
 
-#define LIBED2K_ASSERT(x) do { if (x) {} else assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
+#define LIBED2K_ASSERT(x) do { if (x) {} else libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, 0); } while (false)
 #if LIBED2K_USE_IOSTREAM
-#define LIBED2K_ASSERT_VAL(x, y) do { if (x) {} else { std::stringstream __s__; __s__ << #y ": " << y; assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, __s__.str().c_str()); } } while (false)
+#define LIBED2K_ASSERT_VAL(x, y) do { if (x) {} else { std::stringstream __s__; __s__ << #y ": " << y; libed2k::assert_fail(#x, __LINE__, __FILE__, __PRETTY_FUNCTION__, __s__.str().c_str()); } } while (false)
 #else
 #define LIBED2K_ASSERT_VAL(x, y) LIBED2K_ASSERT(x)
 #endif
