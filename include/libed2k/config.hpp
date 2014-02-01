@@ -42,13 +42,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #error LIBED2K_DEBUG_BUFFERS only works if you also disable pool allocators with LIBED2K_DISABLE_POOL_ALLOCATOR
 #endif
 
-#if !defined BOOST_ASIO_SEPARATE_COMPILATION && !defined BOOST_ASIO_DYN_LINK
-#error you must define either BOOST_ASIO_SEPARATE_COMPILATION or BOOST_ASIO_DYN_LINK in your project in \
-	order for asio's declarations to be correct. If you're linking dynamically against libtorrent, define \
-	BOOST_ASIO_DYN_LINK otherwise BOOST_ASIO_SEPARATE_COMPILATION. You can also use pkg-config or boost \
-	build, to automatically apply these defines
-#endif
-
 #if !defined _MSC_VER || _MSC_VER >= 1600
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS 1
@@ -138,6 +131,13 @@ POSSIBILITY OF SUCH DAMAGE.
 // ======= MSVC =========
 
 #elif defined BOOST_MSVC
+
+#if !defined BOOST_ASIO_SEPARATE_COMPILATION && !defined BOOST_ASIO_DYN_LINK
+#error you must define either BOOST_ASIO_SEPARATE_COMPILATION or BOOST_ASIO_DYN_LINK in your project in \
+    order for asio's declarations to be correct. If you're linking dynamically against libtorrent, define \
+    BOOST_ASIO_DYN_LINK otherwise BOOST_ASIO_SEPARATE_COMPILATION. You can also use pkg-config or boost \
+    build, to automatically apply these defines
+#endif
 
 #pragma warning(disable: 4258)
 #pragma warning(disable: 4251)
