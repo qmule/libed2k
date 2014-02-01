@@ -259,9 +259,9 @@ namespace libed2k {
 
 #else
 
-namespace libed2k {
-    LIBED2K_EXPORT void libed2k::assert_fail(char const* expr, int line, char const* file, char const* function, char const* val) {}
-}
+//namespace libed2k {
+//    LIBED2K_EXPORT void libed2k::assert_fail(char const* expr, int line, char const* file, char const* function, char const* val) {}
+//}
 
 #endif
 
