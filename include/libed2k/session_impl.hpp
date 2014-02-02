@@ -158,7 +158,6 @@ namespace libed2k {
             bool listen_on(int port, const char* net_interface);
             bool is_listening() const;
             unsigned short listen_port() const;
-            char server_connection_state() const;
 
             void update_disk_thread_settings();
 
@@ -391,9 +390,6 @@ namespace libed2k {
             int m_last_announce_duration;
             // ismod extension - share user as file
             bool m_user_announced;
-            // last measured server connection state
-            char m_server_connection_state;
-
             // total redundant and failed bytes
             size_type m_total_failed_bytes;
             size_type m_total_redundant_bytes;

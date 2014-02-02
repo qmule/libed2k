@@ -128,7 +128,6 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_last_connect_duration(0),
     m_last_announce_duration(0),
     m_user_announced(false),
-    m_server_connection_state(SC_OFFLINE),
     m_total_failed_bytes(0),
     m_total_redundant_bytes(0),
     m_queue_pos(0)
@@ -449,12 +448,6 @@ unsigned short session_impl::listen_port() const
 {
     if (m_listen_sockets.empty()) return 0;
     return m_listen_sockets.front().external_port;
-}
-
-char session_impl::server_connection_state() const
-{
-    // return flag from session_impl for sync access by main mutex
-    return m_server_connection_state;
 }
 
 void session_impl::update_disk_thread_settings()
@@ -970,7 +963,7 @@ void session_impl::abort()
 
     DBG("aborting all server requests");
     //m_server_connection.abort_all_requests();
-    m_server_connection->close(errors::session_closing);
+    m_server_connection->stop(errors::session_closing);
 
     DBG("aborting all connections (" << m_connections.size() << ")");
 
@@ -1081,6 +1074,7 @@ void session_impl::on_tick(error_code const& e)
     // server connection
     // --------------------------------------------------------------
     // we always check status changing because it check before reconnect processing
+    /*
     bool server_conn_change_state = m_server_connection_state != m_server_connection->state();
     if (server_conn_change_state)
     {
@@ -1100,11 +1094,9 @@ void session_impl::on_tick(error_code const& e)
     }
 
     if (m_server_connection->online()) announce(tick_interval_ms);
+    */
 
     reconnect(tick_interval_ms);
-
-    m_server_connection->check_keep_alive(tick_interval_ms);
-
     update_active_transfers();
 
     // --------------------------------------------------------------
@@ -1403,12 +1395,12 @@ void session_impl::reconnect(int tick_interval_ms)
         return;
     }
 
-    if (!m_server_connection->offline())
+    /*if (!m_server_connection->offline())
     {
         m_last_connect_duration = 0;
         return;
     }
-
+*/
     m_last_connect_duration += tick_interval_ms;
 
     if (m_last_connect_duration < m_settings.server_reconnect_timeout*1000)
@@ -1428,7 +1420,7 @@ void session_impl::server_conn_start()
 
 void session_impl::server_conn_stop()
 {
-    m_server_connection->stop();
+    m_server_connection->stop(boost::asio::error::operation_aborted);
 
     for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
     {

@@ -12,67 +12,56 @@
 namespace libed2k
 {
 
-#define STATE_CMP(c) if (!compatible_state(c)) { return; }
 #define CHECK_ABORTED(error) if (error == boost::asio::error::operation_aborted) { return; }
 
     typedef boost::iostreams::basic_array_source<char> Device;
 
     server_connection::server_connection(aux::session_impl& ses):
-        m_last_keep_alive_packet(0),
-        m_state(SC_OFFLINE),
-        m_nClientId(0),
+        m_client_id(0),
         m_name_lookup(ses.m_io_service),
         m_ses(ses),
-        m_nTCPFlags(0),
-        m_nAuxPort(0),
-        m_bInitialization(false),
+        m_tcp_flags(0),
+        m_aux_port(0),
         m_socket(ses.m_io_service),
-        m_deadline(ses.m_io_service)
+        current_operation(scs_stop),
+        last_action_time(time_now())
     {
     }
 
     server_connection::~server_connection()
     {
-        stop();
+        stop(boost::asio::error::operation_aborted);
     }
 
     void server_connection::start()
     {
-        STATE_CMP(SC_TO_ONLINE)
-        m_state = SC_PROCESS;
+        if (current_operation != scs_stop)
+            return;
+        current_operation = scs_resolve;
+        last_action_time = time_now();
 
         const session_settings& settings = m_ses.settings();
-
-        m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
 
         tcp::resolver::query q(settings.server_hostname,
                                boost::lexical_cast<std::string>(settings.server_port));
 
         m_name_lookup.async_resolve(
             q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
-
     }
 
-    void server_connection::stop()
+    void server_connection::stop(const error_code& ec)
     {
-        STATE_CMP(SC_TO_OFFLINE);
-        close(boost::asio::error::operation_aborted);
-    }
-
-    void server_connection::close(const error_code& ec)
-    {
-        DBG("server_connection::close()");
-        if (m_state == SC_OFFLINE)
+        if (current_operation == scs_stop)
             return;
-        m_state = SC_OFFLINE;
+
+        current_operation = scs_stop;
         m_write_order.clear();  // remove all incoming messages
         m_socket.close();
-        m_deadline.cancel();
         m_name_lookup.cancel();
 
-        m_nClientId = 0;
-        m_nTCPFlags = 0;
-        m_nAuxPort  = 0;
+        m_client_id = 0;
+        m_tcp_flags = 0;
+        m_aux_port  = 0;
         m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
@@ -83,15 +72,12 @@ namespace libed2k
 
     void server_connection::post_search_request(search_request& ro)
     {
-        STATE_CMP(SC_TO_SERVER)
-        // use wrapper
         search_request_block srb(ro);
         do_write(srb);
     }
 
     void server_connection::post_search_more_result_request()
     {
-        STATE_CMP(SC_TO_SERVER)
         search_more_result smr;
         do_write(smr);
     }
@@ -99,7 +85,6 @@ namespace libed2k
     void server_connection::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
     {
         DBG("server_connection::post_sources_request(" << hFile.toString() << ", " << nSize << ")");
-        STATE_CMP(SC_TO_SERVER)
         get_file_sources gfs;
         gfs.m_hFile = hFile;
         gfs.m_file_size.nQuadPart = nSize;
@@ -109,43 +94,50 @@ namespace libed2k
     void server_connection::post_announce(shared_files_list& offer_list)
     {
         DBG("server_connection::post_announce: " << offer_list.m_collection.size());
-        STATE_CMP(SC_TO_SERVER)
         do_write(offer_list);
     }
 
     void server_connection::post_callback_request(boost::uint32_t client_id)
     {
         DBG("server_connection::post_callback_request: " << client_id);
-        STATE_CMP(SC_TO_SERVER);
         callback_request_out cbo = {client_id};
         do_write(cbo);
     }
 
-    void server_connection::check_keep_alive(int tick_interval_ms)
+    void server_connection::second_tick(int tick_interval_ms)
     {
-        // keep alive only on online server and settings set keep alive packets
-        if (SC_ONLINE != m_state || m_ses.settings().server_keep_alive_timeout == -1)
+        ptime now = time_now();
+        time_duration d = now - last_action_time;
+
+        switch(current_operation)
         {
-            return;
+        case scs_stop:
+            break;
+        case scs_resolve:
+            break;
+        case scs_connection:
+            break;
+        case scs_handshake:
+            break;
+        case scs_start:
+            if (m_ses.settings().server_keep_alive_timeout != -1 &&
+                    time_duration(seconds(m_ses.settings().server_keep_alive_timeout)) <= d)
+            {
+                server_get_list sgl;
+                do_write(sgl);
+            }
+            break;
+        default:
+            LIBED2K_ASSERT(false);
+            break;
         }
-
-        m_last_keep_alive_packet += tick_interval_ms;
-
-        if (m_last_keep_alive_packet < m_ses.settings().server_keep_alive_timeout*1000)
-        {
-            return;
-        }
-
-        DBG("write server keep alive on: " << m_last_keep_alive_packet);
-
-        server_get_list sgl;
-        do_write(sgl);
     }
 
     void server_connection::on_name_lookup(
         const error_code& error, tcp::resolver::iterator i)
     {
-        CHECK_ABORTED(error);
+        if (current_operation != scs_resolve)
+            return;
 
         const session_settings& settings = m_ses.settings();
 
@@ -153,40 +145,31 @@ namespace libed2k
         {
             ERR("server name: " << settings.server_hostname
                 << ", resolve failed: " << error);
-            close(error);
+            stop(error);
             return;
         }
 
-        m_target = *i;
-
         DBG("server name resolved: " << libed2k::print_endpoint(m_target));
+        current_operation = scs_connection;
+        last_action_time = time_now();
+        m_target = *i;
         m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libed2k::print_endpoint(m_target)));
-
-        // prepare for connect
-        // set timeout
-        // execute connect
-        m_deadline.expires_from_now(seconds(settings.server_timeout));
         m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
     }
 
     // private callback methods
     void server_connection::on_connection_complete(error_code const& error)
     {
-        DBG("server_connection::on_connection_complete");
-
-        CHECK_ABORTED(error);
+        if (scs_connection != scs_connection)
+            return;
 
         if (error)
         {
             ERR("connection to: " << libed2k::print_endpoint(m_target)
                 << ", failed: " << error);
-            close(error);
+            stop(error);
             return;
         }
-
-        // stop deadline timer
-        m_deadline.expires_at(max_time());
-        m_deadline.cancel();
 
         DBG("connect to server:" << m_target << ", successfully");
 
@@ -209,6 +192,9 @@ namespace libed2k
         login.m_list.dump();
 
         do_read();
+
+        current_operation = scs_handshake;
+        last_action_time  = time_now();
         do_write(login);      // write login message
     }
 
@@ -226,7 +212,7 @@ namespace libed2k
             tcp::endpoint peer(
                 ip::address::from_string(int2ipstr(i->m_nIP)), i->m_nPort);
 
-            if (isLowId(i->m_nIP) && !isLowId(m_nClientId))
+            if (isLowId(i->m_nIP) && !isLowId(m_client_id))
             {
                 // peer LowID and we is not LowID - send callback request
                 if (m_ses.register_callback(i->m_nIP, sources.m_hFile))
@@ -258,7 +244,7 @@ namespace libed2k
         }
         else
         {
-            close(error);
+            stop(error);
         }
     }
 
@@ -322,7 +308,7 @@ namespace libed2k
         }
         else
         {
-            close(ec);
+            stop(ec);
         }
     }
 
@@ -364,10 +350,10 @@ namespace libed2k
                 switch (m_in_header.m_type)
                 {
                     case OP_REJECT:
-                        DBG("ignore");
+                        DBG("ignore op_reject");
                         break;
                     case OP_DISCONNECT:
-                        DBG("ignore");
+                        DBG("ignore op_disconnect");
                         break;
                     case OP_SERVERMESSAGE:
                     {
@@ -394,15 +380,15 @@ namespace libed2k
                         break;
                     case OP_IDCHANGE:
                     {
+                        current_operation = scs_start;
                         id_change idc;
                         ia >> idc;
 
-                        m_nClientId = idc.m_nClientId;
-                        m_nTCPFlags = idc.m_nTCPFlags;
-                        m_nAuxPort  = idc.m_nAuxPort;
-                        DBG("server connection opened {cid:" << m_nClientId << "}{tcp:" << idc.m_nTCPFlags << "}{port: " << idc.m_nAuxPort<< "}");
-                        m_state = SC_ONLINE;
-                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(m_nClientId, m_nTCPFlags, m_nAuxPort));
+                        m_client_id = idc.m_client_id;
+                        m_tcp_flags = idc.m_tcp_flags;
+                        m_aux_port  = idc.m_aux_port;
+                        DBG("server connection opened {cid:" << m_client_id << "}{tcp:" << idc.m_tcp_flags << "}{port: " << idc.m_aux_port<< "}");
+                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, m_aux_port));
                         break;
                     }
                     case OP_SERVERIDENT:
@@ -464,46 +450,12 @@ namespace libed2k
             catch(libed2k_exception&)
             {
                 ERR("packet parse error");
-                close(errors::decode_packet_error);
+                stop(errors::decode_packet_error);
             }
         }
         else
         {
-            close(error);
+            stop(error);
         }
     }
-
-
-   void server_connection::check_deadline()
-   {
-       if (!m_socket.is_open())
-       {
-           return;
-       }
-
-       // Check whether the deadline has passed. We compare the deadline against
-       // the current time since a new asynchronous operation may have moved the
-       // deadline before this actor had a chance to run.
-
-       if (m_deadline.expires_at() <= deadline_timer::traits_type::now())
-       {
-           DBG("server_connection::check_deadline(): deadline timer expired");
-
-           // The deadline has passed. The socket is closed so that any outstanding
-           // asynchronous operations are cancelled.
-           close(errors::timed_out);
-           // There is no longer an active deadline. The expiry is set to positive
-           // infinity so that the actor takes no action until a new deadline is set.
-           m_deadline.expires_at(max_time());
-           boost::system::error_code ignored_ec;
-       }
-
-       // Put the actor back to sleep.
-       m_deadline.async_wait(boost::bind(&server_connection::check_deadline, self()));
-   }
-
-   bool server_connection::compatible_state(char c) const
-   {
-       return (c & m_state);
-   }
 }

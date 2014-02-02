@@ -89,8 +89,6 @@ namespace libed2k {
 
         void server_conn_start();
         void server_conn_stop();
-        bool server_conn_online() const;
-        bool server_conn_offline() const;
 
         void pause();
         void resume();
