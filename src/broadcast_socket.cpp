@@ -268,7 +268,7 @@ namespace libed2k
         if (ec) return;
         m_sockets.push_back(socket_entry(s));
         socket_entry& se = m_sockets.back();
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("broadcast_socket::on_receive");
 #endif
         s->async_receive_from(asio::buffer(se.buffer, sizeof(se.buffer)),
@@ -295,7 +295,7 @@ namespace libed2k
         s->set_option(option, ec);
         if (!ec) se.broadcast = true;
 
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("broadcast_socket::on_receive");
 #endif
         s->async_receive_from(
@@ -358,7 +358,7 @@ namespace libed2k
     void broadcast_socket::on_receive(
         socket_entry* s, error_code const& ec, std::size_t bytes_transferred)
     {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         complete_async("broadcast_socket::on_receive");
 #endif
         LIBED2K_ASSERT(m_outstanding_operations > 0);
@@ -373,7 +373,7 @@ namespace libed2k
 
         if (maybe_abort()) return;
         if (!s->socket) return;
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("broadcast_socket::on_receive");
 #endif
         s->socket->async_receive_from(

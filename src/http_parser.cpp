@@ -40,6 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/http_parser.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/escape_string.hpp"
+#include "libed2k/string_util.hpp"
 
 using namespace libed2k;
 

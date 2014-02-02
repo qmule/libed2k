@@ -48,7 +48,7 @@ namespace libed2k {
 enum { max_bottled_buffer = 2 * 1024 * 1024 };
 
 http_connection::http_connection(
-    io_service& ios, connection_queue& cc
+    io_service& ios, connection_queue& cc,
     http_handler const& handler, bool bottled,
     http_connect_handler const& ch,
     http_filter_handler const& fh
@@ -221,7 +221,7 @@ void http_connection::start(
     m_read_timeout = (std::max)(seconds(5), timeout / 5);
     error_code ec;
     m_timer.expires_from_now(m_completion_timeout, ec);
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_timeout");
 #endif
     m_timer.async_wait(boost::bind(&http_connection::on_timeout, boost::weak_ptr<http_connection>(me), _1));
@@ -239,7 +239,7 @@ void http_connection::start(
 
     if (m_sock.is_open() && m_hostname == hostname && m_port == port && m_ssl == ssl && m_bind_addr == bind_addr)
     {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("http_connection::on_write");
 #endif
         async_write(m_sock, asio::buffer(sendbuffer), boost::bind(&http_connection::on_write, me, _1));
@@ -334,7 +334,7 @@ void http_connection::start(
 #if LIBED2K_USE_I2P
         if (is_i2p)
         {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
             add_outstanding_async("http_connection::on_i2p_resolve");
 #endif
             i2p_conn->async_name_lookup(hostname.c_str(), boost::bind(&http_connection::on_i2p_resolve
@@ -351,7 +351,7 @@ void http_connection::start(
         }
         else
         {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
             add_outstanding_async("http_connection::on_resolve");
 #endif
             m_endpoints.clear();
@@ -377,7 +377,7 @@ void http_connection::on_connect_timeout()
 
 void http_connection::on_timeout(boost::weak_ptr<http_connection> p, error_code const& e)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_timeout");
 #endif
     boost::shared_ptr<http_connection> c = p.lock();
@@ -391,7 +391,7 @@ void http_connection::on_timeout(boost::weak_ptr<http_connection> p, error_code 
     {
         if (c->m_connection_ticket > -1 && !c->m_endpoints.empty())
         {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
             add_outstanding_async("http_connection::on_timeout");
 #endif
             error_code ec;
@@ -409,7 +409,7 @@ void http_connection::on_timeout(boost::weak_ptr<http_connection> p, error_code 
     }
 
     if (!c->m_sock.is_open()) return;
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_timeout");
 #endif
     error_code ec;
@@ -442,7 +442,7 @@ void http_connection::close(bool force)
 #if LIBED2K_USE_I2P
 void http_connection::on_i2p_resolve(error_code const& e, char const* destination)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_i2p_resolve");
 #endif
     if (e)
@@ -464,7 +464,7 @@ void http_connection::on_i2p_resolve(error_code const& e, char const* destinatio
     m_sock.get<i2p_stream>()->set_command(i2p_stream::cmd_connect);
     m_sock.get<i2p_stream>()->set_session_id(m_i2p_conn->session_id());
 #endif
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_connect");
 #endif
     m_sock.async_connect(tcp::endpoint(), boost::bind(&http_connection::on_connect, shared_from_this(), _1));
@@ -473,7 +473,7 @@ void http_connection::on_i2p_resolve(error_code const& e, char const* destinatio
 
 void http_connection::on_resolve(error_code const& e, tcp::resolver::iterator i)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_resolve");
 #endif
     if (e)
@@ -550,7 +550,7 @@ void http_connection::connect(int ticket, tcp::endpoint target_address)
             m_sock.get<socks5_stream>()->set_dst_name(m_hostname);
         }
     }
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_connect");
 #endif
     m_sock.async_connect(target_address, boost::bind(&http_connection::on_connect, shared_from_this(), _1));
@@ -558,7 +558,7 @@ void http_connection::connect(int ticket, tcp::endpoint target_address)
 
 void http_connection::on_connect(error_code const& e)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_connect");
 #endif
     if (m_connection_ticket >= 0)
@@ -572,7 +572,7 @@ void http_connection::on_connect(error_code const& e)
     if (!e)
     {
         if (m_connect_handler) m_connect_handler(*this);
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("http_connection::on_write");
 #endif
         async_write(m_sock, asio::buffer(sendbuffer),
@@ -629,7 +629,7 @@ void http_connection::callback(error_code e, char const* data, int size)
 
 void http_connection::on_write(error_code const& e)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_write");
 #endif
 
@@ -656,7 +656,7 @@ void http_connection::on_write(error_code const& e)
         {
             if (!m_limiter_timer_active)
             {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
                 add_outstanding_async("http_connection::on_assign_bandwidth");
 #endif
                 on_assign_bandwidth(error_code());
@@ -664,7 +664,7 @@ void http_connection::on_write(error_code const& e)
             return;
         }
     }
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_read");
 #endif
     m_sock.async_read_some(asio::buffer(&m_recvbuffer[0] + m_read_pos
@@ -675,7 +675,7 @@ void http_connection::on_write(error_code const& e)
 
 void http_connection::on_read(error_code const& e, std::size_t bytes_transferred)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_read");
 #endif
 
@@ -835,7 +835,7 @@ void http_connection::on_read(error_code const& e, std::size_t bytes_transferred
         {
             if (!m_limiter_timer_active)
             {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
                 add_outstanding_async("http_connection::on_assign_bandwidth");
 #endif
                 on_assign_bandwidth(error_code());
@@ -843,7 +843,7 @@ void http_connection::on_read(error_code const& e, std::size_t bytes_transferred
             return;
         }
     }
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_read");
 #endif
     m_sock.async_read_some(asio::buffer(&m_recvbuffer[0] + m_read_pos, amount_to_read),
@@ -852,7 +852,7 @@ void http_connection::on_read(error_code const& e, std::size_t bytes_transferred
 
 void http_connection::on_assign_bandwidth(error_code const& e)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("http_connection::on_assign_bandwidth");
 #endif
     if ((e == asio::error::operation_aborted && m_limiter_timer_active) || !m_sock.is_open())
@@ -873,7 +873,7 @@ void http_connection::on_assign_bandwidth(error_code const& e)
 
     if (!m_sock.is_open()) return;
 
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_read");
 #endif
     m_sock.async_read_some(asio::buffer(&m_recvbuffer[0] + m_read_pos, amount_to_read),
@@ -882,7 +882,7 @@ void http_connection::on_assign_bandwidth(error_code const& e)
     error_code ec;
     m_limiter_timer_active = true;
     m_limiter_timer.expires_from_now(milliseconds(250), ec);
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("http_connection::on_assign_bandwidth");
 #endif
     m_limiter_timer.async_wait(boost::bind(&http_connection::on_assign_bandwidth, shared_from_this(), _1));
@@ -897,7 +897,7 @@ void http_connection::rate_limit(int limit)
         error_code ec;
         m_limiter_timer_active = true;
         m_limiter_timer.expires_from_now(milliseconds(250), ec);
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("http_connection::on_assign_bandwidth");
 #endif
         m_limiter_timer.async_wait(boost::bind(&http_connection::on_assign_bandwidth, shared_from_this(), _1));

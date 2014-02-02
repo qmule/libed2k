@@ -7,6 +7,54 @@
 
 namespace libed2k
 {
+    struct proxy_settings
+    {
+        proxy_settings() : port(0), type(none), proxy_hostnames(true), proxy_peer_connections(true)
+        {}
+
+        std::string hostname;
+        int port;
+
+        std::string username;
+        std::string password;
+
+        enum proxy_type
+        {
+            // a plain tcp socket is used, and
+            // the other settings are ignored.
+            none,
+            // socks4 server, requires username.
+            socks4,
+            // the hostname and port settings are
+            // used to connect to the proxy. No
+            // username or password is sent.
+            socks5,
+            // the hostname and port are used to
+            // connect to the proxy. the username
+            // and password are used to authenticate
+            // with the proxy server.
+            socks5_pw,
+            // the http proxy is only available for
+            // tracker and web seed traffic
+            // assumes anonymous access to proxy
+            http,
+            // http proxy with basic authentication
+            // uses username and password
+            http_pw,
+            // route through a i2p SAM proxy
+            i2p_proxy
+        };
+
+        proxy_type type;
+
+        // when set to true, hostname are resolved
+        // through the proxy (if supported)
+        bool proxy_hostnames;
+
+        // if true, use this proxy for peers too
+        bool proxy_peer_connections;
+    };
+
     class session_settings
     {
     public:
@@ -35,6 +83,20 @@ namespace libed2k
             , unchoke_slots_limit(8)
             , half_open_limit(0)
             , connections_limit(200)
+            , enable_outgoing_utp(true)
+            , enable_incoming_utp(true)
+            , utp_target_delay(100) // milliseconds
+            , utp_gain_factor(1500) // bytes per rtt
+            , utp_min_timeout(500) // milliseconds
+            , utp_syn_resends(2)
+            , utp_fin_resends(2)
+            , utp_num_resends(6)
+            , utp_connect_timeout(3000) // milliseconds
+            , utp_delayed_ack(0) // milliseconds
+            , utp_dynamic_sock_buf(false) // this doesn't seem quite reliable yet
+            , utp_loss_multiplier(50) // specified in percent
+            , mixed_mode_algorithm(peer_proportional)
+            , rate_limit_utp(true)
             , m_version(0x3c)
             , m_max_announces_per_call(198)
             , m_announce_timeout(-1)
@@ -157,6 +219,68 @@ namespace libed2k
         // the max number of connections in the session
         int connections_limit;
 
+        // when set to true, libtorrent will try to make outgoing utp connections
+        bool enable_outgoing_utp;
+
+        // if set to false, libtorrent will reject incoming utp connections
+        bool enable_incoming_utp;
+
+        // target delay, milliseconds
+        int utp_target_delay;
+
+        // max number of bytes to increase cwnd per rtt in uTP
+        // congestion controller
+        int utp_gain_factor;
+
+        // the shortest allowed uTP connection timeout in milliseconds
+        // defaults to 500 milliseconds. The shorter timeout, the
+        // faster the connection recovers from a loss of an entire window
+        int utp_min_timeout;
+
+        // the number of SYN packets that are sent before giving up
+        int utp_syn_resends;
+
+        // the number of resent packets sent on a closed socket before giving up
+        int utp_fin_resends;
+
+        // the number of times to send a packet before giving up
+        int utp_num_resends;
+
+        // initial timeout for uTP SYN packets
+        int utp_connect_timeout;
+
+        // number of milliseconds of delaying ACKing packets the most
+        int utp_delayed_ack;
+
+        // set to true if the uTP socket buffer size is allowed to increase
+        // dynamically based on the NIC MTU setting. This is true by default
+        // and improves uTP performance for networks with larger frame sizes
+        // including loopback
+        bool utp_dynamic_sock_buf;
+
+        // what to multiply the congestion window by on packet loss.
+        // it's specified as a percent. The default is 50, i.e. cut
+        // in half
+        int utp_loss_multiplier;
+
+        enum bandwidth_mixed_algo_t
+        {
+            // disables the mixed mode bandwidth balancing
+            prefer_tcp = 0,
+
+            // does not throttle uTP, throttles TCP to the same proportion
+            // of throughput as there are TCP connections
+            peer_proportional = 1
+
+        };
+        // the algorithm to use to balance bandwidth between tcp
+        // connections and uTP connections
+        int mixed_mode_algorithm;
+
+        // set to true if uTP connections should be rate limited
+        // defaults to false
+        bool rate_limit_utp;
+
         unsigned short m_version;
         unsigned short m_max_announces_per_call;
 
@@ -278,7 +402,7 @@ namespace libed2k
         bool optimize_hashing_for_speed;
 
         // if > 0, file checks will have a short
-        // delay between disk operations, to make it 
+        // delay between disk operations, to make it
         // less intrusive on the system as a whole
         // blocking the disk. This delay is specified
         // in milliseconds and the delay will be this
@@ -358,10 +482,10 @@ namespace libed2k
         bool lock_files;
 
         // if this is set to true, the disk I/O will be
-		// run at lower-than-normal priority. This is
-		// intended to make the machine more responsive
-		// to foreground tasks, while bittorrent runs
-		// in the background
+        // run at lower-than-normal priority. This is
+        // intended to make the machine more responsive
+        // to foreground tasks, while bittorrent runs
+        // in the background
         bool low_prio_disk;
 
     };

@@ -30,16 +30,17 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libed2K/pch.hpp"
+#include "libed2k/pch.hpp"
 
-#include "libed2K/socket.hpp"
-#include "libed2K/session_settings.hpp"
-#include "libed2K/socket_type.hpp"
-#include "libed2K/utp_socket_manager.hpp"
+#include "libed2k/socket.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/socket_type.hpp"
+#include "libed2k/utp_socket_manager.hpp"
+#include "libed2k/io_service.hpp"
 #include <boost/shared_ptr.hpp>
 #include <stdexcept>
 
-namespace libed2K
+namespace libed2k
 {
     bool instantiate_connection(io_service& ios
         , proxy_settings const& ps, socket_type& s

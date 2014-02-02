@@ -117,7 +117,7 @@ namespace libed2k
 
     void on_close_socket(socket_type* s, boost::shared_ptr<void> holder)
     {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
         complete_async("on_close_socket");
 #endif
         error_code ec;

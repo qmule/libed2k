@@ -41,6 +41,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/entry.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/escape_string.hpp"
+#include "libed2k/string_util.hpp"
 #include "libed2k/lazy_entry.hpp"
 
 #if defined(_MSC_VER)

@@ -75,7 +75,7 @@ typedef boost::function<void(http_connection&, std::list<tcp::endpoint>&)> http_
 // will always be 0
 struct http_connection : boost::enable_shared_from_this<http_connection>, boost::noncopyable
 {
-    http_connection(io_service& ios, connection_queue& cc
+    http_connection(io_service& ios, connection_queue& cc,
                     http_handler const& handler, bool bottled = true,
                     http_connect_handler const& ch = http_connect_handler(),
                     http_filter_handler const& fh = http_filter_handler()
@@ -93,7 +93,7 @@ struct http_connection : boost::enable_shared_from_this<http_connection>, boost:
 
     std::string sendbuffer;
 
-    void get(std::string const& url, time_duration timeout = seconds(30)
+    void get(std::string const& url, time_duration timeout = seconds(30),
              int prio = 0, proxy_settings const* ps = 0, int handle_redirects = 5,
              std::string const& user_agent = "", address const& bind_addr = address_v4::any()
 #if LIBED2K_USE_I2P
@@ -101,7 +101,7 @@ struct http_connection : boost::enable_shared_from_this<http_connection>, boost:
 #endif
         );
 
-    void start(std::string const& hostname, std::string const& port
+    void start(std::string const& hostname, std::string const& port,
                time_duration timeout, int prio = 0, proxy_settings const* ps = 0,
                bool ssl = false, int handle_redirect = 5,
                address const& bind_addr = address_v4::any()

@@ -170,7 +170,7 @@ namespace libed2k
     { enum { value = 9 }; };
 #endif
 
-    structx socket_type
+    struct socket_type
     {
         typedef stream_socket::endpoint_type endpoint_type;
         typedef stream_socket::protocol_type protocol_type;

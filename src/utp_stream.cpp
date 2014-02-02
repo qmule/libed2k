@@ -38,6 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/timestamp_history.hpp"
 #include "libed2k/error.hpp"
 #include "libed2k/random.hpp"
+#include "libed2k/string_util.hpp"
 #include <boost/cstdint.hpp>
 
 #define LIBED2K_UTP_LOG 0
@@ -3033,7 +3034,7 @@ void utp_socket_impl::tick(ptime const& now)
         case UTP_STATE_DELETE:
             return;
 //      case UTP_STATE_SYN_SENT:
-vv//
+//
 //          break;
     }
 }

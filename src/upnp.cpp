@@ -150,7 +150,7 @@ void upnp::discover_device_impl(mutex::scoped_lock& l)
         return;
     }
 
-#ifdef LIBED2K_DEBUG
+#ifdef LIBED2K_ASIO_DEBUGGING
     add_outstanding_async("upnp::resend_request");
 #endif
     ++m_retry_count;
@@ -247,7 +247,7 @@ bool upnp::get_mapping(int index, int& local_port, int& external_port, int& prot
 
 void upnp::resend_request(error_code const& ec)
 {
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
     complete_async("upnp::resend_request");
 #endif
     if (ec) return;
@@ -820,7 +820,7 @@ void find_control_url(int type, char const* string, parse_state& state)
     }
 }
 
-void upnp::on_upnp_xml(error_code const& e, libtorrent::http_parser const& p, rootdevice& d, http_connection& c)
+void upnp::on_upnp_xml(error_code const& e, libed2k::http_parser const& p, rootdevice& d, http_connection& c)
 {
     boost::intrusive_ptr<upnp> me(self());
 
@@ -1049,13 +1049,13 @@ namespace
 
     error_code_t error_codes[] =
     {
-        {0,   "No error"}
+        {0,   "No error"},
         {402, "Invalid Arguments"},
         {501, "Action Failed"},
         {714, "The specified value does not exist in the array"},
         {715, "The source IP address cannot be wild-carded"},
         {716, "The external port cannot be wild-carded"},
-        {718, "The port mapping entry specified conflicts with a mapping assigned previously to another client"}
+        {718, "The port mapping entry specified conflicts with a mapping assigned previously to another client"},
         {724, "Internal and External port values must be the same"},
         {725, "The NAT implementation only supports permanent lease times on port mappings"},
         {726, "RemoteHost must be a wildcard and cannot be a specific IP address or DNS name"},
@@ -1086,14 +1086,14 @@ std::string upnp_error_category::message(int ev) const BOOST_SYSTEM_NOEXCEPT
     return "unknown UPnP error";
 }
 
-namespace libtorrent
+namespace libed2k
 {
     upnp_error_category upnp_category;
 }
 
 #else
 
-namespace libtorrent
+namespace libed2k
 {
     ::asio::error::error_category upnp_category(21);
 }
@@ -1101,7 +1101,7 @@ namespace libtorrent
 #endif
 
 void upnp::on_upnp_get_ip_address_response(
-    error_code const& e, libtorrent::http_parser const& p, rootdevice& d, http_connection& c)
+    error_code const& e, libed2k::http_parser const& p, rootdevice& d, http_connection& c)
 {
     boost::intrusive_ptr<upnp> me(self());
 
@@ -1179,7 +1179,7 @@ void upnp::on_upnp_get_ip_address_response(
 }
 
 void upnp::on_upnp_map_response(
-    error_code const& e, libtorrent::http_parser const& p, rootdevice& d, int mapping , http_connection& c)
+    error_code const& e, libed2k::http_parser const& p, rootdevice& d, int mapping , http_connection& c)
 {
     boost::intrusive_ptr<upnp> me(self());
 
@@ -1229,7 +1229,7 @@ void upnp::on_upnp_map_response(
     }
 
     std::string ct = p.header("content-type");
-    if (!ct.empty()
+    if (!ct.empty() &&
         ct.find_first_of("text/xml") == std::string::npos &&
         ct.find_first_of("text/soap+xml") == std::string::npos &&
         ct.find_first_of("application/xml") == std::string::npos &&
@@ -1314,7 +1314,7 @@ void upnp::on_upnp_map_response(
             ptime next_expire = m_refresh_timer.expires_at();
             if (next_expire < time_now() || next_expire > m.expires)
             {
-#ifdef LIBED2K_DEBUG
+#ifdef LIBED2K_ASIO_DEBUGGING
                 add_outstanding_async("upnp::on_expire");
 #endif
                 error_code ec;
@@ -1352,7 +1352,7 @@ void upnp::return_error(int mapping, int code, mutex::scoped_lock& l)
     l.lock();
 }
 
-void upnp::on_upnp_unmap_response(error_code const& e, libtorrent::http_parser const& p,
+void upnp::on_upnp_unmap_response(error_code const& e, libed2k::http_parser const& p,
                                   rootdevice& d, int mapping , http_connection& c)
 {
     boost::intrusive_ptr<upnp> me(self());
@@ -1399,7 +1399,7 @@ void upnp::on_upnp_unmap_response(error_code const& e, libtorrent::http_parser c
 
 void upnp::on_expire(error_code const& ec)
 {
-#ifdef LIBED2K_DEBUG
+#ifdef LIBED2K_ASIO_DEBUGGING
     complete_async("upnp::on_expire");
 #endif
     if (ec) return;
@@ -1431,7 +1431,7 @@ void upnp::on_expire(error_code const& ec)
     }
     if (next_expire != max_time())
     {
-#ifdef LIBED2K_DEBUG
+#ifdef LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("upnp::on_expire");
 #endif
         error_code e;
