@@ -836,7 +836,29 @@ namespace libed2k
         error_code          m_ec;
     };
 
+    struct portmap_log_alert : alert
+    {
+        portmap_log_alert(int t, std::string const& m) : map_type(t), msg(m)
+        {}
 
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_log_alert(*this)); }
+
+        virtual char const* what() const { return message().c_str(); }
+
+        const static int static_category = alert::port_mapping_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            char ret[600];
+            snprintf(ret, sizeof(ret), "%s: %s", type_str[map_type], msg.c_str());
+            return ret;
+        }
+
+        int map_type;
+        std::string msg;
+    };
 }
 
 

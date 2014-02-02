@@ -82,6 +82,12 @@ namespace libed2k
             session_pointer_is_null,
             destructing_transfer,
             transfer_not_ready,
+            // natpmp errors
+            unsupported_protocol_version,
+            natpmp_not_authorized,
+            network_failure,
+            no_resources,
+            unsupported_opcode,
             // HTTP errors
             http_parse_error,
             http_missing_location,
