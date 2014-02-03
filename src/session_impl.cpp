@@ -125,9 +125,6 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
     m_last_tick(time_now_hires()),
-    m_last_connect_duration(0),
-    m_last_announce_duration(0),
-    m_user_announced(false),
     m_total_failed_bytes(0),
     m_total_redundant_bytes(0),
     m_queue_pos(0)
@@ -1286,136 +1283,14 @@ void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t n
     m_server_connection->post_sources_request(hFile, nSize);
 }
 
-void session_impl::announce(int tick_interval_ms)
-{
-    // check announces available
-    if (m_settings.m_announce_timeout == -1)
-    {
-        return;
-    }
-
-    // calculate last
-    m_last_announce_duration += tick_interval_ms;
-
-    if (m_last_announce_duration < m_settings.m_announce_timeout*1000)
-    {
-        return;
-    }
-
-    m_last_announce_duration = 0;
-
-    shared_files_list offer_list;
-
-    for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
-    {
-        // we send no more m_max_announces_per_call elements in one packet
-        if (offer_list.m_collection.size() >= m_settings.m_max_announces_per_call)
-        {
-            break;
-        }
-
-        transfer& t = *i->second;
-
-        // add transfer to announce list when it has one piece at least and it is not announced yet
-        if (!t.is_announced())
-        {
-            shared_file_entry se = t.getAnnounce(); // return empty entry on checking transfers and when num_have = 0
-
-            if (!se.is_empty())
-            {
-                offer_list.add(se);
-                t.set_announced(true); // mark transfer as announced
-            }
-        }
-    }
-
-    if (offer_list.m_size > 0)
-    {
-        DBG("session_impl::announce: " << offer_list.m_size);
-        m_server_connection->post_announce(offer_list);
-    }
-
-    // generate announce for user as transfer when all transfers were announced but user wasn't
-    // NOTE - new_announces don't work since server doesn't update users transfer information after first announce
-    if ((offer_list.m_size == 0) && !m_user_announced)
-    {
-        DBG("all transfer probably ware announced - announce user with correct size");
-        __file_size total_size;
-        total_size.nQuadPart = 0;
-
-        for (transfer_map::const_iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
-        {
-            transfer& t = *i->second;
-            total_size.nQuadPart += t.size();
-        }
-
-        shared_file_entry se;
-        se.m_hFile = m_settings.user_agent;
-
-        if (m_server_connection->tcp_flags() & SRV_TCPFLG_COMPRESSION)
-        {
-            // publishing an incomplete file
-            se.m_network_point.m_nIP    = 0xFBFBFBFB;
-            se.m_network_point.m_nPort  = 0xFBFB;
-        }
-        else
-        {
-            se.m_network_point.m_nIP     = m_server_connection->client_id();
-            se.m_network_point.m_nPort   = settings().listen_port;
-        }
-
-        // file name is user name with special mark
-        se.m_list.add_tag(make_string_tag(std::string("+++USERNICK+++ ") + m_settings.client_name, FT_FILENAME, true));
-        se.m_list.add_tag(make_typed_tag(m_server_connection->client_id(), FT_FILESIZE, true));
-
-        // write users size
-        if (m_server_connection->tcp_flags() & SRV_TCPFLG_NEWTAGS)
-        {
-            se.m_list.add_tag(make_typed_tag(total_size.nLowPart, FT_MEDIA_LENGTH, true));
-            se.m_list.add_tag(make_typed_tag(total_size.nHighPart, FT_MEDIA_BITRATE, true));
-        }
-        else
-        {
-            se.m_list.add_tag(make_typed_tag(total_size.nLowPart, FT_ED2K_MEDIA_LENGTH, false));
-            se.m_list.add_tag(make_typed_tag(total_size.nHighPart, FT_ED2K_MEDIA_BITRATE, false));
-        }
-
-        offer_list.add(se);
-        m_server_connection->post_announce(offer_list);
-        m_user_announced = true;
-    }
-}
-
 void session_impl::reconnect(int tick_interval_ms)
 {
 
-    if (m_settings.server_reconnect_timeout == -1)
-    {
-        // do not execute reconnect - feature turned off
-        return;
-    }
-
-    /*if (!m_server_connection->offline())
-    {
-        m_last_connect_duration = 0;
-        return;
-    }
-*/
-    m_last_connect_duration += tick_interval_ms;
-
-    if (m_last_connect_duration < m_settings.server_reconnect_timeout*1000)
-    {
-        return;
-    }
-
-    // perform reconnect
-    m_last_connect_duration = 0;
-    //m_server_connection->start();
 }
 
 void session_impl::server_conn_start()
 {
-    //m_server_connection->start();
+
 }
 
 void session_impl::server_conn_stop()
@@ -1427,8 +1302,6 @@ void session_impl::server_conn_stop()
         transfer& t = *i->second;
         t.set_announced(false);
     }
-
-    m_user_announced = false;
 }
 
 void session_impl::update_connections_limit()

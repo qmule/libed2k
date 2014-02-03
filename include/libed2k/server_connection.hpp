@@ -16,6 +16,9 @@ namespace libed2k
         time_duration   operations_timeout;
         time_duration   keep_alive_timeout;
         time_duration   reconnect_timeout;
+        time_duration   announce_timeout;
+        int             announce_items_per_call_limit;
+        bool announce() const { return announce_timeout != pos_infin && announce_items_per_call_limit > 0; }
         server_connection_parameters();
     };
 
@@ -101,6 +104,7 @@ namespace libed2k
         sc_state                        current_operation;
         ptime                           last_action_time;
         server_connection_parameters    params;
+        int                             announced_transfers_count;
     };
 
     template<typename T>
@@ -112,7 +116,7 @@ namespace libed2k
         CHECK_ABORTED()
 
         last_action_time = time_now();
-        bool bWriteInProgress = !m_write_order.empty();
+        bool write_in_progress = !m_write_order.empty();
         m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));
 
         boost::iostreams::back_insert_device<std::string> inserter(m_write_order.back().second);
@@ -127,7 +131,7 @@ namespace libed2k
 
         DBG("server_connection::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
 
-        if (!bWriteInProgress)
+        if (!write_in_progress)
         {
             std::vector<boost::asio::const_buffer> buffers;
             buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));

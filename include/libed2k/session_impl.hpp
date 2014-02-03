@@ -274,12 +274,6 @@ namespace libed2k {
             boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
             /**
-              * announce transfers
-              * will perform only when server connection online
-             */
-            void announce(int tick_interval_ms);
-
-            /**
               * perform reconnect to server
               * will perform only when server connection offline
              */
@@ -382,14 +376,7 @@ namespace libed2k {
             duration_timer m_second_timer;
             // the timer used to fire the tick
             deadline_timer m_timer;
-
             ptime m_last_tick;
-            // duration in milliseconds since last server connection was executed
-            int m_last_connect_duration;
-            // duration in milliseconds since last announce check was performed
-            int m_last_announce_duration;
-            // ismod extension - share user as file
-            bool m_user_announced;
             // total redundant and failed bytes
             size_type m_total_failed_bytes;
             size_type m_total_redundant_bytes;

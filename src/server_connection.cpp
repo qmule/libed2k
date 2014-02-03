@@ -12,7 +12,13 @@
 namespace libed2k
 {
     server_connection_parameters::server_connection_parameters() :
-        hostname(""), port(""), operations_timeout(pos_infin), keep_alive_timeout(pos_infin), reconnect_timeout(pos_infin){}
+        hostname(""), port(""),
+        operations_timeout(pos_infin),
+        keep_alive_timeout(pos_infin),
+        reconnect_timeout(pos_infin),
+        announce_timeout(pos_infin),
+        announce_items_per_call_limit(0)
+    {}
 
     server_connection::server_connection(aux::session_impl& ses):
         m_client_id(0),
@@ -22,7 +28,8 @@ namespace libed2k
         m_aux_port(0),
         m_socket(ses.m_io_service),
         current_operation(scs_stop),
-        last_action_time(time_now())
+        last_action_time(time_now()),
+        announced_transfers_count(-1)
     {
     }
 
@@ -36,12 +43,10 @@ namespace libed2k
         if (current_operation != scs_stop)
             return;
 
+        LIBED2K_ASSERT(!p.port.empty() && !p.hostname.empty());
         params = p;
-
         current_operation = scs_resolve;
         last_action_time = time_now();
-
-        const session_settings& settings = m_ses.settings();
 
         tcp::resolver::query q(params.hostname, params.port);
 
@@ -62,6 +67,7 @@ namespace libed2k
         m_client_id = 0;
         m_tcp_flags = 0;
         m_aux_port  = 0;
+        announced_transfers_count = 0;
         m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
@@ -101,6 +107,7 @@ namespace libed2k
 
     void server_connection::second_tick(int tick_interval_ms)
     {
+
         ptime now = time_now();
         time_duration d = now - last_action_time;
 
@@ -109,14 +116,108 @@ namespace libed2k
         case scs_stop:
             break;
         case scs_resolve:
-            break;
         case scs_connection:
-            break;
         case scs_handshake:
+            if (d >= params.operations_timeout)
+            {
+                close(boost::asio::error::timed_out);
+            }
             break;
         case scs_start:
-            if (m_ses.settings().server_keep_alive_timeout != -1 &&
-                    time_duration(seconds(m_ses.settings().server_keep_alive_timeout)) <= d)
+            if (params.announce() && d >= params.announce_timeout)
+            {
+#ifdef LIBED2K_IS74
+                if (announced_transfers_count != m_ses.m_transfers.size() + 1)
+#else
+                if (announced_transfers_count != m_ses.m_transfers.size())
+#endif
+                {
+                    // unshared transfers exist
+                    shared_files_list offer_list;
+
+                    for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)
+                    {
+                        // we send no more m_max_announces_per_call elements in one packet
+                        if (offer_list.m_collection.size() >= params.announce_items_per_call_limit)
+                        {
+                            break;
+                        }
+
+                        transfer& t = *i->second;
+
+                        // add transfer to announce list when it has one piece at least and it is not announced yet
+                        if (!t.is_announced())
+                        {
+                            shared_file_entry se = t.get_announce(); // return empty entry on checking transfers and when num_have = 0
+
+                            if (!se.is_empty())
+                            {
+                                offer_list.add(se);
+                                t.set_announced(true); // mark transfer as announced
+                                ++announced_transfers_count;
+                            }
+                        }
+                    }
+
+                    // generate announce for user as transfer when all transfers were announced but user wasn't
+//#ifdef LIBED2K_IS74
+                    if (offer_list.m_collection.size() < params.announce_items_per_call_limit)
+                    {
+                        DBG("all transfer probably ware announced - announce user with correct size");
+                        __file_size total_size;
+                        total_size.nQuadPart = 0;
+
+                        for (aux::session_impl_base::transfer_map::const_iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)
+                        {
+                            transfer& t = *i->second;
+                            total_size.nQuadPart += t.size();
+                        }
+
+                        shared_file_entry se;
+                        se.m_hFile = m_ses.settings().user_agent;
+
+                        if (tcp_flags() & SRV_TCPFLG_COMPRESSION)
+                        {
+                            // publishing an incomplete file
+                            se.m_network_point.m_nIP    = 0xFBFBFBFB;
+                            se.m_network_point.m_nPort  = 0xFBFB;
+                        }
+                        else
+                        {
+                            se.m_network_point.m_nIP     = client_id();
+                            se.m_network_point.m_nPort   = m_ses.settings().listen_port;
+                        }
+
+                        // file name is user name with special mark
+                        se.m_list.add_tag(make_string_tag(std::string("+++USERNICK+++ ") + m_ses.m_settings.client_name, FT_FILENAME, true));
+                        se.m_list.add_tag(make_typed_tag(client_id(), FT_FILESIZE, true));
+
+                        // write users size
+                        if (tcp_flags() & SRV_TCPFLG_NEWTAGS)
+                        {
+                            se.m_list.add_tag(make_typed_tag(total_size.nLowPart, FT_MEDIA_LENGTH, true));
+                            se.m_list.add_tag(make_typed_tag(total_size.nHighPart, FT_MEDIA_BITRATE, true));
+                        }
+                        else
+                        {
+                            se.m_list.add_tag(make_typed_tag(total_size.nLowPart, FT_ED2K_MEDIA_LENGTH, false));
+                            se.m_list.add_tag(make_typed_tag(total_size.nHighPart, FT_ED2K_MEDIA_BITRATE, false));
+                        }
+
+                        offer_list.add(se);
+                        post_announce(offer_list);
+                    }
+
+                    if (offer_list.m_size > 0)
+                    {
+                        DBG("session_impl::announce: " << offer_list.m_size);
+                        post_announce(offer_list);
+                    }
+//#endif
+                }
+            }
+
+            if (d >= params.keep_alive_timeout)
             {
                 server_get_list sgl;
                 do_write(sgl);
