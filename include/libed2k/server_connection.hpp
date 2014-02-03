@@ -10,6 +10,17 @@ namespace libed2k
 {
     namespace aux { class session_impl; }
 
+    struct server_connection_parameters{
+        std::string     hostname;
+        std::string     port;
+        time_duration   operations_timeout;
+        time_duration   keep_alive_timeout;
+        time_duration   reconnect_timeout;
+        server_connection_parameters();
+    };
+
+#define CHECK_ABORTED() if (current_operation != scs_handshake && current_operation != scs_start) { return; }
+
     class server_connection: public intrusive_ptr_base<server_connection>,
                              public boost::noncopyable
     {
@@ -27,10 +38,8 @@ namespace libed2k
         server_connection(aux::session_impl& ses);
         ~server_connection();
 
-        void start();
+        void start(const server_connection_parameters& p);
         void stop(const error_code& ec);
-
-        const tcp::endpoint& serverEndpoint() const;
 
         boost::uint32_t client_id() const { return m_client_id; }
         boost::uint32_t tcp_flags() const { return m_tcp_flags; }
@@ -91,6 +100,7 @@ namespace libed2k
         std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order
         sc_state                        current_operation;
         ptime                           last_action_time;
+        server_connection_parameters    params;
     };
 
     template<typename T>
@@ -99,8 +109,7 @@ namespace libed2k
         // temporary assert
         LIBED2K_ASSERT(current_operation == scs_handshake || current_operation == scs_start);
 
-        if (current_operation != scs_handshake && current_operation != scs_start)
-            return;
+        CHECK_ABORTED()
 
         last_action_time = time_now();
         bool bWriteInProgress = !m_write_order.empty();

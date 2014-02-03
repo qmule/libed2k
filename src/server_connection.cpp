@@ -11,10 +11,8 @@
 
 namespace libed2k
 {
-
-#define CHECK_ABORTED(error) if (error == boost::asio::error::operation_aborted) { return; }
-
-    typedef boost::iostreams::basic_array_source<char> Device;
+    server_connection_parameters::server_connection_parameters() :
+        hostname(""), port(""), operations_timeout(pos_infin), keep_alive_timeout(pos_infin), reconnect_timeout(pos_infin){}
 
     server_connection::server_connection(aux::session_impl& ses):
         m_client_id(0),
@@ -33,17 +31,19 @@ namespace libed2k
         stop(boost::asio::error::operation_aborted);
     }
 
-    void server_connection::start()
+    void server_connection::start(const server_connection_parameters& p)
     {
         if (current_operation != scs_stop)
             return;
+
+        params = p;
+
         current_operation = scs_resolve;
         last_action_time = time_now();
 
         const session_settings& settings = m_ses.settings();
 
-        tcp::resolver::query q(settings.server_hostname,
-                               boost::lexical_cast<std::string>(settings.server_port));
+        tcp::resolver::query q(params.hostname, params.port);
 
         m_name_lookup.async_resolve(
             q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
@@ -63,11 +63,6 @@ namespace libed2k
         m_tcp_flags = 0;
         m_aux_port  = 0;
         m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
-    }
-
-    const tcp::endpoint& server_connection::serverEndpoint() const
-    {
-        return (m_target);
     }
 
     void server_connection::post_search_request(search_request& ro)
@@ -228,6 +223,7 @@ namespace libed2k
 
     void server_connection::handle_write(const error_code& error, size_t nSize)
     {
+        CHECK_ABORTED()
         if (!error)
         {
             m_write_order.pop_front();
@@ -260,7 +256,7 @@ namespace libed2k
 
     void server_connection::handle_read_header(const error_code& error, size_t nSize)
     {
-        CHECK_ABORTED(error);
+        CHECK_ABORTED()
         error_code ec = error;
 
         if (!ec)
@@ -314,7 +310,9 @@ namespace libed2k
 
     void server_connection::handle_read_packet(const error_code& error, size_t nSize)
     {
-        CHECK_ABORTED(error);
+        CHECK_ABORTED();
+
+        typedef boost::iostreams::basic_array_source<char> Device;
 
         if (!error)
         {
@@ -340,6 +338,7 @@ namespace libed2k
                 m_in_container.resize(nSize);
             }
 */
+
             boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_container.size());
             std::istream in_array_stream(&buffer);
             archive::ed2k_iarchive ia(in_array_stream);

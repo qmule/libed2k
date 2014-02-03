@@ -46,6 +46,7 @@ namespace libed2k
 {
 	typedef boost::posix_time::ptime ptime;
 	typedef boost::posix_time::time_duration time_duration;
+	using boost::date_time::pos_infin;
 }
 
 #else // LIBED2K_USE_BOOST_DATE_TIME

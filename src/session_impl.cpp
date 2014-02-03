@@ -343,7 +343,7 @@ void session_impl::operator()()
     {
         boost::mutex::scoped_lock l(m_mutex);
         open_listen_port();
-        m_server_connection->start();
+        //m_server_connection->start();
     }
 
     m_tpm.start();
@@ -1410,12 +1410,12 @@ void session_impl::reconnect(int tick_interval_ms)
 
     // perform reconnect
     m_last_connect_duration = 0;
-    m_server_connection->start();
+    //m_server_connection->start();
 }
 
 void session_impl::server_conn_start()
 {
-    m_server_connection->start();
+    //m_server_connection->start();
 }
 
 void session_impl::server_conn_stop()

@@ -13,7 +13,7 @@ namespace libed2k
         typedef std::vector<std::pair<std::string, bool> >  fd_list;
 
         session_settings():
-            server_timeout(220)
+            server_timeout(220)             // timeout
             , peer_timeout(120)
             , peer_connect_timeout(7)
             , block_request_timeout(10)
@@ -22,12 +22,12 @@ namespace libed2k
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
             , send_buffer_watermark(3 * BLOCK_SIZE)
-            , server_port(4661)
+            , server_port(4661) // to remove
             , listen_port(4662)
             , client_name("libed2k")
             , mod_name("libed2k")
-            , server_keep_alive_timeout(200)
-            , server_reconnect_timeout(5)
+            , server_keep_alive_timeout(200)    // to remove
+            , server_reconnect_timeout(5)       // to remove
             , max_peerlist_size(4000)
             , tick_interval(100)
             , download_rate_limit(-1)
