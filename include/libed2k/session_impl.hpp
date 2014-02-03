@@ -273,14 +273,6 @@ namespace libed2k {
              */
             boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
-            /**
-              * perform reconnect to server
-              * will perform only when server connection offline
-             */
-            void reconnect(int tick_interval_ms);
-            void server_conn_start();
-            void server_conn_stop();
-
             void update_connections_limit();
             void update_rate_settings();
             void update_active_transfers();

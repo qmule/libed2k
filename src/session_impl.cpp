@@ -426,13 +426,7 @@ bool session_impl::listen_on(int port, const char* net_interface)
 
     m_listen_interface = new_interface;
     m_settings.listen_port = port;
-
-    server_conn_stop();     // stop server connection and deannounce all transfers
-    open_listen_port();     // reset listener
-    server_conn_start();    // start server connection, announces will execute in on_tick
-
-    //bool new_listen_address = m_listen_interface.address() != new_interface.address();
-
+    open_listen_port();
     return !m_listen_sockets.empty();
 }
 
@@ -1093,7 +1087,7 @@ void session_impl::on_tick(error_code const& e)
     if (m_server_connection->online()) announce(tick_interval_ms);
     */
 
-    reconnect(tick_interval_ms);
+    m_server_connection->second_tick(tick_interval_ms);
     update_active_transfers();
 
     // --------------------------------------------------------------
@@ -1281,27 +1275,6 @@ void session_impl::post_cancel_search()
 void session_impl::post_sources_request(const md4_hash& hFile, boost::uint64_t nSize)
 {
     m_server_connection->post_sources_request(hFile, nSize);
-}
-
-void session_impl::reconnect(int tick_interval_ms)
-{
-
-}
-
-void session_impl::server_conn_start()
-{
-
-}
-
-void session_impl::server_conn_stop()
-{
-    m_server_connection->stop(boost::asio::error::operation_aborted);
-
-    for (transfer_map::iterator i = m_transfers.begin(); i != m_transfers.end(); ++i)
-    {
-        transfer& t = *i->second;
-        t.set_announced(false);
-    }
 }
 
 void session_impl::update_connections_limit()

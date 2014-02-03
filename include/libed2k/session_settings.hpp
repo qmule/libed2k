@@ -13,8 +13,7 @@ namespace libed2k
         typedef std::vector<std::pair<std::string, bool> >  fd_list;
 
         session_settings():
-            server_timeout(220)             // timeout
-            , peer_timeout(120)
+            peer_timeout(120)
             , peer_connect_timeout(7)
             , block_request_timeout(10)
             , connection_speed(6)
@@ -22,12 +21,9 @@ namespace libed2k
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
             , send_buffer_watermark(3 * BLOCK_SIZE)
-            , server_port(4661) // to remove
             , listen_port(4662)
             , client_name("libed2k")
             , mod_name("libed2k")
-            , server_keep_alive_timeout(200)    // to remove
-            , server_reconnect_timeout(5)       // to remove
             , max_peerlist_size(4000)
             , tick_interval(100)
             , download_rate_limit(-1)
@@ -37,7 +33,6 @@ namespace libed2k
             , connections_limit(200)
             , m_version(0x3c)
             , m_max_announces_per_call(198)
-            , m_announce_timeout(-1)
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)
             , user_agent(md4_hash::emule)
@@ -79,11 +74,6 @@ namespace libed2k
         }
 
         // the number of seconds to wait for any activity on
-        // the server wire before closing the connection due
-        // to time out.
-        int server_timeout;
-
-        // the number of seconds to wait for any activity on
         // the peer wire before closing the connection due
         // to time out.
         int peer_timeout;
@@ -117,19 +107,12 @@ namespace libed2k
         // the upload rate is low, this is the upper limit.
         int send_buffer_watermark;
 
-        // ed2k server hostname
-        std::string server_hostname;
-        // ed2k server port
-        int server_port;
         // ed2k peer port for incoming peer connections
         int listen_port;
         // ed2k client name
         std::string client_name;
         // ed2k mod program name
         std::string mod_name;
-        int server_keep_alive_timeout;
-        // reconnect to server after fail, -1 - do nothing
-        int server_reconnect_timeout;
 
         // the max number of peers in the peer list
         // per transfer. This is the peers we know
@@ -160,11 +143,6 @@ namespace libed2k
         unsigned short m_version;
         unsigned short m_max_announces_per_call;
 
-        /**
-          * announce timeout in seconds
-          * -1 - announces off
-         */
-        int m_announce_timeout;
         bool m_show_shared_catalogs;    //!< show shared catalogs to client
         bool m_show_shared_files;       //!< show shared files to client
         md4_hash user_agent;            //!< ed2k client hash - user agent information

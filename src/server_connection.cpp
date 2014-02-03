@@ -20,6 +20,21 @@ namespace libed2k
         announce_items_per_call_limit(0)
     {}
 
+    server_connection_parameters::server_connection_parameters(const std::string& h, const std::string& p,
+                    int operations_t, int kpl_t, int reconnect_t, int announce_t, size_t ann_items_limit) :
+                    hostname(h), port(p),
+                    operations_timeout(operations_t>0?seconds(operations_t):pos_infin),
+                    keep_alive_timeout(kpl_t>0?seconds(kpl_t):pos_infin),
+                    reconnect_timeout(reconnect_t>0?seconds(reconnect_t):pos_infin),
+                    announce_timeout(announce_t>0?seconds(announce_t):pos_infin),
+                    announce_items_per_call_limit(ann_items_limit)
+    {}
+
+    void server_connection_parameters::set_reconnect_timeout(int timeout)
+    {
+        reconnect_timeout = timeout>0?seconds(timeout):pos_infin;
+    }
+
     server_connection::server_connection(aux::session_impl& ses):
         m_client_id(0),
         m_name_lookup(ses.m_io_service),
@@ -40,9 +55,8 @@ namespace libed2k
 
     void server_connection::start(const server_connection_parameters& p)
     {
-        if (current_operation != scs_stop)
-            return;
-
+        stop(boost::asio::error::operation_aborted);
+        LIBED2K_ASSERT(current_operation == scs_stop);
         LIBED2K_ASSERT(!p.port.empty() && !p.hostname.empty());
         params = p;
         current_operation = scs_resolve;
@@ -59,6 +73,7 @@ namespace libed2k
         if (current_operation == scs_stop)
             return;
 
+        DBG("server connection: disconnected");
         current_operation = scs_stop;
         m_write_order.clear();  // remove all incoming messages
         m_socket.close();
@@ -68,6 +83,13 @@ namespace libed2k
         m_tcp_flags = 0;
         m_aux_port  = 0;
         announced_transfers_count = 0;
+
+        for (aux::session_impl_base::transfer_map::iterator i = m_ses.m_transfers.begin(); i != m_ses.m_transfers.end(); ++i)
+        {
+            transfer& t = *i->second;
+            t.set_announced(false);
+        }
+
         m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
@@ -235,11 +257,9 @@ namespace libed2k
         if (current_operation != scs_resolve)
             return;
 
-        const session_settings& settings = m_ses.settings();
-
         if (error || i == tcp::resolver::iterator())
         {
-            ERR("server name: " << settings.server_hostname
+            ERR("server name: " << params.hostname
                 << ", resolve failed: " << error);
             stop(error);
             return;
@@ -417,7 +437,7 @@ namespace libed2k
 
         if (!error)
         {
-            DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
+            //DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
 /*
             // gzip decompressor disabled
             if (m_in_header.m_protocol == OP_PACKEDPROT)
@@ -487,7 +507,7 @@ namespace libed2k
                         m_client_id = idc.m_client_id;
                         m_tcp_flags = idc.m_tcp_flags;
                         m_aux_port  = idc.m_aux_port;
-                        DBG("server connection opened {cid:" << m_client_id << "}{tcp:" << idc.m_tcp_flags << "}{port: " << idc.m_aux_port<< "}");
+                        DBG("handshake finished. server connection opened {" << idc << "}" << (isLowId(idc.m_client_id)?"LowID":"HighID"));
                         m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, m_aux_port));
                         break;
                     }

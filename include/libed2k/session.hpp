@@ -21,6 +21,7 @@ namespace libed2k {
     struct transfer_handle;
     class add_transfer_params;
     struct ip_filter;
+    struct server_connection_parameters;
 
     namespace aux
     {
@@ -87,8 +88,9 @@ namespace libed2k {
         int download_rate_limit() const;
         int upload_rate_limit() const;
 
-        void server_conn_start();
-        void server_conn_stop();
+        void server_connect(const server_connection_parameters&);
+        void server_disconnect();
+        bool server_connection_established() const;
 
         void pause();
         void resume();

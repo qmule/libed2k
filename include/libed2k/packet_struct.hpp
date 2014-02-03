@@ -585,6 +585,14 @@ namespace libed2k
         }
     };
 
+    inline std::ostream& operator<<(std::ostream& stream, const id_change& id)
+    {
+        stream  << "cid: " << id.m_client_id
+                << ", tcpf: " << id.m_tcp_flags
+                << ", auxp: " << id.m_aux_port;
+        return stream;
+    }
+
     /**
       * call back request from server to client
      */

@@ -17,9 +17,14 @@ namespace libed2k
         time_duration   keep_alive_timeout;
         time_duration   reconnect_timeout;
         time_duration   announce_timeout;
-        int             announce_items_per_call_limit;
+        size_t          announce_items_per_call_limit;
         bool announce() const { return announce_timeout != pos_infin && announce_items_per_call_limit > 0; }
         server_connection_parameters();
+        // all _t in seconds!
+        server_connection_parameters(const std::string& h, const std::string& p,
+                int operations_t, int kpl_t, int reconnect_t, int announce_t, size_t ann_items_limit);
+
+        void set_reconnect_timeout(int);
     };
 
 #define CHECK_ABORTED() if (current_operation != scs_handshake && current_operation != scs_start) { return; }
@@ -47,6 +52,7 @@ namespace libed2k
         boost::uint32_t client_id() const { return m_client_id; }
         boost::uint32_t tcp_flags() const { return m_tcp_flags; }
         boost::uint32_t aux_port()  const { return  m_aux_port; }
+        bool connected() const { return current_operation == scs_start; }
 
 
         void post_search_request(search_request& ro);
@@ -104,7 +110,7 @@ namespace libed2k
         sc_state                        current_operation;
         ptime                           last_action_time;
         server_connection_parameters    params;
-        int                             announced_transfers_count;
+        size_t                          announced_transfers_count;
     };
 
     template<typename T>
@@ -129,7 +135,7 @@ namespace libed2k
         m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
         m_write_order.back().first.m_type     = packet_type<T>::value;
 
-        DBG("server_connection::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
+        //DBG("server_connection::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
 
         if (!write_in_progress)
         {

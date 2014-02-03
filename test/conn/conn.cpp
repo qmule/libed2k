@@ -19,6 +19,7 @@
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/io_service.hpp"
+#include "libed2k/server_connection.hpp"
 
 using namespace libed2k;
 
@@ -406,16 +407,11 @@ int main(int argc, char* argv[])
     libed2k::session_settings settings;
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
-    settings.server_keep_alive_timeout = -1;
-    settings.server_reconnect_timeout = -1;
-    settings.server_hostname = argv[1];
-    settings.server_timeout = 5;
-    settings.server_port = atoi(argv[2]);
-    settings.m_announce_timeout = 8;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
+    libed2k::server_connection_parameters scp(argv[1], argv[2], 2, 20, -1, -1, 0);
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
@@ -461,6 +457,7 @@ int main(int argc, char* argv[])
 
     std::string strArg;
     std::deque<std::string> vpaths;
+    ses.server_connect(scp);
 
     while ((std::cin >> strUser))
     {
@@ -757,10 +754,10 @@ int main(int argc, char* argv[])
                 break;
             }
             case cc_connect:
-                ses.server_conn_start();
+                ses.server_connect(scp);
                 break;
             case cc_disconnect:
-                ses.server_conn_stop();
+                ses.server_disconnect();
                 break;
             case cc_listen:
                 {
@@ -796,10 +793,10 @@ int main(int argc, char* argv[])
             switch(strUser.at(0))
             {
             case 'd':
-                ses.server_conn_stop();
+                ses.server_disconnect();
                 break;
             case 'c':
-                ses.server_conn_start();
+                ses.server_connect(scp);
                 break;
             case 'f':
                 {
