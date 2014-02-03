@@ -237,4 +237,28 @@ namespace libed2k
     {
         m_impl->m_tpm.cancel_transfer_params(filepath);
     }
+    
+    natpmp* session::start_natpmp()
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->start_natpmp();
+    }
+    
+    upnp* session::start_upnp()
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->start_upnp();
+    }
+
+    void session::stop_natpmp()
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->stop_natpmp();
+    }
+    
+    void session::stop_upnp()
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->stop_upnp();
+    }
 }

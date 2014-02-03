@@ -137,6 +137,8 @@ namespace libed2k
             , use_disk_read_ahead(true)
             , lock_files(false)
             , low_prio_disk(true)
+            , peer_tos(0)
+            , upnp_ignore_nonrouters(false)
         {
         }
 
@@ -488,6 +490,17 @@ namespace libed2k
         // in the background
         bool low_prio_disk;
 
+        // the TOS byte of all peer traffic (including
+        // web seeds) is set to this value. The default
+        // is the QBSS scavenger service
+        // http://qbone.internet2.edu/qbss/
+        // For unmarked packets, set to 0
+        char peer_tos;
+
+        // when this is true, the upnp port mapper will ignore
+        // any upnp devices that don't have an address that matches
+        // our currently configured router.
+        bool upnp_ignore_nonrouters;
     };
 
 }

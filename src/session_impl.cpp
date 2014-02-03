@@ -13,6 +13,8 @@
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/transfer.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/upnp.hpp"
+#include "libed2k/natpmp.hpp"
 #include "libed2k/constants.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/alert_types.hpp"
@@ -374,16 +376,11 @@ void session_impl::open_listen_port()
         async_accept(s.sock);
     }
 
+    error_code ec;
     m_udp_socket.bind(udp::endpoint(m_listen_interface.address(), m_listen_interface.port()), ec);
     if (ec)
     {
         ERR("Cannot bind to UDP interface " << print_endpoint(m_listen_interface) << ": " << ec.message());
-        if (m_listen_port_retries > 0)
-        {
-            m_listen_interface.port(m_listen_interface.port() + 1);
-            --m_listen_port_retries;
-            goto retry;
-        }
         m_alerts.post_alert_should(listen_failed_alert(m_listen_interface, ec));
     }
     else
@@ -456,10 +453,34 @@ bool session_impl::is_listening() const
     return !m_listen_sockets.empty();
 }
 
-unsigned short session_impl::listen_port() const
+boost::uint16_t session_impl::listen_port() const
 {
     if (m_listen_sockets.empty()) return 0;
     return m_listen_sockets.front().external_port;
+}
+
+boost::uint16_t session_impl::ssl_listen_port() const
+{
+#ifdef LIBED2K_USE_OPENSSL
+    // if peer connections are set up to be received over a socks
+    // proxy, and it's the same one as we're using for the tracker
+    // just tell the tracker the socks5 port we're listening on
+    if (m_socks_listen_socket && m_socks_listen_socket->is_open()
+        && m_proxy.hostname == m_proxy.hostname)
+        return m_socks_listen_port;
+
+    // if not, don't tell the tracker anything if we're in anonymous
+    // mode. We don't want to leak our listen port since it can
+    // potentially identify us if it is leaked elsewere
+    if (m_settings.anonymous_mode) return 0;
+    if (m_listen_sockets.empty()) return 0;
+    for (std::list<listen_socket_t>::const_iterator i = m_listen_sockets.begin()
+             , end(m_listen_sockets.end()); i != end; ++i)
+    {
+        if (i->ssl) return i->external_port;
+    }
+#endif
+    return 0;
 }
 
 char session_impl::server_connection_state() const
@@ -532,8 +553,7 @@ void session_impl::on_accept_connection(boost::shared_ptr<tcp::socket> const& s,
             return;
         }
 #endif
-        if (m_alerts.should_post<mule_listen_failed_alert>())
-            m_alerts.post_alert(mule_listen_failed_alert(ep, e));
+        m_alerts.post_alert_should(listen_failed_alert(ep, e));
         return;
     }
 
@@ -622,7 +642,7 @@ void session_impl::on_port_mapping(int mapping, address const& ip, int port,
     if (mapping == m_tcp_mapping[map_transport] && port != 0)
     {
         // TODO: report the proper address of the router
-        if (ip != address()) set_external_address(ip, source_router, address());
+        //if (ip != address()) set_external_address(ip, source_router, address());
 
         if (!m_listen_sockets.empty()) {
             m_listen_sockets.front().external_address = ip;
@@ -639,6 +659,74 @@ void session_impl::on_port_mapping(int mapping, address const& ip, int port,
     else
     {
         m_alerts.post_alert_should(portmap_alert(mapping, port, map_transport));
+    }
+}
+
+void session_impl::on_receive_udp(error_code const& e, udp::endpoint const& ep, char const* buf, int len)
+{
+    if (e)
+    {
+        if (e == asio::error::connection_refused
+            || e == asio::error::connection_reset
+            || e == asio::error::connection_aborted
+#ifdef WIN32
+            || e == error_code(ERROR_HOST_UNREACHABLE, get_system_category())
+            || e == error_code(ERROR_PORT_UNREACHABLE, get_system_category())
+            || e == error_code(ERROR_CONNECTION_REFUSED, get_system_category())
+            || e == error_code(ERROR_CONNECTION_ABORTED, get_system_category())
+#endif
+            )
+        {
+        }
+        else
+        {
+            ERR("UDP socket error: (" << e.value() << ") " << e.message());
+        }
+
+        // don't bubble up operation aborted errors to the user
+        if (e != asio::error::operation_aborted)
+            m_alerts.post_alert_should(udp_error_alert(ep, e));
+
+        return;
+    }
+}
+
+void session_impl::on_receive_udp_hostname(error_code const& e, char const* hostname, char const* buf, int len)
+{
+}
+
+void session_impl::maybe_update_udp_mapping(int nat, int local_port, int external_port)
+{
+    int local, external, protocol;
+    if (nat == 0 && m_natpmp.get())
+    {
+        if (m_udp_mapping[nat] != -1)
+        {
+            if (m_natpmp->get_mapping(m_udp_mapping[nat], local, external, protocol))
+            {
+                // we already have a mapping. If it's the same, don't do anything
+                if (local == local_port && external == external_port && protocol == natpmp::udp)
+                    return;
+            }
+            m_natpmp->delete_mapping(m_udp_mapping[nat]);
+        }
+        m_udp_mapping[nat] = m_natpmp->add_mapping(natpmp::udp, local_port, external_port);
+        return;
+    }
+    else if (nat == 1 && m_upnp.get())
+    {
+        if (m_udp_mapping[nat] != -1)
+        {
+            if (m_upnp->get_mapping(m_udp_mapping[nat], local, external, protocol))
+            {
+                // we already have a mapping. If it's the same, don't do anything
+                if (local == local_port && external == external_port && protocol == natpmp::udp)
+                    return;
+            }
+            m_upnp->delete_mapping(m_udp_mapping[nat]);
+        }
+        m_udp_mapping[nat] = m_upnp->add_mapping(upnp::udp, local_port, external_port);
+        return;
     }
 }
 
@@ -1634,7 +1722,7 @@ upnp* session_impl::start_upnp()
     // the upnp constructor may fail and call the callbacks
     upnp* u = new (std::nothrow) upnp(
         m_io_service, m_half_open,
-        m_listen_interface.address(), m_settings.user_agent,
+        m_listen_interface.address(), m_settings.user_agent.toString(),
         boost::bind(&session_impl::on_port_mapping, this, _1, _2, _3, _4, 1),
         boost::bind(&session_impl::on_port_map_log, this, _1, 1),
         m_settings.upnp_ignore_nonrouters);

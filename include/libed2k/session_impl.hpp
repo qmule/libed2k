@@ -155,7 +155,8 @@ namespace libed2k {
 
             bool listen_on(int port, const char* net_interface);
             bool is_listening() const;
-            unsigned short listen_port() const;
+            boost::uint16_t listen_port() const;
+            boost::uint16_t ssl_listen_port() const;
             char server_connection_state() const;
 
             void update_disk_thread_settings();
@@ -171,8 +172,20 @@ namespace libed2k {
 
             // called when a port mapping is successful, or a router returns
             // a failure to map a port
-            void on_port_mapping(int mapping, address const& ip, int port,
-                                 error_code const& ec, int nat_transport);
+            void on_port_mapping(int mapping, address const& ip, int port, error_code const& ec, int nat_transport);
+
+			void on_receive_udp(error_code const& e, udp::endpoint const& ep, char const* buf, int len);
+			void on_receive_udp_hostname(error_code const& e, char const* hostname, char const* buf, int len);
+
+            void maybe_update_udp_mapping(int nat, int local_port, int external_port);
+
+            enum
+            {
+                source_dht = 1,
+                source_peer = 2,
+                source_tracker = 4,
+                source_router = 8
+            };
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
             virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename);
