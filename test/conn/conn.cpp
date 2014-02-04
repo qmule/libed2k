@@ -411,7 +411,7 @@ int main(int argc, char* argv[])
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-    libed2k::server_connection_parameters scp(argv[1], argv[2], 2, 20, 10, 10, 10);
+    libed2k::server_connection_parameters scp(argv[1], argv[2], 20, 20, 10, 10, 10);
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
