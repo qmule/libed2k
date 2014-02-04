@@ -151,7 +151,7 @@ namespace libed2k
         case scs_handshake:
             if (d >= params.operations_timeout)
             {
-                close(boost::asio::error::timed_out);
+                stop(boost::asio::error::timed_out);
             }
             break;
         case scs_start:

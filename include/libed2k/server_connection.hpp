@@ -5,6 +5,7 @@
 #include "libed2k/base_connection.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/session_impl.hpp"
+#include "libed2k/ptime.hpp"
 
 namespace libed2k
 {
