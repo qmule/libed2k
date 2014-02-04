@@ -12,7 +12,7 @@
 namespace libed2k
 {
     server_connection_parameters::server_connection_parameters() :
-        hostname(""), port(""),
+        host(""), port(0),
         operations_timeout(pos_infin),
         keep_alive_timeout(pos_infin),
         reconnect_timeout(pos_infin),
@@ -20,9 +20,9 @@ namespace libed2k
         announce_items_per_call_limit(0)
     {}
 
-    server_connection_parameters::server_connection_parameters(const std::string& h, const std::string& p,
+    server_connection_parameters::server_connection_parameters(const std::string& n, const std::string& h, int p,
                     int operations_t, int kpl_t, int reconnect_t, int announce_t, size_t ann_items_limit) :
-                    hostname(h), port(p),
+                    name(n), host(h), port(p),
                     operations_timeout(operations_t>0?seconds(operations_t):pos_infin),
                     keep_alive_timeout(kpl_t>0?seconds(kpl_t):pos_infin),
                     reconnect_timeout(reconnect_t>0?seconds(reconnect_t):pos_infin),
@@ -58,12 +58,12 @@ namespace libed2k
     {
         stop(boost::asio::error::operation_aborted);
         LIBED2K_ASSERT(current_operation == scs_stop);
-        LIBED2K_ASSERT(!p.port.empty() && !p.hostname.empty());
+        LIBED2K_ASSERT(p.port>0 && !p.host.empty());
         params = p;
         current_operation = scs_resolve;
         last_action_time = time_now();
 
-        tcp::resolver::query q(params.hostname, params.port);
+        tcp::resolver::query q(params.host, boost::lexical_cast<std::string>(params.port));
 
         m_name_lookup.async_resolve(
             q, boost::bind(&server_connection::on_name_lookup, self(), _1, _2));
@@ -93,7 +93,7 @@ namespace libed2k
         }
 
         last_close_result = ec;
-        m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
+        m_ses.m_alerts.post_alert_should(server_connection_closed(params.name, params.host, params.port, ec));
     }
 
     void server_connection::post_search_request(search_request& ro)
@@ -269,7 +269,7 @@ namespace libed2k
 
         if (error || i == tcp::resolver::iterator())
         {
-            ERR("server name: " << params.hostname
+            ERR("server name: " << params.name << " host: " << params.host
                 << ", resolve failed: " << error);
             stop(error);
             return;
@@ -279,7 +279,7 @@ namespace libed2k
         current_operation = scs_connection;
         last_action_time = time_now();
         m_target = *i;
-        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(libed2k::print_endpoint(m_target)));
+        m_ses.m_alerts.post_alert_should(server_name_resolved_alert(params.name, params.host, params.port, libed2k::print_endpoint(m_target)));
         m_socket.async_connect(m_target, boost::bind(&server_connection::on_connection_complete, self(), _1));
     }
 
@@ -489,7 +489,7 @@ namespace libed2k
                     {
                         server_message smsg;
                         ia >> smsg;
-                        m_ses.m_alerts.post_alert_should(server_message_alert(smsg.m_strMessage));
+                        m_ses.m_alerts.post_alert_should(server_message_alert(params.name, params.host, params.port, smsg.m_strMessage));
                         break;
                     }
                     case OP_SERVERLIST:
@@ -502,7 +502,7 @@ namespace libed2k
                     {
                         server_status sss;
                         ia >> sss;
-                        m_ses.m_alerts.post_alert_should(server_status_alert(sss.m_nFilesCount, sss.m_nUserCount));
+                        m_ses.m_alerts.post_alert_should(server_status_alert(params.name, params.host, params.port, sss.m_nFilesCount, sss.m_nUserCount));
                         break;
                     }
                     case OP_USERS_LIST:
@@ -518,7 +518,7 @@ namespace libed2k
                         m_tcp_flags = idc.m_tcp_flags;
                         m_aux_port  = idc.m_aux_port;
                         DBG("handshake finished. server connection opened {" << idc << "}" << (isLowId(idc.m_client_id)?"LowID":"HighID"));
-                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(m_client_id, m_tcp_flags, m_aux_port));
+                        m_ses.m_alerts.post_alert_should(server_connection_initialized_alert(params.name, params.host, params.port, m_client_id, m_tcp_flags, m_aux_port));
                         break;
                     }
                     case OP_SERVERIDENT:
@@ -527,7 +527,7 @@ namespace libed2k
                         ia >> se;
                         se.dump();
                         m_hServer = se.m_hServer;
-                        m_ses.m_alerts.post_alert_should(server_identity_alert(se.m_hServer, se.m_network_point,
+                        m_ses.m_alerts.post_alert_should(server_identity_alert(params.name, params.host, params.port, se.m_hServer, se.m_network_point,
                                 se.m_list.getStringTagByNameId(ST_SERVERNAME),
                                 se.m_list.getStringTagByNameId(ST_DESCRIPTION)));
                         break;

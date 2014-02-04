@@ -44,9 +44,9 @@ BOOST_AUTO_TEST_CASE(test_alerts)
     boost::thread t(boost::bind(&libed2k::io_service::run, &io));
     al.set_alert_mask(0);
 
-    al.post_alert(libed2k::server_connection_initialized_alert(1,1,1));
-    al.post_alert(libed2k::server_connection_initialized_alert(2,2,2));
-    al.post_alert(libed2k::server_connection_initialized_alert(3,2,2));
+    al.post_alert(libed2k::server_connection_initialized_alert("server", "host", 1, 1,1,1));
+    al.post_alert(libed2k::server_connection_initialized_alert("server", "host", 2, 2,2,2));
+    al.post_alert(libed2k::server_connection_initialized_alert("server", "host", 3, 3,2,2));
 
     std::auto_ptr<libed2k::alert> a;
 
@@ -57,7 +57,8 @@ BOOST_AUTO_TEST_CASE(test_alerts)
     {
         nCount++;
         BOOST_REQUIRE(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get()));   // we wait for server alert now
-        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get()))->m_nClientId, nCount);
+        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get()))->client_id, nCount);
+        BOOST_CHECK_EQUAL((dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get()))->port, nCount);
         a = pop_alert(al);
     }
 
@@ -65,7 +66,7 @@ BOOST_AUTO_TEST_CASE(test_alerts)
 
     if (al.should_post<libed2k::server_connection_initialized_alert>())
     {
-        al.post_alert(libed2k::server_connection_initialized_alert(300,23,66));
+        al.post_alert(libed2k::server_connection_initialized_alert("server eMule", "0.1.1.1", 1050, 300,23,66));
     }
 
     a = pop_alert(al);
@@ -75,15 +76,17 @@ BOOST_AUTO_TEST_CASE(test_alerts)
 
     if (al.should_post<libed2k::server_connection_initialized_alert>())
     {
-        al.post_alert(libed2k::server_connection_initialized_alert(90, 1, 66));
+        al.post_alert(libed2k::server_connection_initialized_alert("Some server", "123.456.789.0", 567, 90, 1, 66));
     }
 
     a = pop_alert(al);
 
     BOOST_REQUIRE(a.get());
     BOOST_REQUIRE(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get()));
-    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->m_nClientId, 90U);
-
+    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->client_id, 90U);
+    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->name, std::string("Some server"));
+    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->host, "123.456.789.0");
+    BOOST_CHECK_EQUAL(dynamic_cast<libed2k::server_connection_initialized_alert*>(a.get())->port, 567);
     t.join();
 
     BOOST_CHECK(bGlobal);

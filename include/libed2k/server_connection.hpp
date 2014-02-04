@@ -12,8 +12,9 @@ namespace libed2k
     namespace aux { class session_impl; }
 
     struct server_connection_parameters{
-        std::string     hostname;
-        std::string     port;
+        std::string     name;
+        std::string     host;
+        int             port;
         time_duration   operations_timeout;
         time_duration   keep_alive_timeout;
         time_duration   reconnect_timeout;
@@ -22,7 +23,7 @@ namespace libed2k
         bool announce() const { return announce_timeout != pos_infin && announce_items_per_call_limit > 0; }
         server_connection_parameters();
         // all _t in seconds!
-        server_connection_parameters(const std::string& h, const std::string& p,
+        server_connection_parameters(const std::string& n, const std::string& h, int p,
                 int operations_t, int kpl_t, int reconnect_t, int announce_t, size_t ann_items_limit);
 
         void set_reconnect_timeout(int);
