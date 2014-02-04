@@ -11,6 +11,10 @@
 
 namespace libed2k
 {
+    server_fingerprint::server_fingerprint(const std::string& nm, const std::string& hs, int p):
+            name(nm), host(hs), port(p)
+    {}
+
     server_connection_parameters::server_connection_parameters() :
         host(""), port(0),
         operations_timeout(pos_infin),

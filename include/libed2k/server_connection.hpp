@@ -11,6 +11,13 @@ namespace libed2k
 {
     namespace aux { class session_impl; }
 
+    struct server_fingerprint{
+        std::string name;
+        std::string host;
+        int port;
+        server_fingerprint(const std::string& nm, const std::string& hs, int port);
+    };
+
     struct server_connection_parameters{
         std::string     name;
         std::string     host;
