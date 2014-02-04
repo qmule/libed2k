@@ -1061,32 +1061,6 @@ void session_impl::on_tick(error_code const& e)
     // --------------------------------------------------------------
     // TODO: should it be implemented?
 
-    // --------------------------------------------------------------
-    // server connection
-    // --------------------------------------------------------------
-    // we always check status changing because it check before reconnect processing
-    /*
-    bool server_conn_change_state = m_server_connection_state != m_server_connection->state();
-    if (server_conn_change_state)
-    {
-        m_server_connection_state = m_server_connection->state();
-
-        // when server connection changes its state to offline -
-        // we drop announces status for all transfers
-        if (m_server_connection->offline())
-        {
-            for (transfer_map::iterator i = m_transfers.begin(),
-                     end(m_transfers.end()); i != end; ++i)
-            {
-                transfer& t = *i->second;
-                t.set_announced(false);
-            }
-        }
-    }
-
-    if (m_server_connection->online()) announce(tick_interval_ms);
-    */
-
     m_server_connection->second_tick(tick_interval_ms);
     update_active_transfers();
 
