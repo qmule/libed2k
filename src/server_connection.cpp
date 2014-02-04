@@ -44,7 +44,8 @@ namespace libed2k
         m_socket(ses.m_io_service),
         current_operation(scs_stop),
         last_action_time(time_now()),
-        announced_transfers_count(-1)
+        announced_transfers_count(-1),
+        last_close_result(errors::no_error)
     {
     }
 
@@ -75,6 +76,7 @@ namespace libed2k
 
         DBG("server connection: disconnected");
         current_operation = scs_stop;
+        last_action_time  = time_now();
         m_write_order.clear();  // remove all incoming messages
         m_socket.close();
         m_name_lookup.cancel();
@@ -90,6 +92,7 @@ namespace libed2k
             t.set_announced(false);
         }
 
+        last_close_result = ec;
         m_ses.m_alerts.post_alert_should(server_connection_closed(ec));
     }
 
@@ -136,6 +139,12 @@ namespace libed2k
         switch(current_operation)
         {
         case scs_stop:
+            if (last_close_result &&
+                    last_close_result != boost::asio::error::operation_aborted &&
+                    d >= params.reconnect_timeout)
+            {
+                start(params);  // reconnect when last error status != aborted and timeout
+            }
             break;
         case scs_resolve:
         case scs_connection:

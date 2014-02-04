@@ -111,6 +111,7 @@ namespace libed2k
         ptime                           last_action_time;
         server_connection_parameters    params;
         size_t                          announced_transfers_count;
+        error_code                      last_close_result;
     };
 
     template<typename T>
