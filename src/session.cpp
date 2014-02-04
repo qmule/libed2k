@@ -201,8 +201,7 @@ namespace libed2k
 
     void session::server_disconnect()
     {
-        //m_impl->m_io_service.post(boost::bind(&server_connection::stop, m_impl->m_server_connection, boost::asio::error::operation_aborted));
-        m_impl->m_io_service.post(boost::bind(&server_connection::stop, m_impl->m_server_connection, errors::no_memory));
+        m_impl->m_io_service.post(boost::bind(&server_connection::stop, m_impl->m_server_connection, boost::asio::error::operation_aborted));
     }
 
     bool session::server_connection_established() const

@@ -191,7 +191,7 @@ namespace libed2k
                     }
 
                     // generate announce for user as transfer when all transfers were announced but user wasn't
-//#ifdef LIBED2K_IS74
+#ifdef LIBED2K_IS74
                     if (offer_list.m_collection.size() < params.announce_items_per_call_limit)
                     {
                         DBG("all transfer probably ware announced - announce user with correct size");
@@ -238,13 +238,14 @@ namespace libed2k
                         offer_list.add(se);
                         post_announce(offer_list);
                     }
-
+#endif
                     if (offer_list.m_size > 0)
                     {
                         DBG("session_impl::announce: " << offer_list.m_size);
                         post_announce(offer_list);
                     }
-//#endif
+
+                    d = now - last_action_time; // update current idle duration for
                 }
             }
 
