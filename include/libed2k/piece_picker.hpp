@@ -444,7 +444,7 @@ namespace libed2k
 			void set_not_have() { index = 0; LIBED2K_ASSERT(!have()); }
 			
 			bool filtered() const { return piece_priority == filter_priority; }
-			void filtered(bool f) { piece_priority = f ? filter_priority : 0; }
+			void filtered(bool f) { piece_priority = f; }
 			
 			//  prio 7 is always top priority
 			//  prio 0 is always -1 (don't pick)
