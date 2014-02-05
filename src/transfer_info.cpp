@@ -48,12 +48,12 @@ namespace libed2k
 #if defined LIBED2K_DEBUG && !defined LIBED2K_DISABLE_INVARIANT_CHECKS
         t.check_invariant();
 #endif
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
     }
 
     void transfer_info::remap_files(file_storage const& f)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         // the new specified file storage must have the exact
         // same size as the current file storage
@@ -88,7 +88,7 @@ namespace libed2k
 
     void transfer_info::copy_on_write()
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         if (m_orig_files) return;
         m_orig_files.reset(new file_storage(m_files));
@@ -96,7 +96,7 @@ namespace libed2k
 
     void transfer_info::swap(transfer_info& ti)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         using std::swap;
         m_files.swap(ti.m_files);
