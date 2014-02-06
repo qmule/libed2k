@@ -34,9 +34,20 @@ namespace libed2k
                     announce_items_per_call_limit(ann_items_limit)
     {}
 
-    void server_connection_parameters::set_reconnect_timeout(int timeout)
-    {
+    void server_connection_parameters::set_operations_timeout(int timeout){
+        operations_timeout = timeout>0?seconds(timeout):pos_infin;
+    }
+
+    void server_connection_parameters::set_keep_alive_timeout(int timeout){
+        keep_alive_timeout = timeout>0?seconds(timeout):pos_infin;
+    }
+
+    void server_connection_parameters::set_reconnect_timeout(int timeout){
         reconnect_timeout = timeout>0?seconds(timeout):pos_infin;
+    }
+
+    void server_connection_parameters::set_announce_timeout(int timeout){
+        announce_timeout = timeout>0?seconds(timeout):pos_infin;
     }
 
     server_connection::server_connection(aux::session_impl& ses):

@@ -33,7 +33,10 @@ namespace libed2k
         server_connection_parameters(const std::string& n, const std::string& h, int p,
                 int operations_t, int kpl_t, int reconnect_t, int announce_t, size_t ann_items_limit);
 
-        void set_reconnect_timeout(int);
+        void set_operations_timeout(int seconds);
+        void set_keep_alive_timeout(int seconds);
+        void set_reconnect_timeout(int seconds);
+        void set_announce_timeout(int seconds);
     };
 
 #define CHECK_ABORTED() if (current_operation != scs_handshake && current_operation != scs_start) { return; }
