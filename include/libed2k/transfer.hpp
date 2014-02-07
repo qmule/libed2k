@@ -268,7 +268,7 @@ namespace libed2k
         // SERVER MANAGEMENT
         // --------------------------------------------
         /** convert transfer info into announce */
-        shared_file_entry getAnnounce() const;
+        shared_file_entry get_announce() const;
 
         tcp::endpoint const& get_interface() const { return m_net_interface; }
 

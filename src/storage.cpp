@@ -1710,7 +1710,7 @@ ret:
     {
         mutex::scoped_lock lock(m_mutex);
 
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         m_storage->write_resume_data(rd);
 
@@ -1741,7 +1741,7 @@ ret:
     {
         mutex::scoped_lock lock(m_mutex);
 
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         if (m_storage_mode != internal_storage_mode_compact_deprecated) return;
 
@@ -1898,7 +1898,7 @@ ret:
         , md4_hash const& small_hash
         , int current_slot)
     {
-//      INVARIANT_CHECK;
+//      LIBED2K_INVARIANT_CHECK;
         typedef std::multimap<md4_hash, int>::const_iterator map_iter;
         map_iter begin1;
         map_iter end1;
@@ -2074,7 +2074,7 @@ ret:
     {
         mutex::scoped_lock lock(m_mutex);
 
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         LIBED2K_ASSERT(m_files.piece_length() > 0);
 
@@ -2286,7 +2286,7 @@ ret:
         have_piece = -1;
         if (m_state == state_expand_pieces)
         {
-            INVARIANT_CHECK;
+            LIBED2K_INVARIANT_CHECK;
 
             if (m_scratch_piece >= 0)
             {
@@ -2783,7 +2783,7 @@ ret:
         if (m_storage_mode != internal_storage_mode_compact_deprecated) return piece_index;
 
 #ifdef LIBED2K_EXPENSIVE_INVARIANT_CHECKS
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 #endif
 
         LIBED2K_ASSERT(piece_index >= 0);
@@ -2899,7 +2899,7 @@ ret:
         LIBED2K_ASSERT(num_slots > 0);
 
 #ifdef LIBED2K_EXPENSIVE_INVARIANT_CHECKS
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 #endif
 
         LIBED2K_ASSERT(!m_unallocated_slots.empty());

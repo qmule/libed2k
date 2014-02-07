@@ -67,12 +67,12 @@ namespace libed2k
 }
 
 #if defined LIBED2K_DEBUG && !defined LIBED2K_DISABLE_INVARIANT_CHECKS
-#define INVARIANT_CHECK \
+#define LIBED2K_INVARIANT_CHECK \
 	invariant_checker const& _invariant_check = libed2k_make_invariant_checker(*this); \
 	(void)_invariant_check; \
 	do {} while (false)
 #else
-#define INVARIANT_CHECK do {} while (false)
+#define LIBED2K_INVARIANT_CHECK do {} while (false)
 #endif
 
 #endif // LIBED2K_INVARIANT_ACCESS_HPP_INCLUDED

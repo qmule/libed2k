@@ -565,12 +565,12 @@ namespace libed2k
      */
     struct id_change
     {
-        client_id_type  m_nClientId;
-        boost::uint32_t m_nTCPFlags;
-        boost::uint32_t m_nAuxPort;
+        client_id_type  m_client_id;
+        boost::uint32_t m_tcp_flags;
+        boost::uint32_t m_aux_port;
 
         id_change() :
-            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0)
+            m_client_id(0), m_tcp_flags(0), m_aux_port(0)
         {
         }
 
@@ -579,11 +579,19 @@ namespace libed2k
         void serialize(Archive& ar)
         {
             // always read/write client id;
-            ar & m_nClientId;
-            DECREMENT_READ(ar.bytes_left(), m_nTCPFlags);
-            DECREMENT_READ(ar.bytes_left(), m_nAuxPort);
+            ar & m_client_id;
+            DECREMENT_READ(ar.bytes_left(), m_tcp_flags);
+            DECREMENT_READ(ar.bytes_left(), m_aux_port);
         }
     };
+
+    inline std::ostream& operator<<(std::ostream& stream, const id_change& id)
+    {
+        stream  << "cid: " << id.m_client_id
+                << ", tcpf: " << id.m_tcp_flags
+                << ", auxp: " << id.m_aux_port;
+        return stream;
+    }
 
     /**
       * call back request from server to client

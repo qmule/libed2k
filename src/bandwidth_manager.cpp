@@ -86,7 +86,7 @@ namespace libed2k
         , bandwidth_channel* chan5
         )
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
         if (m_abort) return 0;
 
         LIBED2K_ASSERT(blk > 0);
@@ -131,7 +131,7 @@ namespace libed2k
         if (m_abort) return;
         if (m_queue.empty()) return;
 
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         int dt_milliseconds = total_milliseconds(dt);
         if (dt_milliseconds > 3000) dt_milliseconds = 3000;

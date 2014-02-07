@@ -19,6 +19,7 @@
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/io_service.hpp"
+#include "libed2k/server_connection.hpp"
 
 using namespace libed2k;
 
@@ -226,26 +227,26 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
         {
             server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
-            DBG("ALERT:  " << "server initalized: cid: " << p->m_nClientId);
+            DBG("ALERT:  " << "server initalized: cid: " << p->client_id);
         }
         else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
         {
-            DBG("ALERT: server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->m_strServer);
+            DBG("ALERT: server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->endpoint);
         }
         else if (dynamic_cast<server_status_alert*>(a.get()))
         {
             server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
-            DBG("ALERT: server status: files count: " << p->m_nFilesCount << " users count " << p->m_nUsersCount);
+            DBG("ALERT: server status: files count: " << p->files_count << " users count " << p->users_count);
         }
         else if (dynamic_cast<server_message_alert*>(a.get()))
         {
             server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
-            DBG("ALERT: " << "msg: " << p->m_strMessage);
+            DBG("ALERT: " << "msg: " << p->server_message);
         }
         else if (dynamic_cast<server_identity_alert*>(a.get()))
         {
             server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
-            DBG("ALERT: server_identity_alert: " << p->m_hServer << " name:  " << p->m_strName << " descr: " << p->m_strDescr);
+            DBG("ALERT: server_identity_alert: " << p->server_hash << " name:  " << p->server_name << " descr: " << p->server_descr);
         }
         else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
         {
@@ -406,16 +407,11 @@ int main(int argc, char* argv[])
     libed2k::session_settings settings;
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
-    settings.server_keep_alive_timeout = -1;
-    settings.server_reconnect_timeout = -1;
-    settings.server_hostname = argv[1];
-    settings.server_timeout = 5;
-    settings.server_port = atoi(argv[2]);
-    settings.m_announce_timeout = 8;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
+    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 20, 20, 10, 10, 10);
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
@@ -461,6 +457,7 @@ int main(int argc, char* argv[])
 
     std::string strArg;
     std::deque<std::string> vpaths;
+    ses.server_connect(scp);
 
     while ((std::cin >> strUser))
     {
@@ -757,10 +754,10 @@ int main(int argc, char* argv[])
                 break;
             }
             case cc_connect:
-                ses.server_conn_start();
+                ses.server_connect(scp);
                 break;
             case cc_disconnect:
-                ses.server_conn_stop();
+                ses.server_disconnect();
                 break;
             case cc_listen:
                 {
@@ -796,10 +793,10 @@ int main(int argc, char* argv[])
             switch(strUser.at(0))
             {
             case 'd':
-                ses.server_conn_stop();
+                ses.server_disconnect();
                 break;
             case 'c':
-                ses.server_conn_start();
+                ses.server_connect(scp);
                 break;
             case 'f':
                 {

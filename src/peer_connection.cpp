@@ -2132,7 +2132,7 @@ void peer_connection::on_ismod_files_request(const error_code& error)
                 i != coll.m_files.end(); ++i)
             {
                 boost::shared_ptr<transfer> t = m_ses.find_transfer(i->m_filehash).lock();
-                if (t) ans.m_files.m_collection.push_back(t->getAnnounce());
+                if (t) ans.m_files.m_collection.push_back(t->get_announce());
             }
 
             DBG("ismod directory content: {hash: " << ans.m_hdirectory <<
@@ -2252,7 +2252,7 @@ void peer_connection::on_shared_directory_files_request(const error_code& error)
                     i != coll.m_files.end(); ++i)
                 {
                     boost::shared_ptr<transfer> t = m_ses.find_transfer(i->m_filehash).lock();
-                    if (t) ans.m_list.m_collection.push_back(t->getAnnounce());
+                    if (t) ans.m_list.m_collection.push_back(t->get_announce());
                 }
 
                 DBG("shared directory files: {dir: " << ans.m_directory.m_collection <<

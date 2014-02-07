@@ -1352,7 +1352,7 @@ namespace libed2k
         }
     }
 
-    shared_file_entry transfer::getAnnounce() const
+    shared_file_entry transfer::get_announce() const
     {
         shared_file_entry entry;
 
@@ -1816,7 +1816,7 @@ namespace libed2k
 
     shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran)
     {
-        return tran.second->getAnnounce();
+        return tran.second->get_announce();
     }
 
 }
