@@ -194,26 +194,20 @@ namespace libed2k
         return m_impl->m_settings.upload_rate_limit;
     }
 
-    void session::server_conn_start()
+    void session::server_connect(const server_connection_parameters& scp)
     {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_start, m_impl));
+        m_impl->m_io_service.post(boost::bind(&server_connection::start, m_impl->m_server_connection, scp));
     }
 
-    void session::server_conn_stop()
+    void session::server_disconnect()
     {
-        m_impl->m_io_service.post(boost::bind(&aux::session_impl::server_conn_stop, m_impl));
+        m_impl->m_io_service.post(boost::bind(&server_connection::stop, m_impl->m_server_connection, boost::asio::error::operation_aborted));
     }
 
-    bool session::server_conn_online() const
+    bool session::server_connection_established() const
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return (m_impl->server_connection_state() == SC_ONLINE);
-    }
-
-    bool session::server_conn_offline() const
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return (m_impl->server_connection_state() == SC_OFFLINE);
+        return m_impl->m_server_connection->connected();
     }
 
     void session::pause()

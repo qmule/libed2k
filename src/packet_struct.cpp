@@ -135,16 +135,28 @@ namespace libed2k
     net_identifier::net_identifier(const tcp::endpoint& ep):
         m_nIP(address2int(ep.address())), m_nPort(ep.port()) {}
 
+    std::string net_identifier::to_string() const
+    {
+        std::stringstream s;
+        s << int2ipstr(m_nIP) << ":" << m_nPort;
+        return s.str();
+    }
+
     void net_identifier::dump() const
     {
-        DBG("net_identifier::dump(IP=" << int2ipstr(m_nIP) << " port=" << m_nPort << ")");
+        DBG("{" << to_string() << "}");
+    }
+
+    std::ostream& operator<<(std::ostream& stream, const net_identifier& np)
+    {
+        stream << np.to_string();
+        return stream;
     }
 
     void server_info_entry::dump() const
     {
-        DBG("server_info_entry::dump");
+        DBG("server_info_entry::dump { " << m_network_point.to_string() << "}");
         m_hServer.dump();
-        m_network_point.dump();
         m_list.dump();
     }
 
@@ -171,9 +183,8 @@ namespace libed2k
 
     void shared_file_entry::dump() const
     {
-        DBG("shared_file_entry::dump()");
+        DBG("shared_file_entry::dump{" << m_network_point.to_string() << "}");
         m_hFile.dump();
-        m_network_point.dump();
         m_list.dump();
     }
 

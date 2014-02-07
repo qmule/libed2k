@@ -23,6 +23,7 @@ namespace libed2k {
     struct ip_filter;
     class upnp;
     class natpmp;
+    struct server_connection_parameters;
 
     namespace aux
     {
@@ -89,10 +90,9 @@ namespace libed2k {
         int download_rate_limit() const;
         int upload_rate_limit() const;
 
-        void server_conn_start();
-        void server_conn_stop();
-        bool server_conn_online() const;
-        bool server_conn_offline() const;
+        void server_connect(const server_connection_parameters&);
+        void server_disconnect();
+        bool server_connection_established() const;
 
         void pause();
         void resume();

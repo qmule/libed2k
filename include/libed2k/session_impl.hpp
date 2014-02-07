@@ -76,8 +76,9 @@ namespace libed2k {
         class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
-            typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
-            typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
+            typedef std::map<std::pair<std::string, boost::uint32_t>,   md4_hash> transfer_filename_map;
+            typedef std::map<md4_hash, boost::shared_ptr<transfer> >    transfer_map;
+            typedef std::map<client_id_type, md4_hash>                  lowid_callbacks_map;
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
@@ -97,6 +98,9 @@ namespace libed2k {
             size_t set_alert_queue_size_limit(size_t queue_size_limit_);
             void set_alert_dispatch(boost::function<void(alert const&)> const&);
             alert const* wait_for_alert(time_duration max_wait);
+            md4_hash callbacked_lowid(client_id_type);
+            bool register_callback(client_id_type, md4_hash);
+            void cleanup_callbacks();
 
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
@@ -127,7 +131,8 @@ namespace libed2k {
             alert_manager m_alerts;
 
             /** file hasher closed in self thread */
-            transfer_params_maker    m_tpm;
+            transfer_params_maker   m_tpm;
+            lowid_callbacks_map     lowid_conn_dict;
         };
 
         class session_impl : public session_impl_base
@@ -157,7 +162,6 @@ namespace libed2k {
             bool is_listening() const;
             boost::uint16_t listen_port() const;
             boost::uint16_t ssl_listen_port() const;
-            char server_connection_state() const;
 
             void update_disk_thread_settings();
 
@@ -292,20 +296,6 @@ namespace libed2k {
              */
             boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
-            /**
-              * announce transfers
-              * will perform only when server connection online
-             */
-            void announce(int tick_interval_ms);
-
-            /**
-              * perform reconnect to server
-              * will perform only when server connection offline
-             */
-            void reconnect(int tick_interval_ms);
-            void server_conn_start();
-            void server_conn_stop();
-
             void update_connections_limit();
             void update_rate_settings();
             void update_active_transfers();
@@ -407,17 +397,7 @@ namespace libed2k {
             duration_timer m_second_timer;
             // the timer used to fire the tick
             deadline_timer m_timer;
-
             ptime m_last_tick;
-            // duration in milliseconds since last server connection was executed
-            int m_last_connect_duration;
-            // duration in milliseconds since last announce check was performed
-            int m_last_announce_duration;
-            // ismod extension - share user as file
-            bool m_user_announced;
-            // last measured server connection state
-            char m_server_connection_state;
-
             // total redundant and failed bytes
             size_type m_total_failed_bytes;
             size_type m_total_redundant_bytes;

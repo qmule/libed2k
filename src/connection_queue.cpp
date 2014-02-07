@@ -71,7 +71,7 @@ namespace libed2k
 	{
 		mutex_t::scoped_lock l(m_mutex);
 
-		INVARIANT_CHECK;
+		LIBED2K_INVARIANT_CHECK;
 
 		LIBED2K_ASSERT(priority >= 0);
 		LIBED2K_ASSERT(priority < 3);
@@ -108,7 +108,7 @@ namespace libed2k
 	{
 		mutex_t::scoped_lock l(m_mutex);
 
-		INVARIANT_CHECK;
+		LIBED2K_INVARIANT_CHECK;
 
 		std::list<entry>::iterator i = std::find_if(m_queue.begin()
 			, m_queue.end(), boost::bind(&entry::ticket, _1) == ticket);
@@ -186,7 +186,7 @@ namespace libed2k
 
 	void connection_queue::try_connect(connection_queue::mutex_t::scoped_lock& l)
 	{
-		INVARIANT_CHECK;
+		LIBED2K_INVARIANT_CHECK;
 
 #ifdef LIBED2K_CONNECTION_LOGGING
 		m_log << log_time() << " " << free_slots() << std::endl;
@@ -226,7 +226,7 @@ namespace libed2k
 			++m_num_connecting;
 			i->expires = expire;
 
-			INVARIANT_CHECK;
+			LIBED2K_INVARIANT_CHECK;
 
 			to_connect.push_back(*i);
 
@@ -269,7 +269,7 @@ namespace libed2k
 #endif
 		mutex_t::scoped_lock l(m_mutex);
 
-		INVARIANT_CHECK;
+		LIBED2K_INVARIANT_CHECK;
 #ifdef LIBED2K_DEBUG
 		function_guard guard_(m_in_timeout_function);
 #endif

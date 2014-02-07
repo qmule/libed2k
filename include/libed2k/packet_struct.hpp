@@ -10,6 +10,7 @@
 #include <libed2k/ctag.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/assert.hpp>
+#include <sstream>
 
 namespace libed2k
 {
@@ -448,8 +449,11 @@ namespace libed2k
         }
 
         bool empty() const {return ((m_nIP == 0) || (m_nPort == 0)); }
+        std::string to_string() const;
         void dump() const;
     };
+
+    extern std::ostream& operator<<(std::ostream&, const net_identifier& np);
 
     /**
       * shared file item structure in offer list
@@ -561,12 +565,12 @@ namespace libed2k
      */
     struct id_change
     {
-        client_id_type  m_nClientId;
-        boost::uint32_t m_nTCPFlags;
-        boost::uint32_t m_nAuxPort;
+        client_id_type  m_client_id;
+        boost::uint32_t m_tcp_flags;
+        boost::uint32_t m_aux_port;
 
         id_change() :
-            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0)
+            m_client_id(0), m_tcp_flags(0), m_aux_port(0)
         {
         }
 
@@ -575,14 +579,22 @@ namespace libed2k
         void serialize(Archive& ar)
         {
             // always read/write client id;
-            ar & m_nClientId;
-            DECREMENT_READ(ar.bytes_left(), m_nTCPFlags);
-            DECREMENT_READ(ar.bytes_left(), m_nAuxPort);
+            ar & m_client_id;
+            DECREMENT_READ(ar.bytes_left(), m_tcp_flags);
+            DECREMENT_READ(ar.bytes_left(), m_aux_port);
         }
     };
 
+    inline std::ostream& operator<<(std::ostream& stream, const id_change& id)
+    {
+        stream  << "cid: " << id.m_client_id
+                << ", tcpf: " << id.m_tcp_flags
+                << ", auxp: " << id.m_aux_port;
+        return stream;
+    }
+
     /**
-      * callback request from server to client
+      * call back request from server to client
      */
     struct callback_request_in
     {
@@ -596,20 +608,18 @@ namespace libed2k
     };
 
     /**
-      * callback request failed
+      * call back request failed
      */
     struct callback_req_fail
     {
-        boost::uint32_t m_nClientId;
     };
 
     /**
-      * callback request from client to server
+      * call back request from client to server
      */
     struct callback_request_out
     {
         client_id_type      m_nClientId;
-
         template<typename Archive>
         void serialize(Archive& ar)
         {
@@ -1462,6 +1472,20 @@ namespace libed2k
         }
     };
 
+    struct client_public_ip_request{
+        template<typename Archive> void serialize(Archive& ar) { }
+    };
+
+    struct client_public_ip_answer{
+        client_id_type  client_id;
+        client_public_ip_answer(client_id_type id) : client_id(id)
+        {}
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id;
+        }
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1598,6 +1622,17 @@ namespace libed2k
         static const proto_type value   = OP_CHATCAPTCHARES;
         static const proto_type protocol= OP_EMULEPROT;
     };
+
+    template<> struct packet_type<client_public_ip_request>{
+        static const proto_type value   = OP_PUBLICIP_REQ;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+
+    template<> struct packet_type<client_public_ip_answer>{
+        static const proto_type value   = OP_PUBLICIP_ANSWER;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+
     template<> struct packet_type<client_directory_answer>{
         static const proto_type value       = OP_ASKSHAREDFILESANSWER;
         static const proto_type protocol    = OP_EDONKEYPROT;

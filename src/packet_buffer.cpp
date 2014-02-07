@@ -66,7 +66,7 @@ namespace libed2k {
 
     void* packet_buffer::insert(index_type idx, void* value)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         LIBED2K_ASSERT_VAL(idx <= 0xffff, idx);
         // you're not allowed to insert NULLs!
@@ -133,7 +133,7 @@ namespace libed2k {
 
     void* packet_buffer::at(index_type idx) const
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
         if (idx >= m_first + m_capacity)
             return 0;
 
@@ -148,7 +148,7 @@ namespace libed2k {
 
     void packet_buffer::reserve(std::size_t size)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
         LIBED2K_ASSERT_VAL(size <= 0xffff, size);
         std::size_t new_size = m_capacity == 0 ? 16 : m_capacity;
 
@@ -171,7 +171,7 @@ namespace libed2k {
 
     void* packet_buffer::remove(index_type idx)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
         // TODO: use compare_less_wrap for this comparison as well
         if (idx >= m_first + m_capacity)
             return 0;
