@@ -51,6 +51,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include <libed2k/utf8.hpp>
+#include <libed2k/string_util.hpp>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
