@@ -1114,6 +1114,9 @@ void session_impl::abort()
         i->sock->close(ec);
     }
 
+    stop_upnp();
+    stop_natpmp();
+
     DBG("aborting all transfers (" << m_transfers.size() << ")");
     // abort all transfers
     for (transfer_map::iterator i = m_transfers.begin(),
