@@ -21,7 +21,7 @@ namespace libed2k
         keep_alive_timeout(pos_infin),
         reconnect_timeout(pos_infin),
         announce_timeout(pos_infin),
-        announce_items_per_call_limit(0)
+        announce_items_per_call_limit(50)
     {}
 
     server_connection_parameters::server_connection_parameters(const std::string& n, const std::string& h, int p,
