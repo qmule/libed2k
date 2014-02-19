@@ -129,8 +129,9 @@ namespace libed2k
     template<typename T>
     void server_connection::do_write(T& t)
     {
-        // temporary assert
-        LIBED2K_ASSERT(current_operation == scs_handshake || current_operation == scs_start);
+        // skip all requests to server before connection opened
+        if (current_operation != scs_handshake && current_operation != scs_start)
+            return;
 
         CHECK_ABORTED()
 
