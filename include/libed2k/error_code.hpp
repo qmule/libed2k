@@ -11,6 +11,10 @@
 
 #include <boost/system/error_code.hpp>
 
+#ifndef BOOST_SYSTEM_NOEXCEPT
+#define BOOST_SYSTEM_NOEXCEPT throw()
+#endif
+
 namespace libed2k
 {
     namespace errors
@@ -65,6 +69,7 @@ namespace libed2k
             transfer_aborted,
             transfer_removed,
             stopping_transfer,
+            no_router,
             timed_out,
             timed_out_inactivity,
             self_connection,
@@ -77,6 +82,18 @@ namespace libed2k
             session_pointer_is_null,
             destructing_transfer,
             transfer_not_ready,
+            // natpmp errors
+            unsupported_protocol_version,
+            natpmp_not_authorized,
+            network_failure,
+            no_resources,
+            unsupported_opcode,
+            // HTTP errors
+            http_parse_error,
+            http_missing_location,
+            http_failed_decompress,
+            // i2p errors
+            no_i2p_router,
             // service errors
             filesize_is_zero,
             file_was_truncated,

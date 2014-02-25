@@ -21,6 +21,8 @@ namespace libed2k {
     struct transfer_handle;
     class add_transfer_params;
     struct ip_filter;
+    class upnp;
+    class natpmp;
     struct server_connection_parameters;
 
     namespace aux
@@ -96,6 +98,12 @@ namespace libed2k {
         void resume();
         void make_transfer_parameters(const std::string& filepath);
         void cancel_transfer_parameters(const std::string& filepath);
+
+        natpmp* start_natpmp();
+        upnp* start_upnp();
+
+        void stop_natpmp();
+        void stop_upnp();
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

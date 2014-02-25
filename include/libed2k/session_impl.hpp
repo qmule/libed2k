@@ -26,6 +26,7 @@
 #include "libed2k/connection_queue.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/io_service.hpp"
+#include "libed2k/udp_socket.hpp"
 
 namespace libed2k {
 
@@ -35,6 +36,8 @@ namespace libed2k {
     class add_transfer_params;
     struct transfer_handle;
     struct listen_socket_t;
+    class upnp;
+    class natpmp;
 
     namespace aux
     {
@@ -157,7 +160,8 @@ namespace libed2k {
 
             bool listen_on(int port, const char* net_interface);
             bool is_listening() const;
-            unsigned short listen_port() const;
+            boost::uint16_t listen_port() const;
+            boost::uint16_t ssl_listen_port() const;
 
             void update_disk_thread_settings();
 
@@ -167,6 +171,25 @@ namespace libed2k {
                                       error_code const& e);
 
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
+
+            void on_port_map_log(char const* msg, int map_transport);
+
+            // called when a port mapping is successful, or a router returns
+            // a failure to map a port
+            void on_port_mapping(int mapping, address const& ip, int port, error_code const& ec, int nat_transport);
+
+			void on_receive_udp(error_code const& e, udp::endpoint const& ep, char const* buf, int len);
+			void on_receive_udp_hostname(error_code const& e, char const* hostname, char const* buf, int len);
+
+            void maybe_update_udp_mapping(int nat, int local_port, int external_port);
+
+            enum
+            {
+                source_dht = 1,
+                source_peer = 2,
+                source_tracker = 4,
+                source_router = 8
+            };
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
             virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename);
@@ -277,6 +300,12 @@ namespace libed2k {
             void update_rate_settings();
             void update_active_transfers();
 
+			natpmp* start_natpmp();
+			upnp* start_upnp();
+
+			void stop_natpmp();
+			void stop_upnp();
+
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info
@@ -376,10 +405,32 @@ namespace libed2k {
             // redundant bytes per category
             size_type m_redundant_bytes[7];
 
+            int m_queue_pos;
+
+            // see m_external_listen_port. This is the same
+            // but for the udp port used by the DHT.
+            int m_external_udp_port;
+
+            rate_limited_udp_socket m_udp_socket;
+
+            boost::intrusive_ptr<natpmp> m_natpmp;
+            boost::intrusive_ptr<upnp> m_upnp;
+
+            // mask is a bitmask of which protocols to remap on:
+            // 1: NAT-PMP
+            // 2: UPnP
+            void remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_port);
+
+            // 0 is natpmp 1 is upnp
+            int m_tcp_mapping[2];
+            int m_udp_mapping[2];
+#ifdef TORRENT_USE_OPENSSL
+            int m_ssl_mapping[2];
+#endif
+
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
-            int m_queue_pos;
         };
     }
 }

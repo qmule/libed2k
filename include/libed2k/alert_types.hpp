@@ -135,9 +135,9 @@ namespace libed2k
         error_code m_error;
     };
 
-    struct mule_listen_failed_alert: alert
+    struct listen_failed_alert: alert
     {
-        mule_listen_failed_alert(tcp::endpoint const& ep, error_code const& ec):
+        listen_failed_alert(tcp::endpoint const& ep, error_code const& ec):
             endpoint(ep), error(ec)
         {}
 
@@ -145,7 +145,7 @@ namespace libed2k
         error_code error;
 
         virtual std::auto_ptr<alert> clone() const
-        { return std::auto_ptr<alert>(new mule_listen_failed_alert(*this)); }
+        { return std::auto_ptr<alert>(new listen_failed_alert(*this)); }
         virtual char const* what() const { return "listen failed"; }
         const static int static_category = alert::status_notification | alert::error_notification;
         virtual int category() const { return static_category; }
@@ -815,7 +815,103 @@ namespace libed2k
         error_code          m_ec;
     };
 
+    struct portmap_log_alert : alert
+    {
+        portmap_log_alert(int t, std::string const& m) : map_type(t), msg(m)
+        {}
 
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_log_alert(*this)); }
+
+        virtual char const* what() const { return "portmap log"; }
+
+        const static int static_category = alert::port_mapping_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            char ret[600];
+            snprintf(ret, sizeof(ret), "%s: %s", type_str[map_type], msg.c_str());
+            return ret;
+        }
+
+        int map_type;
+        std::string msg;
+    };
+
+	struct portmap_alert : alert
+    {
+        portmap_alert(int i, int port, int t) : mapping(i), external_port(port), map_type(t)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_alert(*this)); }
+
+        virtual char const* what() const { return "portmap"; }
+
+        const static int static_category = alert::port_mapping_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            char ret[200];
+            snprintf(ret, sizeof(ret), "successfully mapped port using %s. external port: %u",
+                     type_str[map_type], external_port);
+            return ret;
+        }
+
+        int mapping;
+        int external_port;
+        int map_type;
+    };
+
+	struct portmap_error_alert : alert
+    {
+        portmap_error_alert(int i, int t, error_code const& e) :  mapping(i), map_type(t), error(e)
+        {
+        }
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_error_alert(*this)); }
+
+        virtual char const* what() const { return "portmap error"; }
+        virtual int category() const { return static_category; }
+        const static int static_category = alert::port_mapping_notification | alert::error_notification;
+
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            return std::string("could not map port using ") + type_str[map_type]
+                + ": " + convert_from_native(error.message());
+        }
+
+        int mapping;
+        int map_type;
+        error_code error;
+    };
+
+    struct udp_error_alert : alert
+	{
+        udp_error_alert(udp::endpoint const& ep, error_code const& ec): endpoint(ep), error(ec)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new udp_error_alert(*this)); }
+
+        virtual char const* what() const { return "UDP error"; }
+        virtual int category() const { return static_category; }
+
+        const static int static_category = alert::error_notification;
+        virtual std::string message() const
+        {
+            error_code ec;
+            return "UDP error: " + convert_from_native(error.message()) + " from: " +
+                endpoint.address().to_string(ec);
+        }
+
+        udp::endpoint endpoint;
+        error_code error;
+    };
 }
 
 

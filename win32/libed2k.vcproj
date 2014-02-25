@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
-				PreprocessorDefinitions="WIN32;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;LIBED2K_USE_BOOST_DATE_TIME;_WIN32_WINNT=0x0500;BOOST_ASIO_SEPARATE_COMPILATION"
+				PreprocessorDefinitions="WIN32;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;LIBED2K_USE_BOOST_DATE_TIME;_WIN32_WINNT=0x0500;BOOST_ASIO_SEPARATE_COMPILATION;BOOST_ASIO_ENABLE_CANCELIO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -110,7 +110,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500;UNICODE;LIBED2K_USE_BOOST_DATE_TIME;BOOST_ASIO_SEPARATE_COMPILATION"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500;UNICODE;LIBED2K_USE_BOOST_DATE_TIME;BOOST_ASIO_SEPARATE_COMPILATION;BOOST_ASIO_ENABLE_CANCELIO"
 				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -189,6 +189,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\broadcast_socket.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\chained_buffer.cpp"
 				>
 			</File>
@@ -221,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\enum_net.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\error_code.cpp"
 				>
 			</File>
@@ -245,6 +253,30 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\gzip.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\http_connection.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\http_parser.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\http_stream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\i2p_stream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\instantiate_connection.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ip_filter.cpp"
 				>
 			</File>
@@ -262,6 +294,14 @@
 			</File>
 			<File
 				RelativePath="..\src\md4_hash.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\natpmp.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\packet_buffer.cpp"
 				>
 			</File>
 			<File
@@ -293,6 +333,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\puff.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\random.cpp"
 				>
 			</File>
@@ -317,6 +361,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\socket_type.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\socks5_stream.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\stat.cpp"
 				>
 			</File>
@@ -325,11 +377,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\string_util.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\thread.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\time.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\timestamp_history.cpp"
 				>
 			</File>
 			<File
@@ -345,11 +405,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\udp_socket.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\upnp.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\utf8.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\src\util.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utp_socket_manager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utp_stream.cpp"
 				>
 			</File>
 		</Filter>
@@ -415,6 +491,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\broadcast_socket.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\buffer.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\chained_buffer.hpp"
 				>
 			</File>
@@ -463,6 +547,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\enum_net.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\error.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\error_code.hpp"
 				>
 			</File>
@@ -491,7 +583,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\gzip.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\hasher.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\http_connection.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\http_parser.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\http_stream.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\i2p_stream.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\instantiate_connection.hpp"
 				>
 			</File>
 			<File
@@ -508,6 +624,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\io_service.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\io_service_fwd.hpp"
 				>
 			</File>
 			<File
@@ -532,6 +652,14 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\md4_hash.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\natpmp.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\packet_buffer.hpp"
 				>
 			</File>
 			<File
@@ -583,7 +711,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\proxy_base.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\ptime.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\puff.hpp"
 				>
 			</File>
 			<File
@@ -631,6 +767,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\socket_type.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\socks5_stream.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\stat.hpp"
 				>
 			</File>
@@ -643,11 +787,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\string_util.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\thread.hpp"
 				>
 			</File>
 			<File
 				RelativePath="..\include\libed2k\time.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\timestamp_history.hpp"
 				>
 			</File>
 			<File
@@ -663,6 +815,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\udp_socket.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\upnp.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\utf8.hpp"
 				>
 			</File>
@@ -671,7 +831,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\utp_socket_manager.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\utp_stream.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\version.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\xml_parse.hpp"
 				>
 			</File>
 		</Filter>

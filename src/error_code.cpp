@@ -59,6 +59,7 @@ namespace libed2k
             "transfer aborted",
             "transfer removed",
             "stopping transfer",
+            "no router",
             "timed out",
             "timed out inactivity",
             "connection to itself",
@@ -71,6 +72,18 @@ namespace libed2k
             "session pointer is null",
             "destructing transfer",
             "transfer not ready",
+            // natpmp errors
+            "unsupported protocol version",
+            "natpmp not authorized",
+            "network failure",
+            "no resources",
+            "unsupported opcode",
+            // HTTP errors
+            "http parse error",
+            "http missing location",
+            "http failed decompress",
+            // i2p errors
+            "no i2p router",
             // service errors
             "file size is zero",
             "file was truncated",
