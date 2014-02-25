@@ -1,7 +1,10 @@
 LIB=libed2k.a
 
 CXXFLAGS = -I../include
-OBJF = $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
+OBJDIR=obj
+SRC_DIR=. kademlia
+SRC := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.cpp))
+OBJF = $(patsubst %.cpp,$(OBJDIR)/%.o, $(SRC))
 
 $(LIB): $(OBJF)
 	$(AR) $(ARFLAGS) $@ $^
