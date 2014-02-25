@@ -189,6 +189,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\bloom_filter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\broadcast_socket.cpp"
 				>
 			</File>
@@ -341,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\rsa.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\search.cpp"
 				>
 			</File>
@@ -354,6 +362,10 @@
 			</File>
 			<File
 				RelativePath="..\src\session_impl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\sha1.cpp"
 				>
 			</File>
 			<File
@@ -428,6 +440,42 @@
 				RelativePath="..\src\utp_stream.cpp"
 				>
 			</File>
+			<Filter
+				Name="kademlia"
+				>
+				<File
+					RelativePath="..\src\kademlia\dht_tracker.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\find_data.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\node.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\node_id.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\refresh.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\routing_table.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\rpc_manager.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\src\kademlia\traversal_algorithm.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -488,6 +536,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\bitfield.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\libed2k\bloom_filter.hpp"
 				>
 			</File>
 			<File
@@ -727,6 +779,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\rsa.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\search.hpp"
 				>
 			</File>
@@ -846,6 +902,58 @@
 				RelativePath="..\include\libed2k\xml_parse.hpp"
 				>
 			</File>
+			<Filter
+				Name="kademlia"
+				>
+				<File
+					RelativePath="..\include\libed2k\kademlia\dht_tracker.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\find_data.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\logging.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\msg.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\node.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\node_entry.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\node_id.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\observer.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\refresh.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\routing_table.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\rpc_manager.hpp"
+					>
+				</File>
+				<File
+					RelativePath="..\include\libed2k\kademlia\traversal_algorithm.hpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

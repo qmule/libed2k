@@ -20,6 +20,7 @@
 #include "libed2k/alert_types.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/util.hpp"
+#include "libed2k/random.hpp"
 
 namespace libed2k{
 namespace aux{
