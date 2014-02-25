@@ -33,11 +33,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef KADEMLIA_NODE_ENTRY_HPP
 #define KADEMLIA_NODE_ENTRY_HPP
 
-#include "libtorrent/kademlia/node_id.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/address.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/socket.hpp"
+#include "libed2k/address.hpp"
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 struct node_entry
@@ -48,7 +48,7 @@ struct node_entry
 		, timeout_count(pinged ? 0 : 0xffff)
 		, id(id_)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		first_seen = time_now();
 #endif
 	}
@@ -59,7 +59,7 @@ struct node_entry
 		, timeout_count(0xffff)
 		, id(0)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		first_seen = time_now();
 #endif
 	}
@@ -68,7 +68,7 @@ struct node_entry
 		: timeout_count(0xffff)
 		, id(0)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		first_seen = time_now();
 #endif
 	}
@@ -88,12 +88,12 @@ struct node_entry
 	// respond in a row
 	boost::uint16_t timeout_count;
 	node_id id;
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	ptime first_seen;
 #endif
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif
 

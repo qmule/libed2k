@@ -87,6 +87,7 @@ namespace libed2k
             ip_block_notification       = 0x100,
             performance_warning         = 0x200,
             server_notification         = 0x400,
+            dht_notification            = 0x400,
             stats_notification          = 0x800,
             all_categories = 0xffffffff
         };

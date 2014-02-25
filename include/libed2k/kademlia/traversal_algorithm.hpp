@@ -36,22 +36,22 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <set>
 
-#include <libtorrent/kademlia/node_id.hpp>
-#include <libtorrent/kademlia/routing_table.hpp>
-#include <libtorrent/kademlia/logging.hpp>
-#include <libtorrent/kademlia/observer.hpp>
-#include <libtorrent/address.hpp>
+#include <libed2k/kademlia/node_id.hpp>
+#include <libed2k/kademlia/routing_table.hpp>
+#include <libed2k/kademlia/logging.hpp>
+#include <libed2k/kademlia/observer.hpp>
+#include <libed2k/address.hpp>
 
 #include <boost/noncopyable.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/bind.hpp>
 #include <boost/pool/pool.hpp>
 
-namespace libtorrent { struct dht_lookup; }
-namespace libtorrent { namespace dht
+namespace libed2k { struct dht_lookup; }
+namespace libed2k { namespace dht
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DECLARE_LOG(traversal);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DECLARE_LOG(traversal);
 #endif
 
 class rpc_manager;
@@ -117,7 +117,7 @@ protected:
 	int m_num_target_nodes;
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif // TRAVERSAL_ALGORITHM_050324_HPP
 

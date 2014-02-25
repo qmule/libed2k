@@ -39,21 +39,21 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/pool.hpp>
 #include <boost/function/function3.hpp>
 
-#include <libtorrent/socket.hpp>
-#include <libtorrent/entry.hpp>
-#include <libtorrent/kademlia/node_id.hpp>
-#include <libtorrent/kademlia/logging.hpp>
-#include <libtorrent/kademlia/observer.hpp>
+#include <libed2k/socket.hpp>
+#include <libed2k/entry.hpp>
+#include <libed2k/kademlia/node_id.hpp>
+#include <libed2k/kademlia/logging.hpp>
+#include <libed2k/kademlia/observer.hpp>
 
-#include "libtorrent/ptime.hpp"
+#include "libed2k/ptime.hpp"
 
-namespace libtorrent { namespace aux { struct session_impl; } }
+namespace libed2k { namespace aux { struct session_impl; } }
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DECLARE_LOG(rpc);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DECLARE_LOG(rpc);
 #endif
 
 struct null_observer : public observer
@@ -65,7 +65,7 @@ struct null_observer : public observer
 
 class routing_table;
 
-class TORRENT_EXTRA_EXPORT rpc_manager
+class LIBED2K_EXTRA_EXPORT rpc_manager
 {
 public:
 	typedef bool (*send_fun)(void* userdata, entry&, udp::endpoint const&, int);
@@ -87,10 +87,10 @@ public:
 
 	void add_our_id(entry& e);
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	size_t allocation_size() const;
 #endif
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 	void check_invariant() const;
 #endif
 
@@ -118,7 +118,7 @@ private:
 	bool m_destructing;
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif
 

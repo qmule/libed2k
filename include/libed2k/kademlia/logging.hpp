@@ -30,18 +30,18 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_LOGGING_HPP
-#define TORRENT_LOGGING_HPP
+#ifndef LIBED2K_LOGGING_HPP
+#define LIBED2K_LOGGING_HPP
 
-#include "libtorrent/config.hpp"
+#include "libed2k/config.hpp"
 
-#if TORRENT_USE_IOSTREAM
+#if LIBED2K_USE_IOSTREAM
 
 #include <iostream>
 #include <fstream>
-#include "libtorrent/ptime.hpp"
+#include "libed2k/ptime.hpp"
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 class log
@@ -130,24 +130,24 @@ public:
 	}
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
-#define TORRENT_DECLARE_LOG(name) \
-	libtorrent::dht::log& name ## _log()
+#define LIBED2K_DECLARE_LOG(name) \
+	libed2k::dht::log& name ## _log()
 
-#define TORRENT_DEFINE_LOG(name) \
-	libtorrent::dht::log& name ## _log() \
+#define LIBED2K_DEFINE_LOG(name) \
+	libed2k::dht::log& name ## _log() \
 	{ \
 		static std::ofstream log_file("dht.log", std::ios::app); \
-		static libtorrent::dht::log instance(#name, log_file); \
+		static libed2k::dht::log instance(#name, log_file); \
 		return instance; \
 	}
 
-#define TORRENT_LOG(name) \
-	if (libtorrent::dht::inverted_log_event event_object__ = name ## _log()); \
+#define LIBED2K_LOG(name) \
+	if (libed2k::dht::inverted_log_event event_object__ = name ## _log()); \
 	else static_cast<log_event&>(event_object__)
 
-#endif // TORRENT_USE_IOSTREAM
+#endif // LIBED2K_USE_IOSTREAM
 
 #endif
 

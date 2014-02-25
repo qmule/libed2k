@@ -30,19 +30,19 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
-#include <libtorrent/kademlia/refresh.hpp>
-#include <libtorrent/kademlia/rpc_manager.hpp>
-#include <libtorrent/kademlia/node.hpp>
+#include <libed2k/kademlia/refresh.hpp>
+#include <libed2k/kademlia/rpc_manager.hpp>
+#include <libed2k/kademlia/node.hpp>
 
-#include <libtorrent/io.hpp>
+#include <libed2k/io.hpp>
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_DECLARE_LOG(traversal);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_DECLARE_LOG(traversal);
 #endif
 
 refresh::refresh(
@@ -62,7 +62,7 @@ observer_ptr refresh::new_observer(void* ptr
 	, udp::endpoint const& ep, node_id const& id)
 {
 	observer_ptr o(new (ptr) find_data_observer(this, ep, id));
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	o->m_in_constructor = false;
 #endif
 	return o;
@@ -93,8 +93,8 @@ char const* bootstrap::name() const { return "bootstrap"; }
 
 void bootstrap::done()
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(traversal) << " [" << this << "]"
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(traversal) << " [" << this << "]"
 		<< " bootstrap done, pinging remaining nodes";
 #endif
 
@@ -108,5 +108,5 @@ void bootstrap::done()
 	refresh::done();
 }
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 

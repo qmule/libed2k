@@ -42,25 +42,25 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <set>
 #include <list>
 
-#include <libtorrent/kademlia/logging.hpp>
+#include <libed2k/kademlia/logging.hpp>
 
-#include <libtorrent/kademlia/node_id.hpp>
-#include <libtorrent/kademlia/node_entry.hpp>
-#include <libtorrent/session_settings.hpp>
-#include <libtorrent/size_type.hpp>
-#include <libtorrent/assert.hpp>
-#include <libtorrent/ptime.hpp>
+#include <libed2k/kademlia/node_id.hpp>
+#include <libed2k/kademlia/node_entry.hpp>
+#include <libed2k/session_settings.hpp>
+#include <libed2k/size_type.hpp>
+#include <libed2k/assert.hpp>
+#include <libed2k/ptime.hpp>
 
-namespace libtorrent
+namespace libed2k
 {
 	struct session_status;
 }
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DECLARE_LOG(table);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DECLARE_LOG(table);
 #endif
 
 	
@@ -83,7 +83,7 @@ struct routing_table_node
 // 	bucket has failed, then it is put in the replacement
 // 	cache (just like in the paper).
 
-class TORRENT_EXTRA_EXPORT routing_table
+class LIBED2K_EXTRA_EXPORT routing_table
 {
 public:
 	typedef std::vector<routing_table_node> table_t;
@@ -158,7 +158,7 @@ public:
 	
 	void replacement_cache(bucket_t& nodes) const;
 
-#if defined TORRENT_DHT_VERBOSE_LOGGING || defined TORRENT_DEBUG
+#if defined LIBED2K_DHT_VERBOSE_LOGGING || defined LIBED2K_DEBUG
 	// used for debug and monitoring purposes. This will print out
 	// the state of the routing table to the given stream
 	void print_state(std::ostream& os) const;
@@ -215,7 +215,7 @@ private:
 	std::multiset<address_v4::bytes_type> m_ips;
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif // ROUTING_TABLE_HPP
 

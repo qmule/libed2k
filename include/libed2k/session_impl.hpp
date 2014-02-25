@@ -27,6 +27,8 @@
 #include "libed2k/session_status.hpp"
 #include "libed2k/io_service.hpp"
 #include "libed2k/udp_socket.hpp"
+#include "libed2k/bloom_filter.hpp"
+#include "libed2k/kademlia/dht_tracker.hpp"
 
 namespace libed2k {
 
@@ -305,6 +307,76 @@ namespace libed2k {
 
 			void stop_natpmp();
 			void stop_upnp();
+
+			void set_external_address(address const& ip
+			                                , int source_type, address const& source);
+			address const& external_address() const { return m_external_address; }
+
+			// TODO - should be implemented
+            bool is_network_thread() const
+            {
+#if defined BOOST_HAS_PTHREADS
+                    //if (m_network_thread == 0) return true;
+                    //return m_network_thread == pthread_self();
+#endif
+                    return true;
+            }
+
+
+            struct external_ip_t
+            {
+                    external_ip_t(): sources(0), num_votes(0) {}
+
+                    bool add_vote(sha1_hash const& k, int type);
+                    bool operator<(external_ip_t const& rhs) const
+                    {
+                            if (num_votes < rhs.num_votes) return true;
+                            if (num_votes > rhs.num_votes) return false;
+                            return sources < rhs.sources;
+                    }
+
+                    // this is a bloom filter of the IPs that have
+                    // reported this address
+                    bloom_filter<16> voters;
+                    // this is the actual external address
+                    address addr;
+                    // a bitmask of sources the reporters have come from
+                    boost::uint16_t sources;
+                    // the total number of votes for this IP
+                    boost::uint16_t num_votes;
+            };
+
+            // this is a bloom filter of all the IPs that have
+            // been the first to report an external address. Each
+            // IP only gets to add a new item once.
+            bloom_filter<32> m_external_address_voters;
+            std::vector<external_ip_t> m_external_addresses;
+            address m_external_address;
+
+#ifndef TORRENT_DISABLE_DHT
+            entry dht_state() const;
+            void add_dht_node_name(std::pair<std::string, int> const& node);
+            void add_dht_node(udp::endpoint n);
+            void add_dht_router(std::pair<std::string, int> const& node);
+            void set_dht_settings(dht_settings const& s);
+            dht_settings const& get_dht_settings() const { return m_dht_settings; }
+            void start_dht();
+            void stop_dht();
+            void start_dht(entry const& startup_state);
+
+            entry m_dht_state;
+            boost::intrusive_ptr<dht::dht_tracker> m_dht;
+            dht_settings m_dht_settings;
+
+            // these are used when starting the DHT
+            // (and bootstrapping it), and then erased
+            std::list<udp::endpoint> m_dht_router_nodes;
+
+            // this announce timer is used
+            // by the DHT.
+            deadline_timer m_dht_announce_timer;
+#endif
+
 
             boost::object_pool<peer> m_peer_pool;
 

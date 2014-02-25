@@ -34,15 +34,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #define MSG_HPP
 
 #include <string>
-#include <libtorrent/kademlia/node_id.hpp>
-#include "libtorrent/lazy_entry.hpp"
+#include <libed2k/kademlia/node_id.hpp>
+#include "libed2k/lazy_entry.hpp"
 #if BOOST_VERSION < 103500
 #include <asio/ip/udp.hpp>
 #else
 #include <boost/asio/ip/udp.hpp>
 #endif
 
-namespace libtorrent {
+namespace libed2k {
 namespace dht {
 
 typedef std::vector<char> packet_t;

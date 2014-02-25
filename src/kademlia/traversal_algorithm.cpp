@@ -30,30 +30,30 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
-#include "libtorrent/time.hpp" // for total_seconds
+#include "libed2k/time.hpp" // for total_seconds
 
-#include <libtorrent/kademlia/traversal_algorithm.hpp>
-#include <libtorrent/kademlia/routing_table.hpp>
-#include <libtorrent/kademlia/rpc_manager.hpp>
-#include <libtorrent/kademlia/node.hpp>
-#include <libtorrent/session_status.hpp>
-#include "libtorrent/broadcast_socket.hpp" // for cidr_distance
+#include <libed2k/kademlia/traversal_algorithm.hpp>
+#include <libed2k/kademlia/routing_table.hpp>
+#include <libed2k/kademlia/rpc_manager.hpp>
+#include <libed2k/kademlia/node.hpp>
+#include <libed2k/session_status.hpp>
+#include "libed2k/broadcast_socket.hpp" // for cidr_distance
 
 #include <boost/bind.hpp>
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DEFINE_LOG(traversal)
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DEFINE_LOG(traversal)
 #endif
 
 observer_ptr traversal_algorithm::new_observer(void* ptr
 	, udp::endpoint const& ep, node_id const& id)
 {
 	observer_ptr o(new (ptr) null_observer(boost::intrusive_ptr<traversal_algorithm>(this), ep, id));
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	o->m_in_constructor = false;
 #endif
 	return o;
@@ -71,8 +71,8 @@ traversal_algorithm::traversal_algorithm(
 	, m_timeouts(0)
 	, m_num_target_nodes(m_node.m_table.bucket_size() * 2)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(traversal) << " [" << this << "] new traversal process. Target: " << target;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(traversal) << " [" << this << "] new traversal process. Target: " << target;
 #endif
 }
 
@@ -93,12 +93,12 @@ bool compare_ip_cidr(observer_ptr const& lhs, observer_ptr const& rhs)
 
 void traversal_algorithm::add_entry(node_id const& id, udp::endpoint addr, unsigned char flags)
 {
-	TORRENT_ASSERT(m_node.m_rpc.allocation_size() >= sizeof(find_data_observer));
+	LIBED2K_ASSERT(m_node.m_rpc.allocation_size() >= sizeof(find_data_observer));
 	void* ptr = m_node.m_rpc.allocate_observer();
 	if (ptr == 0)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << "[" << this << ":" << name()
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << "[" << this << ":" << name()
 			<< "] failed to allocate memory for observer. aborting!";
 #endif
 		done();
@@ -139,8 +139,8 @@ void traversal_algorithm::add_entry(node_id const& id, udp::endpoint addr, unsig
 				// we already have a node in this search with an IP very
 				// close to this one. We know that it's not the same, because
 				// it claims a different node-ID. Ignore this to avoid attacks
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(traversal) << "ignoring DHT search entry: " << o->id()
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(traversal) << "ignoring DHT search entry: " << o->id()
 				<< " " << o->target_addr()
 				<< " existing node: "
 				<< (*j)->id() << " " << (*j)->target_addr();
@@ -148,10 +148,10 @@ void traversal_algorithm::add_entry(node_id const& id, udp::endpoint addr, unsig
 				return;
 			}
 		}
-		TORRENT_ASSERT(std::find_if(m_results.begin(), m_results.end()
+		LIBED2K_ASSERT(std::find_if(m_results.begin(), m_results.end()
 			, boost::bind(&observer::id, _1) == id) == m_results.end());
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << "[" << this << ":" << name()
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << "[" << this << ":" << name()
 			<< "] adding result: " << id << " " << addr;
 #endif
 		i = m_results.insert(i, o);
@@ -159,7 +159,7 @@ void traversal_algorithm::add_entry(node_id const& id, udp::endpoint addr, unsig
 
 	if (m_results.size() > 100)
 	{
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		for (int i = 100; i < m_results.size(); ++i)
 			m_results[i]->m_was_abandoned = true;
 #endif
@@ -189,9 +189,9 @@ void traversal_algorithm::free_observer(void* ptr)
 
 void traversal_algorithm::traverse(node_id const& id, udp::endpoint addr)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	if (id.is_all_zeros())
-		TORRENT_LOG(traversal) << time_now_string() << "[" << this << ":" << name()
+		LIBED2K_LOG(traversal) << time_now_string() << "[" << this << ":" << name()
 			<< "] WARNING: node returned a list which included a node with id 0";
 #endif
 	add_entry(id, addr, 0);
@@ -199,11 +199,11 @@ void traversal_algorithm::traverse(node_id const& id, udp::endpoint addr)
 
 void traversal_algorithm::finished(observer_ptr o)
 {
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 	std::vector<observer_ptr>::iterator i = std::find(
 		m_results.begin(), m_results.end(), o);
 
-	TORRENT_ASSERT(i != m_results.end() || m_results.size() == 100);
+	LIBED2K_ASSERT(i != m_results.end() || m_results.size() == 100);
 #endif
 
 	// if this flag is set, it means we increased the
@@ -211,12 +211,12 @@ void traversal_algorithm::finished(observer_ptr o)
 	if (o->flags & observer::flag_short_timeout)
 		--m_branch_factor;
 
-	TORRENT_ASSERT(o->flags & observer::flag_queried);
+	LIBED2K_ASSERT(o->flags & observer::flag_queried);
 	o->flags |= observer::flag_alive;
 
 	++m_responses;
 	--m_invoke_count;
-	TORRENT_ASSERT(m_invoke_count >= 0);
+	LIBED2K_ASSERT(m_invoke_count >= 0);
 	add_requests();
 	if (m_invoke_count == 0) done();
 }
@@ -226,11 +226,11 @@ void traversal_algorithm::finished(observer_ptr o)
 // So, if this is true, don't make another request
 void traversal_algorithm::failed(observer_ptr o, int flags)
 {
-	TORRENT_ASSERT(m_invoke_count >= 0);
+	LIBED2K_ASSERT(m_invoke_count >= 0);
 
 	if (m_results.empty()) return;
 
-	TORRENT_ASSERT(o->flags & observer::flag_queried);
+	LIBED2K_ASSERT(o->flags & observer::flag_queried);
 	if (flags & short_timeout)
 	{
 		// short timeout means that it has been more than
@@ -242,8 +242,8 @@ void traversal_algorithm::failed(observer_ptr o, int flags)
 		if ((o->flags & observer::flag_short_timeout) == 0)
 			++m_branch_factor;
 		o->flags |= observer::flag_short_timeout;
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << " [" << this << ":" << name()
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << " [" << this << ":" << name()
 			<< "] first chance timeout: "
 			<< o->id() << " " << o->target_ep()
 			<< " branch-factor: " << m_branch_factor
@@ -258,8 +258,8 @@ void traversal_algorithm::failed(observer_ptr o, int flags)
 		if (o->flags & observer::flag_short_timeout)
 			--m_branch_factor;
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << " [" << this << ":" << name()
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << " [" << this << ":" << name()
 			<< "] failed: " << o->id() << " " << o->target_ep()
 			<< " branch-factor: " << m_branch_factor
 			<< " invoke-count: " << m_invoke_count;
@@ -270,7 +270,7 @@ void traversal_algorithm::failed(observer_ptr o, int flags)
 			m_node.m_table.node_failed(o->id(), o->target_ep());
 		++m_timeouts;
 		--m_invoke_count;
-		TORRENT_ASSERT(m_invoke_count >= 0);
+		LIBED2K_ASSERT(m_invoke_count >= 0);
 	}
 
 	if (flags & prevent_request)
@@ -301,8 +301,8 @@ void traversal_algorithm::add_requests()
 		if ((*i)->flags & observer::flag_alive) --results_target;
 		if ((*i)->flags & observer::flag_queried) continue;
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << " [" << this << ":" << name() << "]"
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << " [" << this << ":" << name() << "]"
 			<< " nodes-left: " << (m_results.end() - i)
 			<< " invoke-count: " << m_invoke_count
 			<< " branch-factor: " << m_branch_factor;
@@ -311,7 +311,7 @@ void traversal_algorithm::add_requests()
 		(*i)->flags |= observer::flag_queried;
 		if (invoke(*i))
 		{
-			TORRENT_ASSERT(m_invoke_count >= 0);
+			LIBED2K_ASSERT(m_invoke_count >= 0);
 			++m_invoke_count;
 		}
 		else
@@ -323,8 +323,8 @@ void traversal_algorithm::add_requests()
 
 void traversal_algorithm::add_router_entries()
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(traversal) << " using router nodes to initiate traversal algorithm. "
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(traversal) << " using router nodes to initiate traversal algorithm. "
 		<< std::distance(m_node.m_table.router_begin(), m_node.m_table.router_end()) << " routers";
 #endif
 	for (routing_table::router_iterator i = m_node.m_table.router_begin()
@@ -374,5 +374,5 @@ void traversal_algorithm::status(dht_lookup& l)
 	l.last_sent = last_sent;
 }
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 

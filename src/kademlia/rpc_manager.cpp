@@ -30,52 +30,52 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
-#include "libtorrent/socket.hpp"
+#include "libed2k/pch.hpp"
+#include "libed2k/socket.hpp"
 
 // TODO: it would be nice to not have this dependency here
-#include "libtorrent/aux_/session_impl.hpp"
+#include "libed2k/session_impl.hpp"
 
 #include <boost/bind.hpp>
 
-#include <libtorrent/io.hpp>
-#include <libtorrent/invariant_check.hpp>
-#include <libtorrent/kademlia/node_id.hpp> // for generate_random_id
-#include <libtorrent/kademlia/rpc_manager.hpp>
-#include <libtorrent/kademlia/logging.hpp>
-#include <libtorrent/kademlia/routing_table.hpp>
-#include <libtorrent/kademlia/find_data.hpp>
-#include <libtorrent/kademlia/refresh.hpp>
-#include <libtorrent/kademlia/node.hpp>
-#include <libtorrent/kademlia/observer.hpp>
-#include <libtorrent/hasher.hpp>
-#include <libtorrent/time.hpp>
+#include <libed2k/io.hpp>
+#include <libed2k/invariant_check.hpp>
+#include <libed2k/kademlia/node_id.hpp> // for generate_random_id
+#include <libed2k/kademlia/rpc_manager.hpp>
+#include <libed2k/kademlia/logging.hpp>
+#include <libed2k/kademlia/routing_table.hpp>
+#include <libed2k/kademlia/find_data.hpp>
+#include <libed2k/kademlia/refresh.hpp>
+#include <libed2k/kademlia/node.hpp>
+#include <libed2k/kademlia/observer.hpp>
+#include <libed2k/hasher.hpp>
+#include <libed2k/time.hpp>
 #include <time.h> // time()
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 #include <fstream>
 #endif
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-namespace io = libtorrent::detail;
+namespace io = libed2k::detail;
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DEFINE_LOG(rpc)
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DEFINE_LOG(rpc)
 #endif
 
 void intrusive_ptr_add_ref(observer const* o)
 {
-	TORRENT_ASSERT(o != 0);
-	TORRENT_ASSERT(o->m_refs >= 0);
+	LIBED2K_ASSERT(o != 0);
+	LIBED2K_ASSERT(o->m_refs >= 0);
 	++o->m_refs;
 }
 
 void intrusive_ptr_release(observer const* o)
 {
-	TORRENT_ASSERT(o != 0);
-	TORRENT_ASSERT(o->m_refs > 0);
+	LIBED2K_ASSERT(o != 0);
+	LIBED2K_ASSERT(o->m_refs > 0);
 	if (--o->m_refs == 0)
 	{
 		boost::intrusive_ptr<traversal_algorithm> ta = o->m_algorithm;
@@ -86,7 +86,7 @@ void intrusive_ptr_release(observer const* o)
 
 void observer::set_target(udp::endpoint const& ep)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	// use high resolution timers for logging
 	m_sent = time_now_hires();
 #else
@@ -94,7 +94,7 @@ void observer::set_target(udp::endpoint const& ep)
 #endif
 
 	m_port = ep.port();
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 	if (ep.address().is_v6())
 	{
 		flags |= flag_ipv6_address;
@@ -110,7 +110,7 @@ void observer::set_target(udp::endpoint const& ep)
 
 address observer::target_addr() const
 {
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 	if (flags & flag_ipv6_address)
 		return address_v6(m_addr.v6);
 	else
@@ -174,12 +174,12 @@ rpc_manager::rpc_manager(node_id const& our_id
 {
 	std::srand(time(0));
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(rpc) << "Constructing";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(rpc) << "Constructing";
 
-#define PRINT_OFFSETOF(x, y) TORRENT_LOG(rpc) << "  +" << offsetof(x, y) << ": " #y
+#define PRINT_OFFSETOF(x, y) LIBED2K_LOG(rpc) << "  +" << offsetof(x, y) << ": " #y
 
-	TORRENT_LOG(rpc) << " observer: " << sizeof(observer);
+	LIBED2K_LOG(rpc) << " observer: " << sizeof(observer);
 	PRINT_OFFSETOF(observer, m_sent);
 	PRINT_OFFSETOF(observer, m_refs);
 	PRINT_OFFSETOF(observer, m_algorithm);
@@ -189,9 +189,9 @@ rpc_manager::rpc_manager(node_id const& our_id
 	PRINT_OFFSETOF(observer, m_transaction_id);
 	PRINT_OFFSETOF(observer, flags);
 
-	TORRENT_LOG(rpc) << " announce_observer: " << sizeof(announce_observer);
-	TORRENT_LOG(rpc) << " null_observer: " << sizeof(null_observer);
-	TORRENT_LOG(rpc) << " find_data_observer: " << sizeof(find_data_observer);
+	LIBED2K_LOG(rpc) << " announce_observer: " << sizeof(announce_observer);
+	LIBED2K_LOG(rpc) << " null_observer: " << sizeof(null_observer);
+	LIBED2K_LOG(rpc) << " find_data_observer: " << sizeof(find_data_observer);
 
 #undef PRINT_OFFSETOF
 #endif
@@ -200,10 +200,10 @@ rpc_manager::rpc_manager(node_id const& our_id
 
 rpc_manager::~rpc_manager()
 {
-	TORRENT_ASSERT(!m_destructing);
+	LIBED2K_ASSERT(!m_destructing);
 	m_destructing = true;
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(rpc) << "Destructing";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(rpc) << "Destructing";
 #endif
 	
 	for (transactions_t::iterator i = m_transactions.begin()
@@ -228,39 +228,39 @@ void rpc_manager::free_observer(void* ptr)
 	m_pool_allocator.free(ptr);
 }
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 size_t rpc_manager::allocation_size() const
 {
 	return observer_size;
 }
 #endif
-#ifdef TORRENT_DEBUG
+#ifdef LIBED2K_DEBUG
 void rpc_manager::check_invariant() const
 {
 	for (transactions_t::const_iterator i = m_transactions.begin()
 		, end(m_transactions.end()); i != end; ++i)
 	{
-		TORRENT_ASSERT(*i);
+		LIBED2K_ASSERT(*i);
 	}
 }
 #endif
 
 void rpc_manager::unreachable(udp::endpoint const& ep)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(rpc) << time_now_string() << " PORT_UNREACHABLE [ ip: " << ep << " ]";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(rpc) << time_now_string() << " PORT_UNREACHABLE [ ip: " << ep << " ]";
 #endif
 
 	for (transactions_t::iterator i = m_transactions.begin();
 		i != m_transactions.end();)
 	{
-		TORRENT_ASSERT(*i);
+		LIBED2K_ASSERT(*i);
 		observer_ptr const& o = *i;
 		if (o->target_ep() != ep) { ++i; continue; }
 		observer_ptr ptr = *i;
 		m_transactions.erase(i++);
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(rpc) << "  found transaction [ tid: " << ptr->transaction_id() << " ]";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(rpc) << "  found transaction [ tid: " << ptr->transaction_id() << " ]";
 #endif
 		ptr->timeout();
 		break;
@@ -272,12 +272,12 @@ void incoming_error(entry& e, char const* msg);
 
 bool rpc_manager::incoming(msg const& m, node_id* id)
 {
-	INVARIANT_CHECK;
+	LIBED2K_INVARIANT_CHECK;
 
 	if (m_destructing) return false;
 
 	// we only deal with replies, not queries
-	TORRENT_ASSERT(m.message.dict_find_string_value("y") == "r");
+	LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "r");
 
 	// if we don't have the transaction id in our
 	// request list, ignore the packet
@@ -292,7 +292,7 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 	for (transactions_t::iterator i = m_transactions.begin()
 		, end(m_transactions.end()); i != end; ++i)
 	{
-		TORRENT_ASSERT(*i);
+		LIBED2K_ASSERT(*i);
 		if ((*i)->transaction_id() != tid) continue;
 		if (m.addr.address() != (*i)->target_addr()) continue;
 		o = *i;
@@ -302,8 +302,8 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 
 	if (!o)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(rpc) << "Reply with unknown transaction id size: " 
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(rpc) << "Reply with unknown transaction id size: " 
 			<< transaction_id.size() << " from " << m.addr;
 #endif
 //		entry e;
@@ -312,7 +312,7 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		return false;
 	}
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	std::ofstream reply_stats("round_trip_ms.log", std::ios::app);
 	reply_stats << m.addr << "\t" << total_milliseconds(time_now_hires() - o->sent())
 		<< std::endl;
@@ -338,8 +338,8 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		return false;
 	}
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
 		<< tid << " from " << m.addr;
 #endif
 	o->reply(m);
@@ -352,7 +352,7 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 
 time_duration rpc_manager::tick()
 {
-	INVARIANT_CHECK;
+	LIBED2K_INVARIANT_CHECK;
 
 	const static int short_timeout = 1;
 	const static int timeout = 8;
@@ -366,12 +366,12 @@ time_duration rpc_manager::tick()
 	time_duration ret = seconds(short_timeout);
 	ptime now = time_now();
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	ptime last = min_time();
 	for (transactions_t::iterator i = m_transactions.begin();
 		i != m_transactions.end(); ++i)
 	{
-		TORRENT_ASSERT((*i)->sent() >= last);
+		LIBED2K_ASSERT((*i)->sent() >= last);
 		last = (*i)->sent();
 	}
 #endif
@@ -391,8 +391,8 @@ time_duration rpc_manager::tick()
 			break;
 		}
 		
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(rpc) << "[" << o->m_algorithm.get() << "] Timing out transaction id: " 
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Timing out transaction id: " 
 			<< (*i)->transaction_id() << " from " << o->target_ep();
 #endif
 		m_transactions.erase(i++);
@@ -437,7 +437,7 @@ void rpc_manager::add_our_id(entry& e)
 bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 	, observer_ptr o)
 {
-	INVARIANT_CHECK;
+	LIBED2K_INVARIANT_CHECK;
 
 	if (m_destructing) return false;
 
@@ -455,15 +455,15 @@ bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 	o->set_target(target_addr);
 	o->set_transaction_id(tid);
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
 		<< e["q"].string() << " -> " << target_addr;
 #endif
 
 	if (m_send(m_userdata, e, target_addr, 1))
 	{
 		m_transactions.push_back(o);
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		o->m_was_sent = true;
 #endif
 		return true;
@@ -477,9 +477,9 @@ observer::~observer()
 	// reported back to the traversal_algorithm as
 	// well. If it wasn't sent, it cannot have been
 	// reported back
-	TORRENT_ASSERT(m_was_sent == bool(flags & flag_done) || m_was_abandoned);
-	TORRENT_ASSERT(!m_in_constructor);
+	LIBED2K_ASSERT(m_was_sent == bool(flags & flag_done) || m_was_abandoned);
+	LIBED2K_ASSERT(!m_in_constructor);
 }
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 

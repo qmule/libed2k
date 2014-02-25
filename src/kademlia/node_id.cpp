@@ -30,20 +30,20 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
 #include <algorithm>
 #include <ctime>
 #include <boost/crc.hpp>
 
-#include "libtorrent/kademlia/node_id.hpp"
-#include "libtorrent/hasher.hpp"
-#include "libtorrent/assert.hpp"
-#include "libtorrent/broadcast_socket.hpp" // for is_local et.al
-#include "libtorrent/socket_io.hpp" // for hash_address
-#include "libtorrent/random.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/hasher.hpp"
+#include "libed2k/assert.hpp"
+#include "libed2k/broadcast_socket.hpp" // for is_local et.al
+#include "libed2k/socket_io.hpp" // for hash_address
+#include "libed2k/random.hpp"
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 // returns the distance between the two nodes
@@ -82,7 +82,7 @@ int distance_exp(node_id const& n1, node_id const& n2)
 	for (node_id::const_iterator i = n1.begin(), j = n2.begin()
 		, end(n1.end()); i != end; ++i, ++j, --byte)
 	{
-		TORRENT_ASSERT(byte >= 0);
+		LIBED2K_ASSERT(byte >= 0);
 		boost::uint8_t t = *i ^ *j;
 		if (t == 0) continue;
 		// we have found the first non-zero byte
@@ -109,7 +109,7 @@ node_id generate_id_impl(address const& ip_, boost::uint32_t r)
 	int num_octets = 0;
 
 	address_v4::bytes_type b4;
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 	address_v6::bytes_type b6;
 	if (ip_.is_v6())
 	{
@@ -152,7 +152,7 @@ node_id generate_random_id()
 {
 	char r[20];
 	for (int i = 0; i < 20; ++i) r[i] = random();
-	return hasher(r, 20).final();
+	return sha1_hasher(r, 20).final();
 }
 
 // verifies whether a node-id matches the IP it's used from
@@ -172,5 +172,5 @@ node_id generate_id(address const& ip)
 	return generate_id_impl(ip, rand());
 }
 
-} }  // namespace libtorrent::dht
+} }  // namespace libed2k::dht
 

@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
 #include <vector>
 #include <iterator> // std::distance()
@@ -40,20 +40,20 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/cstdint.hpp>
 #include <boost/bind.hpp>
 
-#include "libtorrent/kademlia/routing_table.hpp"
-#include "libtorrent/broadcast_socket.hpp" // for cidr_distance
-#include "libtorrent/session_status.hpp"
-#include "libtorrent/kademlia/node_id.hpp"
-#include "libtorrent/session_settings.hpp"
-#include "libtorrent/time.hpp"
+#include "libed2k/kademlia/routing_table.hpp"
+#include "libed2k/broadcast_socket.hpp" // for cidr_distance
+#include "libed2k/session_status.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/time.hpp"
 
 using boost::uint8_t;
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DEFINE_LOG(table)
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DEFINE_LOG(table)
 #endif
 
 routing_table::routing_table(node_id const& id, int bucket_size
@@ -117,7 +117,7 @@ size_type routing_table::num_global_nodes() const
 	else return (size_type(2) << deepest_bucket) * deepest_size;
 }
 
-#if (defined TORRENT_DHT_VERBOSE_LOGGING || defined TORRENT_DEBUG) && TORRENT_USE_IOSTREAM
+#if (defined LIBED2K_DHT_VERBOSE_LOGGING || defined LIBED2K_DEBUG) && LIBED2K_USE_IOSTREAM
 
 void routing_table::print_state(std::ostream& os) const
 {
@@ -204,8 +204,8 @@ bool routing_table::need_refresh(node_id& target) const
 	{
 		m_last_self_refresh = now;
 		target = m_id;
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(table) << "need_refresh [ bucket: self target: " << target << " ]";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(table) << "need_refresh [ bucket: self target: " << target << " ]";
 #endif
 		return true;
 	}
@@ -237,10 +237,10 @@ bool routing_table::need_refresh(node_id& target) const
 	target[(num_bits - 1) / 8] |=
 		(~(m_id[(num_bits - 1) / 8])) & (0x80 >> ((num_bits - 1) % 8));
 
-	TORRENT_ASSERT(distance_exp(m_id, target) == 160 - num_bits);
+	LIBED2K_ASSERT(distance_exp(m_id, target) == 160 - num_bits);
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(table) << "need_refresh [ bucket: " << num_bits << " target: " << target << " ]";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(table) << "need_refresh [ bucket: " << num_bits << " target: " << target << " ]";
 #endif
 	m_last_refresh = now;
 	return true;
@@ -258,7 +258,7 @@ void routing_table::replacement_cache(bucket_t& nodes) const
 
 routing_table::table_t::iterator routing_table::find_bucket(node_id const& id)
 {
-//	TORRENT_ASSERT(id != m_id);
+//	LIBED2K_ASSERT(id != m_id);
 
 	int num_buckets = m_buckets.size();
 	if (num_buckets == 0)
@@ -270,8 +270,8 @@ routing_table::table_t::iterator routing_table::find_bucket(node_id const& id)
 	}
 
 	int bucket_index = (std::min)(159 - distance_exp(m_id, id), num_buckets - 1);
-	TORRENT_ASSERT(bucket_index < int(m_buckets.size()));
-	TORRENT_ASSERT(bucket_index >= 0);
+	LIBED2K_ASSERT(bucket_index < int(m_buckets.size()));
+	LIBED2K_ASSERT(bucket_index >= 0);
 
 	table_t::iterator i = m_buckets.begin();
 	std::advance(i, bucket_index);
@@ -280,7 +280,7 @@ routing_table::table_t::iterator routing_table::find_bucket(node_id const& id)
 
 bool compare_ip_cidr(node_entry const& lhs, node_entry const& rhs)
 {
-	TORRENT_ASSERT(lhs.addr.is_v4() == rhs.addr.is_v4());
+	LIBED2K_ASSERT(lhs.addr.is_v4() == rhs.addr.is_v4());
 	// the number of bits in the IPs that may match. If
 	// more bits that this matches, something suspicious is
 	// going on and we shouldn't add the second one to our
@@ -324,7 +324,7 @@ void routing_table::remove_node(node_entry* n
 		&& n < &bucket->replacements[0] + bucket->replacements.size())
 	{
 		int idx = n - &bucket->replacements[0];
-		TORRENT_ASSERT(m_ips.count(n->addr.to_v4().to_bytes()) > 0);
+		LIBED2K_ASSERT(m_ips.count(n->addr.to_v4().to_bytes()) > 0);
 		m_ips.erase(n->addr.to_v4().to_bytes());
 		bucket->replacements.erase(bucket->replacements.begin() + idx);
 	}
@@ -334,7 +334,7 @@ void routing_table::remove_node(node_entry* n
 		&& n < &bucket->live_nodes[0] + bucket->live_nodes.size())
 	{
 		int idx = n - &bucket->live_nodes[0];
-		TORRENT_ASSERT(m_ips.count(n->addr.to_v4().to_bytes()) > 0);
+		LIBED2K_ASSERT(m_ips.count(n->addr.to_v4().to_bytes()) > 0);
 		m_ips.erase(n->addr.to_v4().to_bytes());
 		bucket->live_nodes.erase(bucket->live_nodes.begin() + idx);
 	}
@@ -369,8 +369,8 @@ bool routing_table::add_node(node_entry const& e)
 			// routing table
 			if (m_settings.restrict_routing_ips)
 			{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-				TORRENT_LOG(table) << "ignoring node (duplicate IP): "
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+				LIBED2K_LOG(table) << "ignoring node (duplicate IP): "
 					<< e.id << " " << e.addr;
 #endif
 				return ret;
@@ -385,7 +385,7 @@ bool routing_table::add_node(node_entry const& e)
 		}
 		else if (existing)
 		{
-			TORRENT_ASSERT(existing->id != e.id);
+			LIBED2K_ASSERT(existing->id != e.id);
 			// this is the same IP and port, but with
 			// a new node ID. remove the old entry and
 			// replace it with this new ID
@@ -413,9 +413,9 @@ bool routing_table::add_node(node_entry const& e)
 		// just move it to the back since it was
 		// the last node we had any contact with
 		// in this bucket
-		TORRENT_ASSERT(j->id == e.id && j->ep() == e.ep());
+		LIBED2K_ASSERT(j->id == e.id && j->ep() == e.ep());
 		j->timeout_count = 0;
-//		TORRENT_LOG(table) << "updating node: " << i->id << " " << i->addr;
+//		LIBED2K_LOG(table) << "updating node: " << i->id << " " << i->addr;
 		return ret;
 	}
 
@@ -431,8 +431,8 @@ bool routing_table::add_node(node_entry const& e)
 			// we already have a node in this bucket with an IP very
 			// close to this one. We know that it's not the same, because
 			// it claims a different node-ID. Ignore this to avoid attacks
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(table) << "ignoring node: " << e.id << " " << e.addr
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(table) << "ignoring node: " << e.id << " " << e.addr
 				<< " existing node: "
 				<< j->id << " " << j->addr;
 #endif
@@ -443,8 +443,8 @@ bool routing_table::add_node(node_entry const& e)
 		if (j != rb->end())
 		{
 			// same thing bug for the replacement bucket
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(table) << "ignoring (replacement) node: " << e.id << " " << e.addr
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(table) << "ignoring (replacement) node: " << e.id << " " << e.addr
 				<< " existing node: "
 				<< j->id << " " << j->addr;
 #endif
@@ -461,7 +461,7 @@ bool routing_table::add_node(node_entry const& e)
 		if (b->empty()) b->reserve(m_bucket_size);
 		b->push_back(e);
 		m_ips.insert(e.addr.to_v4().to_bytes());
-//		TORRENT_LOG(table) << "inserting node: " << e.id << " " << e.addr;
+//		LIBED2K_LOG(table) << "inserting node: " << e.id << " " << e.addr;
 		return ret;
 	}
 
@@ -493,7 +493,7 @@ bool routing_table::add_node(node_entry const& e)
 			b->erase(j);
 			b->push_back(e);
 			m_ips.insert(e.addr.to_v4().to_bytes());
-//			TORRENT_LOG(table) << "replacing unpinged node: " << e.id << " " << e.addr;
+//			LIBED2K_LOG(table) << "replacing unpinged node: " << e.id << " " << e.addr;
 			return ret;
 		}
 
@@ -515,7 +515,7 @@ bool routing_table::add_node(node_entry const& e)
 			b->erase(j);
 			b->push_back(e);
 			m_ips.insert(e.addr.to_v4().to_bytes());
-//			TORRENT_LOG(table) << "replacing stale node: " << e.id << " " << e.addr;
+//			LIBED2K_LOG(table) << "replacing stale node: " << e.id << " " << e.addr;
 			return ret;
 		}
 	}
@@ -556,7 +556,7 @@ bool routing_table::add_node(node_entry const& e)
 		if (rb->empty()) rb->reserve(m_bucket_size);
 		rb->push_back(e);
 		m_ips.insert(e.addr.to_v4().to_bytes());
-//		TORRENT_LOG(table) << "inserting node in replacement cache: " << e.id << " " << e.addr;
+//		LIBED2K_LOG(table) << "inserting node in replacement cache: " << e.id << " " << e.addr;
 		return ret;
 	}
 
@@ -695,8 +695,8 @@ void routing_table::node_failed(node_id const& id, udp::endpoint const& ep)
 	{
 		j->timed_out();
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(table) << " NODE FAILED"
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(table) << " NODE FAILED"
 			" id: " << id <<
 			" ip: " << j->ep() <<
 			" fails: " << j->fail_count() <<
@@ -815,7 +815,7 @@ void routing_table::find_node(node_id const& target
 			, (std::min)(size_t(count), b.size())
 			, boost::bind(&node_entry::confirmed, _1));
 	}
-	TORRENT_ASSERT((int)l.size() <= count);
+	LIBED2K_ASSERT((int)l.size() <= count);
 
 	if (int(l.size()) >= count) return;
 
@@ -880,5 +880,5 @@ routing_table::iterator routing_table::end() const
 	return iterator(m_buckets.end(), m_buckets.end());
 }
 */
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 

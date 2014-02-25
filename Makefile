@@ -8,7 +8,6 @@ OBJF = $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,src)))
 all: libed2k.a test unit
 
 libed2k.a:
-	mkdir -p src/obj
 	cd src && $(MAKE) $<
 
 test:

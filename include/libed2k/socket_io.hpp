@@ -48,6 +48,9 @@ namespace libed2k
 	LIBED2K_EXPORT std::string print_endpoint(udp::endpoint const& ep);
 	LIBED2K_EXPORT std::string address_to_bytes(address const& a);
 
+    LIBED2K_EXPORT std::string endpoint_to_bytes(udp::endpoint const& ep);
+    LIBED2K_EXTRA_EXPORT void hash_address(address const& ip, sha1_hash& h);
+
 	namespace detail
 	{
 		template<class OutIt>

@@ -37,33 +37,33 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <set>
 
-#include <libtorrent/config.hpp>
-#include <libtorrent/kademlia/routing_table.hpp>
-#include <libtorrent/kademlia/rpc_manager.hpp>
-#include <libtorrent/kademlia/node_id.hpp>
-#include <libtorrent/kademlia/msg.hpp>
-#include <libtorrent/kademlia/find_data.hpp>
+#include <libed2k/config.hpp>
+#include <libed2k/kademlia/routing_table.hpp>
+#include <libed2k/kademlia/rpc_manager.hpp>
+#include <libed2k/kademlia/node_id.hpp>
+#include <libed2k/kademlia/msg.hpp>
+#include <libed2k/kademlia/find_data.hpp>
 
-#include <libtorrent/io.hpp>
-#include <libtorrent/session_settings.hpp>
-#include <libtorrent/assert.hpp>
-#include <libtorrent/thread.hpp>
-#include <libtorrent/bloom_filter.hpp>
+#include <libed2k/io.hpp>
+#include <libed2k/session_settings.hpp>
+#include <libed2k/assert.hpp>
+#include <libed2k/thread.hpp>
+#include <libed2k/bloom_filter.hpp>
 
 #include <boost/cstdint.hpp>
 #include <boost/ref.hpp>
 
-#include "libtorrent/socket.hpp"
+#include "libed2k/socket.hpp"
 
-namespace libtorrent {
+namespace libed2k {
 	class alert_manager;
 }
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DECLARE_LOG(node);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DECLARE_LOG(node);
 #endif
 
 struct traversal_algorithm;
@@ -93,7 +93,7 @@ struct key_desc_t
 	}; 
 };
 
-bool TORRENT_EXTRA_EXPORT verify_message(lazy_entry const* msg, key_desc_t const desc[]
+bool LIBED2K_EXTRA_EXPORT verify_message(lazy_entry const* msg, key_desc_t const desc[]
 	, lazy_entry const* ret[], int size , char* error, int error_size);
 
 // this is the entry for every peer
@@ -168,14 +168,14 @@ struct count_peers
 {
 	int& count;
 	count_peers(int& c): count(c) {}
-	void operator()(std::pair<libtorrent::dht::node_id
-		, libtorrent::dht::torrent_entry> const& t)
+	void operator()(std::pair<libed2k::dht::node_id
+		, libed2k::dht::torrent_entry> const& t)
 	{
 		count += t.second.peers.size();
 	}
 };
 	
-class TORRENT_EXTRA_EXPORT node_impl : boost::noncopyable
+class LIBED2K_EXTRA_EXPORT node_impl : boost::noncopyable
 {
 typedef std::map<node_id, torrent_entry> table_t;
 typedef std::map<node_id, dht_immutable_item> dht_immutable_table_t;
@@ -184,7 +184,7 @@ typedef std::map<node_id, dht_mutable_item> dht_mutable_table_t;
 public:
 	typedef boost::function3<void, address, int, address> external_ip_fun;
 
-	node_impl(libtorrent::alert_manager& alerts
+	node_impl(libed2k::alert_manager& alerts
 		, bool (*f)(void*, entry&, udp::endpoint const&, int)
 		, dht_settings const& settings, node_id nid, address const& external_address
 		, external_ip_fun ext_ip, void* userdata);
@@ -218,7 +218,7 @@ public:
 
 	int data_size() const { return int(m_map.size()); }
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	void print_state(std::ostream& os) const
 	{ m_table.print_state(os); }
 #endif
@@ -260,7 +260,7 @@ public:
 		m_running_requests.erase(a);
 	}
 
-	void status(libtorrent::session_status& s);
+	void status(libed2k::session_status& s);
 
 	dht_settings const& settings() const { return m_settings; }
 
@@ -274,7 +274,7 @@ protected:
 	dht_settings const& m_settings;
 	
 private:
-	typedef libtorrent::mutex mutex_t;
+	typedef libed2k::mutex mutex_t;
 	mutex_t m_mutex;
 
 	// this list must be destructed after the rpc manager
@@ -301,13 +301,13 @@ private:
 	// secret random numbers used to create write tokens
 	int m_secret[2];
 
-	libtorrent::alert_manager& m_alerts;
+	libed2k::alert_manager& m_alerts;
 	bool (*m_send)(void*, entry&, udp::endpoint const&, int);
 	void* m_userdata;
 };
 
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif // NODE_HPP
 

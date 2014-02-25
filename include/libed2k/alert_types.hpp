@@ -10,6 +10,7 @@
 #include "libed2k/socket_io.hpp"
 #include "libed2k/entry.hpp"
 #include "libed2k/add_transfer_params.hpp"
+#include <boost/lexical_cast.hpp>
 
 namespace libed2k
 {
@@ -911,6 +912,80 @@ namespace libed2k
 
         udp::endpoint endpoint;
         error_code error;
+    };
+
+    struct dht_announce_alert: alert
+    {
+            dht_announce_alert(address const& ip_, int port_
+                    , sha1_hash const& info_hash_)
+                    : ip(ip_)
+                    , port(port_)
+                    , info_hash(info_hash_)
+            {}
+
+            virtual std::auto_ptr<alert> clone() const
+            { return std::auto_ptr<alert>(new dht_announce_alert(*this)); }
+
+            virtual char const* what() const { return "DHT announce"; }
+            virtual int category() const { return static_category; }
+
+            const static int static_category = alert::dht_notification;
+
+            virtual std::string message() const
+            {
+                error_code ec;
+                return "DHT announce: " + address_to_bytes(ip) + " port: " + boost::lexical_cast<std::string>(port);
+            }
+
+            address ip;
+            int port;
+            sha1_hash info_hash;
+    };
+
+    struct dht_get_peers_alert: alert
+    {
+            dht_get_peers_alert(sha1_hash const& info_hash_)
+                    : info_hash(info_hash_)
+            {}
+
+            virtual std::auto_ptr<alert> clone() const
+            { return std::auto_ptr<alert>(new dht_get_peers_alert(*this)); }
+
+            virtual char const* what() const { return "DHT get peers"; }
+            virtual int category() const { return static_category; }
+
+            const static int static_category = alert::dht_notification;
+
+            virtual std::string message() const
+            {
+                error_code ec;
+                return "DHT get peers alert";
+            }
+
+            sha1_hash   info_hash;
+    };
+
+    struct external_ip_alert: alert
+    {
+        external_ip_alert(address const& ip)
+                    : external_address(ip)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new external_ip_alert(*this)); }
+
+        virtual char const* what() const { return "DHT get peers"; }
+        virtual int category() const { return static_category; }
+
+
+        const static int static_category = alert::status_notification;
+        virtual std::string message() const
+        {
+                error_code ec;
+                return "external IP received: " + external_address.to_string(ec);
+        }
+
+        address external_address;
     };
 }
 

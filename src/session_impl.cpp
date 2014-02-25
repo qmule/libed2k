@@ -135,6 +135,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                  boost::bind(&session_impl::on_receive_udp, this, _1, _2, _3, _4),
                  boost::bind(&session_impl::on_receive_udp_hostname, this, _1, _2, _3, _4),
                  m_half_open)
+#ifndef LIBED2K_DISABLE_DHT
+        , m_dht_announce_timer(m_io_service)
+#endif
 {
     DBG("*** create ed2k session ***");
 
@@ -1627,6 +1630,205 @@ void session_impl::remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_p
 #endif
     }
 }
+
+bool session_impl::external_ip_t::add_vote(sha1_hash const& k, int type)
+{
+        sources |= type;
+        if (voters.find(k)) return false;
+        voters.set(k);
+        ++num_votes;
+        return true;
+}
+
+void session_impl::set_external_address(address const& ip
+        , int source_type, address const& source)
+    {
+        if (is_any(ip)) return;
+        if (is_local(ip)) return;
+        if (is_loopback(ip)) return;
+
+#if defined LIBED2K_VERBOSE_LOGGING
+        (*m_logger) << time_now_string() << ": set_external_address(" << print_address(ip)
+            << ", " << source_type << ", " << print_address(source) << ")\n";
+#endif
+        // this is the key to use for the bloom filters
+        // it represents the identity of the voter
+        sha1_hash k;
+        hash_address(source, k);
+
+        // do we already have an entry for this external IP?
+        std::vector<external_ip_t>::iterator i = std::find_if(m_external_addresses.begin()
+            , m_external_addresses.end(), boost::bind(&external_ip_t::addr, _1) == ip);
+
+        if (i == m_external_addresses.end())
+        {
+            // each IP only gets to add a new IP once
+            if (m_external_address_voters.find(k)) return;
+
+            if (m_external_addresses.size() > 20)
+            {
+                if (random() < UINT_MAX / 2)
+                {
+#if defined LIBED2K_VERBOSE_LOGGING
+                    (*m_logger) << time_now_string() << ": More than 20 slots, dopped\n";
+#endif
+                    return;
+                }
+                // use stable sort here to maintain the fifo-order
+                // of the entries with the same number of votes
+                // this will sort in ascending order, i.e. the lowest
+                // votes first. Also, the oldest are first, so this
+                // is a sort of weighted LRU.
+                std::stable_sort(m_external_addresses.begin(), m_external_addresses.end());
+                // erase the first element, since this is the
+                // oldest entry and the one with lowst number
+                // of votes. This makes sense because the oldest
+                // entry has had the longest time to receive more
+                // votes to be bumped up
+#if defined LIBED2K_VERBOSE_LOGGING
+                (*m_logger) << "  More than 20 slots, dopping "
+                    << print_address(m_external_addresses.front().addr)
+                    << " (" << m_external_addresses.front().num_votes << ")\n";
+#endif
+                m_external_addresses.erase(m_external_addresses.begin());
+            }
+            m_external_addresses.push_back(external_ip_t());
+            i = m_external_addresses.end() - 1;
+            i->addr = ip;
+        }
+        // add one more vote to this external IP
+        if (!i->add_vote(k, source_type)) return;
+
+        i = std::max_element(m_external_addresses.begin(), m_external_addresses.end());
+        LIBED2K_ASSERT(i != m_external_addresses.end());
+
+#if defined TORRENT_VERBOSE_LOGGING
+        for (std::vector<external_ip_t>::iterator j = m_external_addresses.begin()
+            , end(m_external_addresses.end()); j != end; ++j)
+        {
+            (*m_logger) << ((j == i)?"-->":"   ")
+                << print_address(j->addr) << " votes: "
+                << j->num_votes << "\n";
+        }
+#endif
+        if (i->addr == m_external_address) return;
+
+#if defined TORRENT_VERBOSE_LOGGING
+        (*m_logger) << "  external IP updated\n";
+#endif
+        m_external_address = i->addr;
+        m_external_address_voters.clear();
+
+        m_alerts.post_alert_should(external_ip_alert(ip));
+
+        // since we have a new external IP now, we need to
+        // restart the DHT with a new node ID
+#ifndef LIBED2K_DISABLE_DHT
+        if (m_dht)
+        {
+            entry s = m_dht->state();
+            int cur_state = 0;
+            int prev_state = 0;
+            entry* nodes1 = s.find_key("nodes");
+            if (nodes1 && nodes1->type() == entry::list_t) cur_state = nodes1->list().size();
+            entry* nodes2 = m_dht_state.find_key("nodes");
+            if (nodes2 && nodes2->type() == entry::list_t) prev_state = nodes2->list().size();
+            if (cur_state > prev_state) m_dht_state = s;
+            start_dht(m_dht_state);
+        }
+#endif
+    }
+
+#ifndef LIBED2K_DISABLE_DHT
+
+    void session_impl::start_dht()
+    { start_dht(m_dht_state); }
+
+    void session_impl::start_dht(entry const& startup_state)
+    {
+        if (m_dht)
+        {
+            m_dht->stop();
+            m_dht = 0;
+        }
+        m_dht = new dht::dht_tracker(*this, m_udp_socket, m_dht_settings, &startup_state);
+
+        for (std::list<udp::endpoint>::iterator i = m_dht_router_nodes.begin()
+            , end(m_dht_router_nodes.end()); i != end; ++i)
+        {
+            m_dht->add_router_node(*i);
+        }
+
+        m_dht->start(startup_state);
+
+        // announce all torrents we have to the DHT
+        // TODO - should be implemented
+        /*for (torrent_map::const_iterator i = m_torrents.begin()
+            , end(m_torrents.end()); i != end; ++i)
+        {
+            i->second->dht_announce();
+        }
+        */
+    }
+
+    void session_impl::stop_dht()
+    {
+        if (!m_dht) return;
+        m_dht->stop();
+        m_dht = 0;
+    }
+
+    void session_impl::set_dht_settings(dht_settings const& settings)
+    {
+        m_dht_settings = settings;
+    }
+
+    entry session_impl::dht_state() const
+    {
+        if (!m_dht) return entry();
+        return m_dht->state();
+    }
+
+    void session_impl::add_dht_node_name(std::pair<std::string, int> const& node)
+    {
+        if (m_dht) m_dht->add_node(node);
+    }
+
+    void session_impl::add_dht_router(std::pair<std::string, int> const& node)
+    {
+#if defined TORRENT_ASIO_DEBUGGING
+        add_outstanding_async("session_impl::on_dht_router_name_lookup");
+#endif
+        char port[7];
+        snprintf(port, sizeof(port), "%d", node.second);
+        tcp::resolver::query q(node.first, port);
+        // TODO - should be implemented
+        //m_host_resolver.async_resolve(q,
+        //    boost::bind(&session_impl::on_dht_router_name_lookup, this, _1, _2));
+    }
+
+    // TODO  - callback should be implemented
+    /*
+    void session_impl::on_dht_router_name_lookup(error_code const& e
+        , tcp::resolver::iterator host)
+    {
+#if defined TORRENT_ASIO_DEBUGGING
+        complete_async("session_impl::on_dht_router_name_lookup");
+#endif
+        // TODO: report errors as alerts
+        if (e) return;
+        while (host != tcp::resolver::iterator())
+        {
+            // router nodes should be added before the DHT is started (and bootstrapped)
+            udp::endpoint ep(host->endpoint().address(), host->endpoint().port());
+            if (m_dht) m_dht->add_router_node(ep);
+            m_dht_router_nodes.push_back(ep);
+            ++host;
+        }
+    }
+    */
+#endif
+
 
 }
 }

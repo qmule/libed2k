@@ -30,9 +30,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 #include <fstream>
 #endif
 
@@ -41,26 +41,26 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/bind.hpp>
 #include <boost/ref.hpp>
 
-#include "libtorrent/kademlia/node.hpp"
-#include "libtorrent/kademlia/node_id.hpp"
-#include "libtorrent/kademlia/traversal_algorithm.hpp"
-#include "libtorrent/kademlia/dht_tracker.hpp"
-#include "libtorrent/kademlia/msg.hpp"
+#include "libed2k/kademlia/node.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/kademlia/traversal_algorithm.hpp"
+#include "libed2k/kademlia/dht_tracker.hpp"
+#include "libed2k/kademlia/msg.hpp"
 
-#include "libtorrent/aux_/session_impl.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/socket_io.hpp"
-#include "libtorrent/bencode.hpp"
-#include "libtorrent/io.hpp"
-#include "libtorrent/version.hpp"
-#include "libtorrent/escape_string.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/socket.hpp"
+#include "libed2k/socket_io.hpp"
+#include "libed2k/bencode.hpp"
+#include "libed2k/io.hpp"
+#include "libed2k/version.hpp"
+#include "libed2k/escape_string.hpp"
 
 using boost::ref;
-using libtorrent::dht::node_impl;
-using libtorrent::dht::node_id;
-using libtorrent::dht::packet_t;
-using libtorrent::dht::msg;
-using namespace libtorrent::detail;
+using libed2k::dht::node_impl;
+using libed2k::dht::node_id;
+using libed2k::dht::packet_t;
+using libed2k::dht::msg;
+using namespace libed2k::detail;
 
 enum
 {
@@ -72,9 +72,9 @@ namespace
 	const int tick_period = 1; // minutes
 
 	template <class EndpointType>
-	void read_endpoint_list(libtorrent::entry const* n, std::vector<EndpointType>& epl)
+	void read_endpoint_list(libed2k::entry const* n, std::vector<EndpointType>& epl)
 	{
-		using namespace libtorrent;
+		using namespace libed2k;
 		if (n->type() != entry::list_t) return;
 		entry::list_type const& contacts = n->list();
 		for (entry::list_type::const_iterator i = contacts.begin()
@@ -86,7 +86,7 @@ namespace
 			std::string::const_iterator in = p.begin();
 			if (p.size() == 6)
 				epl.push_back(read_v4_endpoint<EndpointType>(in));
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 			else if (p.size() == 18)
 				epl.push_back(read_v6_endpoint<EndpointType>(in));
 #endif
@@ -95,12 +95,12 @@ namespace
 
 }
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 	void incoming_error(entry& e, char const* msg);
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	int g_az_message_input = 0;
 	int g_ut_message_input = 0;
 	int g_lt_message_input = 0;
@@ -115,20 +115,20 @@ namespace libtorrent { namespace dht
 		
 	void intrusive_ptr_add_ref(dht_tracker const* c)
 	{
-		TORRENT_ASSERT(c != 0);
-		TORRENT_ASSERT(c->m_refs >= 0);
+		LIBED2K_ASSERT(c != 0);
+		LIBED2K_ASSERT(c->m_refs >= 0);
 		++c->m_refs;
 	}
 
 	void intrusive_ptr_release(dht_tracker const* c)
 	{
-		TORRENT_ASSERT(c != 0);
-		TORRENT_ASSERT(c->m_refs > 0);
+		LIBED2K_ASSERT(c != 0);
+		LIBED2K_ASSERT(c->m_refs > 0);
 		if (--c->m_refs == 0)
 			delete c;
 	}
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	std::string parse_dht_client(lazy_entry const& e)
 	{
 		lazy_entry const* ver = e.dict_find_string("v");
@@ -152,7 +152,7 @@ namespace libtorrent { namespace dht
 		else if (std::equal(client.begin(), client.begin() + 2, "LT"))
 		{
 			++g_lt_message_input;
-			return "libtorrent";
+			return "libed2k";
 		}
 		else if (std::equal(client.begin(), client.begin() + 2, "MP"))
 		{
@@ -177,8 +177,8 @@ namespace libtorrent { namespace dht
 	}
 #endif
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_DEFINE_LOG(dht_tracker)
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_DEFINE_LOG(dht_tracker)
 #endif
 
 	node_id extract_node_id(lazy_entry const* e)
@@ -206,7 +206,7 @@ namespace libtorrent { namespace dht
 
 	// class that puts the networking and the kademlia node in a single
 	// unit and connecting them together.
-	dht_tracker::dht_tracker(libtorrent::aux::session_impl& ses, rate_limited_udp_socket& sock
+	dht_tracker::dht_tracker(libed2k::aux::session_impl& ses, rate_limited_udp_socket& sock
 		, dht_settings const& settings, entry const* state)
 		: m_dht(ses.m_alerts, &send_callback, settings, extract_node_id(state)
 			, ses.external_address()
@@ -226,7 +226,7 @@ namespace libtorrent { namespace dht
 		, m_received_bytes(0)
 		, m_refs(0)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		m_counter = 0;
 		std::fill_n(m_replies_bytes_sent, 5, 0);
 		std::fill_n(m_queries_bytes_received, 5, 0);
@@ -246,7 +246,7 @@ namespace libtorrent { namespace dht
 //		traversal_log().enable(false);
 //		dht_tracker_log.enable(false);
 
-		TORRENT_LOG(dht_tracker) << "starting DHT tracker with node id: " << m_dht.nid();
+		LIBED2K_LOG(dht_tracker) << "starting DHT tracker with node id: " << m_dht.nid();
 #endif
 	}
 
@@ -255,15 +255,15 @@ namespace libtorrent { namespace dht
 
 	void dht_tracker::start(entry const& bootstrap)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		std::vector<udp::endpoint> initial_nodes;
 
 		if (bootstrap.type() == entry::dictionary_t)
 		{
-			TORRENT_TRY {
+			LIBED2K_TRY {
 				if (entry const* nodes = bootstrap.find_key("nodes"))
 					read_endpoint_list<udp::endpoint>(nodes, initial_nodes);
-			} TORRENT_CATCH(std::exception&) {}
+			} LIBED2K_CATCH(std::exception&) {}
 		}
 
 		error_code ec;
@@ -276,12 +276,12 @@ namespace libtorrent { namespace dht
 
 		m_refresh_timer.expires_from_now(seconds(5), ec);
 		m_refresh_timer.async_wait(boost::bind(&dht_tracker::refresh_timeout, self(), _1));
-		m_dht.bootstrap(initial_nodes, boost::bind(&libtorrent::dht::nop));
+		m_dht.bootstrap(initial_nodes, boost::bind(&libed2k::dht::nop));
 	}
 
 	void dht_tracker::stop()
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_abort = true;
 		error_code ec;
 		m_timer.cancel(ec);
@@ -292,13 +292,13 @@ namespace libtorrent { namespace dht
 
 	void dht_tracker::dht_status(session_status& s)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_dht.status(s);
 	}
 
 	void dht_tracker::network_stats(int& sent, int& received)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		sent = m_sent_bytes;
 		received = m_received_bytes;
 		m_sent_bytes = 0;
@@ -307,7 +307,7 @@ namespace libtorrent { namespace dht
 
 	void dht_tracker::connection_timeout(error_code const& e)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		if (e || m_abort) return;
 
 		time_duration d = m_dht.connection_timeout();
@@ -318,7 +318,7 @@ namespace libtorrent { namespace dht
 
 	void dht_tracker::refresh_timeout(error_code const& e)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		if (e || m_abort) return;
 
 		m_dht.tick();
@@ -330,7 +330,7 @@ namespace libtorrent { namespace dht
 
 	void dht_tracker::tick(error_code const& e)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		if (e || m_abort) return;
 
 		error_code ec;
@@ -342,12 +342,12 @@ namespace libtorrent { namespace dht
 		{
 			m_last_new_key = now;
 			m_dht.new_write_key();
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(dht_tracker) << " *** new write key";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(dht_tracker) << " *** new write key";
 #endif
 		}
 		
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		static bool first = true;
 
 		std::ofstream st("dht_routing_table_state.txt", std::ios_base::trunc);
@@ -433,14 +433,14 @@ namespace libtorrent { namespace dht
 	void dht_tracker::announce(sha1_hash const& ih, int listen_port, bool seed
 		, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_dht.announce(ih, listen_port, seed, f);
 	}
 
 
 	void dht_tracker::on_unreachable(udp::endpoint const& ep)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_dht.unreachable(ep);
 	}
 
@@ -448,7 +448,7 @@ namespace libtorrent { namespace dht
 	// used by the library
 	void dht_tracker::on_receive(udp::endpoint const& ep, char const* buf, int bytes_transferred)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		// account for IP and UDP overhead
 		m_received_bytes += bytes_transferred + (ep.address().is_v6() ? 48 : 28);
 
@@ -472,10 +472,10 @@ namespace libtorrent { namespace dht
 			{
 				if (now < match->limit)
 				{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 					if (match->count == 20)
 					{
-						TORRENT_LOG(dht_tracker) << " BANNING PEER [ ip: "
+						LIBED2K_LOG(dht_tracker) << " BANNING PEER [ ip: "
 							<< ep << " time: " << total_milliseconds((now - match->limit) + seconds(5)) / 1000.f
 							<< " count: " << match->count << " ]";
 					}
@@ -499,15 +499,15 @@ namespace libtorrent { namespace dht
 			min->src = ep.address();
 		}
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		++m_total_message_input;
 		m_total_in_bytes += bytes_transferred;
 #endif
 
-		using libtorrent::entry;
-		using libtorrent::bdecode;
+		using libed2k::entry;
+		using libed2k::bdecode;
 			
-		TORRENT_ASSERT(bytes_transferred > 0);
+		LIBED2K_ASSERT(bytes_transferred > 0);
 
 		lazy_entry e;
 		int pos;
@@ -515,32 +515,32 @@ namespace libtorrent { namespace dht
 		int ret = lazy_bdecode(buf, buf + bytes_transferred, e, ec, &pos, 10, 500);
 		if (ret != 0)
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(dht_tracker) << "<== " << ep << " ERROR: "
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(dht_tracker) << "<== " << ep << " ERROR: "
 				<< ec.message() << " pos: " << pos;
 #endif
 			return;
 		}
 
-		libtorrent::dht::msg m(e, ep);
+		libed2k::dht::msg m(e, ep);
 
 		if (e.type() != lazy_entry::dict_t)
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(dht_tracker) << "<== " << ep << " ERROR: not a dictionary: "
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(dht_tracker) << "<== " << ep << " ERROR: not a dictionary: "
 				<< print_entry(e, true);
 #endif
 			// it's not a good idea to send invalid messages
 			// especially not in response to an invalid message
 //			entry r;
-//			libtorrent::dht::incoming_error(r, "message is not a dictionary");
+//			libed2k::dht::incoming_error(r, "message is not a dictionary");
 //			send_packet(r, ep, 0);
 			return;
 		}
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		parse_dht_client(e);
-		TORRENT_LOG(dht_tracker) << "<== " << ep << " " << print_entry(e, true);
+		LIBED2K_LOG(dht_tracker) << "<== " << ep << " " << print_entry(e, true);
 #endif
 
 		m_dht.incoming(m);
@@ -557,7 +557,7 @@ namespace libtorrent { namespace dht
 	
 	entry dht_tracker::state() const
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		entry ret(entry::dictionary_t);
 		{
 			entry nodes(entry::list_t);
@@ -582,13 +582,13 @@ namespace libtorrent { namespace dht
 
 	void dht_tracker::add_node(udp::endpoint node)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_dht.add_node(node);
 	}
 
 	void dht_tracker::add_node(std::pair<std::string, int> const& node)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		char port[7];
 		snprintf(port, sizeof(port), "%d", node.second);
 		udp::resolver::query q(node.first, port);
@@ -599,36 +599,36 @@ namespace libtorrent { namespace dht
 	void dht_tracker::on_name_lookup(error_code const& e
 		, udp::resolver::iterator host)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		if (e || host == udp::resolver::iterator()) return;
 		add_node(host->endpoint());
 	}
 
 	void dht_tracker::add_router_node(udp::endpoint const& node)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
+		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_dht.add_router_node(node);
 	}
 
-	bool dht_tracker::send_packet(libtorrent::entry& e, udp::endpoint const& addr, int send_flags)
+	bool dht_tracker::send_packet(libed2k::entry& e, udp::endpoint const& addr, int send_flags)
 	{
-		TORRENT_ASSERT(m_ses.is_network_thread());
-		using libtorrent::bencode;
-		using libtorrent::entry;
+		LIBED2K_ASSERT(m_ses.is_network_thread());
+		using libed2k::bencode;
+		using libed2k::entry;
 
 		static char const version_str[] = {'L', 'T'
-			, LIBTORRENT_VERSION_MAJOR, LIBTORRENT_VERSION_MINOR};
+			, LIBED2K_VERSION_MAJOR, LIBED2K_VERSION_MINOR};
 		e["v"] = std::string(version_str, version_str + 4);
 
 		m_send_buf.clear();
 		bencode(std::back_inserter(m_send_buf), e);
 		error_code ec;
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		std::stringstream log_line;
 		lazy_entry print;
 		int ret = lazy_bdecode(&m_send_buf[0], &m_send_buf[0] + m_send_buf.size(), print, ec);
-		TORRENT_ASSERT(ret == 0);
+		LIBED2K_ASSERT(ret == 0);
 		log_line << print_entry(print, true);
 #endif
 
@@ -639,7 +639,7 @@ namespace libtorrent { namespace dht
 			// account for IP and UDP overhead
 			m_sent_bytes += m_send_buf.size() + (addr.address().is_v6() ? 48 : 28);
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			m_total_out_bytes += m_send_buf.size();
 		
 			if (e["y"].string() == "r")
@@ -652,14 +652,14 @@ namespace libtorrent { namespace dht
 			{
 				m_queries_out_bytes += m_send_buf.size();
 			}
-			TORRENT_LOG(dht_tracker) << "==> " << addr << " " << log_line.str();
+			LIBED2K_LOG(dht_tracker) << "==> " << addr << " " << log_line.str();
 #endif
 			return true;
 		}
 		else
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(dht_tracker) << "==> " << addr << " DROPPED " << log_line.str();
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(dht_tracker) << "==> " << addr << " DROPPED " << log_line.str();
 #endif
 			return false;
 		}

@@ -30,30 +30,30 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
 #include <utility>
 #include <boost/bind.hpp>
 #include <boost/function/function1.hpp>
 
-#include "libtorrent/io.hpp"
-#include "libtorrent/bencode.hpp"
-#include "libtorrent/hasher.hpp"
-#include "libtorrent/alert_types.hpp"
-#include "libtorrent/alert.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/random.hpp"
-#include "libtorrent/aux_/session_impl.hpp"
-#include "libtorrent/kademlia/node_id.hpp"
-#include "libtorrent/kademlia/rpc_manager.hpp"
-#include "libtorrent/kademlia/routing_table.hpp"
-#include "libtorrent/kademlia/node.hpp"
+#include "libed2k/io.hpp"
+#include "libed2k/bencode.hpp"
+#include "libed2k/hasher.hpp"
+#include "libed2k/alert_types.hpp"
+#include "libed2k/alert.hpp"
+#include "libed2k/socket.hpp"
+#include "libed2k/random.hpp"
+#include "libed2k/session_impl.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/kademlia/rpc_manager.hpp"
+#include "libed2k/kademlia/routing_table.hpp"
+#include "libed2k/kademlia/node.hpp"
 
-#include "libtorrent/kademlia/refresh.hpp"
-#include "libtorrent/kademlia/find_data.hpp"
-#include "libtorrent/rsa.hpp"
+#include "libed2k/kademlia/refresh.hpp"
+#include "libed2k/kademlia/find_data.hpp"
+#include "libed2k/rsa.hpp"
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 void incoming_error(entry& e, char const* msg);
@@ -63,8 +63,8 @@ using detail::write_endpoint;
 // TODO: configurable?
 enum { announce_interval = 30 };
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-TORRENT_DEFINE_LOG(node)
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+LIBED2K_DEFINE_LOG(node)
 extern int g_announces;
 extern int g_failed_announces;
 #endif
@@ -78,8 +78,8 @@ void purge_peers(std::set<peer_entry>& peers)
 		// the peer has timed out
 		if (i->added + minutes(int(announce_interval * 1.5f)) < time_now())
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(node) << "peer timed out at: " << i->addr;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(node) << "peer timed out at: " << i->addr;
 #endif
 			peers.erase(i++);
 		}
@@ -90,7 +90,7 @@ void purge_peers(std::set<peer_entry>& peers)
 
 void nop() {}
 
-node_impl::node_impl(libtorrent::alert_manager& alerts
+node_impl::node_impl(libed2k::alert_manager& alerts
 	, bool (*f)(void*, entry&, udp::endpoint const&, int)
 	, dht_settings const& settings, node_id nid, address const& external_address
 	, external_ip_fun ext_ip, void* userdata)
@@ -113,13 +113,13 @@ bool node_impl::verify_token(std::string const& token, char const* info_hash
 {
 	if (token.length() != 4)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(node) << "token of incorrect length: " << token.length();
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(node) << "token of incorrect length: " << token.length();
 #endif
 		return false;
 	}
 
-	hasher h1;
+	sha1_hasher h1;
 	error_code ec;
 	std::string address = addr.address().to_string(ec);
 	if (ec) return false;
@@ -131,7 +131,7 @@ bool node_impl::verify_token(std::string const& token, char const* info_hash
 	if (std::equal(token.begin(), token.end(), (char*)&h[0]))
 		return true;
 		
-	hasher h2;
+	sha1_hasher h2;
 	h2.update(&address[0], address.length());
 	h2.update((char*)&m_secret[1], sizeof(m_secret[1]));
 	h2.update((char*)info_hash, sha1_hash::size);
@@ -145,17 +145,17 @@ std::string node_impl::generate_token(udp::endpoint const& addr, char const* inf
 {
 	std::string token;
 	token.resize(4);
-	hasher h;
+	sha1_hasher h;
 	error_code ec;
 	std::string address = addr.address().to_string(ec);
-	TORRENT_ASSERT(!ec);
+	LIBED2K_ASSERT(!ec);
 	h.update(&address[0], address.length());
 	h.update((char*)&m_secret[0], sizeof(m_secret[0]));
 	h.update(info_hash, sha1_hash::size);
 
 	sha1_hash hash = h.final();
 	std::copy(hash.begin(), hash.begin() + 4, (char*)&token[0]);
-	TORRENT_ASSERT(std::equal(token.begin(), token.end(), (char*)&hash[0]));
+	LIBED2K_ASSERT(std::equal(token.begin(), token.end(), (char*)&hash[0]));
 	return token;
 }
 
@@ -171,21 +171,21 @@ void node_impl::bootstrap(std::vector<udp::endpoint> const& nodes
 {
 	boost::intrusive_ptr<dht::refresh> r(new dht::bootstrap(*this, m_id, f));
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	int count = 0;
 #endif
 
 	for (std::vector<udp::endpoint>::const_iterator i = nodes.begin()
 		, end(nodes.end()); i != end; ++i)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		++count;
 #endif
 		r->add_entry(node_id(0), *i, observer::flag_initial);
 	}
 	
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(node) << "bootstrapping with " << count << " nodes";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(node) << "bootstrapping with " << count << " nodes";
 #endif
 	r->start();
 }
@@ -227,7 +227,7 @@ void node_impl::incoming(msg const& m)
 		memcpy(&b[0], ext_ip->string_ptr(), 4);
 		m_ext_ip(address_v4(b), aux::session_impl::source_dht, m.addr.address());
 	}
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 	else if (ext_ip && ext_ip->string_length() >= 16)
 	{
 		address_v6::bytes_type b;
@@ -247,7 +247,7 @@ void node_impl::incoming(msg const& m)
 		}
 		case 'q':
 		{
-			TORRENT_ASSERT(m.message.dict_find_string_value("y") == "q");
+			LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "q");
 			entry e;
 			incoming_request(m, e);
 			m_send(m_userdata, e, m.addr, 0);
@@ -255,11 +255,11 @@ void node_impl::incoming(msg const& m)
 		}
 		case 'e':
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			lazy_entry const* err = m.message.dict_find_list("e");
 			if (err && err->list_size() >= 2)
 			{
-				TORRENT_LOG(node) << "INCOMING ERROR: " << err->list_string_value_at(1);
+				LIBED2K_LOG(node) << "INCOMING ERROR: " << err->list_string_value_at(1);
 			}
 #endif
 			break;
@@ -272,8 +272,8 @@ namespace
 	void announce_fun(std::vector<std::pair<node_entry, std::string> > const& v
 		, node_impl& node, int listen_port, sha1_hash const& ih, bool seed)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(node) << "sending announce_peer [ ih: " << ih
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(node) << "sending announce_peer [ ih: " << ih
 			<< " p: " << listen_port
 			<< " nodes: " << v.size() << " ]" ;
 #endif
@@ -286,14 +286,14 @@ namespace
 		for (std::vector<std::pair<node_entry, std::string> >::const_iterator i = v.begin()
 			, end(v.end()); i != end; ++i)
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-			TORRENT_LOG(node) << "  distance: " << (160 - distance_exp(ih, i->first.id));
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(node) << "  distance: " << (160 - distance_exp(ih, i->first.id));
 #endif
 
 			void* ptr = node.m_rpc.allocate_observer();
 			if (ptr == 0) return;
 			observer_ptr o(new (ptr) announce_observer(algo, i->first.ep(), i->first.id));
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 			o->m_in_constructor = false;
 #endif
 			entry e;
@@ -311,8 +311,8 @@ namespace
 
 void node_impl::add_router_node(udp::endpoint router)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(node) << "adding router node: " << router;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(node) << "adding router node: " << router;
 #endif
 	m_table.add_router_node(router);
 }
@@ -330,7 +330,7 @@ void node_impl::add_node(udp::endpoint node)
 	boost::intrusive_ptr<traversal_algorithm> algo(
 		new traversal_algorithm(*this, (node_id::min)()));
 	observer_ptr o(new (ptr) null_observer(algo, node, node_id(0)));
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	o->m_in_constructor = false;
 #endif
 	entry e;
@@ -342,8 +342,8 @@ void node_impl::add_node(udp::endpoint node)
 void node_impl::announce(sha1_hash const& info_hash, int listen_port, bool seed
 	, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(node) << "announcing [ ih: " << info_hash << " p: " << listen_port << " ]" ;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(node) << "announcing [ ih: " << info_hash << " p: " << listen_port << " ]" ;
 #endif
 	// search for nodes with ids close to id or with peers
 	// for info-hash id. then send announce_peer to them.
@@ -418,8 +418,7 @@ void node_impl::status(session_status& s)
 void node_impl::lookup_peers(sha1_hash const& info_hash, int prefix, entry& reply
 	, bool noseed, bool scrape) const
 {
-	if (m_alerts.should_post<dht_get_peers_alert>())
-		m_alerts.post_alert(dht_get_peers_alert(info_hash));
+    m_alerts.post_alert_should(dht_get_peers_alert(info_hash));
 
 	table_t::const_iterator i = m_map.lower_bound(info_hash);
 	if (i == m_map.end()) return;
@@ -573,12 +572,12 @@ bool verify_message(lazy_entry const* msg, key_desc_t const desc[], lazy_entry c
 		}
 		if (k.flags & key_desc_t::parse_children)
 		{
-			TORRENT_ASSERT(k.type == lazy_entry::dict_t);
+			LIBED2K_ASSERT(k.type == lazy_entry::dict_t);
 
 			if (ret[i])
 			{
 				++stack_ptr;
-				TORRENT_ASSERT(stack_ptr < int(sizeof(stack)/sizeof(stack[0])));
+				LIBED2K_ASSERT(stack_ptr < int(sizeof(stack)/sizeof(stack[0])));
 				msg = ret[i];
 				stack[stack_ptr] = msg;
 			}
@@ -587,12 +586,12 @@ bool verify_message(lazy_entry const* msg, key_desc_t const desc[], lazy_entry c
 				// skip all children
 				while (i < size && (desc[i].flags & key_desc_t::last_child) == 0) ++i;
 				// if this assert is hit, desc is incorrect
-				TORRENT_ASSERT(i < size);
+				LIBED2K_ASSERT(i < size);
 			}
 		}
 		else if (k.flags & key_desc_t::last_child)
 		{
-			TORRENT_ASSERT(stack_ptr > 0);
+			LIBED2K_ASSERT(stack_ptr > 0);
 			// this can happen if the specification passed
 			// in is unbalanced. i.e. contain more last_child
 			// nodes than parse_children
@@ -693,8 +692,8 @@ void node_impl::incoming_request(msg const& m, entry& e)
 		if (msg_keys[2] && msg_keys[2]->int_value() != 0) noseed = true;
 		if (msg_keys[3] && msg_keys[3]->int_value() != 0) scrape = true;
 		lookup_peers(info_hash, prefix, reply, noseed, scrape);
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		if (reply.find_key("values")) TORRENT_LOG(node) << " values: " << reply["values"].list().size();
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		if (reply.find_key("values")) LIBED2K_LOG(node) << " values: " << reply["values"].list().size();
 #endif
 	}
 	else if (strcmp(query, "find_node") == 0)
@@ -731,7 +730,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 		lazy_entry const* msg_keys[6];
 		if (!verify_message(arg_ent, msg_desc, msg_keys, 6, error_string, sizeof(error_string)))
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			++g_failed_announces;
 #endif
 			incoming_error(e, error_string);
@@ -747,7 +746,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 
 		if (port < 0 || port >= 65536)
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			++g_failed_announces;
 #endif
 			incoming_error(e, "invalid port");
@@ -756,13 +755,12 @@ void node_impl::incoming_request(msg const& m, entry& e)
 
 		sha1_hash info_hash(msg_keys[0]->string_ptr());
 
-		if (m_alerts.should_post<dht_announce_alert>())
-			m_alerts.post_alert(dht_announce_alert(
-				m.addr.address(), port, info_hash));
+		m_alerts.post_alert_should(dht_announce_alert(
+                m.addr.address(), port, info_hash));
 
 		if (!verify_token(msg_keys[2]->string_value(), msg_keys[0]->string_ptr(), m.addr))
 		{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			++g_failed_announces;
 #endif
 			incoming_error(e, "invalid token");
@@ -808,7 +806,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 		std::set<peer_entry>::iterator i = v.peers.find(peer);
 		if (i != v.peers.end()) v.peers.erase(i++);
 		v.peers.insert(i, peer);
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		++g_announces;
 #endif
 	}
@@ -846,7 +844,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 
 		sha1_hash target;
 		if (!mutable_put)
-			target = hasher(buf.first, buf.second).final();
+			target = sha1_hasher(buf.first, buf.second).final();
 		else
 			target = sha1_hash(msg_keys[3]->string_ptr());
 
@@ -880,7 +878,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 							, boost::bind(&dht_immutable_table_t::value_type::second, _1))
 							< boost::bind(&dht_immutable_item::num_announcers
 							, boost::bind(&dht_immutable_table_t::value_type::second, _2)));
-					TORRENT_ASSERT(j != m_immutable_table.end());
+					LIBED2K_ASSERT(j != m_immutable_table.end());
 					free(j->second.value);
 					m_immutable_table.erase(j);
 				}
@@ -908,7 +906,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 			std::pair<char const*, int> buf = msg_keys[1]->data_section();
 			digest.update(buf.first, buf.second);
 
-#ifdef TORRENT_USE_OPENSSL
+#ifdef LIBED2K_USE_OPENSSL
 			if (!verify_rsa(digest.final(), msg_keys[3]->string_ptr(), msg_keys[3]->string_length()
 				, msg_keys[4]->string_ptr(), msg_keys[4]->string_length()))
 			{
@@ -920,7 +918,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 			return;
 #endif
 
-			sha1_hash target = hasher(msg_keys[3]->string_ptr(), msg_keys[3]->string_length()).final();
+			sha1_hash target = sha1_hasher(msg_keys[3]->string_ptr(), msg_keys[3]->string_length()).final();
 			dht_mutable_table_t::iterator i = m_mutable_table.find(target);
 			if (i == m_mutable_table.end())
 			{
@@ -933,7 +931,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 						, m_mutable_table.end()
 						, boost::bind(&dht_immutable_item::num_announcers
 							, boost::bind(&dht_mutable_table_t::value_type::second, _1)));
-					TORRENT_ASSERT(j != m_mutable_table.end());
+					LIBED2K_ASSERT(j != m_mutable_table.end());
 					free(j->second.value);
 					m_mutable_table.erase(j);
 				}
@@ -942,7 +940,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 				to_add.size = buf.second;
 				to_add.seq = msg_keys[2]->int_value();
 				memcpy(to_add.sig, msg_keys[4]->string_ptr(), sizeof(to_add.sig));
-				TORRENT_ASSERT(sizeof(to_add.sig) == msg_keys[4]->string_length());
+				LIBED2K_ASSERT(sizeof(to_add.sig) == msg_keys[4]->string_length());
 				memcpy(to_add.value, buf.first, buf.second);
 				memcpy(&to_add.key, msg_keys[3]->string_ptr(), sizeof(to_add.key));
 		
@@ -971,7 +969,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 					}
 					item->seq = msg_keys[2]->int_value();
 					memcpy(item->sig, msg_keys[4]->string_ptr(), sizeof(item->sig));
-					TORRENT_ASSERT(sizeof(item->sig) == msg_keys[4]->string_length());
+					LIBED2K_ASSERT(sizeof(item->sig) == msg_keys[4]->string_length());
 					memcpy(item->value, buf.first, buf.second);
 				}
 			}
@@ -1066,5 +1064,5 @@ void node_impl::incoming_request(msg const& m, entry& e)
 }
 
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 

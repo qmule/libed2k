@@ -37,10 +37,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/detail/atomic_count.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/cstdint.hpp>
-#include <libtorrent/ptime.hpp>
-#include <libtorrent/address.hpp>
+#include <libed2k/ptime.hpp>
+#include <libed2k/address.hpp>
 
-namespace libtorrent {
+namespace libed2k {
 namespace dht {
 
 struct observer;
@@ -48,8 +48,8 @@ struct msg;
 struct traversal_algorithm;
 
 // defined in rpc_manager.cpp
-TORRENT_EXTRA_EXPORT void intrusive_ptr_add_ref(observer const*);
-TORRENT_EXTRA_EXPORT void intrusive_ptr_release(observer const*);
+LIBED2K_EXTRA_EXPORT void intrusive_ptr_add_ref(observer const*);
+LIBED2K_EXTRA_EXPORT void intrusive_ptr_release(observer const*);
 
 // intended struct layout (on 32 bit architectures)
 // offset size  alignment field
@@ -64,8 +64,8 @@ TORRENT_EXTRA_EXPORT void intrusive_ptr_release(observer const*);
 
 struct observer : boost::noncopyable
 {
-	friend TORRENT_EXTRA_EXPORT void intrusive_ptr_add_ref(observer const*);
-	friend TORRENT_EXTRA_EXPORT void intrusive_ptr_release(observer const*);
+	friend LIBED2K_EXTRA_EXPORT void intrusive_ptr_add_ref(observer const*);
+	friend LIBED2K_EXTRA_EXPORT void intrusive_ptr_release(observer const*);
 
 	observer(boost::intrusive_ptr<traversal_algorithm> const& a
 		, udp::endpoint const& ep, node_id const& id)
@@ -77,8 +77,8 @@ struct observer : boost::noncopyable
 		, m_transaction_id()
 		, flags(0)
 	{
-		TORRENT_ASSERT(a);
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+		LIBED2K_ASSERT(a);
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 		m_in_constructor = true;
 		m_was_sent = false;
 		m_was_abandoned = false;
@@ -133,7 +133,7 @@ struct observer : boost::noncopyable
 		flag_done = 128
 	};
 
-#ifndef TORRENT_DHT_VERBOSE_LOGGING
+#ifndef LIBED2K_DHT_VERBOSE_LOGGING
 protected:
 #endif
 
@@ -148,9 +148,9 @@ protected:
 
 	node_id m_id;
 
-	TORRENT_UNION addr_t
+	LIBED2K_UNION addr_t
 	{
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 		address_v6::bytes_type v6;
 #endif
 		address_v4::bytes_type v4;
@@ -163,7 +163,7 @@ protected:
 public:
 	unsigned char flags;
 
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	bool m_in_constructor:1;
 	bool m_was_sent:1;
 	bool m_was_abandoned:1;

@@ -1,6 +1,6 @@
 /*
 
-Copyright (c) 2006, Arvid Norberg
+Copyright (c) 2011, Arvid Norberg, Magnus Jonsson
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,40 +29,33 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 */
-#ifndef NODE_ID_HPP
-#define NODE_ID_HPP
 
-#include <algorithm>
+#ifndef LIBED2K_SIGN_HPP_INCLUDED
+#define LIBED2K_SIGN_HPP_INCLUDED
 
-#include <boost/cstdint.hpp>
 #include "libed2k/config.hpp"
-#include "libed2k/peer_id.hpp"
-#include "libed2k/assert.hpp"
-#include "libed2k/address.hpp"
+#include "libed2k/hasher.hpp"
+#include "libed2k/peer_id.hpp" // for sha1
 
-namespace libed2k { namespace dht
+namespace libed2k
 {
+	// both of these use SHA-1 as the message digest to be signed/verified
 
-typedef libed2k::big_number node_id;
+	// returns the size of the resulting signature
+    LIBED2K_EXTRA_EXPORT int sign_rsa(sha1_hash const& digest
+		, char const* private_key, int private_len
+		, char* signature, int sig_len);
 
-// returns the distance between the two nodes
-// using the kademlia XOR-metric
-node_id LIBED2K_EXTRA_EXPORT distance(node_id const& n1, node_id const& n2);
+	// returns true if the signature is valid
+    LIBED2K_EXTRA_EXPORT bool verify_rsa(sha1_hash const& digest
+		, char const* public_key, int public_len
+		, char const* signature, int sig_len);
 
-// returns true if: distance(n1, ref) < distance(n2, ref)
-bool LIBED2K_EXTRA_EXPORT compare_ref(node_id const& n1, node_id const& n2, node_id const& ref);
+	// returns false if it fails, for instance if the key
+	// buffers are too small. public_len and private_len
+	// are in-out values, set to the actual sizes
+    LIBED2K_EXTRA_EXPORT bool generate_rsa_keys(char* public_key, int* public_len
+		, char* private_key, int* private_len, int key_size);
+}
 
-// returns n in: 2^n <= distance(n1, n2) < 2^(n+1)
-// usefult for finding out which bucket a node belongs to
-int LIBED2K_EXTRA_EXPORT distance_exp(node_id const& n1, node_id const& n2);
-
-node_id LIBED2K_EXTRA_EXPORT generate_id(address const& external_ip);
-node_id LIBED2K_EXTRA_EXPORT generate_random_id();
-node_id LIBED2K_EXTRA_EXPORT generate_id_impl(address const& ip_, boost::uint32_t r);
-
-bool LIBED2K_EXTRA_EXPORT verify_id(node_id const& nid, address const& source_ip);
-
-} } // namespace libed2k::dht
-
-#endif // NODE_ID_HPP
-
+#endif // LIBED2K_SIGN_HPP_INCLUDED

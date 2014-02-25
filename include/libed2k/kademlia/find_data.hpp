@@ -36,18 +36,18 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <map>
 
-#include <libtorrent/kademlia/traversal_algorithm.hpp>
-#include <libtorrent/kademlia/node_id.hpp>
-#include <libtorrent/kademlia/routing_table.hpp>
-#include <libtorrent/kademlia/rpc_manager.hpp>
-#include <libtorrent/kademlia/observer.hpp>
-#include <libtorrent/kademlia/msg.hpp>
+#include <libed2k/kademlia/traversal_algorithm.hpp>
+#include <libed2k/kademlia/node_id.hpp>
+#include <libed2k/kademlia/routing_table.hpp>
+#include <libed2k/kademlia/rpc_manager.hpp>
+#include <libed2k/kademlia/observer.hpp>
+#include <libed2k/kademlia/msg.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/function/function1.hpp>
 #include <boost/function/function2.hpp>
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 typedef std::vector<char> packet_t;
@@ -105,7 +105,7 @@ public:
 	void reply(msg const&);
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif // FIND_DATA_050323_HPP
 

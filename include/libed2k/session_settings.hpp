@@ -481,6 +481,100 @@ namespace libed2k
         bool upnp_ignore_nonrouters;
     };
 
+#ifndef TORRENT_DISABLE_DHT
+    struct dht_settings
+    {
+        dht_settings()
+            : max_peers_reply(100)
+            , search_branching(5)
+#ifndef TORRENT_NO_DEPRECATE
+            , service_port(0)
+#endif
+            , max_fail_count(20)
+            , max_torrents(2000)
+            , max_dht_items(700)
+            , max_torrent_search_reply(20)
+            , restrict_routing_ips(true)
+            , restrict_search_ips(true)
+        {}
+
+        // the maximum number of peers to send in a
+        // reply to get_peers
+        int max_peers_reply;
+
+        // the number of simultanous "connections" when
+        // searching the DHT.
+        int search_branching;
+
+#ifndef TORRENT_NO_DEPRECATE
+        // the listen port for the dht. This is a UDP port.
+        // zero means use the same as the tcp interface
+        int service_port;
+#endif
+
+        // the maximum number of times a node can fail
+        // in a row before it is removed from the table.
+        int max_fail_count;
+
+        // this is the max number of torrents the DHT will track
+        int max_torrents;
+
+        // max number of items the DHT will store
+        int max_dht_items;
+
+        // the max number of torrents to return in a
+        // torrent search query to the DHT
+        int max_torrent_search_reply;
+
+        // when set, nodes whose IP address that's in
+        // the same /24 (or /64 for IPv6) range in the
+        // same routing table bucket. This is an attempt
+        // to mitigate node ID spoofing attacks
+        // also restrict any IP to only have a single
+        // entry in the whole routing table
+        bool restrict_routing_ips;
+
+        // applies the same IP restrictions on nodes
+        // received during a DHT search (traversal algorithm)
+        bool restrict_search_ips;
+    };
+#endif
+
+#ifndef LIBED2K_DISABLE_ENCRYPTION
+
+    struct pe_settings
+    {
+        pe_settings()
+            : out_enc_policy(enabled)
+            , in_enc_policy(enabled)
+            , allowed_enc_level(both)
+            , prefer_rc4(false)
+        {}
+
+        enum enc_policy
+        {
+            forced,  // disallow non encrypted connections
+            enabled, // allow encrypted and non encrypted connections
+            disabled // disallow encrypted connections
+        };
+
+        enum enc_level
+        {
+            plaintext = 1, // use only plaintext encryption
+            rc4 = 2, // use only rc4 encryption
+            both = 3 // allow both
+        };
+
+        enc_policy out_enc_policy;
+        enc_policy in_enc_policy;
+
+        enc_level allowed_enc_level;
+        // if the allowed encryption level is both, setting this to
+        // true will prefer rc4 if both methods are offered, plaintext
+        // otherwise
+        bool prefer_rc4;
+    };
+#endif
 }
 
 #endif

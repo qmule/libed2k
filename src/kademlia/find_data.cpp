@@ -30,33 +30,33 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#include "libtorrent/pch.hpp"
+#include "libed2k/pch.hpp"
 
-#include <libtorrent/kademlia/find_data.hpp>
-#include <libtorrent/kademlia/routing_table.hpp>
-#include <libtorrent/kademlia/rpc_manager.hpp>
-#include <libtorrent/kademlia/node.hpp>
-#include <libtorrent/io.hpp>
-#include <libtorrent/socket.hpp>
-#include <libtorrent/socket_io.hpp>
+#include <libed2k/kademlia/find_data.hpp>
+#include <libed2k/kademlia/routing_table.hpp>
+#include <libed2k/kademlia/rpc_manager.hpp>
+#include <libed2k/kademlia/node.hpp>
+#include <libed2k/io.hpp>
+#include <libed2k/socket.hpp>
+#include <libed2k/socket_io.hpp>
 #include <vector>
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_DECLARE_LOG(traversal);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_DECLARE_LOG(traversal);
 #endif
 
 using detail::read_endpoint_list;
 using detail::read_v4_endpoint;
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 using detail::read_v6_endpoint;
 #endif
 
 void find_data_observer::reply(msg const& m)
 {
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	std::stringstream log_line;
 	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
 #endif
@@ -64,8 +64,8 @@ void find_data_observer::reply(msg const& m)
 	lazy_entry const* r = m.message.dict_find_dict("r");
 	if (!r)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << "[" << m_algorithm.get() << "] missing response dict";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << "[" << m_algorithm.get() << "] missing response dict";
 #endif
 		return;
 	}
@@ -73,8 +73,8 @@ void find_data_observer::reply(msg const& m)
 	lazy_entry const* id = r->dict_find_string("id");
 	if (!id || id->string_length() != 20)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-		TORRENT_LOG(traversal) << "[" << m_algorithm.get() << "] invalid id in response";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(traversal) << "[" << m_algorithm.get() << "] invalid id in response";
 #endif
 		return;
 	}
@@ -85,7 +85,7 @@ void find_data_observer::reply(msg const& m)
 		static_cast<find_data*>(m_algorithm.get())->got_write_token(
 			node_id(id->string_ptr()), token->string_value());
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		log_line << " token: " << to_hex(token->string_value());
 #endif
 	}
@@ -101,7 +101,7 @@ void find_data_observer::reply(msg const& m)
 			char const* peers = n->list_at(0)->string_ptr();
 			char const* end = peers + n->list_at(0)->string_length();
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			log_line << " p: " << ((end - peers) / 6);
 #endif
 			while (end - peers >= 6)
@@ -109,9 +109,9 @@ void find_data_observer::reply(msg const& m)
 		}
 		else
 		{
-			// assume it's uTorrent/libtorrent format
+			// assume it's uTorrent/libed2k format
 			read_endpoint_list<tcp::endpoint>(n, peer_list);
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			log_line << " p: " << n->list_size();
 #endif
 		}
@@ -126,7 +126,7 @@ void find_data_observer::reply(msg const& m)
 		char const* nodes = n->string_ptr();
 		char const* end = nodes + n->string_length();
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		log_line << " nodes: " << ((end - nodes) / 26);
 #endif
 		while (end - nodes >= 26)
@@ -141,7 +141,7 @@ void find_data_observer::reply(msg const& m)
 	n = r->dict_find_list("nodes2");
 	if (n)
 	{
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		log_line << " nodes2: " << n->list_size();
 #endif
 		for (int i = 0; i < n->list_size(); ++i)
@@ -156,15 +156,15 @@ void find_data_observer::reply(msg const& m)
 			in += 20;
 			if (p->string_length() == 6 + 20)
 				m_algorithm->traverse(id, read_v4_endpoint<udp::endpoint>(in));
-#if TORRENT_USE_IPV6
+#if LIBED2K_USE_IPV6
 			else if (p->string_length() == 18 + 20)
 				m_algorithm->traverse(id, read_v6_endpoint<udp::endpoint>(in));
 #endif
 		}
 	}
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	log_line << " ]";
-	TORRENT_LOG(traversal) << log_line.str();
+	LIBED2K_LOG(traversal) << log_line.str();
 #endif
 	done();
 }
@@ -196,7 +196,7 @@ observer_ptr find_data::new_observer(void* ptr
 	, udp::endpoint const& ep, node_id const& id)
 {
 	observer_ptr o(new (ptr) find_data_observer(this, ep, id));
-#if defined TORRENT_DEBUG || TORRENT_RELEASE_ASSERTS
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	o->m_in_constructor = false;
 #endif
 	return o;
@@ -231,8 +231,8 @@ void find_data::done()
 
 	m_done = true;
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_LOG(traversal) << time_now_string() << "[" << this << "] get_peers DONE";
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_LOG(traversal) << time_now_string() << "[" << this << "] get_peers DONE";
 #endif
 
 	std::vector<std::pair<node_entry, std::string> > results;
@@ -253,5 +253,5 @@ void find_data::done()
 	traversal_algorithm::done();
 }
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 

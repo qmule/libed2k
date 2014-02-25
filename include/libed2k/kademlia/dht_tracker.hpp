@@ -30,10 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef TORRENT_DISABLE_DHT
+#ifndef LIBED2K_DISABLE_DHT
 
-#ifndef TORRENT_DHT_TRACKER
-#define TORRENT_DHT_TRACKER
+#ifndef LIBED2K_DHT_TRACKER
+#define LIBED2K_DHT_TRACKER
 
 #include <fstream>
 #include <set>
@@ -43,40 +43,40 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/intrusive_ptr.hpp>
 #include <boost/detail/atomic_count.hpp>
 
-#include "libtorrent/kademlia/node.hpp"
-#include "libtorrent/kademlia/node_id.hpp"
-#include "libtorrent/kademlia/traversal_algorithm.hpp"
-#include "libtorrent/session_settings.hpp"
-#include "libtorrent/session_status.hpp"
-#include "libtorrent/udp_socket.hpp"
-#include "libtorrent/socket.hpp"
-#include "libtorrent/thread.hpp"
-#include "libtorrent/deadline_timer.hpp"
+#include "libed2k/kademlia/node.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/kademlia/traversal_algorithm.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/session_status.hpp"
+#include "libed2k/udp_socket.hpp"
+#include "libed2k/socket.hpp"
+#include "libed2k/thread.hpp"
+#include "libed2k/deadline_timer.hpp"
 
-namespace libtorrent
+namespace libed2k
 {
-	namespace aux { struct session_impl; }
+	namespace aux { class session_impl; }
 	struct lazy_entry;
 }
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
-	TORRENT_DECLARE_LOG(dht_tracker);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+	LIBED2K_DECLARE_LOG(dht_tracker);
 #endif
 
 	struct dht_tracker;
 
-	TORRENT_EXTRA_EXPORT void intrusive_ptr_add_ref(dht_tracker const*);
-	TORRENT_EXTRA_EXPORT void intrusive_ptr_release(dht_tracker const*);	
+	LIBED2K_EXTRA_EXPORT void intrusive_ptr_add_ref(dht_tracker const*);
+	LIBED2K_EXTRA_EXPORT void intrusive_ptr_release(dht_tracker const*);	
 
 	struct dht_tracker
 	{
 		friend void intrusive_ptr_add_ref(dht_tracker const*);
 		friend void intrusive_ptr_release(dht_tracker const*);
 		friend bool send_callback(void* userdata, entry& e, udp::endpoint const& addr, int flags);
-		dht_tracker(libtorrent::aux::session_impl& ses, rate_limited_udp_socket& sock
+		dht_tracker(libed2k::aux::session_impl& ses, rate_limited_udp_socket& sock
 			, dht_settings const& settings, entry const* state = 0);
 
 		void start(entry const& bootstrap);
@@ -112,10 +112,10 @@ namespace libtorrent { namespace dht
 		void refresh_timeout(error_code const& e);
 		void tick(error_code const& e);
 
-		bool send_packet(libtorrent::entry& e, udp::endpoint const& addr, int send_flags);
+		bool send_packet(libed2k::entry& e, udp::endpoint const& addr, int send_flags);
 
 		node_impl m_dht;
-		libtorrent::aux::session_impl& m_ses;
+		libed2k::aux::session_impl& m_ses;
 		rate_limited_udp_socket& m_sock;
 
 		std::vector<char> m_send_buf;
@@ -152,7 +152,7 @@ namespace libtorrent { namespace dht
 		// reference counter for intrusive_ptr
 		mutable boost::detail::atomic_count m_refs;
 
-#ifdef TORRENT_DHT_VERBOSE_LOGGING
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		int m_replies_sent[5];
 		int m_queries_received[5];
 		int m_replies_bytes_sent[5];

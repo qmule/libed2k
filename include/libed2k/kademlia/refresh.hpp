@@ -33,11 +33,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef REFRESH_050324_HPP
 #define REFRESH_050324_HPP
 
-#include <libtorrent/kademlia/traversal_algorithm.hpp>
-#include <libtorrent/kademlia/node_id.hpp>
-#include <libtorrent/kademlia/find_data.hpp>
+#include <libed2k/kademlia/traversal_algorithm.hpp>
+#include <libed2k/kademlia/node_id.hpp>
+#include <libed2k/kademlia/find_data.hpp>
 
-namespace libtorrent { namespace dht
+namespace libed2k { namespace dht
 {
 
 class routing_table;
@@ -73,7 +73,7 @@ protected:
 
 };
 
-} } // namespace libtorrent::dht
+} } // namespace libed2k::dht
 
 #endif // REFRESH_050324_HPP
 
