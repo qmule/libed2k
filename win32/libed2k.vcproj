@@ -831,6 +831,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\ssl_stream.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\stat.hpp"
 				>
 			</File>
