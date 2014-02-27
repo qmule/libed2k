@@ -776,46 +776,49 @@ struct parse_state
     }
 };
 
-void find_control_url(int type, char const* string, parse_state& state)
+namespace aux
 {
-    if (type == xml_start_tag)
+    void find_control_url(int type, char const* string, parse_state& state)
     {
-        std::string tag;
-        copy_tolower(tag, string);
-        state.tag_stack.push_back(tag);
-//      std::copy(state.tag_stack.begin(), state.tag_stack.end(), std::ostream_iterator<std::string>(std::cout, " "));
-//      std::cout << std::endl;
-    }
-    else if (type == xml_end_tag)
-    {
-        if (!state.tag_stack.empty())
+        if (type == xml_start_tag)
         {
-            if (state.in_service && state.tag_stack.back() == "service")
-                state.in_service = false;
-            state.tag_stack.pop_back();
+            std::string tag;
+            copy_tolower(tag, string);
+            state.tag_stack.push_back(tag);
+    //      std::copy(state.tag_stack.begin(), state.tag_stack.end(), std::ostream_iterator<std::string>(std::cout, " "));
+    //      std::cout << std::endl;
         }
-    }
-    else if (type == xml_string)
-    {
-        if (state.tag_stack.empty()) return;
-//      std::cout << " " << string << std::endl;
-        if (!state.in_service && state.top_tags("service", "servicetype"))
+        else if (type == xml_end_tag)
         {
-            if (string_equal_no_case(string, state.service_type))
-                state.in_service = true;
+            if (!state.tag_stack.empty())
+            {
+                if (state.in_service && state.tag_stack.back() == "service")
+                    state.in_service = false;
+                state.tag_stack.pop_back();
+            }
         }
-        else if (state.control_url.empty() && state.in_service && state.top_tags("service", "controlurl"))
+        else if (type == xml_string)
         {
-            // default to the first (or only) control url in the router's listing
-            state.control_url = string;
-        }
-        else if (state.model.empty() && state.top_tags("device", "modelname"))
-        {
-            state.model = string;
-        }
-        else if (state.tag_stack.back() == "urlbase")
-        {
-            state.url_base = string;
+            if (state.tag_stack.empty()) return;
+    //      std::cout << " " << string << std::endl;
+            if (!state.in_service && state.top_tags("service", "servicetype"))
+            {
+                if (string_equal_no_case(string, state.service_type))
+                    state.in_service = true;
+            }
+            else if (state.control_url.empty() && state.in_service && state.top_tags("service", "controlurl"))
+            {
+                // default to the first (or only) control url in the router's listing
+                state.control_url = string;
+            }
+            else if (state.model.empty() && state.top_tags("device", "modelname"))
+            {
+                state.model = string;
+            }
+            else if (state.tag_stack.back() == "urlbase")
+            {
+                state.url_base = string;
+            }
         }
     }
 }
@@ -866,7 +869,7 @@ void upnp::on_upnp_xml(error_code const& e, libed2k::http_parser const& p, rootd
     parse_state s;
     s.reset("urn:schemas-upnp-org:service:WANIPConnection:1");
     xml_parse((char*)p.get_body().begin, (char*)p.get_body().end,
-              boost::bind(&find_control_url, _1, _2, boost::ref(s)));
+        boost::bind(&aux::find_control_url, _1, _2, boost::ref(s)));
     if (!s.control_url.empty())
     {
         d.service_namespace = s.service_type;
@@ -878,7 +881,7 @@ void upnp::on_upnp_xml(error_code const& e, libed2k::http_parser const& p, rootd
         // a PPP connection
         s.reset("urn:schemas-upnp-org:service:WANPPPConnection:1");
         xml_parse((char*)p.get_body().begin, (char*)p.get_body().end,
-                  boost::bind(&find_control_url, _1, _2, boost::ref(s)));
+            boost::bind(&aux::find_control_url, _1, _2, boost::ref(s)));
         if (!s.control_url.empty())
         {
             d.service_namespace = s.service_type;
