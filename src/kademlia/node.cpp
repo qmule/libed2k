@@ -899,7 +899,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 		{
 			// mutable put, we must verify the signature
 			// generate the message digest by merging the sequence number and the
-			hasher digest;
+			sha1_hasher digest;
 			char seq[20];
 			int len = snprintf(seq, sizeof(seq), "3:seqi%" PRId64 "e1:v", msg_keys[2]->int_value());
 			digest.update(seq, len);

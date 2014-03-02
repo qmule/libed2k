@@ -1,5 +1,6 @@
 #include "libed2k/md4_hash.hpp"
 #include "libed2k/log.hpp"
+#include "libed2k/hasher.hpp"
 
 namespace libed2k
 {
@@ -21,11 +22,11 @@ namespace libed2k
 
         if (hashset.size() > 1)
         {
-            md4_context ctx;
-            md4_init(&ctx);
-            md4_update(&ctx, reinterpret_cast<const unsigned char*>(&hashset[0]),
-                    hashset.size() * MD4_HASH_SIZE);
-            md4_final(&ctx, result.getContainer());
+            MD4_CTX ctx;
+            MD4_Init(&ctx);
+            MD4_Update(&ctx, reinterpret_cast<const boost::uint8_t*>(&hashset[0]),
+                    hashset.size() * MD4_DIGEST_LENGTH);
+            MD4_Final(result.getContainer(), &ctx);
         }
         else if (hashset.size() == 1)
         {

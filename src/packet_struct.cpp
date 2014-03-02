@@ -223,14 +223,14 @@ namespace libed2k
             ", server_port: " << m_server_network_point.m_nPort << "}");
     }
 
-    client_hello::client_hello(): client_hello_answer(), m_nHashLength(MD4_HASH_SIZE) {}
+    client_hello::client_hello(): client_hello_answer(), m_nHashLength(MD4_DIGEST_LENGTH) {}
 
     client_hello::client_hello(const md4_hash& client_hash,
             const net_identifier& np,
             const net_identifier& sp,
             const std::string& client_name,
             const std::string& program_name,
-            boost::uint32_t version) : client_hello_answer(client_hash, np, sp, client_name, program_name, version), m_nHashLength(MD4_HASH_SIZE){}
+            boost::uint32_t version) : client_hello_answer(client_hash, np, sp, client_name, program_name, version), m_nHashLength(MD4_DIGEST_LENGTH){}
 
     // special meta tag types
     const tg_type SEARCH_TYPE_BOOL      = '\x00';

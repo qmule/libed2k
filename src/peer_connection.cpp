@@ -1549,7 +1549,7 @@ void peer_connection::write_hello()
             m_ses.settings().m_version);
 
     // fill special fields
-    hello.m_nHashLength = MD4_HASH_SIZE;
+    hello.m_nHashLength = MD4_DIGEST_LENGTH;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
     append_misc_info(hello.m_list);

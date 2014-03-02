@@ -377,6 +377,12 @@ namespace libed2k {
             deadline_timer m_dht_announce_timer;
 #endif
 
+            // when as a socks proxy is used for peers, also
+            // listen for incoming connections on a socks connection
+            //boost::shared_ptr<socket_type> m_socks_listen_socket;
+            //boost::uint16_t m_socks_listen_port;
+
+
 
             boost::object_pool<peer> m_peer_pool;
 
@@ -496,7 +502,7 @@ namespace libed2k {
             // 0 is natpmp 1 is upnp
             int m_tcp_mapping[2];
             int m_udp_mapping[2];
-#ifdef TORRENT_USE_OPENSSL
+#ifdef LIBED2K_USE_OPENSSL
             int m_ssl_mapping[2];
 #endif
 

@@ -485,6 +485,8 @@ boost::uint16_t session_impl::ssl_listen_port() const
     // if peer connections are set up to be received over a socks
     // proxy, and it's the same one as we're using for the tracker
     // just tell the tracker the socks5 port we're listening on
+    /*
+     // TODO - check it needs
     if (m_socks_listen_socket && m_socks_listen_socket->is_open()
         && m_proxy.hostname == m_proxy.hostname)
         return m_socks_listen_port;
@@ -499,6 +501,7 @@ boost::uint16_t session_impl::ssl_listen_port() const
     {
         if (i->ssl) return i->external_port;
     }
+    */
 #endif
     return 0;
 }

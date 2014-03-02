@@ -47,6 +47,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/ssl_stream.hpp"
 #endif
 
+#if defined LIBED2K_ASIO_DEBUGGING
+#include "libed2k/debug.hpp"
+#endif
+
 #if LIBED2K_USE_I2P
 
 #define LIBED2K_SOCKTYPE_I2P_FORWARD(x) \

@@ -14,6 +14,7 @@
 extern "C"
 {
 #include <openssl/sha.h>
+#include <openssl/md4.h>
 }
 #else
 // from sha1.cpp
@@ -28,65 +29,61 @@ LIBED2K_EXTRA_EXPORT void SHA1_Init(SHA_CTX* context);
 LIBED2K_EXTRA_EXPORT void SHA1_Update(SHA_CTX* context, boost::uint8_t const* data, boost::uint32_t len);
 LIBED2K_EXTRA_EXPORT void SHA1_Final(boost::uint8_t* digest, SHA_CTX* context);
 
+#define MD4_DIGEST_LENGTH 16
+
+struct LIBED2K_EXTRA_EXPORT MD4_CTX
+{
+    boost::uint32_t lo, hi;
+    boost::uint32_t a, b, c, d;
+    unsigned char buffer[64];
+    boost::uint32_t block[MD4_DIGEST_LENGTH];
+};
+
+LIBED2K_EXTRA_EXPORT void MD4_Init(struct MD4_CTX *ctx);
+LIBED2K_EXTRA_EXPORT void MD4_Update(struct MD4_CTX *ctx, boost::uint8_t const* data, boost::uint32_t size);
+LIBED2K_EXTRA_EXPORT void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], struct MD4_CTX *ctx);
+
 #endif
 
 
 namespace libed2k
 {
+    // NOTE - we use self implemented MD4 hash always since historical reasons
 	class hasher
 	{
 	public:
 
-		hasher()
-		{
-		    reset();
-		}
-
+		hasher(){ MD4_Init(&m_context); }
 		hasher(const char* data, int len)
 		{
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
-			reset();
+			MD4_Init(&m_context);
 			update(data, len);
 		}
 
-		hasher(hasher const& h)
-		{
-		    m_context = h.m_context;
-		}
+		hasher(hasher const& h){ m_context = h.m_context;}
 
-		hasher& operator=(hasher const& h)
-		{
+		hasher& operator=(hasher const& h){
 		    m_context = h.m_context;
 			return *this;
 		}
 
 		void update(std::string const& data) { update(data.c_str(), data.size()); }
-		void update(const char* data, int len)
-		{
+		void update(const char* data, int len){
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
-			md4_update(&m_context, reinterpret_cast<const unsigned char*>(data), len);
+			MD4_Update(&m_context, reinterpret_cast<const unsigned char*>(data), len);
 		}
 
-		md4_hash final()
-		{
+		md4_hash final(){
 			md4_hash digest;
-			md4_final(&m_context, digest.getContainer());
+			MD4_Final(digest.getContainer(), &m_context);
 			return digest;
 		}
 
-		void reset()
-		{
-		    md4_init(&m_context);
-		}
-
-		~hasher()
-		{
-		}
-
 	private:
-		md4_context m_context;
+		MD4_CTX m_context;
 	};
 
 	class LIBED2K_EXTRA_EXPORT sha1_hasher

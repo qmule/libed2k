@@ -6,10 +6,11 @@
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
-#include <libed2k/bitfield.hpp>
-#include <libed2k/ctag.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/assert.hpp>
+#include "libed2k/bitfield.hpp"
+#include "libed2k/ctag.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/assert.hpp"
+#include "libed2k/hasher.hpp"
 #include <sstream>
 
 namespace libed2k
@@ -358,9 +359,9 @@ namespace libed2k
         {
             size_t res;
             if (m_type == OP_SENDINGPART)
-                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+                res = MD4_DIGEST_LENGTH + 2 * sizeof(boost::uint32_t);
             else if(m_type == OP_SENDINGPART_I64)
-                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
+                res = MD4_DIGEST_LENGTH + 2 * sizeof(boost::uint64_t);
             else
                 res = m_size - 1;
             return res;

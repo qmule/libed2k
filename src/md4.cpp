@@ -15,11 +15,11 @@
  * and avoid compile-time configuration.
  */
 
-#include "libed2k/md4.hpp"
+#include "libed2k/hasher.hpp"
 #include <string.h>
 
-namespace libed2k{
-
+#ifndef LIBED2K_USE_OPENSSL
+namespace {
 /*
  * The basic MD4 functions.
  */
@@ -63,7 +63,7 @@ namespace libed2k{
  * This processes one or more 64-byte data blocks, but does NOT update
  * the bit counters.  There're no alignment requirements.
  */
-const unsigned char *body(struct md4_context *ctx, const unsigned char *data, size_t size)
+const unsigned char *body(struct MD4_CTX *ctx, const unsigned char *data, size_t size)
 {
 	const unsigned char *ptr;
 	boost::uint32_t a, b, c, d;
@@ -159,7 +159,12 @@ const unsigned char *body(struct md4_context *ctx, const unsigned char *data, si
 	return ptr;
 }
 
-void md4_init(struct md4_context *ctx)
+#undef F
+#undef G
+#undef H
+
+}
+void MD4_Init(struct MD4_CTX *ctx)
 {
 	ctx->a = 0x67452301;
 	ctx->b = 0xefcdab89;
@@ -170,7 +175,7 @@ void md4_init(struct md4_context *ctx)
 	ctx->hi = 0;
 }
 
-void md4_update(struct md4_context *ctx, const unsigned char *data, size_t size)
+void MD4_Update(struct MD4_CTX *ctx, boost::uint8_t const *data, boost::uint32_t size)
 {
 	/* @UNSAFE */
 	boost::uint32_t saved_lo;
@@ -205,7 +210,7 @@ void md4_update(struct md4_context *ctx, const unsigned char *data, size_t size)
 	memcpy(ctx->buffer, data, size);
 }
 
-void md4_final(struct md4_context *ctx, unsigned char result[MD4_HASH_SIZE])
+void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], struct MD4_CTX *ctx)
 {
 	/* @UNSAFE */
 	unsigned long used, free;
@@ -257,9 +262,4 @@ void md4_final(struct md4_context *ctx, unsigned char result[MD4_HASH_SIZE])
 	memset(ctx, 0, sizeof(*ctx));
 }
 
-#undef F
-#undef G
-#undef H
-
-}
-
+#endif

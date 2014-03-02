@@ -876,10 +876,10 @@ namespace libed2k
             size_type capacity = atp.file_size;
             size_type offset = 0;
             char chBlock[BLOCK_SIZE];
-            hasher hproc;
 
             for (int i = 0; i < pieces_count; ++i)
             {
+                hasher piece_hash;
                 size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
 
                 while(in_piece_capacity > 0)
@@ -894,7 +894,7 @@ namespace libed2k
                     if (ec)
                         break;
 
-                    hproc.update(chBlock, current_block_size);
+                    piece_hash.update(chBlock, current_block_size);
                     capacity -= current_block_size;
                     in_piece_capacity -= current_block_size;
                     offset += current_block_size;
@@ -903,8 +903,7 @@ namespace libed2k
                 if (ec)
                     break;
 
-                atp.piece_hashses[i] = hproc.final();
-                hproc.reset();
+                atp.piece_hashses[i] = piece_hash.final();
             }
 
             if (!ec)
@@ -916,8 +915,7 @@ namespace libed2k
                 // calculate full file hash
                 if (atp.piece_hashses.size() > 1)
                 {
-                    hproc.update(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_HASH_SIZE);
-                    atp.file_hash = hproc.final();
+                    atp.file_hash = hasher(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_DIGEST_LENGTH).final();
                 }
                 else
                 {
@@ -1214,7 +1212,7 @@ namespace libed2k
     {
         md4_hash hash;
 
-        if (strFilename.empty() || nFilesize == 0 || strFilehash.size() != md4_hash::hash_size*2)
+        if (strFilename.empty() || nFilesize == 0 || strFilehash.size() != MD4_DIGEST_LENGTH*2)
         {
             return false;
         }
