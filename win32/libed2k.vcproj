@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
-				PreprocessorDefinitions="WIN32;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;LIBED2K_USE_BOOST_DATE_TIME;_WIN32_WINNT=0x0500;BOOST_ASIO_SEPARATE_COMPILATION;BOOST_ASIO_ENABLE_CANCELIO"
+				PreprocessorDefinitions="WIN32;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;LIBED2K_DEBUG;LIBED2K_USE_BOOST_DATE_TIME;LIBED2K_USE_OPENSSL;_WIN32_WINNT=0x0500;BOOST_ASIO_SEPARATE_COMPILATION;BOOST_ASIO_ENABLE_CANCELIO"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -110,7 +110,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(BOOST_ROOT)&quot;;../include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500;UNICODE;LIBED2K_USE_BOOST_DATE_TIME;BOOST_ASIO_SEPARATE_COMPILATION;BOOST_ASIO_ENABLE_CANCELIO"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;WITH_SHIPPED_GEOIP_H;BOOST_LOG_DONOT_USE_WCHAR_T;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_WIN32_WINNT=0x0500;UNICODE;LIBED2K_USE_BOOST_DATE_TIME;LIBED2K_USE_OPENSSL;BOOST_ASIO_SEPARATE_COMPILATION;BOOST_ASIO_ENABLE_CANCELIO"
 				GeneratePreprocessedFile="0"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -294,10 +294,6 @@
 			</File>
 			<File
 				RelativePath="..\src\md4.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\src\md4_hash.cpp"
 				>
 			</File>
 			<File
@@ -583,6 +579,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\libed2k\debug.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\disk_buffer_holder.hpp"
 				>
 			</File>
@@ -696,14 +696,6 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\max.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\md4.hpp"
-				>
-			</File>
-			<File
-				RelativePath="..\include\libed2k\md4_hash.hpp"
 				>
 			</File>
 			<File
