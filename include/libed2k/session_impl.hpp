@@ -11,7 +11,7 @@
 #include "libed2k/socket.hpp"
 #include "libed2k/stat.hpp"
 #include "libed2k/fingerprint.hpp"
-#include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/ip_filter.hpp"

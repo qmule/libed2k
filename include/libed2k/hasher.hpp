@@ -1,12 +1,13 @@
 #ifndef LIBED2K_HASHER_HPP_INCLUDED
 #define LIBED2K_HASHER_HPP_INCLUDED
 
-#include "libed2k/md4_hash.hpp"
 #include "libed2k/config.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/peer_id.hpp"
+#include "libed2k/archive.hpp"
 
 #include <boost/cstdint.hpp>
+#include <vector>
 
 #ifdef LIBED2K_USE_GCRYPT
 #include <gcrypt.h>
@@ -48,6 +49,61 @@ LIBED2K_EXTRA_EXPORT void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], st
 
 namespace libed2k
 {
+    class md4_hash
+        {
+        public:
+            friend class archive::access;
+            typedef boost::uint8_t md4hash_container[MD4_DIGEST_LENGTH];
+
+            static const md4_hash terminal;
+            static const md4_hash libed2k;
+            static const md4_hash emule;
+            static const md4_hash invalid;
+
+            static md4_hash fromHashset(const std::vector<md4_hash>& hashset);
+            static md4_hash fromString(const std::string& strHash);
+
+            md4_hash() { clear(); }
+            md4_hash(const std::vector<boost::uint8_t>& vHash);
+            md4_hash(const md4hash_container& container);
+            bool defined() const;
+
+            unsigned char* getContainer(){ return &m_hash[0]; }
+
+            bool operator==(const md4_hash& hash) const {return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) == 0);}
+            bool operator!=(const md4_hash& hash) const{return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) != 0);}
+            bool operator<(const md4_hash& hash) const{return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) < 0);}
+            bool operator>(const md4_hash& hash) const {return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) > 0);}
+
+            void clear() {memset(m_hash, 0, MD4_DIGEST_LENGTH);}
+            std::string toString() const;
+
+            boost::uint8_t operator[](size_t n) const
+            {
+                LIBED2K_ASSERT(n < MD4_DIGEST_LENGTH);
+                return (m_hash[n]);
+            }
+
+            boost::uint8_t& operator[](size_t n)
+            {
+                LIBED2K_ASSERT(n < MD4_DIGEST_LENGTH);
+                return (m_hash[n]);
+            }
+
+            template<typename Archive>
+            void serialize(Archive& ar)
+            {
+                for (size_t n = 0; n < sizeof(md4hash_container); n++){
+                    ar & m_hash[n];
+                }
+            }
+
+            friend std::ostream& operator<< (std::ostream& stream, const md4_hash& hash);
+            void dump() const;
+        private:
+            md4hash_container   m_hash;
+        };
+
     // NOTE - we use self implemented MD4 hash always since historical reasons
 	class hasher
 	{

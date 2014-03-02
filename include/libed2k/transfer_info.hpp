@@ -42,7 +42,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/assert.hpp"
 #include "libed2k/file_storage.hpp"
 #include "libed2k/copy_ptr.hpp"
-#include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 #include "libed2k/constants.hpp"
 
 namespace libed2k

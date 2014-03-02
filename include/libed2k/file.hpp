@@ -15,7 +15,7 @@
 #include "libed2k/size_type.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/filesystem.hpp"
-#include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/alert_types.hpp"
 
