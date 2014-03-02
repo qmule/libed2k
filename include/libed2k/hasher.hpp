@@ -30,6 +30,7 @@ LIBED2K_EXTRA_EXPORT void SHA1_Init(SHA_CTX* context);
 LIBED2K_EXTRA_EXPORT void SHA1_Update(SHA_CTX* context, boost::uint8_t const* data, boost::uint32_t len);
 LIBED2K_EXTRA_EXPORT void SHA1_Final(boost::uint8_t* digest, SHA_CTX* context);
 
+// from md4.h
 #define MD4_DIGEST_LENGTH 16
 
 struct LIBED2K_EXTRA_EXPORT MD4_CTX
