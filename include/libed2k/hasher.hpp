@@ -130,7 +130,7 @@ namespace libed2k
 		void update(const char* data, int len){
 			LIBED2K_ASSERT(data != 0);
 			LIBED2K_ASSERT(len > 0);
-			MD4_Update(&m_context, reinterpret_cast<const unsigned char*>(data), len);
+			MD4_Update(&m_context, reinterpret_cast<boost::uint8_t const *>(data), len);
 		}
 
 		md4_hash final(){
