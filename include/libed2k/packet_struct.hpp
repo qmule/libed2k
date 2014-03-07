@@ -202,6 +202,34 @@ namespace libed2k
         OP_PORTTEST                 = 0xFE  // Connection Test
     };
 
+    enum Kademlia2Opcodes {
+        KADEMLIA2_BOOTSTRAP_REQ     = 0x01,
+        KADEMLIA2_BOOTSTRAP_RES     = 0x09,
+        KADEMLIA2_HELLO_REQ         = 0x11,
+        KADEMLIA2_HELLO_RES         = 0x19,
+        KADEMLIA2_REQ               = 0x21,
+        KADEMLIA2_HELLO_RES_ACK     = 0x22, // <NodeID><uint8 tags>
+        KADEMLIA2_RES               = 0x29,
+        KADEMLIA2_SEARCH_KEY_REQ    = 0x33,
+        KADEMLIA2_SEARCH_SOURCE_REQ = 0x34,
+        KADEMLIA2_SEARCH_NOTES_REQ  = 0x35,
+        KADEMLIA2_SEARCH_RES        = 0x3B,
+        KADEMLIA2_PUBLISH_KEY_REQ   = 0x43,
+        KADEMLIA2_PUBLISH_SOURCE_REQ= 0x44,
+        KADEMLIA2_PUBLISH_NOTES_REQ = 0x45,
+        KADEMLIA2_PUBLISH_RES       = 0x4B,
+        KADEMLIA2_PUBLISH_RES_ACK   = 0x4C, // (null)
+        KADEMLIA_FIREWALLED2_REQ    = 0x53, // <TCPPORT (sender) [2]><userhash><connectoptions 1>
+        KADEMLIA2_PING              = 0x60, // (null)
+        KADEMLIA2_PONG              = 0x61, // (null)
+        KADEMLIA2_FIREWALLUDP       = 0x62  // <errorcode [1]><UDPPort_Used [2]>
+    };
+
+    #define KADEMLIA_FIND_VALUE     0x02
+    #define KADEMLIA_STORE          0x04
+    #define KADEMLIA_FIND_NODE      0x0B
+    #define KADEMLIA_FIND_VALUE_MORE    KADEMLIA_FIND_NODE
+
 	const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
 	const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
 	const boost::uint8_t ED2K_SEARCH_OP_LESS            = 2;
