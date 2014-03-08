@@ -225,10 +225,44 @@ namespace libed2k
         KADEMLIA2_FIREWALLUDP       = 0x62  // <errorcode [1]><UDPPort_Used [2]>
     };
 
+    enum KademliaV1OPcodes {
+        KADEMLIA_BOOTSTRAP_REQ_DEPRECATED   = 0x00, // <PEER (sender) [25]>
+        KADEMLIA_BOOTSTRAP_RES_DEPRECATED   = 0x08, // <CNT [2]> <PEER [25]>*(CNT)
+
+        KADEMLIA_HELLO_REQ_DEPRECATED       = 0x10, // <PEER (sender) [25]>
+        KADEMLIA_HELLO_RES_DEPRECATED       = 0x18, // <PEER (receiver) [25]>
+
+        KADEMLIA_REQ_DEPRECATED             = 0x20, // <TYPE [1]> <HASH (target) [16]> <HASH (receiver) 16>
+        KADEMLIA_RES_DEPRECATED             = 0x28, // <HASH (target) [16]> <CNT> <PEER [25]>*(CNT)
+
+        KADEMLIA_SEARCH_REQ                 = 0x30, // <HASH (key) [16]> <ext 0/1 [1]> <SEARCH_TREE>[ext]
+        // UNUSED               = 0x31, // Old Opcode, don't use.
+        KADEMLIA_SEARCH_NOTES_REQ           = 0x32, // <HASH (key) [16]>
+        KADEMLIA_SEARCH_RES                 = 0x38, // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+        // UNUSED               = 0x39, // Old Opcode, don't use.
+        KADEMLIA_SEARCH_NOTES_RES           = 0x3A, // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+
+        KADEMLIA_PUBLISH_REQ                = 0x40, // <HASH (key) [16]> <CNT1 [2]> (<HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+        // UNUSED               = 0x41, // Old Opcode, don't use.
+        KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED   = 0x42, // <HASH (key) [16]> <HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+        KADEMLIA_PUBLISH_RES                = 0x48, // <HASH (key) [16]>
+        // UNUSED               = 0x49, // Old Opcode, don't use.
+        KADEMLIA_PUBLISH_NOTES_RES_DEPRECATED   = 0x4A, // <HASH (key) [16]>
+
+        KADEMLIA_FIREWALLED_REQ             = 0x50, // <TCPPORT (sender) [2]>
+        KADEMLIA_FINDBUDDY_REQ              = 0x51, // <TCPPORT (sender) [2]>
+        KADEMLIA_CALLBACK_REQ               = 0x52, // <TCPPORT (sender) [2]>
+        KADEMLIA_FIREWALLED_RES             = 0x58, // <IP (sender) [4]>
+        KADEMLIA_FIREWALLED_ACK_RES         = 0x59, // (null)
+        KADEMLIA_FINDBUDDY_RES              = 0x5A  // <TCPPORT (sender) [2]>
+    };
+
     #define KADEMLIA_FIND_VALUE     0x02
     #define KADEMLIA_STORE          0x04
     #define KADEMLIA_FIND_NODE      0x0B
     #define KADEMLIA_FIND_VALUE_MORE    KADEMLIA_FIND_NODE
+
+    #define KADEMLIA_VERSION    0x08    /* 0.49b */
 
 	const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
 	const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
@@ -237,7 +271,6 @@ namespace libed2k
 	const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
 	const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
 
-
 	/**
 	  * supported protocols
 	 */
@@ -245,6 +278,14 @@ namespace libed2k
 	const proto_type    OP_EDONKEYPROT          = OP_EDONKEYHEADER;
 	const proto_type    OP_PACKEDPROT           = '\xD4';
 	const proto_type    OP_EMULEPROT            = '\xC5';
+
+    // Reserved for later UDP headers (important for EncryptedDatagramSocket)
+    const proto_type    OP_UDPRESERVEDPROT1     = '\xA3';   // unused
+    const proto_type    OP_UDPRESERVEDPROT2     = '\xB2';   // unused
+
+    // Kademlia 1/2
+    const proto_type    OP_KADEMLIAHEADER       = '\xE4';
+    const proto_type    OP_KADEMLIAPACKEDPROT   = '\xE5';
 
     /**
       *  common container holder structure
@@ -258,23 +299,15 @@ namespace libed2k
         typedef typename collection_type::iterator Iterator;
         typedef typename collection_type::value_type elem;
 
-        container_holder() : m_size(0)
-        {
-        }
-
-        container_holder(const collection_type& coll) : m_size(coll.size()), m_collection(coll)
-        {
-        }
-
-        void clear()
-        {
+        container_holder() : m_size(0){}
+        container_holder(const collection_type& coll) : m_size(coll.size()), m_collection(coll) { }
+        void clear(){
             m_collection.clear();
             m_size = 0;
         }
 
         template<typename Archive>
-        void save(Archive& ar)
-        {
+        void save(Archive& ar){
             // save collection size in field with properly size
             m_size = static_cast<size_type>(m_collection.size());
             ar & m_size;
@@ -283,7 +316,6 @@ namespace libed2k
             {
                 ar & *i;
             }
-
         }
 
         template<typename Archive>
@@ -325,8 +357,6 @@ namespace libed2k
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
-
-
     /**
       * common libed2k packet header
       *
@@ -364,12 +394,15 @@ namespace libed2k
             //1. first stage - check opcode
             switch (m_protocol)
             {
-            case OP_EDONKEYPROT:    // correct
-            case OP_EMULEPROT:      // correct
+            case OP_EDONKEYPROT:
+            case OP_EMULEPROT:
+            case OP_KADEMLIAHEADER:
                 break;
-            case OP_PACKEDPROT:     // unsupported
-                return errors::unsupported_protocol_type;
-            default:                // invalid
+            case OP_PACKEDPROT:       return errors::unsupported_packed_type;
+            case OP_UDPRESERVEDPROT1: return errors::unsupported_udp_res1_type;
+            case OP_UDPRESERVEDPROT2: return errors::unsupported_udp_res2_type;
+            case OP_KADEMLIAPACKEDPROT: return errors::unsupported_kad_packed_type;
+            default:
                 return errors::invalid_protocol_type;
             }
 
@@ -1507,13 +1540,49 @@ namespace libed2k
 
     struct client_public_ip_answer{
         client_id_type  client_id;
-        client_public_ip_answer(client_id_type id) : client_id(id)
-        {}
+        client_public_ip_answer(client_id_type id) : client_id(id){}
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & client_id;
         }
     };
+
+    // KAD implementation
+
+    /**
+     * base structure for KAD answers
+     */
+    struct kad_answer_base{
+        md4_hash    kad_id;
+        md4_hash    key_id;
+
+    };
+
+    struct kad_bootstrap_contact{
+        md4_hash        client_id;
+        client_id_type  client_ip;
+        boost::uint16_t udp_port;
+        boost::uint16_t tcp_port;
+        boost::uint8_t  version;
+    };
+
+    struct kad_booststrap_res{
+        md4_hash    kad_id;
+        boost::uint16_t port;
+        boost::uint8_t  kad_version;
+        container_holder<boost::uint16_t, std::deque<kad_booststrap_res> >  contacts;
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & kad_id & port & kad_version & contacts;
+        }
+    };
+
+    struct kad_booststrap_req{
+        template<typename Archive>
+        void serialize(Archive& ar){}
+    };
+
+
 
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;

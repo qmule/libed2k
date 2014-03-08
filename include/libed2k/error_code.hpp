@@ -59,7 +59,10 @@ namespace libed2k
             // protocol errors
             decode_packet_error,
             invalid_protocol_type,
-            unsupported_protocol_type,
+            unsupported_packed_type,
+            unsupported_udp_res1_type,
+            unsupported_udp_res2_type,
+            unsupported_kad_packed_type,
             invalid_packet_size,
             // transport errors
             session_closing,
