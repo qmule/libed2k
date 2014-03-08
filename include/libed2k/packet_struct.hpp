@@ -446,11 +446,7 @@ namespace libed2k
         void serialize(Archive& ar)
         {
             ar & nLowPart;
-
-            if (nHighPart > 0)
-            {
-                ar & nHighPart;
-            }
+            if (nHighPart > 0) ar & nHighPart;
         }
 
         union
@@ -484,10 +480,8 @@ namespace libed2k
         net_identifier(const tcp::endpoint& ep);
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nIP;
-            ar & m_nPort;
+        void serialize(Archive& ar){
+            ar & m_nIP & m_nPort;
         }
 
         bool operator==(const net_identifier& np) const
@@ -533,11 +527,8 @@ namespace libed2k
         bool is_empty() const { return !m_hFile.defined(); }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_network_point;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_network_point & m_list;
         }
 
         void dump() const;
@@ -555,11 +546,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hClient;
-            ar & m_network_point;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_hClient & m_network_point & m_list;
         }
     };
 
@@ -570,10 +558,7 @@ namespace libed2k
     struct server_get_list
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-
-        }
+        void serialize(Archive& ar){}
     };
 
     /**
@@ -584,15 +569,10 @@ namespace libed2k
         boost::uint16_t m_nLength;
         std::string     m_strMessage;
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nLength;
             // allocate buffer if it needs
-            if (m_strMessage.size() != m_nLength)
-            {
-                m_strMessage.resize(m_nLength);
-            }
-
+            if (m_strMessage.size() != m_nLength) m_strMessage.resize(m_nLength);
             ar & m_strMessage;
         }
     };
@@ -612,11 +592,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hServer;
-            ar & m_network_point;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_hServer & m_network_point & m_list;
         }
 
         void dump() const;
@@ -638,8 +615,7 @@ namespace libed2k
 
         // only for load
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             // always read/write client id;
             ar & m_client_id;
             DECREMENT_READ(ar.bytes_left(), m_tcp_flags);
@@ -663,8 +639,7 @@ namespace libed2k
         net_identifier  m_network_point;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_network_point;
         }
     };
@@ -672,9 +647,7 @@ namespace libed2k
     /**
       * call back request failed
      */
-    struct callback_req_fail
-    {
-    };
+    struct callback_req_fail{};
 
     /**
       * call back request from client to server
@@ -683,8 +656,7 @@ namespace libed2k
     {
         client_id_type      m_nClientId;
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nClientId;
         }
     };
@@ -698,10 +670,8 @@ namespace libed2k
         boost::uint32_t m_nFilesCount;
 
         template<typename Archive>
-        void serialize(Archive & ar)
-        {
-            ar & m_nUserCount;
-            ar & m_nFilesCount;
+        void serialize(Archive & ar){
+            ar & m_nUserCount & m_nFilesCount;
         }
     };
 
@@ -783,12 +753,9 @@ namespace libed2k
         search_request_block(search_request& ro) : m_order(ro){}
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             for (size_t n = 0; n < m_order.size(); n++)
-            {
                 ar & m_order[n];
-            }
         }
 
         search_request& m_order;
@@ -800,10 +767,7 @@ namespace libed2k
     struct search_more_result
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            // do nothing
-        }
+        void serialize(Archive& ar){}
     };
 
     typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > shared_files_list;
@@ -846,10 +810,8 @@ namespace libed2k
         __file_size     m_file_size;    //!< file size
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
-
             // ugly eDonkey protocol need empty 32-bit part before 64-bit file size record
             if (m_file_size.nHighPart > 0)
             {
@@ -858,7 +820,6 @@ namespace libed2k
             }
 
             ar & m_file_size;
-
         }
     };
 
@@ -871,10 +832,8 @@ namespace libed2k
         container_holder<boost::uint8_t, std::vector<net_identifier> > m_sources;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_sources;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_sources;
         }
 
         void dump() const;
@@ -893,8 +852,7 @@ namespace libed2k
         }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nChallendge;
         }
     };
@@ -916,14 +874,10 @@ namespace libed2k
         size_t          m_nMaxSize;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             size_t nCounter = m_nMaxSize;
-            ar & m_nChallenge;
-            ar & m_nUsersCount;
-            ar & m_nFilesCount;
+            ar & m_nChallenge & m_nUsersCount & m_nFilesCount;
             nCounter -= sizeof(m_nChallenge) - sizeof(m_nUsersCount) - sizeof(m_nFilesCount);
-
             DECREMENT_READ(nCounter, m_nCurrentMaxUsers)
             DECREMENT_READ(nCounter, m_nSoftFiles);
             DECREMENT_READ(nCounter, m_nHardFiles);
@@ -1000,12 +954,8 @@ namespace libed2k
                 boost::uint32_t version);
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hClient;
-            ar & m_network_point;
-            ar & m_list;
-            ar & m_server_network_point;
+        void serialize(Archive& ar){
+            ar & m_hClient & m_network_point & m_list & m_server_network_point;
         }
 
         void dump() const;
@@ -1028,8 +978,7 @@ namespace libed2k
                 boost::uint32_t version);
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nHashLength;
             client_hello_answer::serialize(ar);
         }
@@ -1041,10 +990,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nVersion;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_nVersion & m_list;
         }
     };
 
@@ -1054,10 +1001,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nVersion;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_nVersion & m_list;
         }
     };
 
@@ -1081,8 +1026,7 @@ namespace libed2k
         shared_files_list   m_files;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_files;
         }
     };
@@ -1104,8 +1048,7 @@ namespace libed2k
         }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_directory;
         }
     };
@@ -1115,8 +1058,7 @@ namespace libed2k
         container_holder<boost::uint32_t, std::vector<container_holder<boost::uint16_t, std::string> > > m_dirs;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_dirs;
         }
     };
@@ -1127,10 +1069,8 @@ namespace libed2k
         shared_files_list   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_directory;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_directory & m_list;
         }
     };
 
@@ -1148,8 +1088,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1160,10 +1099,8 @@ namespace libed2k
         container_holder<boost::uint16_t, std::string> m_filename;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_filename;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_filename;
         }
     };
 
@@ -1173,10 +1110,8 @@ namespace libed2k
         container_holder<boost::uint32_t, std::string> m_sComment;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nRating;
-            ar & m_sComment;
+        void serialize(Archive& ar){
+            ar & m_nRating & m_sComment;
         }
     };
 
@@ -1185,8 +1120,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1196,8 +1130,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1207,11 +1140,9 @@ namespace libed2k
         md4_hash m_hFile;
         bitfield m_status;
 
-        void serialize(archive::ed2k_iarchive& ar)
-        {
+        void serialize(archive::ed2k_iarchive& ar){
             boost::uint16_t bits;
-            ar & m_hFile;
-            ar & bits;
+            ar & m_hFile & bits;
             if (bits > 0)
             {
                 std::vector<char> buf(bits2bytes(bits));
@@ -1219,8 +1150,8 @@ namespace libed2k
                 m_status.assign(&buf[0], bits);
             }
         }
-        void serialize(archive::ed2k_oarchive& ar)
-        {
+
+        void serialize(archive::ed2k_oarchive& ar){
             ar & m_hFile;
             boost::uint16_t bits = m_status.size();
             if (bits < m_status.count()) // part file
@@ -1241,8 +1172,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1253,10 +1183,8 @@ namespace libed2k
         container_holder<boost::uint16_t, std::vector<md4_hash> > m_vhParts;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_vhParts;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_vhParts;
         }
     };
 
@@ -1265,8 +1193,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1276,8 +1203,7 @@ namespace libed2k
         boost::uint16_t m_nRank;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nRank;
         }
     };
@@ -1285,25 +1211,19 @@ namespace libed2k
     struct client_accept_upload
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        void serialize(Archive& ar){}
     };
 
     struct client_out_parts
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        void serialize(Archive& ar){}
     };
 
     struct client_cancel_transfer
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        void serialize(Archive& ar){}
     };
 
     template <typename size_type>
@@ -1332,15 +1252,10 @@ namespace libed2k
         bool empty() const { return m_parts == 0; }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_begin_offset[0];
-            ar & m_begin_offset[1];
-            ar & m_begin_offset[2];
-            ar & m_end_offset[0];
-            ar & m_end_offset[1];
-            ar & m_end_offset[2];
+        void serialize(Archive& ar){
+            ar & m_hFile
+            & m_begin_offset[0] & m_begin_offset[1] & m_begin_offset[2]
+            & m_end_offset[0] & m_end_offset[1] & m_end_offset[2];
         }
     };
 
@@ -1356,11 +1271,8 @@ namespace libed2k
         // user_data[end-begin]
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_begin_offset;
-            ar & m_end_offset;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_begin_offset & m_end_offset;
             // user_data[end-begin]
         }
 
@@ -1378,11 +1290,8 @@ namespace libed2k
         // user_data[compressed_size]
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_begin_offset;
-            ar & m_compressed_size;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_begin_offset & m_compressed_size;
             // compressed_user_data[compressed_size]
         }
     };
@@ -1395,8 +1304,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1478,8 +1386,7 @@ namespace libed2k
         boost::uint8_t  m_captcha_result;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_captcha_result;
         }
     };
@@ -1489,8 +1396,7 @@ namespace libed2k
         md4_hash    m_hash;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hash;
         }
     };
@@ -1500,8 +1406,7 @@ namespace libed2k
         shared_files_list    m_files;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_files;
         }
     };
@@ -1515,8 +1420,7 @@ namespace libed2k
         client_directory_content_request(const md4_hash& hash) : m_hash(hash) { }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hash;
         }
     };
@@ -1527,10 +1431,8 @@ namespace libed2k
         md4_hash            m_hdirectory;
         shared_files_list   m_files;
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hdirectory;
-            ar & m_files;
+        void serialize(Archive& ar){
+            ar & m_hdirectory & m_files;
         }
     };
 
@@ -1542,7 +1444,7 @@ namespace libed2k
         client_id_type  client_id;
         client_public_ip_answer(client_id_type id) : client_id(id){}
         template<typename Archive>
-        void serialize(Archive& ar) {
+        void serialize(Archive& ar){
             ar & client_id;
         }
     };
