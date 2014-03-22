@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
+#include <deque>
 #include <cassert>
 
 #include <boost/cstdint.hpp>
@@ -684,187 +684,130 @@ bool is_int_tag(const boost::shared_ptr<base_tag> p);
 /**
   * class for tag list representation
   * used to decode/encode tag list appended sequences in ed2k packets
+  * facade on std::deque stl container
  */
 template<typename size_type>
 class tag_list
 {
 public:
+    typedef boost::shared_ptr<base_tag> value_type;
+    typedef std::deque<value_type>::iterator iterator;
+    typedef std::deque<value_type>::const_iterator const_iterator;
     template<typename U>
     friend bool operator==(const tag_list<U>& t1, const tag_list<U>& t2);
     template<typename U>
     friend bool operator!=(const tag_list<U>& t1, const tag_list<U>& t2);
-    tag_list();
-    void add_tag(boost::shared_ptr<base_tag> ptag);
-    size_t count() const;
-    void clear();
-    const boost::shared_ptr<base_tag> operator[](size_t n) const;
-    tg_nid_type getTagNameId(size_t n) const;
-    tg_type     getTagType(size_t n) const;
-    const boost::shared_ptr<base_tag> getTagByNameId(tg_nid_type nId) const;
-    const boost::shared_ptr<base_tag> getTagByName(const std::string& strName) const;
+    tag_list(){}
+
+    void add_tag(value_type ptag){
+        m_container.push_back(ptag);
+    }
+
+    void clear() {
+        m_container.clear();
+    }
+
+    const value_type operator[](size_t n) const{
+        LIBED2K_ASSERT(n < m_container.size());
+        return (m_container[n]);
+    }
+
+    tg_nid_type getTagNameId(size_t n) const{
+        LIBED2K_ASSERT(n < m_container.size());
+        return m_container[n]->getNameId();
+    }
+
+    tg_type     getTagType(size_t n) const{
+        LIBED2K_ASSERT(n < m_container.size());
+        return m_container[n]->getType();
+    }
+
+    const value_type getTagByNameId(tg_nid_type nId) const{
+        for (size_t n = 0; n < m_container.size(); n++){
+            if (*m_container[n] == nId){
+                return (m_container[n]);
+            }
+        }
+        return (value_type());
+    }
+
+    const value_type getTagByName(const std::string& strName) const{
+        for (size_t n = 0; n < m_container.size(); n++){
+            if (*m_container[n] == strName) {
+                return (m_container[n]);
+            }
+        }
+        return (boost::shared_ptr<base_tag>());
+    }
     
     /**
       * return special tag as string or int
       * if tag not exists or his type is not string returns empty string or zero int
      */
-    std::string getStringTagByNameId(tg_nid_type nId) const;
-    std::string getStringTagByName(const std::string strName) const;
-    boost::uint64_t getIntTagByNameId(tg_nid_type nId) const;
-    boost::uint64_t getIntTagByName(const std::string strName) const;
+    std::string getStringTagByNameId(tg_nid_type nId) const{
+        if (value_type p = getTagByNameId(nId)){
+            try{
+                return (p->asString());
+            }catch(libed2k_exception& e){
+                ERR("Incorrect to string conversion: " << e.what());
+            }
+        }
+        return (std::string(""));
+    }
+
+    std::string getStringTagByName(const std::string strName) const{
+        if (value_type p = getTagByName(strName)){
+            try{
+                return (p->asString());
+            }catch(libed2k_exception& e){
+                ERR("Incorrect to string conversion: " << e.what());
+            }
+        }
+        return (std::string(""));
+    }
+
+    boost::uint64_t getIntTagByNameId(tg_nid_type nId) const{
+        if (value_type p = getTagByNameId(nId)){
+            try{
+                return (p->asInt());
+            }catch(libed2k_exception& e){
+                ERR("Incorrect to int conversion: " << e.what());
+            }
+        }
+        return 0;
+    }
+
+    boost::uint64_t getIntTagByName(const std::string strName) const{
+        if (value_type p = getTagByName(strName)){
+            try{
+                return (p->asInt());
+            }catch(libed2k_exception& e){
+                ERR("Incorrect to int conversion: " << e.what());
+            }
+        }
+        return 0;
+    }
 
     void save(archive::ed2k_oarchive& ar);
     void load(archive::ed2k_iarchive& ar);
     void dump() const;
 
+    // STL container like methods
+    size_t size() const {
+        return (m_container.size());
+    }
+
+    const_iterator begin() const { return m_container.begin(); }
+    iterator begin(){ return m_container.begin(); }
+    const_iterator end() const { return m_container.end(); }
+    iterator end(){ return m_container.end(); }
+    void push_back(value_type ptag) { add_tag(ptag); }
+
     LIBED2K_SERIALIZATION_SPLIT_MEMBER()
 private:
-    std::vector<boost::shared_ptr<base_tag> >   m_container;
+    std::deque<value_type>   m_container;
 };
 
-template<typename size_type>
-tag_list<size_type>::tag_list()
-{
-
-}
-
-template<typename size_type>
-size_t tag_list<size_type>::count() const
-{
-    return (m_container.size());
-}
-
-template<typename size_type>
-void tag_list<size_type>::clear()
-{
-    m_container.clear();
-}
-
-template<typename size_type>
-void tag_list<size_type>::add_tag(boost::shared_ptr<base_tag> ptag)
-{
-    m_container.push_back(ptag);
-}
-
-template<typename size_type>
-const boost::shared_ptr<base_tag> tag_list<size_type>::operator[](size_t n) const
-{
-    BOOST_ASSERT(n < m_container.size());
-    return (m_container[n]);
-}
-
-template<typename size_type>
-tg_nid_type tag_list<size_type>::getTagNameId(size_t n) const
-{
-    BOOST_ASSERT(n < m_container.size());
-    return m_container[n]->getNameId();
-}
-
-template<typename size_type>
-tg_type tag_list<size_type>::getTagType(size_t n) const
-{
-    BOOST_ASSERT(n < m_container.size());
-    return m_container[n]->getType();
-}
-
-template<typename size_type>
-const boost::shared_ptr<base_tag> tag_list<size_type>::getTagByNameId(tg_nid_type nId) const
-{
-    for (size_t n = 0; n < m_container.size(); n++)
-    {
-        if (*m_container[n] == nId)
-        {
-            return (m_container[n]);
-        }
-    }
-
-    return (boost::shared_ptr<base_tag>());
-}
-
-template<typename size_type>
-const boost::shared_ptr<base_tag> tag_list<size_type>::getTagByName(const std::string& strName) const
-{
-    for (size_t n = 0; n < m_container.size(); n++)
-    {
-        if (*m_container[n] == strName)
-        {
-            return (m_container[n]);
-        }
-    }
-
-    return (boost::shared_ptr<base_tag>());
-}
-
-template<typename size_type>
-std::string tag_list<size_type>::getStringTagByNameId(tg_nid_type nId) const
-{
-    if (boost::shared_ptr<base_tag> p = getTagByNameId(nId))
-    {
-        try
-        {
-            return (p->asString());
-        }
-        catch(libed2k_exception& e)
-        {
-            ERR("Incorrect type conversion: " << e.what());
-        }
-    }
-
-    return (std::string(""));
-}
-
-template<typename size_type>
-std::string tag_list<size_type>::getStringTagByName(const std::string strName) const
-{
-    if (boost::shared_ptr<base_tag> p = getTagByName(strName))
-    {
-        try
-        {
-            return (p->asString());
-        }
-        catch(libed2k_exception& e)
-        {
-            ERR("Incorrect type conversion: " << e.what());
-        }
-    }
-
-    return (std::string(""));
-}
-
-template<typename size_type>
-boost::uint64_t tag_list<size_type>::getIntTagByNameId(tg_nid_type nId) const
-{
-    if (boost::shared_ptr<base_tag> p = getTagByNameId(nId))
-    {
-        try
-        {
-            return (p->asInt());
-        }
-        catch(libed2k_exception& e)
-        {
-            ERR("Incorrect type conversion: " << e.what());
-        }
-    }
-
-    return 0;
-}
-
-template<typename size_type>
-boost::uint64_t tag_list<size_type>::getIntTagByName(const std::string strName) const
-{
-    if (boost::shared_ptr<base_tag> p = getTagByName(strName))
-    {
-        try
-        {
-            return (p->asInt());
-        }
-        catch(libed2k_exception& e)
-        {
-            ERR("Incorrect type conversion: " << e.what());
-        }
-    }
-
-    return 0;
-}
 
 template<typename size_type>
 void tag_list<size_type>::save(archive::ed2k_oarchive& ar)
@@ -947,28 +890,28 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
         switch (nType)
         {
         case TAGTYPE_UINT64:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<boost::uint64_t>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<boost::uint64_t>(strName, nNameId)));
                 break;
         case TAGTYPE_UINT32:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<boost::uint32_t>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<boost::uint32_t>(strName, nNameId)));
                 break;
         case TAGTYPE_UINT16:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<boost::uint16_t>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<boost::uint16_t>(strName, nNameId)));
                 break;
         case TAGTYPE_UINT8:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<boost::uint8_t>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<boost::uint8_t>(strName, nNameId)));
                 break;
         case TAGTYPE_FLOAT32:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<float>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<float>(strName, nNameId)));
                 break;
         case TAGTYPE_BOOL:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<bool>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<bool>(strName, nNameId)));
                 break;
         case TAGTYPE_HASH16:
-                m_container.push_back(boost::shared_ptr<base_tag>(new typed_tag<md4_hash>(strName, nNameId)));
+                m_container.push_back(value_type(new typed_tag<md4_hash>(strName, nNameId)));
                 break;
         case TAGTYPE_BLOB:
-                m_container.push_back(boost::shared_ptr<base_tag>(new array_tag(strName, nNameId)));
+                m_container.push_back(value_type(new array_tag(strName, nNameId)));
                 break;
         case TAGTYPE_STRING:
         case TAGTYPE_STR1:
@@ -987,7 +930,7 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
         case TAGTYPE_STR14:
         case TAGTYPE_STR15:
         case TAGTYPE_STR16:
-                m_container.push_back(boost::shared_ptr<base_tag>(new string_tag(static_cast<tg_types>(nType), strName, nNameId)));
+                m_container.push_back(value_type(new string_tag(static_cast<tg_types>(nType), strName, nNameId)));
                 break;
         default:
             throw libed2k_exception(errors::invalid_tag_type);
@@ -1007,29 +950,23 @@ void tag_list<size_type>::dump() const
 }
 
 template<typename size_type>
-bool operator==(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
-{
-    if (t1.count() != t2.count())
-    {
-        return (false);
-    }
+bool operator==(const tag_list<size_type>& t1, const tag_list<size_type>& t2){
+    if (t1.size() != t2.size()) return (false);
 
-    for(size_t n = 0; n < t1.count(); ++n)
+    for(size_t n = 0; n < t1.size(); ++n)
     {
         bool found = false;
-        boost::shared_ptr<base_tag> ptr = t1.m_container[n];
+        //TODO - replace it after remove shared_ptr
+        boost::shared_ptr<base_tag> ptr = t1[n]; // temporary hack
 
-        for (size_t m = 0; m < t2.count(); ++m)
-        {
-            if (t2.m_container[m]->is_equal(ptr.get()))
-            {
+        for (size_t m = 0; m < t2.size(); ++m){
+            if (t2.m_container[m]->is_equal(ptr.get())){
                 found = true;
                 break;
             }
         }
 
-        if (!found)
-        {
+        if (!found){
             return (false);
         }
     }
@@ -1038,10 +975,7 @@ bool operator==(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
 }
 
 template<typename size_type>
-bool operator!=(const tag_list<size_type>& t1, const tag_list<size_type>& t2)
-{
-    return (!(t1 == t2));
-}
+bool operator!=(const tag_list<size_type>& t1, const tag_list<size_type>& t2){ return (!(t1 == t2));}
 
 }
 

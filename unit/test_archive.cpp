@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE(test_tag_list)
     libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
     in_array_archive >> tl;
 
-    BOOST_CHECK_EQUAL(tl.count(), static_cast<unsigned short>(m_source_archive[0]));
+    BOOST_CHECK_EQUAL(tl.size(), static_cast<unsigned short>(m_source_archive[0]));
     BOOST_CHECK(tl[0]->getType() == libed2k::TAGTYPE_UINT8);
     BOOST_CHECK(tl[1]->getType() == libed2k::TAGTYPE_UINT16);
     BOOST_CHECK(tl[2]->getType() == libed2k::TAGTYPE_UINT64);
@@ -413,7 +413,7 @@ BOOST_AUTO_TEST_CASE(test_tag_conversation)
     libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
     in_array_archive >> tl;
 
-    BOOST_REQUIRE_EQUAL(tl.count(), 2U);
+    BOOST_REQUIRE_EQUAL(tl.size(), 2U);
     BOOST_CHECK_EQUAL(tl[0]->getNameId(), 0xED);
     BOOST_CHECK_EQUAL(tl[1]->getType(), libed2k::TAGTYPE_UINT64);
 
@@ -478,9 +478,9 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     src_list.add_tag(libed2k::make_typed_tag(libed2k::md4_hash(libed2k::md4_hash::terminal), libed2k::FT_AICH_HASH,  true));         // 9
 
 
-    BOOST_REQUIRE_EQUAL(src_list.count(), 10U);
+    BOOST_REQUIRE_EQUAL(src_list.size(), 10U);
 
-    for (size_t n = 0; n < src_list.count(); n++)
+    for (size_t n = 0; n < src_list.size(); n++)
     {
         if (stringTest[n])
         {
@@ -548,7 +548,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
     bool bDst = false;
     libed2k::md4_hash hRes;
 
-    for (size_t n = 0; n < src_list.count(); n++)
+    for (size_t n = 0; n < src_list.size(); n++)
     {
         boost::shared_ptr<libed2k::base_tag> ptag = src_list[n];
         switch(ptag->getNameId())
@@ -598,7 +598,7 @@ BOOST_AUTO_TEST_CASE(test_tags_getters)
         }
     }
 
-    BOOST_REQUIRE_EQUAL(nCount, src_list.count());
+    BOOST_REQUIRE_EQUAL(nCount, src_list.size());
     BOOST_CHECK_EQUAL(strName, std::string("IVAN"));
     BOOST_CHECK_EQUAL(strFilename, std::string("IVANANDPLAN"));
     BOOST_CHECK_EQUAL(fValue, fTag);

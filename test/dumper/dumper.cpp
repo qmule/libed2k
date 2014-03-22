@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
             {
                 DBG(sm.m_servers.m_collection.at(n).m_network_point.to_string());
 
-                for (size_t k = 0; k < sm.m_servers.m_collection.at(n).m_list.count(); ++k)
+                for (size_t k = 0; k < sm.m_servers.m_collection.at(n).m_list.size(); ++k)
                 {
                     sm.m_servers.m_collection.at(n).m_list[k]->dump();
                 }

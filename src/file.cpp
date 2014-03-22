@@ -590,7 +590,7 @@ namespace libed2k
         DBG("known_file_entry::dump(TS: " << m_nLastChanged
                 << " " << m_hFile
                 << " hash list size: " <<  m_hash_list.m_collection.size()
-                << " tag list size: " << m_list.count());
+                << " tag list size: " << m_list.size());
     }
 
     known_file_collection::known_file_collection()
@@ -630,7 +630,7 @@ namespace libed2k
                 atp.piece_hashses = m_known_file_list.m_collection[n].m_hash_list.m_collection;
             }
 
-            for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.count(); j++)
+            for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.size(); j++)
             {
                 const boost::shared_ptr<base_tag> p = m_known_file_list.m_collection[n].m_list[j];
                 // we process only int tags - check only ints
@@ -1012,7 +1012,7 @@ namespace libed2k
                     boost::uint64_t nFilesize = 0;
                     md4_hash        hFile;
 
-                    for (size_t j = 0; j < ebc.m_files.m_collection[i].count(); ++j)
+                    for (size_t j = 0; j < ebc.m_files.m_collection[i].size(); ++j)
                     {
                         const boost::shared_ptr<base_tag> p = ebc.m_files.m_collection[i][j];
 

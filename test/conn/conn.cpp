@@ -689,7 +689,7 @@ int main(int argc, char* argv[])
                         params.file_path= trd.m_filepath.m_collection;
                         params.file_size = trd.m_filesize;
 
-                        if (trd.m_fast_resume_data.count() > 0)
+                        if (trd.m_fast_resume_data.size() > 0)
                         {
                             params.resume_data = const_cast<std::vector<char>* >(&trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
                         }

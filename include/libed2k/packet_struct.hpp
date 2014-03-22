@@ -312,8 +312,7 @@ namespace libed2k
             m_size = static_cast<size_type>(m_collection.size());
             ar & m_size;
 
-            for(Iterator i = m_collection.begin(); i != m_collection.end(); ++i)
-            {
+            for(Iterator i = m_collection.begin(); i != m_collection.end(); ++i) {
                 ar & *i;
             }
         }
@@ -1483,17 +1482,74 @@ namespace libed2k
         void serialize(Archive& ar){}
     };
 
+    /**
+      * hello chain
+      * kad_hello_req ->
+      * kad_hello_res <-
+      * kad_hello_res_ack ->
+     */
+    struct kad_hello_req{
+        md4_hash    client_id;
+        boost::uint16_t port;
+        boost::uint8_t  version;
+        bool            udp_firewalled; // unused
+        bool            tcp_firewalled; // unused
+        tag_list<boost::uint8_t>    options;
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id & port & version & options;
+        }
+    };
+
+    struct kad_hello_res{
+        md4_hash    client_id;
+        boost::uint16_t port;
+        boost::uint8_t  version;
+        tag_list<boost::uint8_t>    options;    // external kad port and udp/tcp firewalled
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id & port & version & options;
+        }
+    };
+
+    struct kad_hello_res_ack{
+        md4_hash    client_id;
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id;
+        }
+    };
+
     /*
      * this is response package as answer to search request FILE, KEYWORD, NOTES
      */
     struct kad_search_response{
         kad_answer_base header;
         md4_hash        answer;
-        container_holder<boost::uint16_t, std::deque<tag_list<boost::uint8_t> > >  tags;    // tag list doesn't support container's interface
+        container_holder<boost::uint16_t, tag_list<boost::uint8_t> >  tags;    // tag list doesn't support container's interface
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & header & answer & tags;
         }
+    };
+
+    struct kad_find_buddy_req{
+        md4_hash    target_id;
+        md4_hash    client_id;
+        boost::uint16_t port;
+    };
+
+    struct kad_find_buddy_res{
+        md4_hash    target_id;
+        md4_hash    client_id;
+        boost::uint16_t port;
+    };
+
+    // find source case
+    struct kad_callback_req{
+        md4_hash    target_id;
+        md4_hash    file_id;
+        boost::uint16_t port;
     };
 
     template<> struct packet_type<client_hello> {
@@ -1655,6 +1711,29 @@ namespace libed2k
         static const proto_type value       = OP_ASKDIRCONTENTSANS;
         static const proto_type protocol    = OP_EDONKEYPROT;
     };
+    // kad packet types
+    template<> struct packet_type<kad_booststrap_req>{
+        static const proto_type value       = KADEMLIA2_BOOTSTRAP_REQ;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_booststrap_res>{
+        static const proto_type value       = KADEMLIA2_BOOTSTRAP_RES;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_hello_req>{
+        static const proto_type value       = KADEMLIA2_HELLO_REQ;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_hello_res>{
+        static const proto_type value       = KADEMLIA2_HELLO_RES;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_hello_res_ack>{
+        static const proto_type value       = KADEMLIA2_HELLO_RES_ACK;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+
+
 
 
     // helper for get type from item

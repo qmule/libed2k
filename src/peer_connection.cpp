@@ -1457,7 +1457,7 @@ void peer_connection::parse_misc_info(const tag_list<boost::uint32_t>& list)
     try
     {
         // extract user info from tag list
-        for (size_t n = 0; n < list.count(); ++n)
+        for (size_t n = 0; n < list.size(); ++n)
         {
             const boost::shared_ptr<base_tag> p = list[n];
 
@@ -2071,7 +2071,7 @@ template <typename FileContainer>
 std::vector<std::string> filelist(const FileContainer& files) {
     std::vector<std::string> res;
     for (size_t i = 0; i < files.m_collection.size(); ++i)
-        for (size_t j = 0; j < files.m_collection[i].m_list.count(); ++j)
+        for (size_t j = 0; j < files.m_collection[i].m_list.size(); ++j)
         {
             boost::shared_ptr<libed2k::base_tag> ptag = files.m_collection[i].m_list[j];
             if (ptag->getNameId() == FT_FILENAME)
