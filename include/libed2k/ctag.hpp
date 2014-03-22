@@ -54,6 +54,51 @@ const tg_nid_type FT_FILEHASH           = '\x28';
 const tg_nid_type FT_COMPLETE_SOURCES   = '\x30';    // nr. of sources which share a
 const tg_nid_type FT_FAST_RESUME_DATA   = '\x31';   // fast resume data array
 
+// Kad search + some unused tags to mirror the ed2k ones.
+const tg_nid_type   TAG_FILENAME        = '\x01';  // <string>
+const tg_nid_type   TAG_FILESIZE        = '\x02';  // <uint32>
+const tg_nid_type   TAG_FILESIZE_HI     = '\x3A';  // <uint32>
+const tg_nid_type   TAG_FILETYPE        = '\x03';  // <string>
+const tg_nid_type   TAG_FILEFORMAT      = '\x04';  // <string>
+const tg_nid_type   TAG_COLLECTION      = '\x05';
+const tg_nid_type   TAG_PART_PATH       = '\x06';  // <string>
+const tg_nid_type   TAG_PART_HASH       = '\x07';
+const tg_nid_type   TAG_COPIED          = '\x08';  // <uint32>
+const tg_nid_type   TAG_GAP_START       = '\x09';  // <uint32>
+const tg_nid_type   TAG_GAP_END         = '\x0A';  // <uint32>
+const tg_nid_type   TAG_DESCRIPTION     = '\x0B';  // <string>
+const tg_nid_type   TAG_PING            = '\x0C';
+const tg_nid_type   TAG_FAIL            = '\x0D';
+const tg_nid_type   TAG_PREFERENCE      = '\x0E';
+const tg_nid_type   TAG_PORT            = '\x0F';
+const tg_nid_type   TAG_IP_ADDRESS      = '\x10';
+const tg_nid_type   TAG_VERSION         = '\x11';  // <string>
+const tg_nid_type   TAG_TEMPFILE        = '\x12';  // <string>
+const tg_nid_type   TAG_PRIORITY        = '\x13';  // <uint32>
+const tg_nid_type   TAG_STATUS          = '\x14';  // <uint32>
+const tg_nid_type   TAG_SOURCES         = '\x15';  // <uint32>
+const tg_nid_type   TAG_AVAILABILITY    = '\x15';  // <uint32>
+const tg_nid_type   TAG_PERMISSIONS     = '\x16';
+const tg_nid_type   TAG_QTIME           = '\x16';
+const tg_nid_type   TAG_PARTS           = '\x17';
+const tg_nid_type   TAG_PUBLISHINFO     = '\x33';  // <uint32>
+const tg_nid_type   TAG_MEDIA_ARTIST    = '\xD0';  // <string>
+const tg_nid_type   TAG_MEDIA_ALBUM     = '\xD1';  // <string>
+const tg_nid_type   TAG_MEDIA_TITLE     = '\xD2';  // <string>
+const tg_nid_type   TAG_MEDIA_LENGTH    = '\xD3';  // <uint32> !!!
+const tg_nid_type   TAG_MEDIA_BITRATE   = '\xD4';  // <uint32>
+const tg_nid_type   TAG_MEDIA_CODEC     = '\xD5';  // <string>
+const tg_nid_type   TAG_KADMISCOPTIONS  = '\xF2';  // <uint8>
+const tg_nid_type   TAG_ENCRYPTION      = '\xF3';  // <uint8>
+const tg_nid_type   TAG_FILERATING      = '\xF7';  // <uint8>
+const tg_nid_type   TAG_BUDDYHASH       = '\xF8';  // <string>
+const tg_nid_type   TAG_CLIENTLOWID     = '\xF9';  // <uint32>
+const tg_nid_type   TAG_SERVERPORT      = '\xFA';  // <uint16>
+const tg_nid_type   TAG_SERVERIP        = '\xFB';  // <uint32>
+const tg_nid_type   TAG_SOURCEUPORT     = '\xFC';  // <uint16>
+const tg_nid_type   TAG_SOURCEPORT      = '\xFD';  // <uint16>
+const tg_nid_type   TAG_SOURCEIP        = '\xFE';  // <uint32>
+const tg_nid_type   TAG_SOURCETYPE      = '\xFF';  // <uint8>
 
 // complete version of the
 // associated file (supported

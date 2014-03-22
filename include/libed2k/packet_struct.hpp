@@ -1457,7 +1457,6 @@ namespace libed2k
     struct kad_answer_base{
         md4_hash    kad_id;
         md4_hash    key_id;
-
     };
 
     struct kad_bootstrap_contact{
@@ -1484,7 +1483,18 @@ namespace libed2k
         void serialize(Archive& ar){}
     };
 
-
+    /*
+     * this is response package as answer to search request FILE, KEYWORD, NOTES
+     */
+    struct kad_search_response{
+        kad_answer_base header;
+        md4_hash        answer;
+        container_holder<boost::uint16_t, std::deque<tag_list<boost::uint8_t> > >  tags;    // tag list doesn't support container's interface
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & header & answer & tags;
+        }
+    };
 
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
