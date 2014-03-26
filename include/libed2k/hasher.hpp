@@ -9,6 +9,12 @@
 #include <boost/cstdint.hpp>
 #include <vector>
 
+#if LIBED2K_USE_IOSTREAM
+#include "libed2k/escape_string.hpp" // to_hex, from_hex
+#include <iostream>
+#include <iomanip>
+#endif
+
 #ifdef LIBED2K_USE_GCRYPT
 #include <gcrypt.h>
 #elif defined LIBED2K_USE_OPENSSL
@@ -50,11 +56,12 @@ LIBED2K_EXTRA_EXPORT void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], st
 
 namespace libed2k
 {
-    class md4_hash
-        {
+    class md4_hash{
         public:
             friend class archive::access;
             typedef boost::uint8_t md4hash_container[MD4_DIGEST_LENGTH];
+            enum { number_size =  MD4_DIGEST_LENGTH };
+            enum { size = number_size };
 
             static const md4_hash terminal;
             static const md4_hash libed2k;
@@ -63,31 +70,42 @@ namespace libed2k
 
             static md4_hash fromHashset(const std::vector<md4_hash>& hashset);
             static md4_hash fromString(const std::string& strHash);
+            static md4_hash min();
+            static md4_hash max();
 
             md4_hash() { clear(); }
             md4_hash(const std::vector<boost::uint8_t>& vHash);
             md4_hash(const md4hash_container& container);
+            bool is_all_zeros() const;
             bool defined() const;
+
+            md4_hash& operator<<=(int n);
+            md4_hash& operator>>=(int n);
+
 
             unsigned char* getContainer(){ return &m_hash[0]; }
 
-            bool operator==(const md4_hash& hash) const {return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) == 0);}
-            bool operator!=(const md4_hash& hash) const{return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) != 0);}
-            bool operator<(const md4_hash& hash) const{return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) < 0);}
-            bool operator>(const md4_hash& hash) const {return (memcmp(m_hash, hash.m_hash, MD4_DIGEST_LENGTH) > 0);}
+            bool operator==(const md4_hash& hash) const;
+            bool operator!=(const md4_hash& hash) const;
+            bool operator<(const md4_hash& hash) const;
+            md4_hash operator~() const;
+            md4_hash operator^ (md4_hash const& n) const;
+            md4_hash operator& (md4_hash const& n) const;
+            md4_hash& operator &= (md4_hash const& n);
+            md4_hash& operator |= (md4_hash const& n);
+            md4_hash& operator ^= (md4_hash const& n);
 
-            void clear() {memset(m_hash, 0, MD4_DIGEST_LENGTH);}
+            void clear() {memset(m_hash, 0, size);}
             std::string toString() const;
 
-            boost::uint8_t operator[](size_t n) const
-            {
-                LIBED2K_ASSERT(n < MD4_DIGEST_LENGTH);
+            const boost::uint8_t& operator[](size_t n) const{
+                LIBED2K_ASSERT(n < size);
                 return (m_hash[n]);
             }
 
             boost::uint8_t& operator[](size_t n)
             {
-                LIBED2K_ASSERT(n < MD4_DIGEST_LENGTH);
+                LIBED2K_ASSERT(n < size);
                 return (m_hash[n]);
             }
 
@@ -99,11 +117,37 @@ namespace libed2k
                 }
             }
 
-            friend std::ostream& operator<< (std::ostream& stream, const md4_hash& hash);
             void dump() const;
+
+            typedef const unsigned char* const_iterator;
+            typedef unsigned char* iterator;
+
+            const_iterator begin() const { return m_hash; }
+            const_iterator end() const { return m_hash+number_size; }
+
+            iterator begin() { return m_hash; }
+            iterator end() { return m_hash+number_size; }
         private:
             md4hash_container   m_hash;
         };
+
+#if LIBED2K_USE_IOSTREAM
+    inline std::ostream& operator<<(std::ostream& os, md4_hash const& peer)
+    {
+        char out[md4_hash::size*2+1];
+        to_hex((char const*)&peer[0], md4_hash::size, out);
+        return os << out;
+    }
+
+    inline std::istream& operator>>(std::istream& is, md4_hash& peer)
+    {
+        char hex[md4_hash::size*2];
+        is.read(hex, md4_hash::size*2);
+        if (!from_hex(hex, md4_hash::size*2, (char*)&peer[0]))
+            is.setstate(std::ios_base::failbit);
+        return is;
+    }
+#endif // LIBED2K_USE_IOSTREAM
 
     // NOTE - we use self implemented MD4 hash always since historical reasons
 	class hasher
