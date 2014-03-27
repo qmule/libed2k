@@ -36,14 +36,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/cstdint.hpp>
 #include "libed2k/config.hpp"
-#include "libed2k/peer_id.hpp"
+#include "libed2k/hasher.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/address.hpp"
 
 namespace libed2k { namespace dht
 {
 
-typedef libed2k::big_number node_id;
+typedef libed2k::md4_hash node_id;
 
 // returns the distance between the two nodes
 // using the kademlia XOR-metric

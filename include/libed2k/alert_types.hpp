@@ -917,7 +917,7 @@ namespace libed2k
     struct dht_announce_alert: alert
     {
             dht_announce_alert(address const& ip_, int port_
-                    , sha1_hash const& info_hash_)
+                    , md4_hash const& info_hash_)
                     : ip(ip_)
                     , port(port_)
                     , info_hash(info_hash_)
@@ -939,12 +939,12 @@ namespace libed2k
 
             address ip;
             int port;
-            sha1_hash info_hash;
+            md4_hash info_hash;
     };
 
     struct dht_get_peers_alert: alert
     {
-            dht_get_peers_alert(sha1_hash const& info_hash_)
+            dht_get_peers_alert(md4_hash const& info_hash_)
                     : info_hash(info_hash_)
             {}
 
@@ -962,7 +962,7 @@ namespace libed2k
                 return "DHT get peers alert";
             }
 
-            sha1_hash   info_hash;
+            md4_hash   info_hash;
     };
 
     struct external_ip_alert: alert

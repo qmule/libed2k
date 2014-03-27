@@ -270,7 +270,7 @@ void node_impl::incoming(msg const& m)
 namespace
 {
 	void announce_fun(std::vector<std::pair<node_entry, std::string> > const& v
-		, node_impl& node, int listen_port, sha1_hash const& ih, bool seed)
+		, node_impl& node, int listen_port, md4_hash const& ih, bool seed)
 	{
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		LIBED2K_LOG(node) << "sending announce_peer [ ih: " << ih
@@ -339,7 +339,7 @@ void node_impl::add_node(udp::endpoint node)
 	m_rpc.invoke(e, node, o);
 }
 
-void node_impl::announce(sha1_hash const& info_hash, int listen_port, bool seed
+void node_impl::announce(md4_hash const& info_hash, int listen_port, bool seed
 	, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -415,18 +415,18 @@ void node_impl::status(session_status& s)
 	}
 }
 
-void node_impl::lookup_peers(sha1_hash const& info_hash, int prefix, entry& reply
+void node_impl::lookup_peers(md4_hash const& info_hash, int prefix, entry& reply
 	, bool noseed, bool scrape) const
 {
     m_alerts.post_alert_should(dht_get_peers_alert(info_hash));
 
 	table_t::const_iterator i = m_map.lower_bound(info_hash);
 	if (i == m_map.end()) return;
-	if (i->first != info_hash && prefix == 20) return;
-	if (prefix != 20)
+	if (i->first != info_hash && prefix == md4_hash::size) return;
+	if (prefix != md4_hash::size)
 	{
-		sha1_hash mask = sha1_hash::max();
-		mask <<= (20 - prefix) * 8;
+		md4_hash mask = md4_hash::max();
+		mask <<= (md4_hash::size - prefix) * 8;
 		if ((i->first & mask) != (info_hash & mask)) return;
 	}
 
@@ -442,7 +442,7 @@ void node_impl::lookup_peers(sha1_hash const& info_hash, int prefix, entry& repl
 		for (std::set<peer_entry>::const_iterator i = v.peers.begin()
 			, end(v.peers.end()); i != end; ++i)
 		{
-			sha1_hash iphash;
+			md4_hash iphash;
 			hash_address(i->addr.address(), iphash);
 			if (i->seed) seeds.set(iphash);
 			else downloaders.set(iphash);
@@ -614,6 +614,8 @@ void incoming_error(entry& e, char const* msg)
 // build response
 void node_impl::incoming_request(msg const& m, entry& e)
 {
+	// TODO implement emule protocol instead messages
+	/*
 	e = entry(entry::dictionary_t);
 	e["y"] = "r";
 	e["t"] = m.message.dict_find_string_value("t");
@@ -633,16 +635,16 @@ void node_impl::incoming_request(msg const& m, entry& e)
 	}
 
 	e["ip"] = endpoint_to_bytes(m.addr);
-/*
+
 	// if this nodes ID doesn't match its IP, tell it what
 	// its IP is with an error
 	// don't enforce this yet
-	if (!verify_id(id, m.addr.address()))
-	{
-		incoming_error(e, "invalid node ID");
-		return;
-	}
-*/
+	//if (!verify_id(id, m.addr.address()))
+	//{
+	//	incoming_error(e, "invalid node ID");
+	//	return;
+	//}
+
 	char const* query = top_level[0]->string_cstr();
 
 	lazy_entry const* arg_ent = top_level[1];
@@ -1061,6 +1063,7 @@ void node_impl::incoming_request(msg const& m, entry& e)
 		write_nodes_entry(reply, n);
 		return;
 	}
+	*/
 }
 
 

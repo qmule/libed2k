@@ -1635,7 +1635,7 @@ void session_impl::remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_p
     }
 }
 
-bool session_impl::external_ip_t::add_vote(sha1_hash const& k, int type)
+bool session_impl::external_ip_t::add_vote(md4_hash const& k, int type)
 {
         sources |= type;
         if (voters.find(k)) return false;
@@ -1657,7 +1657,7 @@ void session_impl::set_external_address(address const& ip
 #endif
         // this is the key to use for the bloom filters
         // it represents the identity of the voter
-        sha1_hash k;
+        md4_hash k;
         hash_address(source, k);
 
         // do we already have an entry for this external IP?

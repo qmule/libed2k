@@ -386,7 +386,7 @@ namespace libed2k { namespace dht
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 		//TODO use md4_hash
-		//m_dht.announce(ih, listen_port, seed, f);
+		m_dht.announce(ih, listen_port, seed, f);
 	}
 
 

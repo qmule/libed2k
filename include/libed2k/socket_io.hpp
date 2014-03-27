@@ -38,7 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/io.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/lazy_entry.hpp"
-#include "libed2k/peer_id.hpp" // for sha1_hash
+#include "libed2k/hasher.hpp" // for md4_hash
 #include <string>
 
 namespace libed2k
@@ -49,7 +49,7 @@ namespace libed2k
 	LIBED2K_EXPORT std::string address_to_bytes(address const& a);
 
     LIBED2K_EXPORT std::string endpoint_to_bytes(udp::endpoint const& ep);
-    LIBED2K_EXTRA_EXPORT void hash_address(address const& ip, sha1_hash& h);
+    LIBED2K_EXTRA_EXPORT void hash_address(address const& ip, md4_hash& h);
 
 	namespace detail
 	{

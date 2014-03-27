@@ -93,19 +93,19 @@ namespace libed2k
         return print_endpoint(tcp::endpoint(ep.address(), ep.port()));
     }
 
-    void hash_address(address const& ip, sha1_hash& h)
+    void hash_address(address const& ip, md4_hash& h)
     {
 #if LIBED2K_USE_IPV6
             if (ip.is_v6())
             {
                     address_v6::bytes_type b = ip.to_v6().to_bytes();
-                    h = sha1_hasher((char*)&b[0], b.size()).final();
+                    h = hasher((char*)&b[0], b.size()).final();
             }
             else
 #endif
             {
                     address_v4::bytes_type b = ip.to_v4().to_bytes();
-                    h = sha1_hasher((char*)&b[0], b.size()).final();
+                    h = hasher((char*)&b[0], b.size()).final();
             }
     }
 

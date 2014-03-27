@@ -331,6 +331,11 @@ namespace libed2k
         memcpy(m_hash, container, MD4_DIGEST_LENGTH);
     }
 
+    md4_hash::md4_hash(const char* s){
+		if (s == 0) clear();
+		else std::memcpy(m_hash, s, size);
+    }
+
     bool md4_hash::is_all_zeros() const
     {
         for (const unsigned char* i = m_hash; i < m_hash+number_size; ++i)

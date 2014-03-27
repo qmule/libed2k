@@ -223,7 +223,7 @@ public:
 	{ m_table.print_state(os); }
 #endif
 
-	void announce(sha1_hash const& info_hash, int listen_port, bool seed
+	void announce(md4_hash const& info_hash, int listen_port, bool seed
 		, boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
 	bool verify_token(std::string const& token, char const* info_hash
@@ -266,7 +266,7 @@ public:
 
 protected:
 
-	void lookup_peers(sha1_hash const& info_hash, int prefix, entry& reply
+	void lookup_peers(md4_hash const& info_hash, int prefix, entry& reply
 		, bool noseed, bool scrape) const;
 	bool lookup_torrents(sha1_hash const& target, entry& reply
 		, char* tags) const;

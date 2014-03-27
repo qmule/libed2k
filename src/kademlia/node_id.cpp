@@ -152,7 +152,7 @@ node_id generate_random_id()
 {
 	char r[20];
 	for (int i = 0; i < 20; ++i) r[i] = random();
-	return sha1_hasher(r, 20).final();
+	return hasher(r, 20).final();
 }
 
 // verifies whether a node-id matches the IP it's used from

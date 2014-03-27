@@ -327,7 +327,7 @@ namespace libed2k {
             {
                     external_ip_t(): sources(0), num_votes(0) {}
 
-                    bool add_vote(sha1_hash const& k, int type);
+                    bool add_vote(md4_hash const& k, int type);
                     bool operator<(external_ip_t const& rhs) const
                     {
                             if (num_votes < rhs.num_votes) return true;

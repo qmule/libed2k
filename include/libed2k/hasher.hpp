@@ -15,6 +15,14 @@
 #include <iomanip>
 #endif
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 #ifdef LIBED2K_USE_GCRYPT
 #include <gcrypt.h>
 #elif defined LIBED2K_USE_OPENSSL
@@ -76,6 +84,7 @@ namespace libed2k
             md4_hash() { clear(); }
             md4_hash(const std::vector<boost::uint8_t>& vHash);
             md4_hash(const md4hash_container& container);
+            md4_hash(const char*);
             bool is_all_zeros() const;
             bool defined() const;
 

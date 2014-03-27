@@ -34,8 +34,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #define TORRENT_BLOOM_FILTER_HPP_INCLUDED
 
 #include <boost/cstdint.hpp>
-#include "libed2k/peer_id.hpp" // for sha1_hash
-#include "libed2k/config.hpp" // for sha1_hash
+#include "libed2k/hasher.hpp" // for md4_hash
+#include "libed2k/config.hpp"
 
 #include <math.h> // for log()
 
@@ -48,10 +48,10 @@ namespace libed2k
 	template <int N>
 	struct bloom_filter
 	{
-		bool find(sha1_hash const& k) const
+		bool find(md4_hash const& k) const
 		{ return has_bits(&k[0], bits, N); }
 
-		void set(sha1_hash const& k)
+		void set(md4_hash const& k)
 		{ set_bits(&k[0], bits, N); }
 
 		std::string to_string() const
