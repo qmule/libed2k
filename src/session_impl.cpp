@@ -114,6 +114,7 @@ void session_impl_base::set_alert_dispatch(boost::function<void(alert const&)> c
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings):
     session_impl_base(settings),
+    m_host_resolver(m_io_service),
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
     m_skip_buffer(4096),
@@ -1806,13 +1807,10 @@ void session_impl::set_external_address(address const& ip
         char port[7];
         snprintf(port, sizeof(port), "%d", node.second);
         tcp::resolver::query q(node.first, port);
-        // TODO - should be implemented
-        //m_host_resolver.async_resolve(q,
-        //    boost::bind(&session_impl::on_dht_router_name_lookup, this, _1, _2));
+        m_host_resolver.async_resolve(q,
+            boost::bind(&session_impl::on_dht_router_name_lookup, this, _1, _2));
     }
 
-    // TODO  - callback should be implemented
-    /*
     void session_impl::on_dht_router_name_lookup(error_code const& e
         , tcp::resolver::iterator host)
     {
@@ -1830,7 +1828,7 @@ void session_impl::set_external_address(address const& ip
             ++host;
         }
     }
-    */
+
 #endif
 
 

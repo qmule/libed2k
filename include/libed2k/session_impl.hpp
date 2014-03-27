@@ -353,7 +353,8 @@ namespace libed2k {
             std::vector<external_ip_t> m_external_addresses;
             address m_external_address;
 
-#ifndef TORRENT_DISABLE_DHT
+#ifndef LIBED2K_DISABLE_DHT
+            bool is_dht_running() const { return m_dht.get(); }
             entry dht_state() const;
             void add_dht_node_name(std::pair<std::string, int> const& node);
             void add_dht_node(udp::endpoint n);
@@ -375,6 +376,8 @@ namespace libed2k {
             // this announce timer is used
             // by the DHT.
             deadline_timer m_dht_announce_timer;
+            void on_dht_router_name_lookup(error_code const& e
+                    , tcp::resolver::iterator host);
 #endif
 
             // when as a socks proxy is used for peers, also
@@ -383,7 +386,7 @@ namespace libed2k {
             //boost::uint16_t m_socks_listen_port;
 
 
-
+            tcp::resolver m_host_resolver;
             boost::object_pool<peer> m_peer_pool;
 
             // this vector is used to store the block_info

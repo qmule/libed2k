@@ -481,13 +481,13 @@ namespace libed2k
         bool upnp_ignore_nonrouters;
     };
 
-#ifndef TORRENT_DISABLE_DHT
+#ifndef LIBED2K_DISABLE_DHT
     struct dht_settings
     {
         dht_settings()
             : max_peers_reply(100)
             , search_branching(5)
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
             , service_port(0)
 #endif
             , max_fail_count(20)
@@ -506,7 +506,7 @@ namespace libed2k
         // searching the DHT.
         int search_branching;
 
-#ifndef TORRENT_NO_DEPRECATE
+#ifndef LIBED2K_NO_DEPRECATE
         // the listen port for the dht. This is a UDP port.
         // zero means use the same as the tcp interface
         int service_port;

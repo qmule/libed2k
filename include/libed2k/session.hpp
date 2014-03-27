@@ -14,6 +14,7 @@
 #include "libed2k/packet_struct.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/filesystem.hpp"
+#include "libed2k/session_settings.hpp"
 
 namespace libed2k {
 
@@ -104,6 +105,15 @@ namespace libed2k {
 
         void stop_natpmp();
         void stop_upnp();
+
+#ifndef LIBED2K_DISABLE_DHT
+		void start_dht();
+		void stop_dht();
+		void set_dht_settings(dht_settings const& settings);
+		void add_dht_node(std::pair<std::string, int> const& node);
+		void add_dht_router(std::pair<std::string, int> const& node);
+		bool is_dht_running() const;
+#endif
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

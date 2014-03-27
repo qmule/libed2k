@@ -255,4 +255,47 @@ namespace libed2k
         boost::mutex::scoped_lock l(m_impl->m_mutex);
         m_impl->stop_upnp();
     }
+
+#ifndef LIBED2K_DISABLE_DHT
+
+	void session::start_dht()
+	{
+		// the state is loaded in load_state()
+		boost::mutex::scoped_lock l(m_impl->m_mutex);
+		m_impl->start_dht();
+	}
+
+	void session::stop_dht()
+	{
+		boost::mutex::scoped_lock l(m_impl->m_mutex);
+		m_impl->stop_dht();
+	}
+
+	void session::set_dht_settings(dht_settings const& settings)
+	{
+		boost::mutex::scoped_lock l(m_impl->m_mutex);
+		m_impl->set_dht_settings(settings);
+	}
+
+	void session::add_dht_node(std::pair<std::string, int> const& node)
+	{
+		boost::mutex::scoped_lock l(m_impl->m_mutex);
+		m_impl->add_dht_node_name(node);
+	}
+
+	void session::add_dht_router(std::pair<std::string, int> const& node)
+	{
+		boost::mutex::scoped_lock l(m_impl->m_mutex);
+		m_impl->add_dht_router(node);
+	}
+
+	bool session::is_dht_running() const
+	{
+		boost::mutex::scoped_lock l(m_impl->m_mutex);
+		bool r = m_impl->is_dht_running();
+		return r;
+	}
+
+#endif
+
 }
