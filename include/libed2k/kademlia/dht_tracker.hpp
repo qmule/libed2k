@@ -88,7 +88,7 @@ namespace libed2k { namespace dht
 
 		entry state() const;
 
-		void announce(sha1_hash const& ih, int listen_port, bool seed
+		void announce(md4_hash const& ih, int listen_port, bool seed
 			, boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
 		void dht_status(session_status& s);

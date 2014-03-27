@@ -129,55 +129,6 @@ namespace libed2k { namespace dht
 	}
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	std::string parse_dht_client(lazy_entry const& e)
-	{
-		lazy_entry const* ver = e.dict_find_string("v");
-		if (!ver) return "generic";
-		std::string const& client = ver->string_value();
-		if (client.size() < 2)
-		{
-			++g_unknown_message_input;
-			return client;
-		}
-		else if (std::equal(client.begin(), client.begin() + 2, "Az"))
-		{
-			++g_az_message_input;
-			return "Azureus";
-		}
-		else if (std::equal(client.begin(), client.begin() + 2, "UT"))
-		{
-			++g_ut_message_input;
-			return "uTorrent";
-		}
-		else if (std::equal(client.begin(), client.begin() + 2, "LT"))
-		{
-			++g_lt_message_input;
-			return "libed2k";
-		}
-		else if (std::equal(client.begin(), client.begin() + 2, "MP"))
-		{
-			++g_mp_message_input;
-			return "MooPolice";
-		}
-		else if (std::equal(client.begin(), client.begin() + 2, "GR"))
-		{
-			++g_gr_message_input;
-			return "GetRight";
-		}
-		else if (std::equal(client.begin(), client.begin() + 2, "MO"))
-		{
-			++g_mo_message_input;
-			return "Mono Torrent";
-		}
-		else
-		{
-			++g_unknown_message_input;
-			return client;
-		}
-	}
-#endif
-
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	LIBED2K_DEFINE_LOG(dht_tracker)
 #endif
 
@@ -430,11 +381,12 @@ namespace libed2k { namespace dht
 #endif
 	}
 
-	void dht_tracker::announce(sha1_hash const& ih, int listen_port, bool seed
+	void dht_tracker::announce(md4_hash const& ih, int listen_port, bool seed
 		, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
-		m_dht.announce(ih, listen_port, seed, f);
+		//TODO use md4_hash
+		//m_dht.announce(ih, listen_port, seed, f);
 	}
 
 
@@ -444,11 +396,20 @@ namespace libed2k { namespace dht
 		m_dht.unreachable(ep);
 	}
 
-	// translate bittorrent kademlia message into the generice kademlia message
+	// translate eDonkey kademlia message into the generic kademlia packet
 	// used by the library
 	void dht_tracker::on_receive(udp::endpoint const& ep, char const* buf, int bytes_transferred)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
+
+		// bytes count should be at least as packet header size
+		if (bytes_transferred < sizeof(libed2k_header)){
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(dht_tracker) << " incoming bytes count: " << bytes_transferred << " less than libed2k_header size";
+#endif
+			return;
+		}
+
 		// account for IP and UDP overhead
 		m_received_bytes += bytes_transferred + (ep.address().is_v6() ? 48 : 28);
 
@@ -504,46 +465,20 @@ namespace libed2k { namespace dht
 		m_total_in_bytes += bytes_transferred;
 #endif
 
-		using libed2k::entry;
-		using libed2k::bdecode;
+		LIBED2K_ASSERT(bytes_transferred >= sizeof(libed2k_header));
+
+		libed2k_header header(buf);
+		error_code ec = header.check_packet();
+		if (!ec){
+			// valid packet header, extract content
 			
-		LIBED2K_ASSERT(bytes_transferred > 0);
-
-		lazy_entry e;
-		int pos;
-		error_code ec;
-		int ret = lazy_bdecode(buf, buf + bytes_transferred, e, ec, &pos, 10, 500);
-		if (ret != 0)
-		{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			LIBED2K_LOG(dht_tracker) << "<== " << ep << " ERROR: "
-				<< ec.message() << " pos: " << pos;
-#endif
-			return;
+		}
+		else{
+			// report error
 		}
 
-		libed2k::dht::msg m(e, ep);
-
-		if (e.type() != lazy_entry::dict_t)
-		{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			LIBED2K_LOG(dht_tracker) << "<== " << ep << " ERROR: not a dictionary: "
-				<< print_entry(e, true);
-#endif
-			// it's not a good idea to send invalid messages
-			// especially not in response to an invalid message
-//			entry r;
-//			libed2k::dht::incoming_error(r, "message is not a dictionary");
-//			send_packet(r, ep, 0);
-			return;
-		}
-
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		parse_dht_client(e);
-		LIBED2K_LOG(dht_tracker) << "<== " << ep << " " << print_entry(e, true);
-#endif
-
-		m_dht.incoming(m);
+		// TODO - implement correct incoming message
+		//m_dht.incoming(m);
 	}
 
 	void add_node_fun(void* userdata, node_entry const& e)

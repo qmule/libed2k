@@ -384,6 +384,13 @@ namespace libed2k
          */
         libed2k_header() : m_protocol(OP_EDONKEYPROT), m_size(1), m_type(0){}
 
+        libed2k_header(const char* buf){
+        	const libed2k_header* p = ((libed2k_header*)buf);
+        	m_protocol = p->m_protocol;
+        	m_size = p->m_size;
+        	m_type = p->m_type;
+        }
+
         /**
           * check packet data is correct
           * on debug assert will generate on size error
