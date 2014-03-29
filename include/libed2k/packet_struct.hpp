@@ -5,6 +5,10 @@
 #include <deque>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/stream.hpp>
 
 #include "libed2k/bitfield.hpp"
 #include "libed2k/ctag.hpp"
@@ -908,35 +912,85 @@ namespace libed2k
     //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
     //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 
-    template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
-    template<> struct packet_type<shared_files_list>        //!< offer files to server
-    {
+    template<> struct packet_type<cs_login_request>{
+        static const proto_type value = OP_LOGINREQUEST;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< on login to server
+
+    template<> struct packet_type<shared_files_list>{
         static const proto_type value       = OP_OFFERFILES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< offer files to server
+
+    template<> struct packet_type<search_request_block>{
+        static const proto_type value = OP_SEARCHREQUEST;
+        static const proto_type protocol = OP_EDONKEYPROT;
+    };//!< search request to server
+
+    template<> struct packet_type<search_result>{
+        static const proto_type value = OP_SEARCHRESULT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< search result from server
+
+    template<> struct packet_type<search_more_result>{
+        static const proto_type value = OP_QUERY_MORE_RESULT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< search result from server
+
+    template<> struct packet_type<get_file_sources>{
+        static const proto_type value = OP_GETSOURCES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< file sources request to server
+
+    template<> struct packet_type<found_file_sources>{
+        static const proto_type value = OP_FOUNDSOURCES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< file sources answer
+
+    template<> struct packet_type<callback_request_out>{
+        static const proto_type value = OP_CALLBACKREQUEST;
         static const proto_type protocol    = OP_EDONKEYPROT;
     };
 
-    template<> struct packet_type<search_request_block>     { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
-    template<> struct packet_type<search_result>            { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
-    template<> struct packet_type<search_more_result>       { static const proto_type value = OP_QUERY_MORE_RESULT;  }; //!< search result from server
+    template<> struct packet_type<callback_request_in>{
+        static const proto_type value = OP_CALLBACKREQUESTED;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
 
-    template<> struct packet_type<get_file_sources>         { static const proto_type value = OP_GETSOURCES;    };      //!< file sources request to server
-    template<> struct packet_type<found_file_sources>       { static const proto_type value = OP_FOUNDSOURCES;  };      //!< file sources answer
+    template<> struct packet_type<callback_req_fail>{
+        static const proto_type value = OP_CALLBACK_FAIL;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< callback request answer from server
 
-    template<> struct packet_type<callback_request_out>     { static const proto_type value = OP_CALLBACKREQUEST;};     //!< callback request to server - do not use
-    template<> struct packet_type<callback_request_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };  //!< callback request from server - we reject it
-    template<> struct packet_type<callback_req_fail>        { static const proto_type value = OP_CALLBACK_FAIL; };      //!< callback request answer from server
+    template<> struct packet_type<server_get_list>{
+        static const proto_type value = OP_GETSERVERLIST;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
 
-    template<> struct packet_type<server_get_list>          { static const proto_type value = OP_GETSERVERLIST; };
-    template<> struct packet_type<server_list>              { static const proto_type value = OP_SERVERLIST;    };      //!< server list from server
-    template<> struct packet_type<server_status>            { static const proto_type value = OP_SERVERSTATUS;  };      //!< server status
-    template<> struct packet_type<id_change>                { static const proto_type value = OP_IDCHANGE;      };      //!< new our id from server
-    template<> struct packet_type<server_message>           { static const proto_type value = OP_SERVERMESSAGE; };      //!< some server message
-    template<> struct packet_type<server_info_entry>        { static const proto_type value = OP_SERVERIDENT;   };      //!< server info
+    template<> struct packet_type<server_list>{
+        static const proto_type value = OP_SERVERLIST;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< server list from server
 
+    template<> struct packet_type<server_status> {
+        static const proto_type value = OP_SERVERSTATUS;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< server status
 
-    // UDP types
-    template<> struct packet_type<global_server_state_req>  { static const proto_type value = OP_GLOBSERVSTATREQ;   };      //!< server info request
-    template<> struct packet_type<global_server_state_res>  { static const proto_type value = OP_GLOBSERVSTATRES;   };      //!< server info answer
+    template<> struct packet_type<id_change>{
+        static const proto_type value = OP_IDCHANGE;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< new our id from server
+
+    template<> struct packet_type<server_message>{
+        static const proto_type value = OP_SERVERMESSAGE;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< some server message
+
+    template<> struct packet_type<server_info_entry>{
+        static const proto_type value = OP_SERVERIDENT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< server info
 
     // Client to Client structures
 
@@ -1856,6 +1910,35 @@ namespace libed2k
     };
 
     EClientSoftware uagent2csoft(const md4_hash& ua_hash);
+
+    typedef std::pair<libed2k_header, std::string> message;
+
+    template <typename Struct>
+    inline size_t body_size(const Struct& s, const std::string& body)
+    { return body.size(); }
+
+    template<typename size_type>
+    inline size_t body_size(const client_sending_part<size_type>&s, const std::string& body)
+    { return body.size() + s.m_end_offset - s.m_begin_offset; }
+
+	template <typename T>
+	inline message make_message(const T& t)
+	{
+		message msg;
+
+		msg.first.m_protocol = packet_type<T>::protocol;
+		boost::iostreams::back_insert_device<std::string> inserter(msg.second);
+		boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
+			s(inserter);
+		// Serialize the data first so we know how large it is.
+		archive::ed2k_oarchive oa(s);
+		oa << const_cast<T&>(t);
+		s.flush();
+		// packet size without protocol type and packet body size field plus one byte for opcode
+		msg.first.m_size = body_size(t, msg.second) + 1;
+		msg.first.m_type = packet_type<T>::value;
+		return msg;
+	}
 }
 
 

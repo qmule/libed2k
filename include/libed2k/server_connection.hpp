@@ -118,7 +118,7 @@ namespace libed2k
         socket_buffer                   m_in_gzip_container;    //!< special container for compressed data
         tcp::endpoint                   m_target;
 
-        std::deque<std::pair<libed2k_header, std::string> > m_write_order;  //!< outgoing messages order
+        std::deque<message>             m_write_order;  //!< outgoing messages order
         sc_state                        current_operation;
         ptime                           last_action_time;
         server_connection_parameters    params;
@@ -137,26 +137,13 @@ namespace libed2k
 
         last_action_time = time_now();
         bool write_in_progress = !m_write_order.empty();
-        m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));
-
-        boost::iostreams::back_insert_device<std::string> inserter(m_write_order.back().second);
-        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
-
-        // Serialize the data first so we know how large it is.
-        archive::ed2k_oarchive oa(s);
-        oa << t;
-        s.flush();
-        m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
-        m_write_order.back().first.m_type     = packet_type<T>::value;
-
-        //DBG("server_connection::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
+        m_write_order.push_back(make_message(t));
 
         if (!write_in_progress)
         {
             std::vector<boost::asio::const_buffer> buffers;
             buffers.push_back(boost::asio::buffer(&m_write_order.front().first, header_size));
             buffers.push_back(boost::asio::buffer(m_write_order.front().second));
-
             boost::asio::async_write(m_socket, buffers, boost::bind(&server_connection::handle_write, self(),
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));

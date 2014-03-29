@@ -150,9 +150,9 @@ node_id generate_id_impl(address const& ip_, boost::uint32_t r)
 
 node_id generate_random_id()
 {
-	char r[20];
-	for (int i = 0; i < 20; ++i) r[i] = random();
-	return hasher(r, 20).final();
+	char r[md4_hash::size];
+	for (int i = 0; i < md4_hash::size; ++i) r[i] = random();
+	return hasher(r, md4_hash::size).final();
 }
 
 // verifies whether a node-id matches the IP it's used from
