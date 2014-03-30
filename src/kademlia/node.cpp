@@ -206,65 +206,27 @@ void node_impl::unreachable(udp::endpoint const& ep)
 	m_rpc.unreachable(ep);
 }
 
-void node_impl::incoming(msg const& m)
+void node_impl::incoming(message const& m)
 {
-	// is this a reply?
-	lazy_entry const* y_ent = m.message.dict_find_string("y");
-	if (!y_ent || y_ent->string_length() == 0)
-	{
-//		entry e;
-//		incoming_error(e, "missing 'y' entry");
-//		m_send(m_userdata, e, m.addr, 0);
-		return;
-	}
+    // parse incoming message to packet
+    // detect packet type - request/response
+    // for response - check order for request
+    // for request - process request
 
-	char y = *(y_ent->string_ptr());
-
-	lazy_entry const* ext_ip = m.message.dict_find_string("ip");
-	if (ext_ip && ext_ip->string_length() >= 4)
-	{
-		address_v4::bytes_type b;
-		memcpy(&b[0], ext_ip->string_ptr(), 4);
-		m_ext_ip(address_v4(b), aux::session_impl::source_dht, m.addr.address());
-	}
-#if LIBED2K_USE_IPV6
-	else if (ext_ip && ext_ip->string_length() >= 16)
-	{
-		address_v6::bytes_type b;
-		memcpy(&b[0], ext_ip->string_ptr(), 16);
-		m_ext_ip(address_v6(b), aux::session_impl::source_dht, m.addr.address());
-	}
-#endif
-
-	switch (y)
-	{
-		case 'r':
-		{
-			node_id id;
-			if (m_rpc.incoming(m, &id))
-				refresh(id, boost::bind(&nop));
-			break;
-		}
-		case 'q':
-		{
-			LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "q");
-			entry e;
-			incoming_request(m, e);
-			m_send(m_userdata, e, m.addr, 0);
-			break;
-		}
-		case 'e':
-		{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			lazy_entry const* err = m.message.dict_find_list("e");
-			if (err && err->list_size() >= 2)
-			{
-				LIBED2K_LOG(node) << "INCOMING ERROR: " << err->list_string_value_at(1);
-			}
-#endif
-			break;
-		}
-	}
+		//case 'r':   // result
+		//{
+		//	node_id id;
+			//if (m_rpc.incoming(m, &id))
+			//	refresh(id, boost::bind(&nop));
+		//	break;
+		//}
+		//case 'q':   // request
+		//{
+		//	LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "q");
+		//	entry e;
+			//incoming_request(m, e);
+		//	//m_send(m_userdata, e, m.addr, 0);
+		//	break;
 }
 
 namespace
@@ -611,8 +573,12 @@ void incoming_error(entry& e, char const* msg)
 	l.push_back(entry(msg));
 }
 
+void node_impl::incoming_request(kad_booststrap_req const& h){
+
+}
+
 // build response
-void node_impl::incoming_request(msg const& m, entry& e)
+void node_impl::incoming_request(kad_hello_req const& m)
 {
 	// TODO implement emule protocol instead messages
 	/*

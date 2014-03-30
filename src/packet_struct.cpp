@@ -613,4 +613,29 @@ namespace libed2k
         return cs;
     }
 
+    message extract_message(const char* p, int bytes, error_code& ec){
+        LIBED2K_ASSERT(p);
+        message res;
+        ec = errors::no_error;
+
+        if (bytes < sizeof(libed2k_header)){
+            ec = errors::invalid_packet_size;
+        }
+
+        if (!ec){
+            res.first.assign(p);
+            ec = res.first.check_packet();
+        }
+
+        if (!ec){
+            if (res.first.body_size() > bytes){
+                ec = errors::invalid_packet_size;
+            } else{
+                res.second.assign(p+sizeof(libed2k_header), res.first.body_size());
+            }
+        }
+
+        return res;
+    }
+
 }

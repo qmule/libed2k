@@ -49,6 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/assert.hpp>
 #include <libed2k/thread.hpp>
 #include <libed2k/bloom_filter.hpp>
+#include "libed2k/packet_struct.hpp"
 
 #include <boost/cstdint.hpp>
 #include <boost/ref.hpp>
@@ -198,7 +199,7 @@ public:
 	void add_router_node(udp::endpoint router);
 		
 	void unreachable(udp::endpoint const& ep);
-	void incoming(msg const& m);
+	void incoming(message const& m);
 
 	int num_torrents() const { return m_map.size(); }
 	int num_peers() const
@@ -281,7 +282,8 @@ private:
 	// since it might have references to it
 	std::set<traversal_algorithm*> m_running_requests;
 
-	void incoming_request(msg const& h, entry& e);
+	void incoming_request(kad_booststrap_req const& h);
+	void incoming_request(kad_hello_req const& h);
 
 	node_id m_id;
 

@@ -402,10 +402,13 @@ namespace libed2k { namespace dht
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 
+        error_code ec;
+        message msg = extract_message(buf, bytes_transferred, ec);
+
 		// bytes count should be at least as packet header size
-		if (bytes_transferred < sizeof(libed2k_header)){
+		if (ec){
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			LIBED2K_LOG(dht_tracker) << " incoming bytes count: " << bytes_transferred << " less than libed2k_header size";
+			LIBED2K_LOG(dht_tracker) << " message extract error: " << ec;
 #endif
 			return;
 		}
@@ -465,20 +468,7 @@ namespace libed2k { namespace dht
 		m_total_in_bytes += bytes_transferred;
 #endif
 
-		LIBED2K_ASSERT(bytes_transferred >= sizeof(libed2k_header));
-
-		libed2k_header header(buf);
-		error_code ec = header.check_packet();
-		if (!ec){
-			// valid packet header, extract content
-			
-		}
-		else{
-			// report error
-		}
-
-		// TODO - implement correct incoming message
-		//m_dht.incoming(m);
+		m_dht.incoming(msg);
 	}
 
 	void add_node_fun(void* userdata, node_entry const& e)

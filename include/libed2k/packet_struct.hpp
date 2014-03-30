@@ -388,11 +388,15 @@ namespace libed2k
          */
         libed2k_header() : m_protocol(OP_EDONKEYPROT), m_size(1), m_type(0){}
 
-        libed2k_header(const char* buf){
+        void assign(const char* buf){
         	const libed2k_header* p = ((libed2k_header*)buf);
         	m_protocol = p->m_protocol;
         	m_size = p->m_size;
         	m_type = p->m_type;
+        }
+
+        size_t body_size() const {
+            return m_size - 1;
         }
 
         /**
@@ -1939,6 +1943,8 @@ namespace libed2k
 		msg.first.m_type = packet_type<T>::value;
 		return msg;
 	}
+
+	message extract_message(const char* p, int bytes, error_code& ec);
 }
 
 
