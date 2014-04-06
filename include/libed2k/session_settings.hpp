@@ -64,6 +64,8 @@ namespace libed2k
             peer_timeout(120)
             , peer_connect_timeout(7)
             , block_request_timeout(10)
+            , max_failcount(3)
+            , min_reconnect_time(60)
             , connection_speed(6)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
@@ -73,6 +75,7 @@ namespace libed2k
             , client_name("libed2k")
             , mod_name("libed2k")
             , max_peerlist_size(4000)
+            , max_paused_peerlist_size(4000)
             , tick_interval(100)
             , download_rate_limit(-1)
             , upload_rate_limit(-1)
@@ -150,6 +153,14 @@ namespace libed2k
         // the number of seconds to wait for block request.
         int block_request_timeout;
 
+        // the number of times we can fail to connect to a peer
+        // before we stop retrying it.
+        int max_failcount;
+
+        // the number of seconds to wait to reconnect to a peer.
+        // this time is multiplied with the failcount.
+        int min_reconnect_time;
+
         // the number of connection attempts that
         // are made per second.
         int connection_speed;
@@ -182,6 +193,10 @@ namespace libed2k
         // per transfer. This is the peers we know
         // about, not necessarily connected to.
         int max_peerlist_size;
+
+        // when a torrent is paused, this is the max peer
+        // list size that's used
+        int max_paused_peerlist_size;
 
         // the number of milliseconds between internal ticks. Should be no
         // more than one second (i.e. 1000).

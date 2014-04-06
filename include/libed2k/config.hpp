@@ -412,7 +412,7 @@ namespace libed2k
 #endif
 
 #ifndef LIBED2K_USE_IPV6
-#define LIBED2K_USE_IPV6 1
+#define LIBED2K_USE_IPV6 0
 #endif
 
 #ifndef LIBED2K_USE_MLOCK
@@ -446,7 +446,7 @@ namespace libed2k
 #endif
 
 #ifndef LIBED2K_USE_I2P
-#define LIBED2K_USE_I2P 1
+#define LIBED2K_USE_I2P 0
 #endif
 
 #ifndef LIBED2K_HAS_STRDUP

@@ -362,7 +362,7 @@ namespace libed2k
             else
             {
                 APP("found HiID peer: " << peer);
-                t->add_peer(peer);
+                t->add_peer(peer, peer_info::tracker);
             }
         }
     }

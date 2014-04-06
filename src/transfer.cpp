@@ -172,6 +172,11 @@ namespace libed2k
             activate(true);
     }
 
+    const session_settings& transfer::settings() const
+    {
+        return m_ses.settings();
+    }
+
     bool transfer::want_more_peers() const
     {
         return !is_paused() && m_state == transfer_status::downloading &&
@@ -184,9 +189,11 @@ namespace libed2k
         m_ses.m_server_connection->post_sources_request(hash(), size());
     }
 
-    void transfer::add_peer(const tcp::endpoint& peer)
+    void transfer::add_peer(const tcp::endpoint& peer, int source)
     {
-        m_policy.add_peer(peer);
+        m_policy.add_peer(peer, source, 0);
+
+        state_updated();
     }
 
     bool transfer::want_more_connections() const
@@ -196,6 +203,11 @@ namespace libed2k
 
     bool transfer::connect_to_peer(peer* peerinfo)
     {
+        LIBED2K_ASSERT(peerinfo);
+        LIBED2K_ASSERT(peerinfo->connection == 0);
+
+        peerinfo->last_connected = m_ses.session_time();
+
         tcp::endpoint ep(peerinfo->endpoint);
         LIBED2K_ASSERT((m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked) == 0);
 
@@ -262,7 +274,7 @@ namespace libed2k
             p->disconnect(errors::session_closing);
             return false;
         }
-        if (!m_policy.new_connection(*p))
+        if (!m_policy.new_connection(*p, m_ses.session_time()))
             return false;
 
         LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
@@ -303,7 +315,7 @@ namespace libed2k
             }
         }
 
-        m_policy.connection_closed(*c);
+        m_policy.connection_closed(*c, m_ses.session_time());
         c->set_peer(0);
         m_connections.erase(c);
     }
@@ -349,7 +361,8 @@ namespace libed2k
 
     bool transfer::try_connect_peer()
     {
-        return m_policy.connect_one_peer();
+        LIBED2K_ASSERT(want_more_peers());
+        return m_policy.connect_one_peer(m_ses.session_time());
     }
 
     void transfer::piece_passed(int index)
@@ -481,7 +494,11 @@ namespace libed2k
         }
         else
         {
-            // TODO: reset last_connected, to force fast reconnect after leaving upload mode
+            // reset last_connected, to force fast reconnect after leaving upload mode
+            for (policy::peers_t::iterator i = m_policy.begin_peer(), end(m_policy.end_peer()); i != end; ++i)
+            {
+                (*i)->last_connected = 0;
+            }
 
             // send_block_requests on all peers
             for (std::set<peer_connection*>::iterator i = m_connections.begin(),

@@ -108,6 +108,8 @@ void peer_connection::reset()
     m_timeout = seconds(m_ses.settings().peer_timeout);
 
     m_connection_ticket = -1;
+    m_fast_reconnect = false;
+    m_failed = false;
     m_quota[upload_channel] = 0;
     m_quota[download_channel] = 0;
     m_priority = 1;
@@ -190,14 +192,17 @@ void peer_connection::finalize_handshake()
     if (m_handshake_complete)
         return;
 
+    // peer handshake completed
+    boost::shared_ptr<transfer> t = m_transfer.lock();
+
     m_handshake_complete = true;
+
+    // consider this a successful connection, reset the failcount
+    if (t && get_peer()) t->get_policy().set_failcount(get_peer(), 0);
 
     if (m_active)
     {
         DBG("handshake completed on active peer");
-
-        // peer handshake completed
-        boost::shared_ptr<transfer> t = m_transfer.lock();
 
         if (t && !t->is_finished()){
         	// TODO - enable sources request in future
@@ -913,9 +918,9 @@ void peer_connection::on_sent(const error_code& error, std::size_t bytes_transfe
 
 void peer_connection::disconnect(error_code const& ec, int error)
 {
-    //if (error > 0) m_failed = true;
     if (m_disconnecting) return;
 
+    if (error > 0) m_failed = true;
     boost::intrusive_ptr<peer_connection> me(this);
 
     if (m_connecting && m_connection_ticket >= 0)
@@ -1019,6 +1024,20 @@ int peer_connection::picker_options() const
     assert(bool(ret & piece_picker::rarest_first) + bool(ret & piece_picker::sequential) <= 1);
 
     return ret;
+}
+
+void peer_connection::fast_reconnect(bool r)
+{
+    if (!get_peer() || get_peer()->fast_reconnects > 1)
+        return;
+    m_fast_reconnect = r;
+    get_peer()->last_connected = m_ses.session_time();
+    int rewind = m_ses.settings().min_reconnect_time * m_ses.settings().max_failcount;
+    if (get_peer()->last_connected < rewind) get_peer()->last_connected = 0;
+    else get_peer()->last_connected -= rewind;
+
+    if (get_peer()->fast_reconnects < 15)
+        ++get_peer()->fast_reconnects;
 }
 
 net_identifier peer_connection::get_network_point() const

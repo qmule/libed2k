@@ -177,6 +177,9 @@ namespace libed2k
 
         int picker_options() const;
 
+        void fast_reconnect(bool r);
+        bool fast_reconnect() const { return m_fast_reconnect; }
+
         // tells if this connection has data it want to send
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
@@ -220,6 +223,9 @@ namespace libed2k
         void set_download_limit(int limit);
         int upload_limit() const { return m_upload_limit; }
         int download_limit() const { return m_download_limit; }
+
+        bool failed() const { return m_failed; }
+
     private:
 
         // constructor method
@@ -425,6 +431,19 @@ namespace libed2k
         // and false if we got an incoming connection
         // could be considered: true = local, false = remote
         bool m_active;
+
+        // if this is true, the disconnection
+        // timestamp is not updated when the connection
+        // is closed. This means the time until we can
+        // reconnect to this peer is shorter, and likely
+        // immediate.
+        bool m_fast_reconnect;
+
+        // this is set to true if the connection timed
+        // out or closed the connection. In that
+        // case we will not try to reconnect to
+        // this peer
+        bool m_failed;
 
         int m_disk_recv_buffer_size;
 

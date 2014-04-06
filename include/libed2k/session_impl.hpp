@@ -306,7 +306,7 @@ namespace libed2k {
 			void stop_natpmp();
 			void stop_upnp();
 
-            boost::object_pool<peer> m_peer_pool;
+            boost::object_pool<peer> m_ipv4_peer_pool;
 
             // this vector is used to store the block_info
             // objects pointed to by partial_piece_info returned
@@ -393,6 +393,9 @@ namespace libed2k {
 
             // is true if the session is paused
             bool m_paused;
+
+            ptime m_created;
+            int session_time() const { return total_seconds(time_now() - m_created); }
 
             duration_timer m_second_timer;
             // the timer used to fire the tick

@@ -33,6 +33,7 @@ namespace libed2k
     class server_response;
     class piece_manager;
     struct disk_io_job;
+    class session_settings;
 
     // a transfer is a class that holds information
     // for a specific download. It updates itself against
@@ -68,10 +69,11 @@ namespace libed2k
         void set_state(transfer_status::state_t s);
 
         aux::session_impl& session() { return m_ses; }
+        const session_settings& settings() const;
 
         bool want_more_peers() const;
         void request_peers();
-        void add_peer(const tcp::endpoint& peer);
+        void add_peer(const tcp::endpoint& peer, int source);
         bool connect_to_peer(peer* peerinfo);
         // used by peer_connection to attach itself to a torrent
         // since incoming connections don't know what torrent
@@ -195,6 +197,8 @@ namespace libed2k
 
         bool has_picker() const { return m_picker.get() != 0; }
         piece_picker& picker() { return *m_picker; }
+
+        policy& get_policy() { return m_policy; }
 
         // returns true if we have downloaded the given piece
         bool have_piece(int index) const
