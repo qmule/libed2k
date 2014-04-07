@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <deque>
+#include <list>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
@@ -1486,6 +1487,68 @@ namespace libed2k
         }
     };
 
+    struct sources_request_base{
+        md4_hash    file_hash;
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & file_hash;
+        }
+    };
+
+    struct sources_request: public sources_request_base{};
+    struct sources_request2: public sources_request_base{};
+
+    struct sources_answer_element{
+        net_identifier  client_id;
+        net_identifier  server_id;
+        md4_hash        client_hash;
+        boost::uint8_t  flag;   // something unknown
+        int sx_version;
+
+        sources_answer_element(int version): sx_version(version){}
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id & server_id;
+            if (sx_version > 1)
+                ar & client_hash;
+            if (sx_version > 3)
+                ar & flag;
+        }
+    };
+
+    typedef std::list<sources_answer_element>   sae_container;
+
+    struct sources_answer_base{
+        md4_hash        file_hash;
+        boost::uint16_t size;
+        sae_container elems;
+        int sx_version;
+        sources_answer_base(int version) : sx_version(version){}
+        template<typename Archive>
+        void load(Archive& ar) {
+            ar & file_hash & size;
+            for (int i = 0; i < size; ++i){
+                sources_answer_element sae(sx_version);
+                ar & sae;
+                elems.push_back(sae);
+            }
+        }
+
+        template<typename Archive>
+        void save(Archive& ar) {
+            size = elems.size();
+            ar & file_hash;
+            for(sae_container::const_iterator itr = elems.begin(); itr != elems.end(); ++itr){
+                ar & *itr;
+            }
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
+    struct sources_answer : public sources_answer_base{};
+    struct sources_answer2: public sources_answer_base{};
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1515,7 +1578,7 @@ namespace libed2k
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_files_answer> {
-        static const proto_type value   = OP_ASKSHAREDFILESANSWER;
+        static const proto_type value   = OP_ASKSHAREDFILESANSWER;;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_directories_answer> {
@@ -1644,6 +1707,22 @@ namespace libed2k
     template<> struct packet_type<client_directory_content_result>{  // ismod
         static const proto_type value       = OP_ASKDIRCONTENTSANS;
         static const proto_type protocol    = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<sources_request>{
+        static const proto_type value       = OP_REQUESTSOURCES;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<sources_request2>{
+        static const proto_type value       = OP_REQUESTSOURCES2;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<sources_answer>{
+        static const proto_type value       = OP_ANSWERSOURCES;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<sources_answer2>{
+        static const proto_type value       = OP_ANSWERSOURCES2;
+        static const proto_type protocol    = OP_EMULEPROT;
     };
 
 

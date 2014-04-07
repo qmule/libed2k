@@ -166,6 +166,10 @@ void peer_connection::reset()
     add_handler(/*OP_CHATCAPTCHAREQ*/get_proto_pair<client_captcha_request>(), boost::bind(&peer_connection::on_client_captcha_request, this, _1));
     add_handler(/*OP_CHATCAPTCHARES*/get_proto_pair<client_captcha_result>(), boost::bind(&peer_connection::on_client_captcha_result, this, _1));
     add_handler(/*OP_PUBLICIP_RE*/get_proto_pair<client_public_ip_request>(), boost::bind(&peer_connection::on_client_public_ip_request, this, _1));
+
+    // sources answer
+    add_handler(get_proto_pair<sources_answer>(), boost::bind(&peer_connection::on_client_sources_answer, this, _1));
+    add_handler(get_proto_pair<sources_answer2>(), boost::bind(&peer_connection::on_client_sources_answer, this, _1));
 }
 
 peer_connection::~peer_connection()
@@ -2365,6 +2369,16 @@ void peer_connection::on_client_public_ip_request(const error_code& error)
     else
     {
         ERR("on request public ip error: " << error.message());
+    }
+}
+
+void peer_connection::on_client_sources_answer(const error_code& error){
+    if (!error){
+        sources_answer_base sae(m_misc_options.m_nSourceExchange1Ver);
+        decode_packet(sae);
+    }
+    else{
+        ERR("unable to parse sources answer: " << error.message());
     }
 }
 
