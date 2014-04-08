@@ -168,6 +168,8 @@ void peer_connection::reset()
     add_handler(/*OP_PUBLICIP_RE*/get_proto_pair<client_public_ip_request>(), boost::bind(&peer_connection::on_client_public_ip_request, this, _1));
 
     // sources answer
+    add_handler(get_proto_pair<sources_request>(), boost::bind(&peer_connection::on_client_sources_request, this, _1));
+    add_handler(get_proto_pair<sources_request2>(), boost::bind(&peer_connection::on_client_sources_request, this, _1));
     add_handler(get_proto_pair<sources_answer>(), boost::bind(&peer_connection::on_client_sources_answer, this, _1));
     add_handler(get_proto_pair<sources_answer2>(), boost::bind(&peer_connection::on_client_sources_answer, this, _1));
 }
@@ -1446,6 +1448,7 @@ void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
     mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
+    mo.m_nSourceExchange1Ver = SOURCE_EXCHG_LEVEL;
 
     misc_options2 mo2(0);
     mo2.set_captcha();
@@ -2382,10 +2385,27 @@ void peer_connection::on_client_public_ip_request(const error_code& error)
     }
 }
 
+void peer_connection::on_client_sources_request(const error_code& error){
+    if (!error){
+        DECODE_PACKET(sources_request_base, packet);
+        DBG("request sources: <====" << m_remote);
+        // prepare fake answer
+        //TODO - add transfer search and peer request
+        sources_answer2 sa2(SOURCE_EXCHG_LEVEL);
+        sa2.file_hash = packet.file_hash;
+        sa2.size = 0;
+        send_throw_meta_order(sa2);
+    }
+    else{
+        ERR("Error on request sources for file");
+    }
+}
+
 void peer_connection::on_client_sources_answer(const error_code& error){
     if (!error){
         sources_answer_base sae(m_misc_options.m_nSourceExchange1Ver);
         decode_packet(sae);
+        DBG("sources answer: <====" << m_remote);
     }
     else{
         ERR("unable to parse sources answer: " << error.message());

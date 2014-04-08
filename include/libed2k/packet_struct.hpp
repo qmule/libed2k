@@ -218,6 +218,8 @@ namespace libed2k
 	const proto_type    OP_PACKEDPROT           = '\xD4';
 	const proto_type    OP_EMULEPROT            = '\xC5';
 
+    #define SOURCE_EXCHG_LEVEL 3
+
     /**
       *  common container holder structure
       *  contains size_type for read it from archives and some container for data
@@ -1538,7 +1540,7 @@ namespace libed2k
         void save(Archive& ar) {
             size = elems.size();
             ar & file_hash;
-            for(sae_container::const_iterator itr = elems.begin(); itr != elems.end(); ++itr){
+            for(sae_container::iterator itr = elems.begin(); itr != elems.end(); ++itr){
                 ar & *itr;
             }
         }
@@ -1546,8 +1548,13 @@ namespace libed2k
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    struct sources_answer : public sources_answer_base{};
-    struct sources_answer2: public sources_answer_base{};
+    struct sources_answer : public sources_answer_base{
+        sources_answer(int version): sources_answer_base(version){}
+    };
+
+    struct sources_answer2: public sources_answer_base{
+        sources_answer2(int version): sources_answer_base(version){}
+    };
 
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
