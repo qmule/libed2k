@@ -218,7 +218,7 @@ namespace libed2k
 	const proto_type    OP_PACKEDPROT           = '\xD4';
 	const proto_type    OP_EMULEPROT            = '\xC5';
 
-    #define SOURCE_EXCHG_LEVEL 3
+    #define SOURCE_EXCHG_LEVEL 0
 
     /**
       *  common container holder structure
@@ -1498,7 +1498,10 @@ namespace libed2k
     };
 
     struct sources_request: public sources_request_base{};
-    struct sources_request2: public sources_request_base{};
+    struct sources_request2: public sources_request_base{	// incomplete structure
+    	boost::uint8_t	option1;
+    	boost::uint16_t	option2;
+    };
 
     struct sources_answer_element{
         net_identifier  client_id;

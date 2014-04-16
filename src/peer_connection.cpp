@@ -199,7 +199,14 @@ void peer_connection::finalize_handshake()
         // peer handshake completed
         boost::shared_ptr<transfer> t = m_transfer.lock();
 
-        if (t && !t->is_finished()) write_file_request(t->hash());
+        if (t && !t->is_finished()){
+        	// TODO - enable sources request in future
+        	//sources_request sa;
+        	//sa.file_hash = t->hash();
+        	//DBG("write sources request => " << m_remote);
+        	//write_struct(sa);
+        	write_file_request(t->hash());
+        }
         else fill_send_buffer();
     }
     else
