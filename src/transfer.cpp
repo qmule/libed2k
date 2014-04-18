@@ -208,11 +208,6 @@ namespace libed2k
         state_updated();
     }
 
-    bool transfer::want_more_connections() const
-    {
-        return !m_abort && !is_paused() && m_state == transfer_status::downloading;
-    }
-
     bool transfer::connect_to_peer(peer* peerinfo)
     {
         LIBED2K_ASSERT(peerinfo);
