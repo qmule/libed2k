@@ -1309,7 +1309,7 @@ void session_impl::connect_new_peers()
         for (;;)
         {
             transfer& t = *m_next_connect_transfer->second;
-            if (t.want_more_connections())
+            if (t.want_more_peers())
             {
                 try
                 {

@@ -90,7 +90,6 @@ namespace libed2k
         bool has_peer(peer_connection* p) const
         { return m_connections.find(p) != m_connections.end(); }
 
-        bool want_more_connections() const;
         void disconnect_all(const error_code& ec);
         int disconnect_peers(int num, const error_code& ec);
         bool try_connect_peer();
