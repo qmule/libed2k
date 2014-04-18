@@ -212,8 +212,10 @@ namespace libed2k
     {
         LIBED2K_ASSERT(peerinfo);
         LIBED2K_ASSERT(peerinfo->connection == 0);
+        LIBED2K_ASSERT(peerinfo->next_connect >= m_ses.session_time());
 
         peerinfo->last_connected = m_ses.session_time();
+        peerinfo->next_connect = 0;
 
         tcp::endpoint ep(peerinfo->endpoint);
         LIBED2K_ASSERT((m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked) == 0);

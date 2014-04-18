@@ -226,6 +226,7 @@ bool policy::new_connection(peer_connection& c, int session_time)
     LIBED2K_ASSERT(i->connection);
     if (!c.fast_reconnect())
         i->last_connected = session_time;
+    i->next_connect = 0;
 
     // this cannot be a connect candidate anymore, since i->connection is set
     LIBED2K_ASSERT(!is_connect_candidate(*i, m_finished));
@@ -599,6 +600,9 @@ bool policy::compare_peer(peer const& lhs, peer const& rhs/*, address const& ext
     if (lhs.last_connected != rhs.last_connected)
         return lhs.last_connected < rhs.last_connected;
 
+    if (lhs.next_connect != rhs.next_connect)
+        return lhs.next_connect < rhs.next_connect;
+
     int lhs_rank = source_rank(lhs.source);
     int rhs_rank = source_rank(rhs.source);
     if (lhs_rank != rhs_rank) return lhs_rank > rhs_rank;
@@ -702,6 +706,8 @@ policy::peers_t::iterator policy::find_connect_candidate(int session_time)
         // pe, which is the peer m_round_robin points to. If it is, just
         // keep looking.
         if (candidate != -1 && compare_peer(*m_peers[candidate], pe/*, external_ip*/)) continue;
+
+        if (pe.next_connect && session_time < pe.next_connect) continue;
 
         if (pe.last_connected && session_time - pe.last_connected < (int(pe.failcount) + 1) * min_reconnect_time)
             continue;

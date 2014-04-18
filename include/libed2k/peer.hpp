@@ -12,7 +12,7 @@ namespace libed2k {
     {
     public:
         peer(const tcp::endpoint& ep, bool conn, int src):
-            endpoint(ep), connection(NULL), last_connected(0),
+            endpoint(ep), connection(NULL), last_connected(0), next_connect(0),
             connectable(conn), seed(false), failcount(0), fast_reconnects(0),
             trust_points(0), source(src)
 #ifndef TORRENT_DISABLE_DHT
@@ -35,6 +35,9 @@ namespace libed2k {
         // or disconnected if it isn't connected right now
         // in number of seconds since session was created
         boost::uint16_t last_connected;
+
+        // the next time to connect this peer 
+        boost::uint16_t next_connect;
 
         // incoming peers (that don't advertize their listen port)
         // will not be considered connectable. Peers that
