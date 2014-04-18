@@ -2031,15 +2031,15 @@ void peer_connection::on_queue_ranking(const error_code& error)
         DECODE_PACKET(client_queue_ranking, qr);
         DBG("queue ranking " << qr.m_nRank << " <== " << m_remote);
         if (boost::shared_ptr<transfer> t = m_transfer.lock()){
-            m_ses.register_callback(net_identifier().m_nIP, t->hash());
-            DBG("add queued peer to low id list for waiting file:" << t->hash());
+            // TODO - fix this behaviour
+            DBG("set fail count to  for peer who set us to queue");
+            if (t && get_peer()) t->get_policy().set_failcount(get_peer(), 5);
         }
         else{
             DBG("weird situation - transfer doesn't exist on peer on request parts");
         }
 
         // TODO - add peer to policy for avoid reconnect to it permanenty
-
         disconnect(errors::no_error);
     }
     else
