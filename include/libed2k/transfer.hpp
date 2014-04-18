@@ -71,6 +71,8 @@ namespace libed2k
         aux::session_impl& session() { return m_ses; }
         const session_settings& settings() const;
 
+        bool valid_metadata() const;
+
         bool want_more_peers() const;
         void request_peers();
         void add_peer(const tcp::endpoint& peer, int source);

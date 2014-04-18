@@ -177,10 +177,22 @@ namespace libed2k
         return m_ses.settings();
     }
 
+    bool transfer::valid_metadata() const
+    {
+        return m_info->is_valid();
+    }
+
     bool transfer::want_more_peers() const
     {
-        return !is_paused() && m_state == transfer_status::downloading &&
-            m_policy.num_peers() == 0 && !m_abort;
+        return
+            /*m_connections.size() < m_max_connections &&*/
+            !is_paused() &&
+            ((m_state != transfer_status::checking_files &&
+              m_state != transfer_status::checking_resume_data &&
+              m_state != transfer_status::queued_for_checking) || !valid_metadata()) &&
+            m_policy.num_connect_candidates() > 0 && !m_abort /*&&
+            (m_ses.settings().seeding_outgoing_connections ||
+             (m_state != transfer_status::seeding && m_state != transfer_status::finished))*/;
     }
 
     void transfer::request_peers()

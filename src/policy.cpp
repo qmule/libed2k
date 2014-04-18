@@ -100,11 +100,11 @@ peer* policy::add_peer(const tcp::endpoint& ep, int source, char flags)
             m_transfer->session().m_ipv4_peer_pool.destroy(p);
             return 0;
         }
-        else
-        {
-            p = *iter;
-            update_peer(p, source, flags, ep, 0);
-        }
+    }
+    else
+    {
+        p = *iter;
+        update_peer(p, source, flags, ep, 0);
     }
 
     return p;
