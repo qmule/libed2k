@@ -405,13 +405,16 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
+    settings.peer_connect_timeout = 60;
+    settings.peer_timeout = 60;
+
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 20, 20, 10, 10, 10);
+    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 60, 60, 60, 60, 60);
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
