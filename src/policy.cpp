@@ -7,6 +7,7 @@
 #include "libed2k/transfer.hpp"
 #include "libed2k/peer_connection.hpp"
 #include "libed2k/broadcast_socket.hpp"
+#include "libed2k/random.hpp"
 
 using namespace libed2k;
 

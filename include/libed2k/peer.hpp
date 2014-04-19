@@ -21,7 +21,7 @@ namespace libed2k {
         {}
 
         ip::address address() const { return endpoint.address(); }
-        uint16_t port() const { return endpoint.port(); }
+        boost::uint16_t port() const { return endpoint.port(); }
 
         void set_failcount(peer* p, int f);
 
