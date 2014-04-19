@@ -212,7 +212,7 @@ namespace libed2k
     {
         LIBED2K_ASSERT(peerinfo);
         LIBED2K_ASSERT(peerinfo->connection == 0);
-        LIBED2K_ASSERT(peerinfo->next_connect >= m_ses.session_time());
+        LIBED2K_ASSERT(peerinfo->next_connect <= m_ses.session_time());
 
         peerinfo->last_connected = m_ses.session_time();
         peerinfo->next_connect = 0;
