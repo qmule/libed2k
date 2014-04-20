@@ -2033,7 +2033,11 @@ void peer_connection::on_queue_ranking(const error_code& error)
         if (boost::shared_ptr<transfer> t = m_transfer.lock()){
             // TODO - fix this behaviour
             DBG("set fail count to  for peer who set us to queue");
-            if (t && get_peer()) t->get_policy().set_failcount(get_peer(), 5);
+
+            if (t && get_peer()) {
+                DBG("one minute pause on queue ranking");
+                get_peer()->next_connect = m_ses.session_time() + 60; // wait one minute before connect again
+            }
         }
         else{
             DBG("weird situation - transfer doesn't exist on peer on request parts");
@@ -2067,6 +2071,12 @@ void peer_connection::on_out_parts(const error_code& error)
     if (!error)
     {        
         DBG("out of parts <== " << m_remote);
+        if (peer* p = get_peer()){
+            DBG("two minutes pause on peer");
+            p->next_connect = m_ses.session_time() + 120;   // wait two minutes after part end
+        } else{
+            DBG("unable to locate peer on connection");
+        }
     }
     else
     {
