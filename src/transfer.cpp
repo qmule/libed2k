@@ -468,6 +468,8 @@ namespace libed2k
 
         if (m_abort) return;
 
+        m_policy.recalculate_connect_candidates();
+
         // we need to keep the object alive during this operation
         m_storage->async_release_files(
             boost::bind(&transfer::on_files_released, shared_from_this(), _1, _2));

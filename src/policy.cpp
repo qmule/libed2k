@@ -418,6 +418,19 @@ void policy::connection_closed(const peer_connection& c, int session_time)
     }
 }
 
+void policy::recalculate_connect_candidates()
+{
+    const bool is_finished = m_transfer->is_finished();
+    if (is_finished == m_finished) return;
+
+    m_num_connect_candidates = 0;
+    m_finished = is_finished;
+    for (peers_t::const_iterator i = m_peers.begin(); i != m_peers.end(); ++i)
+    {
+        m_num_connect_candidates += is_connect_candidate(**i, m_finished);
+    }
+}
+
 // disconnects [TODO: and removes] all peers that are now filtered
 void policy::ip_filter_updated()
 {

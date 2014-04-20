@@ -33,6 +33,7 @@ namespace libed2k {
         bool connect_one_peer(int session_time);
 
         int num_connect_candidates() const { return m_num_connect_candidates; }
+        void recalculate_connect_candidates();
 
         typedef std::deque<peer*> peers_t;
 
