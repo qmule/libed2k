@@ -321,7 +321,7 @@ namespace libed2k
         cs_login_request    login;
         //!< generate initial packet to server
         boost::uint32_t nVersion = 0x3c;
-        boost::uint32_t nCapability = /*CAPABLE_ZLIB */ CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
+        boost::uint32_t nCapability = CAPABLE_ZLIB | CAPABLE_AUXPORT | CAPABLE_NEWTAGS | CAPABLE_UNICODE | CAPABLE_LARGEFILES;
         boost::uint32_t nClientVersion  = (LIBED2K_VERSION_MAJOR << 24) | (LIBED2K_VERSION_MINOR << 17) | (LIBED2K_VERSION_TINY << 10) | (1 << 7);
 
         login.m_hClient                 = settings.user_agent;
@@ -437,12 +437,18 @@ namespace libed2k
                 }
                 case OP_PACKEDPROT:
                 {
-                    DBG("Receive gzip container");
-                    // when we have zero-sized packed packet - it is error?
-                    BOOST_ASSERT(nSize != 0);
-                    m_in_gzip_container.resize(nSize);
-                    boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_gzip_container[0], nSize),
+                    if (nSize > 0){
+                        DBG("gzip container - read it");
+                        m_in_gzip_container.resize(nSize);
+                        boost::asio::async_read(m_socket, boost::asio::buffer(&m_in_gzip_container[0], nSize),
                             boost::bind(&server_connection::handle_read_packet, self(), boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+                    }
+                    else
+                    {
+                        DBG("packed packet is empty - ignore it");
+                        // zero size packed packet - simply ignore it
+                        do_read();
+                    }
                     break;
                 }
                 default:
@@ -469,11 +475,11 @@ namespace libed2k
             // gzip decompressor disabled
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
+                DBG("packed packet reseived");
                 // unzip data
                 m_in_container.resize(m_in_gzip_container.size() * 10 + 300);
                 uLongf nSize = m_in_container.size();
                 int nRet = uncompress((Bytef*)&m_in_container[0], &nSize, (const Bytef*)&m_in_gzip_container[0], m_in_gzip_container.size());
-
 
                 if (nRet != Z_OK)
                 {

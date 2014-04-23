@@ -340,9 +340,8 @@ namespace libed2k
             {
             case OP_EDONKEYPROT:    // correct
             case OP_EMULEPROT:      // correct
+            case OP_PACKEDPROT:     // correct
                 break;
-            case OP_PACKEDPROT:     // unsupported
-                return errors::unsupported_protocol_type;
             default:                // invalid
                 return errors::invalid_protocol_type;
             }
