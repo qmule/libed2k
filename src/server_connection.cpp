@@ -590,7 +590,7 @@ namespace libed2k
                         DBG("callback request failed - cleanup callbacks? ");
                         break;
                     default:
-                        ERR("ignore unhandled packet: " << m_in_header.m_type);
+                        ERR("server ignore unhandled packet: " << std::hex << int(m_in_header.m_type));
                         break;
                 }
 

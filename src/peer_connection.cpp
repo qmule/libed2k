@@ -1473,6 +1473,7 @@ void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
 {
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
+    mo.m_nDataCompVer = 0;  // support data compression
     mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
     mo.m_nSourceExchange1Ver = SOURCE_EXCHG_LEVEL;
 
@@ -1481,8 +1482,12 @@ void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
     mo2.set_large_files();
     mo2.set_source_ext2();
 
+    t.add_tag(make_string_tag(m_ses.settings().client_name, CT_NAME, true));
+    t.add_tag(make_typed_tag(m_ses.settings().m_version, CT_VERSION, true));
+    t.add_tag(make_typed_tag(make_full_ed2k_version(SO_AMULE, 2,3,1), CT_EMULE_VERSION, true));// temp like amule version
     t.add_tag(make_typed_tag(mo.generate(), CT_EMULE_MISCOPTIONS1, true));
     t.add_tag(make_typed_tag(mo2.generate(), CT_EMULE_MISCOPTIONS2, true));
+
 }
 
 void peer_connection::parse_misc_info(const tag_list<boost::uint32_t>& list)

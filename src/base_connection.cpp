@@ -194,7 +194,7 @@ namespace libed2k
             }
             else
             {
-                DBG("ignore unhandled packet: " << std::hex << int(m_in_header.m_type));
+                DBG("ignore unhandled packet: " << std::hex << int(m_in_header.m_type) << " <<< " << m_remote);
             }
 
             m_in_gzip_container.clear();

@@ -182,6 +182,10 @@ namespace libed2k
         return (nId < HIGHEST_LOWID_ED2K);
     }
 
+    inline boost::uint64_t make_full_ed2k_version(int client_id, int a, int b, int c){
+        return ((client_id << 24) | (a << 17 ) | (b << 10) | (c << 7));
+    }
+
     template<typename T1, typename T2>
     inline const T2& take_second(const std::pair<T1, T2> &pair)
     {

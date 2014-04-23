@@ -209,7 +209,6 @@ namespace libed2k
 	const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
 	const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
 
-
 	/**
 	  * supported protocols
 	 */
