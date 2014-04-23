@@ -8,6 +8,8 @@
 #include "libed2k/transfer.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/alert_types.hpp"
+#define MINIZ_HEADER_FILE_ONLY
+#include "miniz.c"
 
 namespace libed2k
 {
@@ -463,7 +465,7 @@ namespace libed2k
         if (!error)
         {
             //DBG("server_connection::handle_read_packet(" << error.message() << ", " << nSize << ", " << packetToString(m_in_header.m_type));
-/*
+
             // gzip decompressor disabled
             if (m_in_header.m_protocol == OP_PACKEDPROT)
             {
@@ -483,7 +485,7 @@ namespace libed2k
 
                 m_in_container.resize(nSize);
             }
-*/
+
 
             boost::iostreams::stream_buffer<Device> buffer(&m_in_container[0], m_in_container.size());
             std::istream in_array_stream(&buffer);
