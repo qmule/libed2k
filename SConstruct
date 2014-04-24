@@ -49,7 +49,7 @@ releaseArgs = {
 args = unionArgs(commonArgs, releaseArgs if GetOption('dbg') == None else debugArgs)
 
 env = Environment(**args)
-sources = globrec('src', '*.cpp')
+sources = globrec('src', '*.cpp') + globrec('src', '*.c')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
 
 binenv = Environment(**unionArgs(args, {'LIBS' : ['ed2k'], 'LIBPATH' : ['lib']}))

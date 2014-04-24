@@ -338,6 +338,7 @@ namespace libed2k
 
         template <typename Struct> void on_request_parts(const error_code& error);
         template <typename Struct> void on_sending_part(const error_code& error);
+        template <typename Struct> void on_sending_packed_part(const error_code& error);
 
         template<typename T> void defer_write(const T& t);
         template<typename T> void send_throw_meta_order(const T& t);
