@@ -12,6 +12,9 @@
 #include "libed2k/server_connection.hpp"
 #include "libed2k/peer_info.hpp"
 
+#define MINIZ_HEADER_FILE_ONLY
+#include "miniz.c"
+
 using namespace libed2k;
 namespace ip = boost::asio::ip;
 
@@ -106,6 +109,7 @@ void peer_connection::reset()
     m_last_receive = time_now();
     m_last_sent = time_now();
     m_timeout = seconds(m_ses.settings().peer_timeout);
+    m_z_recv_buffer = NULL;
 
     m_connection_ticket = -1;
     m_fast_reconnect = false;
@@ -119,6 +123,7 @@ void peer_connection::reset()
     m_desired_queue_size = 3;
     m_max_busy_blocks = 1;
     m_recv_pos = 0;
+    m_recv_compressed = false;
 
     add_handler(std::make_pair(OP_HELLO, OP_EDONKEYPROT), boost::bind(&peer_connection::on_hello, this, _1));
     add_handler(get_proto_pair<client_hello_answer>(), boost::bind(&peer_connection::on_hello_answer, this, _1));
@@ -185,10 +190,11 @@ peer_connection::~peer_connection()
     assert(m_disconnecting);
 
     m_disk_recv_buffer_size = 0;
+    free_z_receive_buffer();
 
-    assert(!m_ses.has_peer(this));
-    assert(m_request_queue.empty());
-    assert(m_download_queue.empty());
+    LIBED2K_ASSERT(!m_ses.has_peer(this));
+    LIBED2K_ASSERT(m_request_queue.empty());
+    LIBED2K_ASSERT(m_download_queue.empty());
 }
 
 void peer_connection::finalize_handshake()
@@ -845,6 +851,40 @@ int peer_connection::outstanding_bytes() const
     return res;
 }
 
+char* peer_connection::allocate_receive_buffer(int buffer_size)
+{
+    size_type size = std::min<size_type>(buffer_size, BLOCK_SIZE);
+    if (!allocate_disk_receive_buffer(size))
+    {
+        ERR("cannot allocate disk receive buffer " << size);
+        return NULL;
+    }
+
+    if (m_recv_compressed && !allocate_z_receive_buffer())
+    {
+        ERR("cannot allocate z receive buffer");
+        return NULL;
+    }
+
+    return m_recv_compressed ? m_z_recv_buffer : m_disk_recv_buffer.get();
+}
+
+bool peer_connection::allocate_z_receive_buffer()
+{
+    if (!m_z_recv_buffer)
+        m_z_recv_buffer = m_ses.allocate_z_buffer();
+    return m_z_recv_buffer != NULL;
+}
+
+void peer_connection::free_z_receive_buffer()
+{
+    if (m_z_recv_buffer)
+    {
+        m_ses.free_z_buffer(m_z_recv_buffer);
+        m_z_recv_buffer = NULL;
+    }
+}
+
 bool peer_connection::allocate_disk_receive_buffer(int disk_buffer_size)
 {
     if (disk_buffer_size == 0) return true;
@@ -1246,13 +1286,14 @@ void peer_connection::on_disk_read_complete(
     send_data(left);
 }
 
-void peer_connection::receive_data(const peer_request& req)
+void peer_connection::receive_data(const peer_request& req, bool compressed)
 {
     LIBED2K_ASSERT((m_channel_state[download_channel] & (peer_info::bw_network | peer_info::bw_seq)) == 0);
     LIBED2K_ASSERT(req.length <= BLOCK_SIZE);
 
     m_recv_pos = 0;
     m_recv_req = req;
+    m_recv_compressed = compressed;
     m_channel_state[download_channel] |= peer_info::bw_seq;
     receive_data();
 }
@@ -1282,23 +1323,14 @@ void peer_connection::receive_data()
     {
         ERR("The block incoming from " << m_remote <<
             " : {piece: "<< block.piece_index <<
-            ", block: " << block.block_index << ", length: " << m_recv_req.length
+            ", block: " << block.block_index << ", length: " << block_size(block, t->size())
             << "} was not in the request queue");
         skip_data();
         return;
     }
 
-    if (!b->buffer)
-    {
-        if (!allocate_disk_receive_buffer(
-                std::min<size_t>(block_size(block, t->size()), BLOCK_SIZE)))
-        {
-            ERR("cannot allocate disk receive buffer " << m_recv_req.length);
-            return;
-        }
-
-        b->buffer = m_disk_recv_buffer.get();
-    }
+    if (!b->buffer && !(b->buffer = allocate_receive_buffer(block_size(block, t->size()))))
+        return;
 
     int remained_bytes = m_recv_req.length - m_recv_pos;
     LIBED2K_ASSERT(remained_bytes >= 0);
@@ -1354,7 +1386,7 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
     {
         ERR("The block we just got from " << m_remote <<
             " : {piece: "<< block_finished.piece_index <<
-            ", block: " << block_finished.block_index << ", length: " << m_recv_req.length
+            ", block: " << block_finished.block_index << ", length: " << block_size(block_finished, t->size())
             << "} was not in the request queue");
         skip_data();
         return;
@@ -1365,7 +1397,7 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
     {
         DBG("The block we just got from " << m_remote <<
             " : {piece: "<< block_finished.piece_index <<
-            ", block: " << block_finished.block_index << ", length: " << m_recv_req.length
+            ", block: " << block_finished.block_index << ", length: " << block_size(block_finished, t->size())
             << "} is already downloaded");
 
         //t->add_redundant_bytes(p.length);
@@ -1376,8 +1408,7 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
 
     if (m_recv_pos == m_recv_req.length)
     {
-        b->complete(mk_range(m_recv_req));
-        if (b->completed())
+        if (complete_block(*b))
         {
             disk_buffer_holder holder(m_ses.m_disk_thread, release_disk_receive_buffer());
             peer_request req = mk_peer_request(b->block, t->size());
@@ -2515,7 +2546,7 @@ void peer_connection::on_sending_part(const error_code& error)
             << " <== " << m_remote);
 
         peer_request r = mk_peer_request(sp.m_begin_offset, sp.m_end_offset);
-        receive_data(r);
+        receive_data(r, false);
     }
     else
     {
@@ -2536,7 +2567,7 @@ void peer_connection::on_sending_packed_part(const error_code& error)
             << " <== " << m_remote);
 
         peer_request r = mk_peer_request(begin_offset, end_offset);
-        receive_data(r);
+        receive_data(r, true);
     }
     else
     {
@@ -2552,6 +2583,38 @@ void peer_connection::send_throw_meta_order(const T& t)
 {
     defer_write(t);
     if (!is_closed()) fill_send_buffer();
+}
+
+bool peer_connection::complete_block(pending_block& b)
+{
+    LIBED2K_ASSERT(m_recv_pos == m_recv_req.length);
+
+    if (m_recv_compressed)
+    {
+        // received data is in z_buffer
+        // decompress it into disk receive buffer
+        size_t offset = offset_in_block(m_recv_req);
+        uLongf size = m_disk_recv_buffer_size - offset;
+        int rc = mz_uncompress((Bytef*)m_disk_recv_buffer.get() + offset, &size,
+                               (const Bytef*)m_z_recv_buffer, m_recv_req.length);
+        if (rc != Z_OK)
+        {
+            ERR("Uncompress error: " << mz_error(rc));
+            disconnect(errors::decode_packet_error, 1);
+            return false;
+        }
+
+        peer_request orig_req = m_recv_req;
+        orig_req.length = size;
+        b.complete(mk_range(orig_req));
+    }
+    else
+    {
+        // received data is already in disk receive buffer
+        b.complete(mk_range(m_recv_req));
+    }
+
+    return b.completed();
 }
 
 void peer_connection::assign_bandwidth(int channel, int amount)

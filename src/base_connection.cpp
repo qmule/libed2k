@@ -88,7 +88,7 @@ namespace libed2k
         }
         if (size <= 0) return;
 
-        std::pair<char*, int> buffer = m_ses.allocate_buffer(size);
+        std::pair<char*, int> buffer = m_ses.allocate_send_buffer(size);
         if (buffer.first == 0)
         {
             disconnect(errors::no_memory);
@@ -98,7 +98,7 @@ namespace libed2k
         std::memcpy(buffer.first, buf, size);
         m_send_buffer.append_buffer(
             buffer.first, buffer.second, size,
-            boost::bind(&aux::session_impl::free_buffer,
+            boost::bind(&aux::session_impl::free_send_buffer,
                         boost::ref(m_ses), _1, buffer.second));
     }
 

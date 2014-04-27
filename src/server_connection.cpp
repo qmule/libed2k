@@ -483,7 +483,7 @@ namespace libed2k
 
                 if (nRet != Z_OK)
                 {
-                    DBG("Unzip error: ");
+                    ERR("Unzip error: " << mz_error(nRet));
                     //unpack error - pass packet
                     do_read();
                     return;

@@ -115,6 +115,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     session_impl_base(settings),
     m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
+    m_z_buffers(BLOCK_SIZE),
     m_skip_buffer(4096),
     m_filepool(40),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), m_filepool, BLOCK_SIZE),
@@ -1000,7 +1001,7 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
     return (peer_connection_handle(c, this));
 }
 
-std::pair<char*, int> session_impl::allocate_buffer(int size)
+std::pair<char*, int> session_impl::allocate_send_buffer(int size)
 {
     int num_buffers = (size + send_buffer_size - 1) / send_buffer_size;
 
@@ -1010,7 +1011,7 @@ std::pair<char*, int> session_impl::allocate_buffer(int size)
                           num_buffers * send_buffer_size);
 }
 
-void session_impl::free_buffer(char* buf, int size)
+void session_impl::free_send_buffer(char* buf, int size)
 {
     int num_buffers = size / send_buffer_size;
 
@@ -1028,7 +1029,17 @@ void session_impl::free_disk_buffer(char* buf)
     m_disk_thread.free_buffer(buf);
 }
 
-std::string session_impl::buffer_usage()
+char* session_impl::allocate_z_buffer()
+{
+    return (char*)m_z_buffers.ordered_malloc();
+}
+
+void session_impl::free_z_buffer(char* buf)
+{
+    m_z_buffers.ordered_free(buf);
+}
+
+std::string session_impl::send_buffer_usage()
 {
     int send_buffer_capacity = 0;
     int used_send_buffer = 0;

@@ -16,7 +16,6 @@
 #include "libed2k/peer_request.hpp"
 #include "libed2k/piece_picker.hpp"
 #include "libed2k/peer_info.hpp"
-#include "libed2k/piece_block_progress.hpp"
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \
@@ -141,8 +140,13 @@ namespace libed2k
             num_supported_messages
         };
 
+        char* allocate_receive_buffer(int buffer_size);
+
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
+
+        bool allocate_z_receive_buffer();
+        void free_z_receive_buffer();
 
         virtual void on_timeout();
         virtual void on_sent(const error_code& e, std::size_t bytes_transferred);
@@ -260,7 +264,7 @@ namespace libed2k
         void fill_send_buffer();
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
-        void receive_data(const peer_request& r);
+        void receive_data(const peer_request& r, bool compressed);
         void receive_data();
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request req, boost::shared_ptr<transfer> t);
@@ -343,6 +347,8 @@ namespace libed2k
         template<typename T> void defer_write(const T& t);
         template<typename T> void send_throw_meta_order(const T& t);
 
+        bool complete_block(pending_block& b);
+
         // keep the io_service running as long as we
         // have peer connections
         boost::asio::io_service::work m_work;
@@ -357,6 +363,8 @@ namespace libed2k
         // read into. This eliminates a memcopy from
         // the receive buffer into the disk buffer
         disk_buffer_holder m_disk_recv_buffer;
+
+        char* m_z_recv_buffer;
 
         // this is the transfer this connection is
         // associated with. If the connection is an
@@ -465,6 +473,8 @@ namespace libed2k
         int m_recv_pos;
         // current recuest processed
         peer_request m_recv_req;
+        // current received data compression
+        bool m_recv_compressed;
 
         // this is a queue of ranges that describes
         // where in the send buffer actual payload
