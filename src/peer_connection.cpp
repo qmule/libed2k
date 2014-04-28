@@ -27,6 +27,22 @@ peer_request mk_peer_request(size_type begin, size_type end)
     return r;
 }
 
+std::vector<peer_request> mk_peer_requests(size_type begin, size_type end, size_type fsize)
+{
+    begin = std::min(begin, fsize);
+    end = std::min(end, fsize);
+
+    std::vector<peer_request> reqs;
+    for (size_type i = begin; i < end;)
+    {
+        peer_request r = mk_peer_request(i, std::min(begin + PIECE_SIZE - begin % PIECE_SIZE, end));
+        reqs.push_back(r);
+        i += r.length;
+    }
+
+    return reqs;
+}
+
 peer_request mk_peer_request(const piece_block& b, size_type fsize)
 {
     std::pair<size_type, size_type> r = block_range(b.piece_index, b.block_index, fsize);
@@ -2508,19 +2524,20 @@ void peer_connection::on_request_parts(const error_code& error)
             << " <== " << m_remote);
         for (size_t i = 0; i < 3; ++i)
         {
-            if (rp.m_begin_offset[i] < rp.m_end_offset[i])
+            std::vector<peer_request> reqs = mk_peer_requests(rp.m_begin_offset[i], rp.m_end_offset[i], t->size());
+            for (std::vector<peer_request>::const_iterator ri = reqs.begin(); ri != reqs.end(); ++ri)
             {
-                peer_request req = mk_peer_request(rp.m_begin_offset[i], rp.m_end_offset[i]);
-                if (t->have_piece(req.piece))
+                if (t->have_piece(ri->piece))
                 {
-                    m_requests.push_back(req);
+                    m_requests.push_back(*ri);
                 }
                 else
                 {
-                    DBG("we haven't piece " << req.piece << " requested from " << m_remote);
+                    DBG("we haven't piece " << ri->piece << " requested from " << m_remote);
                 }
             }
-            else if (rp.m_begin_offset[i] > rp.m_end_offset[i])
+
+            if (reqs.empty())
             {
                 ERR("incorrect request ["
                     << rp.m_begin_offset[i] << ", " << rp.m_end_offset[i]
