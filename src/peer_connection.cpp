@@ -166,10 +166,10 @@ void peer_connection::reset()
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_32>, this, _1));
     add_handler(/*OP_SENDINGPART_I64*/get_proto_pair<client_sending_part_64>(),
                 boost::bind(&peer_connection::on_sending_part<client_sending_part_64>, this, _1));
-    add_handler(/*OP_COMPRESSEDPART*/get_proto_pair<client_sending_packed_part_32>(),
-                boost::bind(&peer_connection::on_sending_packed_part<client_sending_packed_part_32>, this, _1));
-    add_handler(/*OP_COMPRESSEDPART_I64*/get_proto_pair<client_sending_packed_part_64>(),
-                boost::bind(&peer_connection::on_sending_packed_part<client_sending_packed_part_64>, this, _1));
+    add_handler(/*OP_COMPRESSEDPART*/get_proto_pair<client_compressed_part_32>(),
+                boost::bind(&peer_connection::on_compressed_part<client_compressed_part_32>, this, _1));
+    add_handler(/*OP_COMPRESSEDPART_I64*/get_proto_pair<client_compressed_part_64>(),
+                boost::bind(&peer_connection::on_compressed_part<client_compressed_part_64>, this, _1));
     add_handler(/*OP_END_OF_DOWNLOAD*/get_proto_pair<client_end_download>(), boost::bind(&peer_connection::on_end_download, this, _1));
 
     // shared files request and answer
@@ -2572,13 +2572,13 @@ void peer_connection::on_sending_part(const error_code& error)
 }
 
 template <typename Struct>
-void peer_connection::on_sending_packed_part(const error_code& error)
+void peer_connection::on_compressed_part(const error_code& error)
 {
     if (!error)
     {
         DECODE_PACKET(Struct, sp);
-        size_type begin_offset = sp.start_pos;
-        size_type end_offset = sp.start_pos + sp.size;
+        size_type begin_offset = sp.m_begin_offset;
+        size_type end_offset = sp.m_begin_offset + sp.m_compressed_size;
         DBG("compressed part " << sp.m_hFile
             << " [" << begin_offset << ", " << end_offset << "]"
             << " <== " << m_remote);
