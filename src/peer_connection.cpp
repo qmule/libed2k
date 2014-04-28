@@ -1519,7 +1519,7 @@ void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
 
     t.add_tag(make_string_tag(m_ses.settings().client_name, CT_NAME, true));
     t.add_tag(make_typed_tag(m_ses.settings().m_version, CT_VERSION, true));
-    t.add_tag(make_typed_tag(make_full_ed2k_version(SO_AMULE, 2,3,1), CT_EMULE_VERSION, true));// temp like amule version
+    t.add_tag(make_typed_tag(make_full_ed2k_version(SO_AMULE, m_ses.settings().mod_major, m_ses.settings().mod_minor, m_ses.settings().mod_build), CT_EMULE_VERSION, true));
     t.add_tag(make_typed_tag(mo.generate(), CT_EMULE_MISCOPTIONS1, true));
     t.add_tag(make_typed_tag(mo2.generate(), CT_EMULE_MISCOPTIONS2, true));
 

@@ -97,6 +97,9 @@ namespace libed2k
             , mixed_mode_algorithm(peer_proportional)
             , rate_limit_utp(true)
             , m_version(0x3c)
+        	, mod_major(0)
+        	, mod_minor(0)
+        	, mod_build(0)
             , m_max_announces_per_call(198)
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)
@@ -282,6 +285,9 @@ namespace libed2k
         bool rate_limit_utp;
 
         unsigned short m_version;
+        unsigned short mod_major;
+        unsigned short mod_minor;
+        unsigned short mod_build;
         unsigned short m_max_announces_per_call;
 
         bool m_show_shared_catalogs;    //!< show shared catalogs to client

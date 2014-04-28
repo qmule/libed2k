@@ -765,14 +765,8 @@ int main(int argc, char* argv[])
             case cc_listen:
                 {
                     settings.listen_port = atoi(strArg.c_str());
-                    if (ses.listen_on(settings.listen_port))
-                    {
-                        DBG("Ok, listen on " << strArg);
-                    }
-                    else
-                    {
-                        DBG("Unable to reset port");
-                    }
+                    ses.listen_on(settings.listen_port);
+                    DBG("Try listen on " << strArg);
                     break;
                 }
             case cc_tr:
