@@ -106,6 +106,7 @@ namespace libed2k
             , user_agent(md4_hash::emule)
             , ignore_resume_timestamps(false)
             , no_recheck_incomplete_resume(false)
+            , seeding_outgoing_connections(false)
             , alert_queue_size(1000)
             // Disk IO settings
             , file_pool_size(40)
@@ -318,6 +319,10 @@ namespace libed2k
         // this settings is set to true, instead libed2k will assume
         // we have none of the files and go straight to download
         bool no_recheck_incomplete_resume;
+
+        // this controls whether or not seeding (and complete) transfers
+        // attempt to make outgoing connections or not.
+        bool seeding_outgoing_connections;
 
         // the max alert queue size
         int alert_queue_size;

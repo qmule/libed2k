@@ -1308,21 +1308,6 @@ namespace libed2k
     typedef client_sending_part<boost::uint64_t> client_sending_part_64;
 
     template <typename size_type>
-    struct client_sending_packed_part{
-        md4_hash    m_hFile;
-        size_type   start_pos;
-        size_type   size;
-        // user packed data block
-        template<typename Archive>
-        void serialize(Archive& ar){
-            ar & m_hFile & start_pos & size;
-        }
-    };
-
-    typedef client_sending_packed_part<boost::uint32_t> client_sending_packed_part_32;
-    typedef client_sending_packed_part<boost::uint64_t> client_sending_packed_part_64;
-
-    template <typename size_type>
     struct client_compressed_part
     {
         md4_hash m_hFile;
@@ -1681,14 +1666,6 @@ namespace libed2k
     };
     template<> struct packet_type<client_sending_part_64> {
         static const proto_type value = OP_SENDINGPART_I64;
-        static const proto_type protocol = OP_EMULEPROT;
-    };
-    template<> struct packet_type<client_sending_packed_part_32> {
-        static const proto_type value = OP_COMPRESSEDPART;
-        static const proto_type protocol = OP_EMULEPROT;
-    };
-    template<> struct packet_type<client_sending_packed_part_64> {
-        static const proto_type value = OP_COMPRESSEDPART_I64;
         static const proto_type protocol = OP_EMULEPROT;
     };
     template<> struct packet_type<client_compressed_part_32> {
