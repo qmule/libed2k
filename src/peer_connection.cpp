@@ -386,7 +386,7 @@ void peer_connection::second_tick(int tick_interval_ms)
     bool may_timeout = can_read();
     if (may_timeout && d > m_timeout && !m_connecting)
     {
-        disconnect(errors::timed_out_inactivity,1);
+        disconnect(errors::timed_out_inactivity);
         return;
     }
 
@@ -928,7 +928,7 @@ char* peer_connection::release_disk_receive_buffer()
 void peer_connection::on_timeout()
 {
     boost::mutex::scoped_lock l(m_ses.m_mutex);
-    disconnect(errors::timed_out, 1);
+    disconnect(errors::timed_out);
 }
 
 void peer_connection::on_sent(const error_code& error, std::size_t bytes_transferred)
