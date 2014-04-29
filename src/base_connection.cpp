@@ -164,7 +164,7 @@ namespace libed2k
         }
         else
         {
-            disconnect(ec);
+            disconnect(ec,1);
         }
 
     }

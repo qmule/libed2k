@@ -386,7 +386,7 @@ void peer_connection::second_tick(int tick_interval_ms)
     bool may_timeout = can_read();
     if (may_timeout && d > m_timeout && !m_connecting)
     {
-        disconnect(errors::timed_out_inactivity);
+        disconnect(errors::timed_out_inactivity,1);
         return;
     }
 
@@ -1373,7 +1373,7 @@ void peer_connection::on_receive_data(const error_code& error, std::size_t bytes
     // keep ourselves alive in until this function exits in case we disconnect
     boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
 
-    if (error) disconnect(error);
+    if (error) disconnect(error,1);
     if (m_disconnecting || is_closed()) return;
 
     LIBED2K_ASSERT(int(bytes_transferred) <= m_quota[download_channel]);
@@ -1476,7 +1476,7 @@ void peer_connection::on_skip_data(const error_code& error, std::size_t bytes_tr
     // keep ourselves alive in until this function exits in case we disconnect
     boost::intrusive_ptr<peer_connection> me(self_as<peer_connection>());
 
-    if (error) disconnect(error);
+    if (error) disconnect(error,1);
     if (m_disconnecting || is_closed()) return;
 
     m_recv_pos += bytes_transferred;
@@ -2087,19 +2087,17 @@ void peer_connection::on_queue_ranking(const error_code& error)
         DECODE_PACKET(client_queue_ranking, qr);
         DBG("queue ranking " << qr.m_nRank << " <== " << m_remote);
         if (boost::shared_ptr<transfer> t = m_transfer.lock()){
-            // TODO - fix this behaviour
-            DBG("set fail count to  for peer who set us to queue");
 
             if (t && get_peer()) {
-                DBG("one minute pause on queue ranking");
-                get_peer()->next_connect = m_ses.session_time() + 60; // wait one minute before connect again
+                int delay = std::max(30, static_cast<int>(qr.m_nRank));
+                DBG("set timeout to " << delay << " seconds since our rank is " << qr.m_nRank);
+                get_peer()->next_connect = m_ses.session_time() + delay; // wait one minute before connect again
             }
         }
         else{
             DBG("weird situation - transfer doesn't exist on peer on request parts");
         }
 
-        // TODO - add peer to policy for avoid reconnect to it permanenty
         disconnect(errors::no_error);
     }
     else
