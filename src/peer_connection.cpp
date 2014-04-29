@@ -35,7 +35,7 @@ std::vector<peer_request> mk_peer_requests(size_type begin, size_type end, size_
     std::vector<peer_request> reqs;
     for (size_type i = begin; i < end;)
     {
-        peer_request r = mk_peer_request(i, std::min(begin + PIECE_SIZE - begin % PIECE_SIZE, end));
+        peer_request r = mk_peer_request(i, std::min(i + PIECE_SIZE - i % PIECE_SIZE, end));
         reqs.push_back(r);
         i += r.length;
     }

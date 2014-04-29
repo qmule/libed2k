@@ -9,8 +9,11 @@
 #include "libed2k/ctag.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/transfer_handle.hpp"
+#include "libed2k/peer_request.hpp"
 #include "libed2k/util.hpp"
 
+extern std::vector<libed2k::peer_request> mk_peer_requests(
+    libed2k::size_type begin, libed2k::size_type end, libed2k::size_type fsize);
 
 BOOST_AUTO_TEST_SUITE(simple_exception_test)
 
@@ -251,6 +254,14 @@ BOOST_AUTO_TEST_CASE(check_dat_filter_parser)
     ec = libed2k::error_code(libed2k::errors::no_error);
     libed2k::datline2filter("31.208.0.0      - 37.139.255.255  , , Non-IS Net", ec);
     BOOST_CHECK_EQUAL(ec, libed2k::error_code(libed2k::errors::levels_value_error));
+}
+
+BOOST_AUTO_TEST_CASE(multipiece_request_test)
+{
+    std::vector<libed2k::peer_request> res1;
+    res1.push_back(libed2k::peer_request(47, 9712413, 15587));
+    res1.push_back(libed2k::peer_request(48, 0, 45853));
+    BOOST_CHECK(mk_peer_requests(466928413, 466989853, 490106914) == res1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
