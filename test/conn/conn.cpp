@@ -477,7 +477,7 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(1000000000,0,1,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
+                search_request sr = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }

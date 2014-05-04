@@ -355,15 +355,21 @@ namespace libed2k
             return errors::no_error;
         }
 
+        // TODO - fix bad code
         inline size_t service_size() const
         {
             size_t res;
-            if (m_type == OP_SENDINGPART)
+            if (m_type == OP_SENDINGPART)   // add protocol type check
                 res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
-            else if(m_type == OP_SENDINGPART_I64)
+            else if(m_type == OP_SENDINGPART_I64) // add protocol type check
                 res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
+            else if (m_protocol == OP_EMULEPROT && m_type == OP_COMPRESSEDPART)
+                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+            else if (m_protocol == OP_EMULEPROT && m_type == OP_COMPRESSEDPART_I64)
+                res = MD4_HASH_SIZE + sizeof(boost::uint64_t) + sizeof(boost::uint32_t);
             else
                 res = m_size - 1;
+
             return res;
         }
     };
