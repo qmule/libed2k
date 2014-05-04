@@ -1,6 +1,8 @@
 #include "libed2k/base_connection.hpp"
 #include "libed2k/session.hpp"
 #include "libed2k/session_impl.hpp"
+#define MINIZ_HEADER_FILE_ONLY
+#include "miniz.c"
 
 namespace libed2k
 {
@@ -182,13 +184,30 @@ namespace libed2k
 
         if (!error)
         {
+            // temporary support compression on client to client channel by copy paste code
+            int rc = Z_OK;
+            if (m_in_header.m_protocol == OP_PACKEDPROT)
+            {
+                m_in_container.resize(m_in_gzip_container.size() * 10 + 300);
+                uLongf nSize = m_in_container.size();
+                rc = uncompress((Bytef*)&m_in_container[0], &nSize, (const Bytef*)&m_in_gzip_container[0], m_in_gzip_container.size());
+
+                if (rc != Z_OK){
+                    ERR("Unzip error: " << mz_error(rc));
+                }
+                else{
+                    m_in_container.resize(nSize);
+                }
+
+            }
+
             m_channel_state[download_channel] &= ~peer_info::bw_network;
 
             //!< search appropriate dispatcher
             handler_map::iterator itr = m_handlers.find(
                 std::make_pair(m_in_header.m_type, m_in_header.m_protocol));
 
-            if (itr != m_handlers.end())
+            if (rc == Z_OK && itr != m_handlers.end())
             {
                 itr->second(error);
             }
