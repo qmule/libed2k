@@ -37,10 +37,7 @@ namespace libed2k
 
     struct pending_block
     {
-        pending_block(const piece_block& b, size_type fsize):
-            skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
-            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL),
-            create_time(time_now()){}
+        pending_block(const piece_block& b, size_type fsize);
 
         // the number of times the request
         // has been skipped by out of order blocks
@@ -62,6 +59,8 @@ namespace libed2k
         bool busy:1;
 
         piece_block block;
+        // data size, it is useful to store compressed block size
+        size_type data_size;
         // block covering
         range<size_type> data_left;
         // disk receive buffer

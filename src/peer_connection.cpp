@@ -84,6 +84,13 @@ size_t block_size(const piece_block& b, size_type s)
     return size_t(r.second - r.first);
 }
 
+pending_block::pending_block(const piece_block& b, size_type fsize):
+    skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
+    data_size(block_size(b, fsize)), data_left(block_range(b.piece_index, b.block_index, fsize)),
+    buffer(NULL), create_time(time_now())
+{
+}
+
 peer_connection::peer_connection(aux::session_impl& ses,
                                  boost::weak_ptr<transfer> transfer,
                                  boost::shared_ptr<tcp::socket> s,
@@ -2576,14 +2583,24 @@ void peer_connection::on_compressed_part(const error_code& error)
     {
         DECODE_PACKET(Struct, sp);
         size_type begin_offset = sp.m_begin_offset;
-        // do not use m_compressed_size since it is full size which covers multiple compressed packets!
-        // temp fix - use actual compressed part size
-        size_type end_offset = sp.m_begin_offset + m_in_header.m_size - 1 - m_in_header.service_size(); //sp.m_compressed_size;
+        size_type data_size = m_in_header.m_size - m_in_header.service_size() - 1;
+        size_type end_offset = sp.m_begin_offset + data_size;
+
         DBG("compressed part " << sp.m_hFile
             << " [" << begin_offset << ", " << end_offset << "]"
             << " <== " << m_remote);
 
         peer_request r = mk_peer_request(begin_offset, end_offset);
+
+        std::vector<pending_block>::iterator b =
+            std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(mk_block(r)));
+        if (b != m_download_queue.end() && !b->buffer)
+        {
+            // we will receive a compressed block, so expected data amount should be corrected
+            b->data_size = sp.m_compressed_size;
+            b->data_left.shrink_right(sp.m_compressed_size);
+        }
+
         receive_data(r, true);
     }
     else
@@ -2606,107 +2623,21 @@ bool peer_connection::complete_block(pending_block& b)
 {
     LIBED2K_ASSERT(m_recv_pos == m_recv_req.length);
 
-    if (m_recv_compressed)
+    b.complete(mk_range(m_recv_req));
+
+    if (m_recv_compressed && b.completed())
     {
-        // received data is in z_buffer
+        // all compressed block data was received in z_buffer
         // decompress it into disk receive buffer
-        size_t offset = offset_in_block(m_recv_req);
-        uLongf size = m_disk_recv_buffer_size - offset;
-
-        // do not use mz_uncompress function since it implies full compressed piece and full uncompressed room
-        // we have only full uncompressed room and part of compressed message
-        //int rc = mz_uncompress((Bytef*)m_disk_recv_buffer.get() + offset, &size,
-        //                       (const Bytef*)m_z_recv_buffer, m_recv_req.length);
-
-        z_stream *zS = new z_stream;    // TODO - move it in class members for process order of compressed messages
-
-        // Initialise stream values
-        zS->zalloc = (alloc_func)0;
-        zS->zfree = (free_func)0;
-        zS->opaque = (voidpf)0;
-
-        // Set output data streams, do this here to avoid overwriting on recursive calls
-        zS->next_out = ((Bytef*)m_disk_recv_buffer.get() + offset);
-        zS->avail_out = size;
-
-        // Use whatever input is provided
-        zS->next_in  = (const Bytef*)m_z_recv_buffer;
-        zS->avail_in = m_recv_req.length;
-
-        // Initialise the z_stream
-        int err = inflateInit(zS);
-        if (err != Z_OK)
-        {
-            ERR("inflate init error " << mz_error(err));
-        }
-        else
-        {
-            // Try to unzip the data
-            err = inflate(zS, Z_SYNC_FLUSH);
-
-            // Is zip finished reading all currently available input and writing
-            // all generated output
-            if (err == Z_STREAM_END)
-            {
-                DBG("input stream ended");
-                // Finish up
-                err = inflateEnd(zS);
-                if (err != Z_OK)
-                {
-                    ERR("unzip error " << mz_error(err));
-                }
-                else
-                {
-                    DBG("data successfully processed");
-                    // Got a good result, set the size to the amount unzipped in this call
-                    //  (including all recursive calls)
-                    //(*lenUnzipped) = (zS->total_out - block->totalUnzipped);
-                    //block->totalUnzipped = zS->total_out;
-                }
-            }
-            else if ((err == Z_OK) && (zS->avail_out == 0) && (zS->avail_in != 0))
-            {
-                // peer sends us more information than was requested!
-                DBG("output array too small");
-                // Output array was not big enough,
-                // call recursively until there is enough space
-            }
-            else if ((err == Z_OK) && (zS->avail_in == 0))
-            {
-                // All available input has been processed, everything ok.
-                // Set the size to the amount unzipped in this call
-                // (including all recursive calls)
-                DBG("all available input was processed");
-            }
-            else
-            {
-                // Should not get here unless input data is corrupt
-                DBG("corrupted data " << mz_error(err));
-            }
-        }
-
-        return false;
-        // temporary commented
-        /*
+        uLongf size = m_disk_recv_buffer_size;
+        int rc = mz_uncompress((Bytef*)m_disk_recv_buffer.get(), &size,
+                               (const Bytef*)m_z_recv_buffer, b.data_size);
         if (rc != Z_OK)
         {
             ERR("Uncompress error: " << mz_error(rc));
             disconnect(errors::decode_packet_error, 1);
             return false;
         }
-        else{
-            DBG("uncompress succesfull " << m_remote);
-        }
-
-        peer_request orig_req = m_recv_req;
-        orig_req.length = size;
-        b.complete(mk_range(orig_req));
-        */
-    }
-    else
-    {
-        // received data is already in disk receive buffer
-        b.complete(mk_range(m_recv_req));
     }
 
     return b.completed();
