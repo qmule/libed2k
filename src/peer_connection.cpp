@@ -62,6 +62,13 @@ inline piece_block mk_block(const peer_request& r)
     return piece_block(r.piece, r.start / BLOCK_SIZE);
 }
 
+inline piece_block mk_block(size_type offset)
+{
+    int piece = offset / PIECE_SIZE;
+    int start = offset % PIECE_SIZE;
+    return piece_block(piece, start / BLOCK_SIZE);
+}
+
 inline size_t offset_in_block(const peer_request& r)
 {
     return r.start % BLOCK_SIZE;
@@ -2582,9 +2589,19 @@ void peer_connection::on_compressed_part(const error_code& error)
     if (!error)
     {
         DECODE_PACKET(Struct, sp);
-        size_type begin_offset = sp.m_begin_offset;
+
+        std::vector<pending_block>::iterator b =
+            std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(mk_block(sp.m_begin_offset)));
+        if (b != m_download_queue.end() && !b->buffer)
+        {
+            // we will receive a compressed block, so expected data amount should be corrected
+            b->data_size = sp.m_compressed_size;
+            b->data_left.shrink_end(sp.m_compressed_size);
+        }
+
+        size_type begin_offset = (b != m_download_queue.end() ? b->data_left.begin() : sp.m_begin_offset);
         size_type data_size = m_in_header.m_size - m_in_header.service_size() - 1;
-        size_type end_offset = sp.m_begin_offset + data_size;
+        size_type end_offset = begin_offset + data_size;
 
         DBG("compressed part " << sp.m_hFile
             << " [" << begin_offset << ", " << end_offset << "]"
@@ -2592,14 +2609,6 @@ void peer_connection::on_compressed_part(const error_code& error)
 
         peer_request r = mk_peer_request(begin_offset, end_offset);
 
-        std::vector<pending_block>::iterator b =
-            std::find_if(m_download_queue.begin(), m_download_queue.end(), has_block(mk_block(r)));
-        if (b != m_download_queue.end() && !b->buffer)
-        {
-            // we will receive a compressed block, so expected data amount should be corrected
-            b->data_size = sp.m_compressed_size;
-            b->data_left.shrink_right(sp.m_compressed_size);
-        }
 
         receive_data(r, true);
     }
