@@ -405,13 +405,16 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
+    settings.peer_connect_timeout = 60;
+    settings.peer_timeout = 60;
+
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 20, 20, 10, 10, 10);
+    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 60, 60, 60, 60, 60);
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
@@ -474,7 +477,7 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(1000000000,0,1,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
+                search_request sr = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }
@@ -762,14 +765,8 @@ int main(int argc, char* argv[])
             case cc_listen:
                 {
                     settings.listen_port = atoi(strArg.c_str());
-                    if (ses.listen_on(settings.listen_port))
-                    {
-                        DBG("Ok, listen on " << strArg);
-                    }
-                    else
-                    {
-                        DBG("Unable to reset port");
-                    }
+                    ses.listen_on(settings.listen_port);
+                    DBG("Try listen on " << strArg);
                     break;
                 }
             case cc_tr:

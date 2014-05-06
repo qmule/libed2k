@@ -32,8 +32,8 @@ boostRoot = os.getenv('BOOST_ROOT')
 commonArgs = {
     'ENV'     : os.environ,
     'CPPPATH' : ['include'] + [join(p, 'include') for p in [boostRoot]],
-    'CXXFLAGS': ['-Wall', '-Werror=return-type', '-D_FILE_OFFSET_BITS=64',
-                 '-DLIBED2K_USE_BOOST_DATE_TIME'],
+    'CXXFLAGS': ['-Wall', '-Werror=return-type', '-Wno-unused-local-typedefs',
+                 '-D_FILE_OFFSET_BITS=64', '-DLIBED2K_USE_BOOST_DATE_TIME'],
     'LIBPATH' : [join(p, 'lib') for p in [boostRoot]],
     'LIBS'    : [libboost('system'), libboost('thread'), 'pthread']
     }
@@ -49,7 +49,7 @@ releaseArgs = {
 args = unionArgs(commonArgs, releaseArgs if GetOption('dbg') == None else debugArgs)
 
 env = Environment(**args)
-sources = globrec('src', '*.cpp')
+sources = globrec('src', '*.cpp') + globrec('src', '*.c')
 lib = env.StaticLibrary(join('lib', 'ed2k'), sources)
 
 binenv = Environment(**unionArgs(args, {'LIBS' : ['ed2k'], 'LIBPATH' : ['lib']}))

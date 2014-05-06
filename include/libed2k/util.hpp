@@ -137,6 +137,18 @@ namespace libed2k
 
         bool empty() const { return m_segments.empty(); }
 
+        void shrink_end(T size)
+        {
+            LIBED2K_ASSERT(m_segments.size() == 1);
+            m_segments[0].second = m_segments[0].first + size;
+        }
+
+        T begin() const 
+        {
+            LIBED2K_ASSERT(m_segments.size() == 1);
+            return m_segments[0].first;
+        }
+
     private:
         segments m_segments;
 
@@ -180,6 +192,10 @@ namespace libed2k
     inline bool isLowId(boost::uint32_t nId)
     {
         return (nId < HIGHEST_LOWID_ED2K);
+    }
+
+    inline boost::uint64_t make_full_ed2k_version(int client_id, int a, int b, int c){
+        return ((client_id << 24) | (a << 17 ) | (b << 10) | (c << 7));
     }
 
     template<typename T1, typename T2>

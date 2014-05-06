@@ -64,6 +64,8 @@ namespace libed2k
             peer_timeout(120)
             , peer_connect_timeout(7)
             , block_request_timeout(10)
+            , max_failcount(3)
+            , min_reconnect_time(60)
             , connection_speed(6)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
@@ -73,6 +75,7 @@ namespace libed2k
             , client_name("libed2k")
             , mod_name("libed2k")
             , max_peerlist_size(4000)
+            , max_paused_peerlist_size(4000)
             , tick_interval(100)
             , download_rate_limit(-1)
             , upload_rate_limit(-1)
@@ -94,12 +97,16 @@ namespace libed2k
             , mixed_mode_algorithm(peer_proportional)
             , rate_limit_utp(true)
             , m_version(0x3c)
+            , mod_major(0)
+            , mod_minor(0)
+            , mod_build(0)
             , m_max_announces_per_call(198)
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)
             , user_agent(md4_hash::emule)
             , ignore_resume_timestamps(false)
             , no_recheck_incomplete_resume(false)
+            , seeding_outgoing_connections(false)
             , alert_queue_size(1000)
             // Disk IO settings
             , file_pool_size(40)
@@ -150,6 +157,14 @@ namespace libed2k
         // the number of seconds to wait for block request.
         int block_request_timeout;
 
+        // the number of times we can fail to connect to a peer
+        // before we stop retrying it.
+        int max_failcount;
+
+        // the number of seconds to wait to reconnect to a peer.
+        // this time is multiplied with the failcount.
+        int min_reconnect_time;
+
         // the number of connection attempts that
         // are made per second.
         int connection_speed;
@@ -182,6 +197,10 @@ namespace libed2k
         // per transfer. This is the peers we know
         // about, not necessarily connected to.
         int max_peerlist_size;
+
+        // when a torrent is paused, this is the max peer
+        // list size that's used
+        int max_paused_peerlist_size;
 
         // the number of milliseconds between internal ticks. Should be no
         // more than one second (i.e. 1000).
@@ -267,6 +286,9 @@ namespace libed2k
         bool rate_limit_utp;
 
         unsigned short m_version;
+        unsigned short mod_major;
+        unsigned short mod_minor;
+        unsigned short mod_build;
         unsigned short m_max_announces_per_call;
 
         bool m_show_shared_catalogs;    //!< show shared catalogs to client
@@ -297,6 +319,10 @@ namespace libed2k
         // this settings is set to true, instead libed2k will assume
         // we have none of the files and go straight to download
         bool no_recheck_incomplete_resume;
+
+        // this controls whether or not seeding (and complete) transfers
+        // attempt to make outgoing connections or not.
+        bool seeding_outgoing_connections;
 
         // the max alert queue size
         int alert_queue_size;
