@@ -113,8 +113,9 @@ void session_impl_base::set_alert_dispatch(boost::function<void(alert const&)> c
 session_impl::session_impl(const fingerprint& id, const char* listen_interface,
                            const session_settings& settings):
     session_impl_base(settings),
-    m_peer_pool(500),
+    m_ipv4_peer_pool(500),
     m_send_buffers(send_buffer_size),
+    m_z_buffers(BLOCK_SIZE),
     m_skip_buffer(4096),
     m_filepool(40),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), m_filepool, BLOCK_SIZE),
@@ -124,9 +125,10 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_active_transfers),
     m_paused(false),
+    m_created(time_now_hires()),
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
-    m_last_tick(time_now_hires()),
+    m_last_tick(m_created),
     m_total_failed_bytes(0),
     m_total_redundant_bytes(0),
     m_queue_pos(0),
@@ -999,7 +1001,7 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
     return (peer_connection_handle(c, this));
 }
 
-std::pair<char*, int> session_impl::allocate_buffer(int size)
+std::pair<char*, int> session_impl::allocate_send_buffer(int size)
 {
     int num_buffers = (size + send_buffer_size - 1) / send_buffer_size;
 
@@ -1009,7 +1011,7 @@ std::pair<char*, int> session_impl::allocate_buffer(int size)
                           num_buffers * send_buffer_size);
 }
 
-void session_impl::free_buffer(char* buf, int size)
+void session_impl::free_send_buffer(char* buf, int size)
 {
     int num_buffers = size / send_buffer_size;
 
@@ -1027,7 +1029,17 @@ void session_impl::free_disk_buffer(char* buf)
     m_disk_thread.free_buffer(buf);
 }
 
-std::string session_impl::buffer_usage()
+char* session_impl::allocate_z_buffer()
+{
+    return (char*)m_z_buffers.ordered_malloc();
+}
+
+void session_impl::free_z_buffer(char* buf)
+{
+    m_z_buffers.ordered_free(buf);
+}
+
+std::string session_impl::send_buffer_usage()
 {
     int send_buffer_capacity = 0;
     int used_send_buffer = 0;
@@ -1308,7 +1320,7 @@ void session_impl::connect_new_peers()
         for (;;)
         {
             transfer& t = *m_next_connect_transfer->second;
-            if (t.want_more_connections())
+            if (t.want_more_peers())
             {
                 try
                 {

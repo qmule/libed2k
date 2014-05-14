@@ -297,6 +297,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\miniz.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\natpmp.cpp"
 				>
 			</File>
