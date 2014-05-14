@@ -611,4 +611,27 @@ namespace libed2k
             stop(error);
         }
     }
+
+    std::string server_connection::compress_output_data(const std::string& data)
+    {
+        std::string compressed_string;
+
+        if (data.size() > 100)
+        {
+            DBG("prepare compression ");
+            char compression_data_buffer[data.size()];
+            mz_ulong dst_len = data.size();
+            int ret = mz_compress((unsigned char*)compression_data_buffer, &dst_len, (const unsigned char*)m_write_order.back().second.c_str(), data.size());
+
+            if (ret == MZ_OK){
+                DBG("successfully deflate buffer to size " << dst_len << " from size " << data.size());
+                compressed_string.assign(compression_data_buffer, dst_len);
+            }
+            else{
+                ERR("deflate error " << mz_error(ret));
+            }
+        }
+
+        return compressed_string;
+    }
 }
