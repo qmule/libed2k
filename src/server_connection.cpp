@@ -619,7 +619,7 @@ namespace libed2k
         if (data.size() > 100)
         {
             DBG("prepare compression ");
-            char compression_data_buffer[data.size()];
+            char* compression_data_buffer = new char[data.size()];
             mz_ulong dst_len = data.size();
             int ret = mz_compress((unsigned char*)compression_data_buffer, &dst_len, (const unsigned char*)m_write_order.back().second.c_str(), data.size());
 
@@ -630,6 +630,8 @@ namespace libed2k
             else{
                 ERR("deflate error " << mz_error(ret));
             }
+
+            delete [] compression_data_buffer;
         }
 
         return compressed_string;
