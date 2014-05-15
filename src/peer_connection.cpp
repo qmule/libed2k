@@ -1538,7 +1538,7 @@ void peer_connection::append_misc_info(tag_list<boost::uint32_t>& t)
 {
     misc_options mo(0);
     mo.m_nUnicodeSupport = 1;
-    mo.m_nDataCompVer = 1;  // support data compression
+    mo.m_nDataCompVer = 0;  // support data compression
     mo.m_nNoViewSharedFiles = !m_ses.settings().m_show_shared_files;
     mo.m_nSourceExchange1Ver = SOURCE_EXCHG_LEVEL;
 
