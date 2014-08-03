@@ -13,152 +13,131 @@
 
 namespace libed2k
 {
-    struct server_name_resolved_alert : alert
-    {
-        const static int static_category = alert::status_notification;
-        server_name_resolved_alert(const std::string& strServer) : m_strServer(strServer){}
+    struct server_alert : alert{
+        const static int static_category = alert::status_notification | alert::server_notification;
+        server_alert(const std::string& nm, const std::string& h, int p): name(nm), host(h), port(p){}
         virtual int category() const { return static_category; }
 
         virtual std::auto_ptr<alert> clone() const
         {
-            return std::auto_ptr<alert>(new server_name_resolved_alert(*this));
+            return std::auto_ptr<alert>(new server_alert(*this));
         }
 
-        virtual std::string message() const { return std::string("server name was resolved"); }
-        virtual char const* what() const { return "server notification"; }
+        virtual std::string message() const { return std::string("server alert"); }
+        virtual char const* what() const { return "abstract server notification"; }
+        std::string name;
+        std::string host;
+        int port;
+    };
 
-        std::string m_strServer;
+
+    struct server_name_resolved_alert : server_alert
+    {
+        server_name_resolved_alert(const std::string& name, const std::string& host, int port, const std::string endp) :
+            server_alert(name, host, port), endpoint(endp){}
+        virtual std::auto_ptr<alert> clone() const { return std::auto_ptr<alert>(new server_name_resolved_alert(*this)); }
+        virtual std::string message() const { return std::string("server name was resolved"); }
+        std::string endpoint;
     };
 
     /**
-      * emit when server connection was initialized
+      * after server handshake completed
      */
-    struct server_connection_initialized_alert : alert
+    struct server_connection_initialized_alert : server_alert
     {
-        const static int static_category = alert::status_notification;
-
-        server_connection_initialized_alert(boost::uint32_t nClientId,
-                boost::uint32_t nTCPFlags, boost::uint32_t nAuxPort) :
-                    m_nClientId(nClientId),
-                    m_nTCPFlags(nTCPFlags),
-                    m_nAuxPort(nAuxPort)
+        server_connection_initialized_alert(const std::string& name, const std::string& host, int port,
+                boost::uint32_t cid,
+                boost::uint32_t tcpf,
+                boost::uint32_t auxp) : server_alert(name, host, port),
+                    client_id(cid),
+                    tcp_flags(tcpf),
+                    aux_port(auxp)
         {}
 
-        virtual int category() const { return static_category; }
+        virtual std::auto_ptr<alert> clone() const { return std::auto_ptr<alert>(new server_connection_initialized_alert(*this)); }
+        virtual std::string message() const { return std::string("handshake completed"); }
 
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return std::auto_ptr<alert>(new server_connection_initialized_alert(*this));
-        }
-
-        virtual std::string message() const { return std::string("server connection was initialized"); }
-        virtual char const* what() const { return "server notification"; }
-
-        boost::uint32_t m_nClientId;
-        boost::uint32_t m_nTCPFlags;
-        boost::uint32_t m_nAuxPort;
+        boost::uint32_t client_id;
+        boost::uint32_t tcp_flags;
+        boost::uint32_t aux_port;
     };
 
     /**
       * emit on OP_SERVERSTATUS
      */
-    struct server_status_alert : alert
+    struct server_status_alert : server_alert
     {
-        const static int static_category = alert::status_notification | alert::server_notification;
-
-        server_status_alert(boost::uint32_t nFilesCount, boost::uint32_t nUsersCount) :
-            m_nFilesCount(nFilesCount), m_nUsersCount(nUsersCount)
+        server_status_alert(const std::string& name, const std::string& host, int port,
+                boost::uint32_t fcount,
+                boost::uint32_t ucount) : server_alert(name, host, port),
+            files_count(fcount),
+            users_count(ucount)
         {
         }
 
-        virtual int category() const { return static_category; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return std::auto_ptr<alert>(new server_status_alert(*this));
-        }
-
+        virtual std::auto_ptr<alert> clone() const { return std::auto_ptr<alert>(new server_status_alert(*this)); }
         virtual std::string message() const { return std::string("server status information"); }
-        virtual char const* what() const { return "server status information"; }
 
-        boost::uint32_t m_nFilesCount;
-        boost::uint32_t m_nUsersCount;
+        boost::uint32_t files_count;
+        boost::uint32_t users_count;
     };
 
     /**
       * emit on OP_SERVERIDENT
      */
 
-    struct server_identity_alert : alert
+    struct server_identity_alert : server_alert
     {
-        const static int static_category = alert::status_notification | alert::server_notification;
-
-        server_identity_alert(const md4_hash& hServer , net_identifier address, const std::string& strName, const std::string& strDescr) :
-            m_hServer(hServer), m_address(address), m_strName(strName), m_strDescr(strDescr)
+        server_identity_alert(const std::string& name, const std::string& host, int port,
+                const md4_hash& shash ,
+                const net_identifier& saddr ,
+                const std::string& sname,
+                const std::string& sdescr) : server_alert(name, host, port),
+            server_hash(shash),
+            server_address(saddr),
+            server_name(sname),
+            server_descr(sdescr)
         {
         }
 
-        virtual int category() const { return static_category; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return std::auto_ptr<alert>(new server_identity_alert(*this));
-        }
+        virtual std::auto_ptr<alert> clone() const { return std::auto_ptr<alert>(new server_identity_alert(*this)); }
 
         virtual std::string message() const { return std::string("server identity information"); }
-        virtual char const* what() const { return "server identity information"; }
 
-        md4_hash        m_hServer;
-        net_identifier  m_address;
-        std::string     m_strName;
-        std::string     m_strDescr;
+        md4_hash        server_hash;
+        net_identifier  server_address;
+        std::string     server_name;
+        std::string     server_descr;
     };
 
     /**
       * emit for every server message
      */
-    struct server_message_alert: alert
+    struct server_message_alert: server_alert
     {
-        const static int static_category = alert::server_notification;
-
-        server_message_alert(const std::string& strMessage) : m_strMessage(strMessage){}
-        virtual int category() const { return static_category; }
-
-        virtual std::string message() const { return m_strMessage; }
-        virtual char const* what() const { return "server message incoming"; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return (std::auto_ptr<alert>(new server_message_alert(*this)));
-        }
-
-        std::string m_strMessage;
+        server_message_alert(const std::string& name, const std::string host, int port,
+                const std::string& msg) : server_alert(name, host, port),
+                server_message(msg){}
+        virtual std::string message() const { return server_message; }
+        virtual char const* what() const { return "incoming server message"; }
+        virtual std::auto_ptr<alert> clone() const { return (std::auto_ptr<alert>(new server_message_alert(*this))); }
+        std::string server_message;
     };
 
-    /**
-      * emit when server connection closed
-     */
-    struct server_connection_closed : alert
+    struct server_connection_closed : server_alert
     {
-        const static int static_category = alert::status_notification | alert::server_notification;
-
-        server_connection_closed(const error_code& error) : m_error(error){}
-        virtual int category() const { return static_category; }
-
+        server_connection_closed(const std::string& name, const std::string& host, int port,
+                const error_code& error) : server_alert(name, host, port),
+                m_error(error){}
         virtual std::string message() const { return m_error.message(); }
         virtual char const* what() const { return "server connection closed"; }
-
-        virtual std::auto_ptr<alert> clone() const
-        {
-            return (std::auto_ptr<alert>(new server_connection_closed(*this)));
-        }
-
+        virtual std::auto_ptr<alert> clone() const { return (std::auto_ptr<alert>(new server_connection_closed(*this))); }
         error_code m_error;
     };
 
-    struct mule_listen_failed_alert: alert
+    struct listen_failed_alert: alert
     {
-        mule_listen_failed_alert(tcp::endpoint const& ep, error_code const& ec):
+        listen_failed_alert(tcp::endpoint const& ep, error_code const& ec):
             endpoint(ep), error(ec)
         {}
 
@@ -166,7 +145,7 @@ namespace libed2k
         error_code error;
 
         virtual std::auto_ptr<alert> clone() const
-        { return std::auto_ptr<alert>(new mule_listen_failed_alert(*this)); }
+        { return std::auto_ptr<alert>(new listen_failed_alert(*this)); }
         virtual char const* what() const { return "listen failed"; }
         const static int static_category = alert::status_notification | alert::error_notification;
         virtual int category() const { return static_category; }
@@ -836,7 +815,103 @@ namespace libed2k
         error_code          m_ec;
     };
 
+    struct portmap_log_alert : alert
+    {
+        portmap_log_alert(int t, std::string const& m) : map_type(t), msg(m)
+        {}
 
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_log_alert(*this)); }
+
+        virtual char const* what() const { return "portmap log"; }
+
+        const static int static_category = alert::port_mapping_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            char ret[600];
+            snprintf(ret, sizeof(ret), "%s: %s", type_str[map_type], msg.c_str());
+            return ret;
+        }
+
+        int map_type;
+        std::string msg;
+    };
+
+	struct portmap_alert : alert
+    {
+        portmap_alert(int i, int port, int t) : mapping(i), external_port(port), map_type(t)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_alert(*this)); }
+
+        virtual char const* what() const { return "portmap"; }
+
+        const static int static_category = alert::port_mapping_notification;
+        virtual int category() const { return static_category; }
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            char ret[200];
+            snprintf(ret, sizeof(ret), "successfully mapped port using %s. external port: %u",
+                     type_str[map_type], external_port);
+            return ret;
+        }
+
+        int mapping;
+        int external_port;
+        int map_type;
+    };
+
+	struct portmap_error_alert : alert
+    {
+        portmap_error_alert(int i, int t, error_code const& e) :  mapping(i), map_type(t), error(e)
+        {
+        }
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new portmap_error_alert(*this)); }
+
+        virtual char const* what() const { return "portmap error"; }
+        virtual int category() const { return static_category; }
+        const static int static_category = alert::port_mapping_notification | alert::error_notification;
+
+        virtual std::string message() const
+        {
+            static char const* type_str[] = {"NAT-PMP", "UPnP"};
+            return std::string("could not map port using ") + type_str[map_type]
+                + ": " + convert_from_native(error.message());
+        }
+
+        int mapping;
+        int map_type;
+        error_code error;
+    };
+
+    struct udp_error_alert : alert
+	{
+        udp_error_alert(udp::endpoint const& ep, error_code const& ec): endpoint(ep), error(ec)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const
+        { return std::auto_ptr<alert>(new udp_error_alert(*this)); }
+
+        virtual char const* what() const { return "UDP error"; }
+        virtual int category() const { return static_category; }
+
+        const static int static_category = alert::error_notification;
+        virtual std::string message() const
+        {
+            error_code ec;
+            return "UDP error: " + convert_from_native(error.message()) + " from: " +
+                endpoint.address().to_string(ec);
+        }
+
+        udp::endpoint endpoint;
+        error_code error;
+    };
 }
 
 

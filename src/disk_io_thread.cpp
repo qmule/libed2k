@@ -248,7 +248,7 @@ namespace libed2k
 
         mutex::scoped_lock l(m_piece_mutex);
 
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
         // flush write cache
         cache_lru_index_t& widx = m_pieces.get<1>();
         cache_lru_index_t::iterator i = widx.begin();
@@ -338,7 +338,7 @@ namespace libed2k
     int disk_io_thread::clear_oldest_read_piece(
         int num_blocks, ignore_t ignore, mutex::scoped_lock& l)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         cache_lru_index_t& idx = m_read_pieces.get<1>();
         if (idx.empty()) return 0;
@@ -569,7 +569,7 @@ namespace libed2k
     int disk_io_thread::flush_range(cached_piece_entry& p
         , int start, int end, mutex::scoped_lock& l)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         LIBED2K_ASSERT(start < end);
 
@@ -695,7 +695,7 @@ namespace libed2k
         , int cache_expire
         , mutex::scoped_lock& l)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
         LIBED2K_ASSERT(find_cached_piece(m_pieces, j, l) == m_pieces.end());
         LIBED2K_ASSERT((j.offset & (m_block_size-1)) == 0);
         LIBED2K_ASSERT(j.cache_min_time >= 0);
@@ -869,7 +869,7 @@ namespace libed2k
     // or the number of bytes read
     int disk_io_thread::cache_read_block(disk_io_job const& j, mutex::scoped_lock& l)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         LIBED2K_ASSERT(j.cache_min_time >= 0);
 
@@ -991,7 +991,7 @@ namespace libed2k
     int disk_io_thread::cache_piece(disk_io_job const& j, cache_piece_index_t::iterator& p
         , bool& hit, int options, mutex::scoped_lock& l)
     {
-        INVARIANT_CHECK;
+        LIBED2K_INVARIANT_CHECK;
 
         LIBED2K_ASSERT(j.cache_min_time >= 0);
 
@@ -1006,7 +1006,7 @@ namespace libed2k
 
         if (p != m_read_pieces.end() && p->num_blocks != blocks_in_piece)
         {
-            INVARIANT_CHECK;
+            LIBED2K_INVARIANT_CHECK;
             // we have the piece in the cache, but not all of the blocks
             ret = read_into_piece(const_cast<cached_piece_entry&>(*p), 0
                 , options, blocks_in_piece, l);
@@ -1016,7 +1016,7 @@ namespace libed2k
         }
         else if (p == m_read_pieces.end())
         {
-            INVARIANT_CHECK;
+            LIBED2K_INVARIANT_CHECK;
             // if the piece cannot be found in the cache,
             // read the whole piece starting at the block
             // we got a request for.
@@ -1908,7 +1908,7 @@ namespace libed2k
 #ifdef LIBED2K_DISK_STATS
                     m_log << log_time() << " read_and_hash " << j.buffer_size << std::endl;
 #endif
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
                     LIBED2K_ASSERT(j.buffer == 0);
                     j.buffer = allocate_buffer("send buffer");
                     LIBED2K_ASSERT(j.buffer_size <= m_block_size);
@@ -1980,7 +1980,7 @@ namespace libed2k
 #ifdef LIBED2K_DISK_STATS
                     m_log << log_time();
 #endif
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
                     if (j.buffer == 0) j.buffer = allocate_buffer("send buffer");
                     LIBED2K_ASSERT(j.buffer_size <= m_block_size);
                     if (j.buffer == 0)
@@ -2059,7 +2059,7 @@ namespace libed2k
                     m_log << log_time() << " write " << j.buffer_size << std::endl;
 #endif
                     mutex::scoped_lock l(m_piece_mutex);
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
 
                     LIBED2K_ASSERT(!j.storage->error());
                     LIBED2K_ASSERT(j.cache_min_time >= 0);
@@ -2173,7 +2173,7 @@ namespace libed2k
 #ifdef LIBED2K_DISK_STATS
                     m_log << log_time() << " cache " << j.piece << std::endl;
 #endif
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
                     LIBED2K_ASSERT(j.buffer == 0);
 
                     cache_piece_index_t::iterator p;
@@ -2191,7 +2191,7 @@ namespace libed2k
 #endif
                     LIBED2K_ASSERT(!j.storage->error());
                     mutex::scoped_lock l(m_piece_mutex);
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
 
                     cache_piece_index_t& idx = m_pieces.get<0>();
                     cache_piece_index_t::iterator i = find_cached_piece(m_pieces, j, l);
@@ -2258,7 +2258,7 @@ namespace libed2k
                     LIBED2K_ASSERT(j.buffer == 0);
 
                     mutex::scoped_lock l(m_piece_mutex);
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
 
                     for (cache_t::iterator i = m_pieces.begin(); i != m_pieces.end();)
                     {
@@ -2287,7 +2287,7 @@ namespace libed2k
                     LIBED2K_ASSERT(j.buffer == 0);
 
                     mutex::scoped_lock l(m_piece_mutex);
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
 
                     for (cache_t::iterator i = m_read_pieces.begin();
                         i != m_read_pieces.end();)
@@ -2315,7 +2315,7 @@ namespace libed2k
                     LIBED2K_ASSERT(j.buffer == 0);
 
                     mutex::scoped_lock l(m_piece_mutex);
-                    INVARIANT_CHECK;
+                    LIBED2K_INVARIANT_CHECK;
 
                     // delete all write cache entries for this storage
                     cache_piece_index_t& idx = m_pieces.get<0>();

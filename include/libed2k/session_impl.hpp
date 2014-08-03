@@ -26,6 +26,7 @@
 #include "libed2k/connection_queue.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/io_service.hpp"
+#include "libed2k/udp_socket.hpp"
 
 namespace libed2k {
 
@@ -35,6 +36,8 @@ namespace libed2k {
     class add_transfer_params;
     struct transfer_handle;
     struct listen_socket_t;
+    class upnp;
+    class natpmp;
 
     namespace aux
     {
@@ -73,8 +76,9 @@ namespace libed2k {
         class session_impl_base : boost::noncopyable, initialize_timer
         {
         public:
-            typedef std::map<std::pair<std::string, boost::uint32_t>, md4_hash> transfer_filename_map;
-            typedef std::map<md4_hash, boost::shared_ptr<transfer> > transfer_map;
+            typedef std::map<std::pair<std::string, boost::uint32_t>,   md4_hash> transfer_filename_map;
+            typedef std::map<md4_hash, boost::shared_ptr<transfer> >    transfer_map;
+            typedef std::map<client_id_type, md4_hash>                  lowid_callbacks_map;
 
             session_impl_base(const session_settings& settings);
             virtual ~session_impl_base();
@@ -94,6 +98,9 @@ namespace libed2k {
             size_t set_alert_queue_size_limit(size_t queue_size_limit_);
             void set_alert_dispatch(boost::function<void(alert const&)> const&);
             alert const* wait_for_alert(time_duration max_wait);
+            md4_hash callbacked_lowid(client_id_type);
+            bool register_callback(client_id_type, md4_hash);
+            void cleanup_callbacks();
 
             // this is where all active sockets are stored.
             // the selector can sleep while there's no activity on
@@ -124,7 +131,8 @@ namespace libed2k {
             alert_manager m_alerts;
 
             /** file hasher closed in self thread */
-            transfer_params_maker    m_tpm;
+            transfer_params_maker   m_tpm;
+            lowid_callbacks_map     lowid_conn_dict;
         };
 
         class session_impl : public session_impl_base
@@ -152,8 +160,8 @@ namespace libed2k {
 
             bool listen_on(int port, const char* net_interface);
             bool is_listening() const;
-            unsigned short listen_port() const;
-            char server_connection_state() const;
+            boost::uint16_t listen_port() const;
+            boost::uint16_t ssl_listen_port() const;
 
             void update_disk_thread_settings();
 
@@ -163,6 +171,25 @@ namespace libed2k {
                                       error_code const& e);
 
             void incoming_connection(boost::shared_ptr<tcp::socket> const& s);
+
+            void on_port_map_log(char const* msg, int map_transport);
+
+            // called when a port mapping is successful, or a router returns
+            // a failure to map a port
+            void on_port_mapping(int mapping, address const& ip, int port, error_code const& ec, int nat_transport);
+
+			void on_receive_udp(error_code const& e, udp::endpoint const& ep, char const* buf, int len);
+			void on_receive_udp_hostname(error_code const& e, char const* hostname, char const* buf, int len);
+
+            void maybe_update_udp_mapping(int nat, int local_port, int external_port);
+
+            enum
+            {
+                source_dht = 1,
+                source_peer = 2,
+                source_tracker = 4,
+                source_router = 8
+            };
 
             boost::weak_ptr<transfer> find_transfer(const md4_hash& hash);
             virtual boost::weak_ptr<transfer> find_transfer(const std::string& filename);
@@ -228,14 +255,18 @@ namespace libed2k {
                 m_total_failed_bytes += b;
             }
 
-            std::pair<char*, int> allocate_buffer(int size);
-            void free_buffer(char* buf, int size);
+            std::pair<char*, int> allocate_send_buffer(int size);
+            void free_send_buffer(char* buf, int size);
 
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
+
+            char* allocate_z_buffer();
+            void free_z_buffer(char* buf);
+
             bool can_write_to_disk() const { return m_disk_thread.can_write(); }
 
-            std::string buffer_usage();
+            std::string send_buffer_usage();
 
             void on_disk_queue();
 
@@ -269,25 +300,17 @@ namespace libed2k {
              */
             boost::intrusive_ptr<peer_connection> initialize_peer(client_id_type nIP, int nPort);
 
-            /**
-              * announce transfers
-              * will perform only when server connection online
-             */
-            void announce(int tick_interval_ms);
-
-            /**
-              * perform reconnect to server
-              * will perform only when server connection offline
-             */
-            void reconnect(int tick_interval_ms);
-            void server_conn_start();
-            void server_conn_stop();
-
             void update_connections_limit();
             void update_rate_settings();
             void update_active_transfers();
 
-            boost::object_pool<peer> m_peer_pool;
+			natpmp* start_natpmp();
+			upnp* start_upnp();
+
+			void stop_natpmp();
+			void stop_upnp();
+
+            boost::object_pool<peer> m_ipv4_peer_pool;
 
             // this vector is used to store the block_info
             // objects pointed to by partial_piece_info returned
@@ -298,6 +321,9 @@ namespace libed2k {
             // buffers from.
             boost::pool<> m_send_buffers;
             boost::mutex m_send_buffer_mutex;
+
+            // this pool is used to allocate and recycle compressed data buffers
+            boost::pool<> m_z_buffers;
 
             // used to skipping data in connections
             std::vector<char> m_skip_buffer;
@@ -375,20 +401,13 @@ namespace libed2k {
             // is true if the session is paused
             bool m_paused;
 
+            ptime m_created;
+            int session_time() const { return total_seconds(time_now() - m_created); }
+
             duration_timer m_second_timer;
             // the timer used to fire the tick
             deadline_timer m_timer;
-
             ptime m_last_tick;
-            // duration in milliseconds since last server connection was executed
-            int m_last_connect_duration;
-            // duration in milliseconds since last announce check was performed
-            int m_last_announce_duration;
-            // ismod extension - share user as file
-            bool m_user_announced;
-            // last measured server connection state
-            char m_server_connection_state;
-
             // total redundant and failed bytes
             size_type m_total_failed_bytes;
             size_type m_total_redundant_bytes;
@@ -396,10 +415,32 @@ namespace libed2k {
             // redundant bytes per category
             size_type m_redundant_bytes[7];
 
+            int m_queue_pos;
+
+            // see m_external_listen_port. This is the same
+            // but for the udp port used by the DHT.
+            int m_external_udp_port;
+
+            rate_limited_udp_socket m_udp_socket;
+
+            boost::intrusive_ptr<natpmp> m_natpmp;
+            boost::intrusive_ptr<upnp> m_upnp;
+
+            // mask is a bitmask of which protocols to remap on:
+            // 1: NAT-PMP
+            // 2: UPnP
+            void remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_port);
+
+            // 0 is natpmp 1 is upnp
+            int m_tcp_mapping[2];
+            int m_udp_mapping[2];
+#ifdef TORRENT_USE_OPENSSL
+            int m_ssl_mapping[2];
+#endif
+
             // the main working thread
             // !!! should be last in the member list
             boost::scoped_ptr<boost::thread> m_thread;
-            int m_queue_pos;
         };
     }
 }

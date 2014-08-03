@@ -2,6 +2,7 @@ LIB=libed2k.a
 
 CXXFLAGS = -I../include
 OBJF = $(patsubst %.cpp,%.o,$(wildcard $(addsuffix /*.cpp,.)))
+OBJF += $(patsubst %.c,%.o,$(wildcard $(addsuffix /*.c,.)))
 
 $(LIB): $(OBJF)
 	$(AR) $(ARFLAGS) $@ $^

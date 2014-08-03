@@ -34,8 +34,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef LIBED2K_BENCODE_HPP_INCLUDED
 #define LIBED2K_BENCODE_HPP_INCLUDED
 
-
-
 /*
  * This file declares the following functions:
  *
@@ -60,9 +58,6 @@ POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
-
-
-
 #include <cstdlib>
 
 #ifdef _MSC_VER
@@ -79,7 +74,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/config.hpp"
 
 #include "libed2k/assert.hpp"
-#include "libed2k/escape_string.hpp"
+#include "libed2k/string_util.hpp"
 
 namespace libed2k
 {

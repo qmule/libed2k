@@ -48,42 +48,44 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxabi.h>
 
-std::string demangle(char const* name)
-{
-// in case this string comes
-	// this is needed on linux
-	char const* start = strchr(name, '(');
-	if (start != 0)
-	{
-		++start;
-	}
-	else
-	{
-		// this is needed on macos x
-		start = strstr(name, "0x");
-		if (start != 0)
-		{
-			start = strchr(start, ' ');
-			if (start != 0) ++start;
-			else start = name;
-		}
-		else start = name;
-	}
+namespace libed2k {
+    std::string demangle(char const* name)
+    {
+    // in case this string comes
+        // this is needed on linux
+        char const* start = strchr(name, '(');
+        if (start != 0)
+        {
+            ++start;
+        }
+        else
+        {
+            // this is needed on macos x
+            start = strstr(name, "0x");
+            if (start != 0)
+            {
+                start = strchr(start, ' ');
+                if (start != 0) ++start;
+                else start = name;
+            }
+            else start = name;
+        }
 
-	char const* end = strchr(start, '+');
-	if (end) while (*(end-1) == ' ') --end;
+        char const* end = strchr(start, '+');
+        if (end) while (*(end-1) == ' ') --end;
 
-	std::string in;
-	if (end == 0) in.assign(start);
-	else in.assign(start, end);
+        std::string in;
+        if (end == 0) in.assign(start);
+        else in.assign(start, end);
 
-	size_t len;
-	int status;
-	char* unmangled = ::abi::__cxa_demangle(in.c_str(), 0, &len, &status);
-	if (unmangled == 0) return in;
-	std::string ret(unmangled);
-	free(unmangled);
-	return ret;
+        size_t len;
+        int status;
+        char* unmangled = ::abi::__cxa_demangle(in.c_str(), 0, &len, &status);
+        if (unmangled == 0) return in;
+        std::string ret(unmangled);
+        free(unmangled);
+        return ret;
+    }
 }
 #elif defined WIN32
 
@@ -93,16 +95,19 @@ std::string demangle(char const* name)
 #include "windows.h"
 #include "dbghelp.h"
 
-std::string demangle(char const* name) 
-{ 
-	char demangled_name[256];
-	if (UnDecorateSymbolName(name, demangled_name, sizeof(demangled_name), UNDNAME_NO_THROW_SIGNATURES) == 0)
-		demangled_name[0] = 0;
-	return demangled_name;
+namespace libed2k {
+    std::string demangle(char const* name)
+    {
+        char demangled_name[256];
+        if (UnDecorateSymbolName(name, demangled_name, sizeof(demangled_name), UNDNAME_NO_THROW_SIGNATURES) == 0)
+            demangled_name[0] = 0;
+        return demangled_name;
+    }
 }
-
 #else
+namespace libed2k {
 std::string demangle(char const* name) { return name; }
+}
 #endif
 
 #include <stdlib.h>
@@ -114,6 +119,7 @@ std::string demangle(char const* name) { return name; }
 #if (defined __linux__ || (defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050))
 #include <execinfo.h>
 
+namespace libed2k {
 void print_backtrace(char* out, int len, int max_depth)
 {
 	void* stack[50];
@@ -130,6 +136,7 @@ void print_backtrace(char* out, int len, int max_depth)
 
 	free(symbols);
 }
+}
 
 // visual studio 9 and up appears to support this
 #elif defined WIN32 && _MSC_VER >= 1500
@@ -143,111 +150,118 @@ void print_backtrace(char* out, int len, int max_depth)
 #include "winbase.h"
 #include "dbghelp.h"
 
-void print_backtrace(char* out, int len, int max_depth)
-{
-	typedef USHORT (*RtlCaptureStackBackTrace_t)(
-		__in ULONG FramesToSkip,
-		__in ULONG FramesToCapture,
-		__out PVOID *BackTrace,
-		__out_opt PULONG BackTraceHash);
+namespace libed2k {
+    void print_backtrace(char* out, int len, int max_depth)
+    {
+        typedef USHORT (*RtlCaptureStackBackTrace_t)(
+            __in ULONG FramesToSkip,
+            __in ULONG FramesToCapture,
+            __out PVOID *BackTrace,
+            __out_opt PULONG BackTraceHash);
 
-	static RtlCaptureStackBackTrace_t RtlCaptureStackBackTrace = 0;
+        static RtlCaptureStackBackTrace_t RtlCaptureStackBackTrace = 0;
 
-	if (RtlCaptureStackBackTrace == 0)
-	{
-		// we don't actually have to free this library, everyone has it loaded
-		HMODULE lib = LoadLibrary(TEXT("kernel32.dll"));
-		RtlCaptureStackBackTrace = (RtlCaptureStackBackTrace_t)GetProcAddress(lib, "RtlCaptureStackBackTrace");
-		if (RtlCaptureStackBackTrace == 0)
-		{
-			out[0] = 0;
-			return;
-		}
-	}
+        if (RtlCaptureStackBackTrace == 0)
+        {
+            // we don't actually have to free this library, everyone has it loaded
+            HMODULE lib = LoadLibrary(TEXT("kernel32.dll"));
+            RtlCaptureStackBackTrace = (RtlCaptureStackBackTrace_t)GetProcAddress(lib, "RtlCaptureStackBackTrace");
+            if (RtlCaptureStackBackTrace == 0)
+            {
+                out[0] = 0;
+                return;
+            }
+        }
 
-	int i;
-	void* stack[50];
-	int size = CaptureStackBackTrace(0, 50, stack, 0);
+        int i;
+        void* stack[50];
+        int size = CaptureStackBackTrace(0, 50, stack, 0);
 
-	SYMBOL_INFO* symbol = (SYMBOL_INFO*)calloc(sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR), 1);
-	symbol->MaxNameLen = MAX_SYM_NAME;
-	symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        SYMBOL_INFO* symbol = (SYMBOL_INFO*)calloc(sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR), 1);
+        symbol->MaxNameLen = MAX_SYM_NAME;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
 
-	HANDLE p = GetCurrentProcess();
-	static bool sym_initialized = false;
-	if (!sym_initialized)
-	{
-		sym_initialized = true;
-		SymInitialize(p, NULL, true);
-	}
-	for (i = 0; i < size && len > 0; ++i)
-	{
-		int ret;
-		if (SymFromAddr(p, uintptr_t(stack[i]), 0, symbol))
-            ret = libed2k::snprintf(out, len, "%d: %s\n", i, symbol->Name);
-		else
-            ret = libed2k::snprintf(out, len, "%d: <unknown>\n", i);
+        HANDLE p = GetCurrentProcess();
+        static bool sym_initialized = false;
+        if (!sym_initialized)
+        {
+            sym_initialized = true;
+            SymInitialize(p, NULL, true);
+        }
+        for (i = 0; i < size && len > 0; ++i)
+        {
+            int ret;
+            if (SymFromAddr(p, uintptr_t(stack[i]), 0, symbol))
+                ret = libed2k::snprintf(out, len, "%d: %s\n", i, symbol->Name);
+            else
+                ret = libed2k::snprintf(out, len, "%d: <unknown>\n", i);
 
-		out += ret;
-		len -= ret;
-		if (i == max_depth && max_depth > 0) break;
-	}
-	free(symbol);
+            out += ret;
+            len -= ret;
+            if (i == max_depth && max_depth > 0) break;
+        }
+        free(symbol);
+    }
+}
+
+#else
+namespace libed2k {
+    void print_backtrace(char* out, int len, int max_depth) {}
+}
+
+#endif
+
+#if LIBED2K_PRODUCTION_ASSERTS
+char const* libed2k_assert_log = "asserts.log";
+#endif
+
+namespace libed2k {
+    LIBED2K_EXPORT void assert_fail(char const* expr, int line, char const* file
+        , char const* function, char const* value)
+    {
+    #if LIBED2K_PRODUCTION_ASSERTS
+        FILE* out = fopen(libed2k_assert_log, "a+");
+        if (out == 0) out = stderr;
+    #else
+        FILE* out = stderr;
+    #endif
+
+        char stack[8192];
+        print_backtrace(stack, sizeof(stack), 0);
+
+        fprintf(out, "assertion failed. Please file a bugreport at "
+            "intser79@gmail.com\n"
+            "Please include the following information:\n\n"
+            "version: " LIBED2K_VERSION "\n"
+            "%s\n"
+            "file: '%s'\n"
+            "line: %d\n"
+            "function: %s\n"
+            "expression: %s\n"
+            "%s%s\n"
+            "stack:\n"
+            "%s\n"
+            , LIBED2K_REVISION, file, line, function, expr
+            , value ? value : "", value ? "\n" : ""
+            , stack);
+
+        // if production asserts are defined, don't abort, just print the error
+    #if LIBED2K_PRODUCTION_ASSERTS
+        if (out != stderr) fclose(out);
+    #else
+        // send SIGINT to the current process
+        // to break into the debugger
+        raise(SIGINT);
+        abort();
+    #endif
+    }
 }
 
 #else
 
-void print_backtrace(char* out, int len, int max_depth) {}
-
-#endif
-
-#if LIBED2K_PRODUCTION_ASSERTS
-char const* libtorrent_assert_log = "asserts.log";
-#endif
-
-LIBED2K_EXPORT void assert_fail(char const* expr, int line, char const* file
-	, char const* function, char const* value)
-{
-#if LIBED2K_PRODUCTION_ASSERTS
-	FILE* out = fopen(libtorrent_assert_log, "a+");
-	if (out == 0) out = stderr;
-#else
-	FILE* out = stderr;
-#endif
-
-	char stack[8192];
-	print_backtrace(stack, sizeof(stack), 0);
-
-	fprintf(out, "assertion failed. Please file a bugreport at "
-		"intser79@gmail.com\n"
-		"Please include the following information:\n\n"
-		"version: " LIBED2K_VERSION "\n"
-		"%s\n"
-		"file: '%s'\n"
-		"line: %d\n"
-		"function: %s\n"
-		"expression: %s\n"
-		"%s%s\n"
-		"stack:\n"
-		"%s\n"
-		, LIBED2K_REVISION, file, line, function, expr
-		, value ? value : "", value ? "\n" : ""
-		, stack);
-
-	// if production asserts are defined, don't abort, just print the error
-#if LIBED2K_PRODUCTION_ASSERTS
-	if (out != stderr) fclose(out);
-#else
- 	// send SIGINT to the current process
- 	// to break into the debugger
- 	raise(SIGINT);
- 	abort();
-#endif
-}
-
-#else
-
-LIBED2K_EXPORT void assert_fail(char const* expr, int line, char const* file, char const* function) {}
+//namespace libed2k {
+//    LIBED2K_EXPORT void libed2k::assert_fail(char const* expr, int line, char const* file, char const* function, char const* val) {}
+//}
 
 #endif
 

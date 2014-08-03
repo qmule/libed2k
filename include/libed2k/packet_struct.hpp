@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <deque>
+#include <list>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
 
@@ -10,6 +11,7 @@
 #include <libed2k/ctag.hpp>
 #include <libed2k/util.hpp>
 #include <libed2k/assert.hpp>
+#include <sstream>
 
 namespace libed2k
 {
@@ -207,7 +209,6 @@ namespace libed2k
 	const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
 	const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
 
-
 	/**
 	  * supported protocols
 	 */
@@ -215,6 +216,8 @@ namespace libed2k
 	const proto_type    OP_EDONKEYPROT          = OP_EDONKEYHEADER;
 	const proto_type    OP_PACKEDPROT           = '\xD4';
 	const proto_type    OP_EMULEPROT            = '\xC5';
+
+    #define SOURCE_EXCHG_LEVEL 0
 
     /**
       *  common container holder structure
@@ -336,9 +339,8 @@ namespace libed2k
             {
             case OP_EDONKEYPROT:    // correct
             case OP_EMULEPROT:      // correct
+            case OP_PACKEDPROT:     // correct
                 break;
-            case OP_PACKEDPROT:     // unsupported
-                return errors::unsupported_protocol_type;
             default:                // invalid
                 return errors::invalid_protocol_type;
             }
@@ -353,15 +355,21 @@ namespace libed2k
             return errors::no_error;
         }
 
+        // TODO - fix bad code
         inline size_t service_size() const
         {
             size_t res;
-            if (m_type == OP_SENDINGPART)
+            if (m_type == OP_SENDINGPART)   // add protocol type check
                 res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
-            else if(m_type == OP_SENDINGPART_I64)
+            else if(m_type == OP_SENDINGPART_I64) // add protocol type check
                 res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
+            else if (m_protocol == OP_EMULEPROT && m_type == OP_COMPRESSEDPART)
+                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+            else if (m_protocol == OP_EMULEPROT && m_type == OP_COMPRESSEDPART_I64)
+                res = MD4_HASH_SIZE + sizeof(boost::uint64_t) + sizeof(boost::uint32_t);
             else
                 res = m_size - 1;
+
             return res;
         }
     };
@@ -448,8 +456,11 @@ namespace libed2k
         }
 
         bool empty() const {return ((m_nIP == 0) || (m_nPort == 0)); }
+        std::string to_string() const;
         void dump() const;
     };
+
+    extern std::ostream& operator<<(std::ostream&, const net_identifier& np);
 
     /**
       * shared file item structure in offer list
@@ -561,12 +572,12 @@ namespace libed2k
      */
     struct id_change
     {
-        client_id_type  m_nClientId;
-        boost::uint32_t m_nTCPFlags;
-        boost::uint32_t m_nAuxPort;
+        client_id_type  m_client_id;
+        boost::uint32_t m_tcp_flags;
+        boost::uint32_t m_aux_port;
 
         id_change() :
-            m_nClientId(0), m_nTCPFlags(0), m_nAuxPort(0)
+            m_client_id(0), m_tcp_flags(0), m_aux_port(0)
         {
         }
 
@@ -575,14 +586,22 @@ namespace libed2k
         void serialize(Archive& ar)
         {
             // always read/write client id;
-            ar & m_nClientId;
-            DECREMENT_READ(ar.bytes_left(), m_nTCPFlags);
-            DECREMENT_READ(ar.bytes_left(), m_nAuxPort);
+            ar & m_client_id;
+            DECREMENT_READ(ar.bytes_left(), m_tcp_flags);
+            DECREMENT_READ(ar.bytes_left(), m_aux_port);
         }
     };
 
+    inline std::ostream& operator<<(std::ostream& stream, const id_change& id)
+    {
+        stream  << "cid: " << id.m_client_id
+                << ", tcpf: " << id.m_tcp_flags
+                << ", auxp: " << id.m_aux_port;
+        return stream;
+    }
+
     /**
-      * callback request from server to client
+      * call back request from server to client
      */
     struct callback_request_in
     {
@@ -596,20 +615,18 @@ namespace libed2k
     };
 
     /**
-      * callback request failed
+      * call back request failed
      */
     struct callback_req_fail
     {
-        boost::uint32_t m_nClientId;
     };
 
     /**
-      * callback request from client to server
+      * call back request from client to server
      */
     struct callback_request_out
     {
         client_id_type      m_nClientId;
-
         template<typename Archive>
         void serialize(Archive& ar)
         {
@@ -1291,7 +1308,6 @@ namespace libed2k
             ar & m_end_offset;
             // user_data[end-begin]
         }
-
     };
 
     typedef client_sending_part<boost::uint32_t> client_sending_part_32;
@@ -1462,6 +1478,90 @@ namespace libed2k
         }
     };
 
+    struct client_public_ip_request{
+        template<typename Archive> void serialize(Archive& ar) { }
+    };
+
+    struct client_public_ip_answer{
+        client_id_type  client_id;
+        client_public_ip_answer(client_id_type id) : client_id(id)
+        {}
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id;
+        }
+    };
+
+    struct sources_request_base{
+        md4_hash    file_hash;
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & file_hash;
+        }
+    };
+
+    struct sources_request: public sources_request_base{};
+    struct sources_request2: public sources_request_base{	// incomplete structure
+    	boost::uint8_t	option1;
+    	boost::uint16_t	option2;
+    };
+
+    struct sources_answer_element{
+        net_identifier  client_id;
+        net_identifier  server_id;
+        md4_hash        client_hash;
+        boost::uint8_t  flag;   // something unknown
+        int sx_version;
+
+        sources_answer_element(int version): sx_version(version){}
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id & server_id;
+            if (sx_version > 1)
+                ar & client_hash;
+            if (sx_version > 3)
+                ar & flag;
+        }
+    };
+
+    typedef std::list<sources_answer_element>   sae_container;
+
+    struct sources_answer_base{
+        md4_hash        file_hash;
+        boost::uint16_t size;
+        sae_container elems;
+        int sx_version;
+        sources_answer_base(int version) : sx_version(version){}
+        template<typename Archive>
+        void load(Archive& ar) {
+            ar & file_hash & size;
+            for (int i = 0; i < size; ++i){
+                sources_answer_element sae(sx_version);
+                ar & sae;
+                elems.push_back(sae);
+            }
+        }
+
+        template<typename Archive>
+        void save(Archive& ar) {
+            size = elems.size();
+            ar & file_hash;
+            for(sae_container::iterator itr = elems.begin(); itr != elems.end(); ++itr){
+                ar & *itr;
+            }
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
+    struct sources_answer : public sources_answer_base{
+        sources_answer(int version): sources_answer_base(version){}
+    };
+
+    struct sources_answer2: public sources_answer_base{
+        sources_answer2(int version): sources_answer_base(version){}
+    };
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1491,7 +1591,7 @@ namespace libed2k
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_files_answer> {
-        static const proto_type value   = OP_ASKSHAREDFILESANSWER;
+        static const proto_type value   = OP_ASKSHAREDFILESANSWER;;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_directories_answer> {
@@ -1598,6 +1698,17 @@ namespace libed2k
         static const proto_type value   = OP_CHATCAPTCHARES;
         static const proto_type protocol= OP_EMULEPROT;
     };
+
+    template<> struct packet_type<client_public_ip_request>{
+        static const proto_type value   = OP_PUBLICIP_REQ;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+
+    template<> struct packet_type<client_public_ip_answer>{
+        static const proto_type value   = OP_PUBLICIP_ANSWER;
+        static const proto_type protocol= OP_EMULEPROT;
+    };
+
     template<> struct packet_type<client_directory_answer>{
         static const proto_type value       = OP_ASKSHAREDFILESANSWER;
         static const proto_type protocol    = OP_EDONKEYPROT;
@@ -1609,6 +1720,22 @@ namespace libed2k
     template<> struct packet_type<client_directory_content_result>{  // ismod
         static const proto_type value       = OP_ASKDIRCONTENTSANS;
         static const proto_type protocol    = OP_EDONKEYPROT;
+    };
+    template<> struct packet_type<sources_request>{
+        static const proto_type value       = OP_REQUESTSOURCES;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<sources_request2>{
+        static const proto_type value       = OP_REQUESTSOURCES2;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<sources_answer>{
+        static const proto_type value       = OP_ANSWERSOURCES;
+        static const proto_type protocol    = OP_EMULEPROT;
+    };
+    template<> struct packet_type<sources_answer2>{
+        static const proto_type value       = OP_ANSWERSOURCES2;
+        static const proto_type protocol    = OP_EMULEPROT;
     };
 
 

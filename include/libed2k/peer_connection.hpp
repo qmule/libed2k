@@ -16,7 +16,6 @@
 #include "libed2k/peer_request.hpp"
 #include "libed2k/piece_picker.hpp"
 #include "libed2k/peer_info.hpp"
-#include "libed2k/piece_block_progress.hpp"
 
 #define DECODE_PACKET(packet_struct, name)       \
     packet_struct name;                          \
@@ -38,10 +37,7 @@ namespace libed2k
 
     struct pending_block
     {
-        pending_block(const piece_block& b, size_type fsize):
-            skipped(0), not_wanted(false), timed_out(false), busy(false), block(b),
-            data_left(block_range(b.piece_index, b.block_index, fsize)), buffer(NULL),
-            create_time(time_now()){}
+        pending_block(const piece_block& b, size_type fsize);
 
         // the number of times the request
         // has been skipped by out of order blocks
@@ -63,6 +59,8 @@ namespace libed2k
         bool busy:1;
 
         piece_block block;
+        // data size, it is useful to store compressed block size
+        size_type data_size;
         // block covering
         range<size_type> data_left;
         // disk receive buffer
@@ -141,8 +139,13 @@ namespace libed2k
             num_supported_messages
         };
 
+        char* allocate_receive_buffer(int buffer_size);
+
         bool allocate_disk_receive_buffer(int disk_buffer_size);
         char* release_disk_receive_buffer();
+
+        bool allocate_z_receive_buffer();
+        void free_z_receive_buffer();
 
         virtual void on_timeout();
         virtual void on_sent(const error_code& e, std::size_t bytes_transferred);
@@ -177,6 +180,9 @@ namespace libed2k
 
         int picker_options() const;
 
+        void fast_reconnect(bool r);
+        bool fast_reconnect() const { return m_fast_reconnect; }
+
         // tells if this connection has data it want to send
         // and has enough upload bandwidth quota left to send it.
         bool can_write() const;
@@ -196,7 +202,6 @@ namespace libed2k
         misc_options get_misc_options() const { return m_misc_options; }
         misc_options2 get_misc_options2() const { return m_misc_options2; }
 
-        bool is_active() const { return m_active; }
         net_identifier get_network_point() const;
         md4_hash get_connection_hash() const { return m_hClient; }
         peer_connection_options get_options() const { return m_options; }
@@ -222,11 +227,14 @@ namespace libed2k
         int upload_limit() const { return m_upload_limit; }
         int download_limit() const { return m_download_limit; }
 
+        bool failed() const { return m_failed; }
+
     private:
 
         // constructor method
         void reset();
         bool attach_to_transfer(const md4_hash& hash);
+        void finalize_handshake();
 
         virtual void do_read();
         virtual void do_write(int quota = std::numeric_limits<int>::max());
@@ -255,7 +263,7 @@ namespace libed2k
         void fill_send_buffer();
         void send_data(const peer_request& r);
         void on_disk_read_complete(int ret, disk_io_job const& j, peer_request r, peer_request left);
-        void receive_data(const peer_request& r);
+        void receive_data(const peer_request& r, bool compressed);
         void receive_data();
         void on_disk_write_complete(int ret, disk_io_job const& j,
                                     peer_request req, boost::shared_ptr<transfer> t);
@@ -327,11 +335,18 @@ namespace libed2k
         void on_client_message(const error_code& error);
         void on_client_captcha_request(const error_code& error);
         void on_client_captcha_result(const error_code& error);
+        void on_client_public_ip_request(const error_code& error);
+        void on_client_sources_request(const error_code& error);
+        void on_client_sources_answer(const error_code& error);
+
         template <typename Struct> void on_request_parts(const error_code& error);
         template <typename Struct> void on_sending_part(const error_code& error);
+        template <typename Struct> void on_compressed_part(const error_code& error);
 
         template<typename T> void defer_write(const T& t);
         template<typename T> void send_throw_meta_order(const T& t);
+
+        bool complete_block(pending_block& b);
 
         // keep the io_service running as long as we
         // have peer connections
@@ -347,6 +362,8 @@ namespace libed2k
         // read into. This eliminates a memcopy from
         // the receive buffer into the disk buffer
         disk_buffer_holder m_disk_recv_buffer;
+
+        char* m_z_recv_buffer;
 
         // this is the transfer this connection is
         // associated with. If the connection is an
@@ -423,6 +440,19 @@ namespace libed2k
         // could be considered: true = local, false = remote
         bool m_active;
 
+        // if this is true, the disconnection
+        // timestamp is not updated when the connection
+        // is closed. This means the time until we can
+        // reconnect to this peer is shorter, and likely
+        // immediate.
+        bool m_fast_reconnect;
+
+        // this is set to true if the connection timed
+        // out or closed the connection. In that
+        // case we will not try to reconnect to
+        // this peer
+        bool m_failed;
+
         int m_disk_recv_buffer_size;
 
         // this flag will active after hello -> hello_answer order
@@ -442,6 +472,8 @@ namespace libed2k
         int m_recv_pos;
         // current recuest processed
         peer_request m_recv_req;
+        // current received data compression
+        bool m_recv_compressed;
 
         // this is a queue of ranges that describes
         // where in the send buffer actual payload

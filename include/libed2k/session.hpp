@@ -21,6 +21,9 @@ namespace libed2k {
     struct transfer_handle;
     class add_transfer_params;
     struct ip_filter;
+    class upnp;
+    class natpmp;
+    struct server_connection_parameters;
 
     namespace aux
     {
@@ -72,7 +75,7 @@ namespace libed2k {
         void post_search_request(search_request& sr);
         void post_search_more_result_request();
         void post_cancel_search();
-        bool listen_on(int port, const char* net_interface = 0);
+        void listen_on(int port, const char* net_interface = 0);
         bool is_listening() const;
         unsigned short listen_port() const;
         void set_settings(const session_settings& settings);
@@ -87,15 +90,20 @@ namespace libed2k {
         int download_rate_limit() const;
         int upload_rate_limit() const;
 
-        void server_conn_start();
-        void server_conn_stop();
-        bool server_conn_online() const;
-        bool server_conn_offline() const;
+        void server_connect(const server_connection_parameters&);
+        void server_disconnect();
+        bool server_connection_established() const;
 
         void pause();
         void resume();
         void make_transfer_parameters(const std::string& filepath);
         void cancel_transfer_parameters(const std::string& filepath);
+
+        natpmp* start_natpmp();
+        upnp* start_upnp();
+
+        void stop_natpmp();
+        void stop_upnp();
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

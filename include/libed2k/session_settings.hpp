@@ -7,42 +7,106 @@
 
 namespace libed2k
 {
+    struct proxy_settings
+    {
+        proxy_settings() : port(0), type(none), proxy_hostnames(true), proxy_peer_connections(true)
+        {}
+
+        std::string hostname;
+        int port;
+
+        std::string username;
+        std::string password;
+
+        enum proxy_type
+        {
+            // a plain tcp socket is used, and
+            // the other settings are ignored.
+            none,
+            // socks4 server, requires username.
+            socks4,
+            // the hostname and port settings are
+            // used to connect to the proxy. No
+            // username or password is sent.
+            socks5,
+            // the hostname and port are used to
+            // connect to the proxy. the username
+            // and password are used to authenticate
+            // with the proxy server.
+            socks5_pw,
+            // the http proxy is only available for
+            // tracker and web seed traffic
+            // assumes anonymous access to proxy
+            http,
+            // http proxy with basic authentication
+            // uses username and password
+            http_pw,
+            // route through a i2p SAM proxy
+            i2p_proxy
+        };
+
+        proxy_type type;
+
+        // when set to true, hostname are resolved
+        // through the proxy (if supported)
+        bool proxy_hostnames;
+
+        // if true, use this proxy for peers too
+        bool proxy_peer_connections;
+    };
+
     class session_settings
     {
     public:
         typedef std::vector<std::pair<std::string, bool> >  fd_list;
 
         session_settings():
-            server_timeout(220)
-            , peer_timeout(120)
+            peer_timeout(120)
             , peer_connect_timeout(7)
             , block_request_timeout(10)
+            , max_failcount(3)
+            , min_reconnect_time(60)
             , connection_speed(6)
             , allow_multiple_connections_per_ip(false)
             , recv_socket_buffer_size(0)
             , send_socket_buffer_size(0)
             , send_buffer_watermark(3 * BLOCK_SIZE)
-            , server_port(4661)
             , listen_port(4662)
             , client_name("libed2k")
             , mod_name("libed2k")
-            , server_keep_alive_timeout(200)
-            , server_reconnect_timeout(5)
             , max_peerlist_size(4000)
+            , max_paused_peerlist_size(4000)
             , tick_interval(100)
             , download_rate_limit(-1)
             , upload_rate_limit(-1)
             , unchoke_slots_limit(8)
             , half_open_limit(0)
             , connections_limit(200)
+            , enable_outgoing_utp(true)
+            , enable_incoming_utp(true)
+            , utp_target_delay(100) // milliseconds
+            , utp_gain_factor(1500) // bytes per rtt
+            , utp_min_timeout(500) // milliseconds
+            , utp_syn_resends(2)
+            , utp_fin_resends(2)
+            , utp_num_resends(6)
+            , utp_connect_timeout(3000) // milliseconds
+            , utp_delayed_ack(0) // milliseconds
+            , utp_dynamic_sock_buf(false) // this doesn't seem quite reliable yet
+            , utp_loss_multiplier(50) // specified in percent
+            , mixed_mode_algorithm(peer_proportional)
+            , rate_limit_utp(true)
             , m_version(0x3c)
+            , mod_major(0)
+            , mod_minor(0)
+            , mod_build(0)
             , m_max_announces_per_call(198)
-            , m_announce_timeout(-1)
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)
             , user_agent(md4_hash::emule)
             , ignore_resume_timestamps(false)
             , no_recheck_incomplete_resume(false)
+            , seeding_outgoing_connections(false)
             , alert_queue_size(1000)
             // Disk IO settings
             , file_pool_size(40)
@@ -75,13 +139,10 @@ namespace libed2k
             , use_disk_read_ahead(true)
             , lock_files(false)
             , low_prio_disk(true)
+            , peer_tos(0)
+            , upnp_ignore_nonrouters(false)
         {
         }
-
-        // the number of seconds to wait for any activity on
-        // the server wire before closing the connection due
-        // to time out.
-        int server_timeout;
 
         // the number of seconds to wait for any activity on
         // the peer wire before closing the connection due
@@ -95,6 +156,14 @@ namespace libed2k
 
         // the number of seconds to wait for block request.
         int block_request_timeout;
+
+        // the number of times we can fail to connect to a peer
+        // before we stop retrying it.
+        int max_failcount;
+
+        // the number of seconds to wait to reconnect to a peer.
+        // this time is multiplied with the failcount.
+        int min_reconnect_time;
 
         // the number of connection attempts that
         // are made per second.
@@ -117,24 +186,21 @@ namespace libed2k
         // the upload rate is low, this is the upper limit.
         int send_buffer_watermark;
 
-        // ed2k server hostname
-        std::string server_hostname;
-        // ed2k server port
-        int server_port;
         // ed2k peer port for incoming peer connections
         int listen_port;
         // ed2k client name
         std::string client_name;
         // ed2k mod program name
         std::string mod_name;
-        int server_keep_alive_timeout;
-        // reconnect to server after fail, -1 - do nothing
-        int server_reconnect_timeout;
 
         // the max number of peers in the peer list
         // per transfer. This is the peers we know
         // about, not necessarily connected to.
         int max_peerlist_size;
+
+        // when a torrent is paused, this is the max peer
+        // list size that's used
+        int max_paused_peerlist_size;
 
         // the number of milliseconds between internal ticks. Should be no
         // more than one second (i.e. 1000).
@@ -157,14 +223,74 @@ namespace libed2k
         // the max number of connections in the session
         int connections_limit;
 
+        // when set to true, libtorrent will try to make outgoing utp connections
+        bool enable_outgoing_utp;
+
+        // if set to false, libtorrent will reject incoming utp connections
+        bool enable_incoming_utp;
+
+        // target delay, milliseconds
+        int utp_target_delay;
+
+        // max number of bytes to increase cwnd per rtt in uTP
+        // congestion controller
+        int utp_gain_factor;
+
+        // the shortest allowed uTP connection timeout in milliseconds
+        // defaults to 500 milliseconds. The shorter timeout, the
+        // faster the connection recovers from a loss of an entire window
+        int utp_min_timeout;
+
+        // the number of SYN packets that are sent before giving up
+        int utp_syn_resends;
+
+        // the number of resent packets sent on a closed socket before giving up
+        int utp_fin_resends;
+
+        // the number of times to send a packet before giving up
+        int utp_num_resends;
+
+        // initial timeout for uTP SYN packets
+        int utp_connect_timeout;
+
+        // number of milliseconds of delaying ACKing packets the most
+        int utp_delayed_ack;
+
+        // set to true if the uTP socket buffer size is allowed to increase
+        // dynamically based on the NIC MTU setting. This is true by default
+        // and improves uTP performance for networks with larger frame sizes
+        // including loopback
+        bool utp_dynamic_sock_buf;
+
+        // what to multiply the congestion window by on packet loss.
+        // it's specified as a percent. The default is 50, i.e. cut
+        // in half
+        int utp_loss_multiplier;
+
+        enum bandwidth_mixed_algo_t
+        {
+            // disables the mixed mode bandwidth balancing
+            prefer_tcp = 0,
+
+            // does not throttle uTP, throttles TCP to the same proportion
+            // of throughput as there are TCP connections
+            peer_proportional = 1
+
+        };
+        // the algorithm to use to balance bandwidth between tcp
+        // connections and uTP connections
+        int mixed_mode_algorithm;
+
+        // set to true if uTP connections should be rate limited
+        // defaults to false
+        bool rate_limit_utp;
+
         unsigned short m_version;
+        unsigned short mod_major;
+        unsigned short mod_minor;
+        unsigned short mod_build;
         unsigned short m_max_announces_per_call;
 
-        /**
-          * announce timeout in seconds
-          * -1 - announces off
-         */
-        int m_announce_timeout;
         bool m_show_shared_catalogs;    //!< show shared catalogs to client
         bool m_show_shared_files;       //!< show shared files to client
         md4_hash user_agent;            //!< ed2k client hash - user agent information
@@ -193,6 +319,10 @@ namespace libed2k
         // this settings is set to true, instead libed2k will assume
         // we have none of the files and go straight to download
         bool no_recheck_incomplete_resume;
+
+        // this controls whether or not seeding (and complete) transfers
+        // attempt to make outgoing connections or not.
+        bool seeding_outgoing_connections;
 
         // the max alert queue size
         int alert_queue_size;
@@ -278,7 +408,7 @@ namespace libed2k
         bool optimize_hashing_for_speed;
 
         // if > 0, file checks will have a short
-        // delay between disk operations, to make it 
+        // delay between disk operations, to make it
         // less intrusive on the system as a whole
         // blocking the disk. This delay is specified
         // in milliseconds and the delay will be this
@@ -358,12 +488,23 @@ namespace libed2k
         bool lock_files;
 
         // if this is set to true, the disk I/O will be
-		// run at lower-than-normal priority. This is
-		// intended to make the machine more responsive
-		// to foreground tasks, while bittorrent runs
-		// in the background
+        // run at lower-than-normal priority. This is
+        // intended to make the machine more responsive
+        // to foreground tasks, while bittorrent runs
+        // in the background
         bool low_prio_disk;
 
+        // the TOS byte of all peer traffic (including
+        // web seeds) is set to this value. The default
+        // is the QBSS scavenger service
+        // http://qbone.internet2.edu/qbss/
+        // For unmarked packets, set to 0
+        char peer_tos;
+
+        // when this is true, the upnp port mapper will ignore
+        // any upnp devices that don't have an address that matches
+        // our currently configured router.
+        bool upnp_ignore_nonrouters;
     };
 
 }
