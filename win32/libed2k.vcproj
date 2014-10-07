@@ -535,6 +535,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\logging\defaults.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\disk_buffer_holder.hpp"
 				>
 			</File>
@@ -584,6 +588,22 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\fingerprint.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format_all.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format_fwd.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format_ts.hpp"
 				>
 			</File>
 			<File
@@ -644,6 +664,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\log.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\logging.hpp"
 				>
 			</File>
 			<File
@@ -712,6 +736,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\policy.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\profile.hpp"
 				>
 			</File>
 			<File
