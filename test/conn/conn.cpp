@@ -23,29 +23,6 @@
 
 using namespace libed2k;
 
-#ifndef BOOST_ASIO_SOURCE
-#define BOOST_ASIO_SOURCE
-#endif
-
-
-#define TORRENT_HAS_ASIO_DECL x ## BOOST_ASIO_DECL
-
-// only define BOOST_ASIO_DECL if it hasn't already been defined
-// or if it has been defined to an empty string
-#if TORRENT_HAS_ASIO_DECL == x
-#define BOOST_ASIO_DECL BOOST_SYMBOL_EXPORT
-#endif
-
-#if BOOST_VERSION >= 104500
-#include <boost/asio/impl/src.hpp>
-#elif BOOST_VERSION >= 104400
-#include <boost/asio/impl/src.cpp>
-#endif
-
-#if BOOST_VERSION >= 104610
-#include <boost/asio/ssl/impl/src.hpp>
-#endif
-
 /**
  md4_hash::dump D4CF11BC699F0850210A92BEE8DFCD12
 23:57.11 4860[dbg] net_identifier::dump(IP=1768108042 port=4662)
