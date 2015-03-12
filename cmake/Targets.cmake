@@ -16,7 +16,7 @@ if (BUILD_TOOLS)
         set_target_properties(${ed2k_component} PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${out_dir})
         target_link_libraries(${ed2k_component} ed2k)
         # link boost and system libraries
-        target_link_libraries(${ed2k_component} boost_system boost_thread pthread ssl rt)
+        target_link_libraries(${ed2k_component} boost_system boost_thread pthread)
     endforeach(ed2k_component)
 endif()
 
