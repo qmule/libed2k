@@ -577,8 +577,8 @@ namespace libed2k
             m_list.add_tag(make_string_tag(libed2k::filename(filename), FT_FILENAME, true));
             m_list.add_tag(make_string_tag(libed2k::filename(filename), FT_FILENAME, true));  // write same name for backward compatibility
             m_list.add_tag(make_typed_tag(static_cast<boost::uint32_t>(libed2k::file_size(filename)), FT_FILESIZE, true));
-            m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
-            m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
+            m_list.add_tag(make_typed_tag(fs_trans.u.nLowPart, FT_ATTRANSFERRED, true));
+            m_list.add_tag(make_typed_tag(fs_trans.u.nHighPart, FT_ATTRANSFERREDHI, true));
             m_list.add_tag(make_typed_tag(nRequested, FT_ATREQUESTED, true));
             m_list.add_tag(make_typed_tag(nAccepted, FT_ATACCEPTED, true));
             m_list.add_tag(make_typed_tag(nPriority, FT_ULPRIORITY, true));
