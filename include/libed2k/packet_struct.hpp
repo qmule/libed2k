@@ -400,16 +400,14 @@ namespace libed2k
 
         union
         {
-            struct
-            {
+            struct {
                 boost::uint32_t nLowPart;
-                boost::uint32_t nHighPart;
+                boost::uint32_t nHighPart; 
             };
 
-            struct
-            {
+            struct {
                 boost::uint32_t nLowPart;
-                boost::uint32_t nHighPart;
+                boost::uint32_t nHighPart; 
             } u;
             boost::uint64_t     nQuadPart;
         };
@@ -1591,7 +1589,7 @@ namespace libed2k
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_files_answer> {
-        static const proto_type value   = OP_ASKSHAREDFILESANSWER;;
+        static const proto_type value   = OP_ASKSHAREDFILESANSWER;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_directories_answer> {
