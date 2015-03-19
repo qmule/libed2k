@@ -1094,6 +1094,7 @@ namespace libed2k
                     ev = errors::invalid_file_tag;
 
                 std::string info_hash = m_resume_entry.dict_find_string_value("transfer-hash");
+                birthday = boost::posix_time::from_iso_string(m_resume_entry.dict_find_string_value("birthday"));
 
                 if (!ev && info_hash.empty())
                     ev = errors::missing_transfer_hash;
@@ -1122,6 +1123,7 @@ namespace libed2k
         else
         {
             DBG("don't read resume data: {hash: " << hash() << ", file: " << name() << "}");
+            birthday = time_now();
             set_state(transfer_status::seeding);
         }
     }
@@ -1651,6 +1653,7 @@ namespace libed2k
         ret["sequential_download"] = m_sequential_download;
 
         ret["transfer-hash"] = hash().toString();
+        ret["birthday"] = boost::posix_time::to_iso_string(birthday);
 
         // blocks per piece
         const int num_blocks_per_piece = div_ceil(PIECE_SIZE, BLOCK_SIZE);

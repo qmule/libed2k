@@ -268,6 +268,7 @@ namespace libed2k
         bool active() const;
         void activate(bool a);
         boost::uint16_t last_active() const { return m_last_active; }
+        std::string birthday_iso() const { return boost::posix_time::to_iso_string(birthday); }
 
         // --------------------------------------------
         // SERVER MANAGEMENT
@@ -425,6 +426,7 @@ namespace libed2k
 
         // the number of seconds since the last active state
         boost::uint16_t m_last_active;
+        ptime birthday;
     };
 
     extern shared_file_entry transfer2sfe(const std::pair<md4_hash, boost::shared_ptr<transfer> >& tran);
