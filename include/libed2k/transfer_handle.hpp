@@ -311,7 +311,6 @@ namespace libed2k
 
         void move_storage(std::string const& save_path) const;
         bool rename_file(const std::string& name) const;
-        std::string birthday_iso() const;
 
         bool operator==(const transfer_handle& h) const
         { return m_transfer.lock() == h.m_transfer.lock(); }
