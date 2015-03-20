@@ -960,8 +960,6 @@ namespace libed2k
             }
         }
 
-        if (m_am.pending()) libed2k::sleep(500);
-
         if (!m_am.post_alert(transfer_params_alert(atp, ec)))
         {
             ERR("add transfer parameters for {" << atp.file_path << "} waren't added because order overflow!");
