@@ -689,8 +689,9 @@ namespace libed2k
             const std::string& save_path,
             const std::string& filename,
             size_type size,
+            bool seed,
             const std::vector<char>& fr_data):
-            m_hash(hash), m_filepath(combine_path(save_path, filename)), m_filesize(size)
+            m_hash(hash), m_filepath(combine_path(save_path, filename)), m_filesize(size), m_seed(seed)
     {
         if (!fr_data.empty())
         {
@@ -698,7 +699,7 @@ namespace libed2k
         }
     }
 
-    transfer_resume_data::transfer_resume_data()
+    transfer_resume_data::transfer_resume_data() : m_filesize(0), m_seed(false)
     {}
 
     transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) :

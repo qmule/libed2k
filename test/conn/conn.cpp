@@ -654,7 +654,7 @@ int main(int argc, char* argv[])
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.save_path(), rd->m_handle.name(), rd->m_handle.size(), vFastResumeData);
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.save_path(), rd->m_handle.name(), rd->m_handle.size(), rd->m_handle.is_seed(), vFastResumeData);
 
                     // prepare storage filename
                     std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
