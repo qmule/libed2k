@@ -763,7 +763,7 @@ BOOST_AUTO_TEST_CASE(test_links_generation)
 BOOST_AUTO_TEST_CASE(test_fast_resume_data_serialize)
 {
     std::vector<char> v(100, 122);
-    libed2k::transfer_resume_data trd(libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), std::string("./"), std::string("xxx.data"), 1009, true, v);
+    libed2k::transfer_resume_data trd(libed2k::md4_hash::fromString("DB48A1C00CC972488C29D3FEC9F16A79"), std::string("xxx.data"), 1009, true, v);
     libed2k::transfer_resume_data trd_dst;
     std::stringstream sstream_out(std::ios::out | std::ios::in | std::ios::binary);
     libed2k::archive::ed2k_oarchive out_string_archive(sstream_out);

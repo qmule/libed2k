@@ -184,13 +184,12 @@ namespace libed2k
     struct transfer_resume_data
     {
         md4_hash    m_hash;     //!< transfer hash
-        container_holder<boost::uint16_t, std::string> m_filepath; //!< utf-8 file path
+        container_holder<boost::uint16_t, std::string> m_filename; //!< utf-8 file name
         size_type     m_filesize;
         bool          m_seed;
         tag_list<boost::uint8_t>    m_fast_resume_data;
         transfer_resume_data();
         transfer_resume_data(const md4_hash& hash,
-                const std::string& save_path,
                 const std::string& filename,
                 size_type size,
                 bool seed,
@@ -200,7 +199,7 @@ namespace libed2k
         void serialize(Archive& ar)
         {
             ar & m_hash;
-            ar & m_filepath;
+            ar & m_filename;
             ar & m_filesize;
             ar & m_seed;
             ar & m_fast_resume_data;
