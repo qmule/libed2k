@@ -20,6 +20,7 @@
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/io_service.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/filesystem.hpp"
 
 using namespace libed2k;
 
