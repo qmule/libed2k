@@ -1,6 +1,8 @@
 // builds all boost.asio source as a separate compilation unit
 #include <boost/version.hpp>
 
+#if defined( BOOST_ASIO_SEPARATE_COMPILATION) || defined(BOOST_ASIO_DYN_LINK)
+
 #ifndef BOOST_ASIO_SOURCE
 #define BOOST_ASIO_SOURCE
 #endif
@@ -19,4 +21,6 @@
 #include <boost/asio/impl/src.hpp>
 #elif BOOST_VERSION >= 104400
 #include <boost/asio/impl/src.cpp>
+#endif
+
 #endif
