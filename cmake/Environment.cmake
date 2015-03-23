@@ -4,11 +4,8 @@ else(DEFINED ENV{DATA_MODEL})
     message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
 endif(DEFINED ENV{DATA_MODEL})
 
-if(DEFINED ENV{BOOST_HOME})
-    set(boost_home "$ENV{BOOST_HOME}")
-else(DEFINED ENV{BOOST_HOME})
-    message(STATUS "BOOST_HOME is not set, use default")
-endif(DEFINED ENV{BOOST_HOME})
+find_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
+INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
 file(MAKE_DIRECTORY ${out_dir})
 
