@@ -188,12 +188,21 @@ namespace libed2k
         size_type     m_filesize;
         bool          m_seed;
         tag_list<boost::uint8_t>    m_fast_resume_data;
-        transfer_resume_data();
+        //transfer_resume_data();
         transfer_resume_data(const md4_hash& hash,
                 const std::string& filename,
                 size_type size,
                 bool seed,
-                const std::vector<char>& fr_data);
+                const std::vector<char>& fr_data) :
+        m_hash(hash), m_filename(filename), m_filesize(size), m_seed(seed)
+        {
+            if (!fr_data.empty())
+                m_fast_resume_data.add_tag(make_blob_tag(fr_data, FT_FAST_RESUME_DATA, true));
+        }
+
+        transfer_resume_data() : m_filesize(0), m_seed(false)
+        {}
+
 
         template<typename Archive>
         void serialize(Archive& ar)
