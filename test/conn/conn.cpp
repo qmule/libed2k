@@ -20,6 +20,7 @@
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/io_service.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/filesystem.hpp"
 
 using namespace libed2k;
 
@@ -654,7 +655,7 @@ int main(int argc, char* argv[])
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.save_path(), rd->m_handle.name(), rd->m_handle.size(), vFastResumeData);
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.name(), rd->m_handle.size(), rd->m_handle.is_seed(), vFastResumeData);
 
                     // prepare storage filename
                     std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
@@ -689,7 +690,7 @@ int main(int argc, char* argv[])
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.file_path= trd.m_filepath.m_collection;
+                        params.file_path= trd.m_filename.m_collection;
                         params.file_size = trd.m_filesize;
 
                         if (trd.m_fast_resume_data.count() > 0)
