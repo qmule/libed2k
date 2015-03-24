@@ -1420,11 +1420,11 @@ namespace libed2k
 
         __file_size fs;
         fs.nQuadPart = size();
-        entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
+        entry.m_list.add_tag(make_typed_tag(fs.u.nLowPart, FT_FILESIZE, true));
 
-        if (fs.nHighPart > 0)
+        if (fs.u.nHighPart > 0)
         {
-            entry.m_list.add_tag(make_typed_tag(fs.nHighPart, FT_FILESIZE_HI, true));
+            entry.m_list.add_tag(make_typed_tag(fs.u.nHighPart, FT_FILESIZE_HI, true));
         }
 
         bool bFileTypeAdded = false;

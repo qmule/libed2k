@@ -345,8 +345,6 @@ namespace libed2k
                 return errors::invalid_protocol_type;
             }
 
-            LIBED2K_ASSERT(m_size > 0 && m_size < MAX_ED2K_PACKET_LEN);
-
             if ((m_size < 1) || (m_size > MAX_ED2K_PACKET_LEN))
             {
                 return errors::invalid_packet_size;
@@ -384,33 +382,28 @@ namespace libed2k
     const boost::uint32_t FILE_INCOMPLETE_ID    = 0xfcfcfcfcU;
     const boost::uint16_t FILE_INCOMPLETE_PORT  = 0xfcfcU;
 
+    struct uint64_s {
+        boost::uint32_t nLowPart;
+        boost::uint32_t nHighPart;
+    };
+
     struct __file_size
     {
 
         template<typename Archive>
         void serialize(Archive& ar)
         {
-            ar & nLowPart;
+            ar & u.nLowPart;
 
-            if (nHighPart > 0)
+            if (u.nHighPart > 0)
             {
-                ar & nHighPart;
+                ar & u.nHighPart;
             }
         }
 
         union
         {
-            struct
-            {
-                boost::uint32_t nLowPart;
-                boost::uint32_t nHighPart;
-            };
-
-            struct
-            {
-                boost::uint32_t nLowPart;
-                boost::uint32_t nHighPart;
-            } u;
+            uint64_s            u;
             boost::uint64_t     nQuadPart;
         };
     };
@@ -796,7 +789,7 @@ namespace libed2k
             ar & m_hFile;
 
             // ugly eDonkey protocol need empty 32-bit part before 64-bit file size record
-            if (m_file_size.nHighPart > 0)
+            if (m_file_size.u.nHighPart > 0)
             {
                 boost::uint32_t nZeroSize = 0;
                 ar & nZeroSize;
@@ -1591,7 +1584,7 @@ namespace libed2k
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_files_answer> {
-        static const proto_type value   = OP_ASKSHAREDFILESANSWER;;
+        static const proto_type value   = OP_ASKSHAREDFILESANSWER;
         static const proto_type protocol= OP_EDONKEYPROT;
     };
     template<> struct packet_type<client_shared_directories_answer> {

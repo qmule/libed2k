@@ -169,6 +169,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\asio.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\assert.cpp"
 				>
 			</File>
