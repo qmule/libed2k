@@ -4,6 +4,11 @@ else(DEFINED ENV{DATA_MODEL})
     message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
 endif(DEFINED ENV{DATA_MODEL})
 
+## Boost libraries
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
 find_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
@@ -25,9 +30,6 @@ else(DEFINED production)
     set(out_dir "${out_dir}/debug")
 endif(PRODUCTION)
 
-set(cxx_flags "${cxx_flags} -Wall -Wno-long-long -Wpointer-arith -Wformat -pedantic -ansi -fPIC -std=c++98 -D__STDC_LIMIT_MACROS -DLIBED2K_USE_BOOST_DATE_TIME")
-
-set(CMAKE_CXX_FLAGS ${cxx_flags})
 if(DEFINED boost_home)
 include_directories("${boost_home}/include")
 set(l_flags "${l_flags} -L${boost_home}/lib")

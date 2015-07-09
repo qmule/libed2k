@@ -12,5 +12,7 @@ option (BUILD_TESTS "Build unit tests." TRUE)
 option (BUILD_TOOLS "Build tools." TRUE)
 
 include(cmake/Environment.cmake)
+include(cmake/Linux.cmake)
+include(cmake/Windows.cmake)
 include(cmake/Targets.cmake)
 

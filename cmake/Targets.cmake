@@ -6,6 +6,8 @@ add_library(ed2k STATIC ${headers} ${sources})
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
 set_target_properties(ed2k PROPERTIES LINK_FLAGS ${l_flags})
 
+target_compile_definitions(ed2k PRIVATE ${c_definitions})
+
 if (BUILD_TOOLS)
     foreach(ed2k_component conn archive dumper)
         file(GLOB_RECURSE component_headers test/${ed2k_component}/*hpp)
