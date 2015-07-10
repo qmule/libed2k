@@ -6,7 +6,9 @@ add_library(ed2k STATIC ${headers} ${sources})
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
 set_target_properties(ed2k PROPERTIES LINK_FLAGS ${l_flags})
 
-target_compile_definitions(ed2k PRIVATE ${c_definitions})
+target_compile_definitions(ed2k PRIVATE ${cxx_definitions})
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D LIBED2K_DEBUG")
+
 
 if (BUILD_TOOLS)
     foreach(ed2k_component conn archive dumper)

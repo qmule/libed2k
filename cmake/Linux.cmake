@@ -45,8 +45,19 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
 endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
 
 set(l_flags "${l_flags} -lpthread")
-set(c_definitions __STDC_LIMIT_MACROS LIBED2K_USE_BOOST_DATE_TIME)
+set(cxx_definitions ${cxx_definitions} __STDC_LIMIT_MACROS LIBED2K_USE_BOOST_DATE_TIME)
 
-# on linux debug suffix always empty string
-set(ODB_SUFFIX "")
+if(DEFINED ENV{DATA_MODEL})
+    set(bitness $ENV{DATA_MODEL})
+else(DEFINED ENV{DATA_MODEL})
+    message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
+endif(DEFINED ENV{DATA_MODEL})
+
+if(bitness MATCHES "64")
+    set(cxx_flags "-m64 -D_LP64")
+    set(l_flags "-m64")
+else(bitness MATCHES "64")
+    set(cxx_flags "-m32 -D_FILE_OFFSET_BITS=64")
+    set(l_flags "-m32")
+endif(bitness MATCHES "64")
 

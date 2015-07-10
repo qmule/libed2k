@@ -1,9 +1,3 @@
-if(DEFINED ENV{DATA_MODEL})
-    set(bitness $ENV{DATA_MODEL})
-else(DEFINED ENV{DATA_MODEL})
-    message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
-endif(DEFINED ENV{DATA_MODEL})
-
 ## Boost libraries
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
@@ -14,20 +8,13 @@ INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
 file(MAKE_DIRECTORY ${out_dir})
 
-if(bitness MATCHES "64")
-    set(cxx_flags "-m64 -D_LP64")
-    set(l_flags "-m64")
-else(bitness MATCHES "64")
-    set(cxx_flags "-m32 -D_FILE_OFFSET_BITS=64")
-    set(l_flags "-m32")
-endif(bitness MATCHES "64")
-
 if(PRODUCTION)
     set(cxx_flags "${cxx_flags} -O2")
     set(out_dir "${out_dir}/release")
 else(DEFINED production)
-    set(cxx_flags "${cxx_flags} -O0 -rdynamic -g -DDEBUG -D_DEBUG -DLIBED2K_DEBUG")
+    set(cxx_flags "${cxx_flags} -O0 -rdynamic -g")
     set(out_dir "${out_dir}/debug")
+	#set(cxx_definitions "${cxx_definitions} DEBUG _DEBUG LIBED2K_DEBUG")
 endif(PRODUCTION)
 
 if(DEFINED boost_home)
