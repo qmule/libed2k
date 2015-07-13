@@ -30,7 +30,7 @@ endif(bitness MATCHES "64")
 if(DEFINED production)
     set(cxx_flags "${cxx_flags} -O2")
 else(DEFINED production)
-    set(cxx_flags "${cxx_flags} -O0 -rdynamic")
+    set(cxx_flags "${cxx_flags} -DLIBED2K_DEBUG -O0 -rdynamic")
 endif(DEFINED production)
 
 if(DEFINED profiling)

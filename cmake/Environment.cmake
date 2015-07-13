@@ -1,7 +1,4 @@
 ## Boost libraries
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-set(Boost_USE_STATIC_RUNTIME OFF)
 
 find_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
@@ -17,10 +14,6 @@ else(DEFINED production)
 	#set(cxx_definitions "${cxx_definitions} DEBUG _DEBUG LIBED2K_DEBUG")
 endif(PRODUCTION)
 
-if(DEFINED boost_home)
-include_directories("${boost_home}/include")
-set(l_flags "${l_flags} -L${boost_home}/lib")
-endif(DEFINED boost_home)
 include_directories(include)
 
 message(STATUS "DATA_MODEL      = ${bitness}")

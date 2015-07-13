@@ -8,4 +8,10 @@ set(cxx_definitions ${cxx_definitions} WITH_SHIPPED_GEOIP_H BOOST_LOG_DONOT_USE_
 set(l_flags "${l_flags} ")
 set(cxx_flags "${cxx_flags} ")
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D LIBED2K_DEBUG")
+
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
 
