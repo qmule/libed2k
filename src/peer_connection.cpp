@@ -441,15 +441,18 @@ bool peer_connection::attach_to_transfer(const md4_hash& hash)
     if (t == m_transfer.lock())
     {
         // this connection is already attached to the same transfer
+        DBG("this conection alredy attached to the same transfer");
         return true;
     }
 
     if (has_transfer())
     {
         // this connection is already attached to other transfer
+        DBG("this connection already attached to another transfer");
         return false;
     }
 
+    DBG("attach to transfer");
     // check to make sure we don't have another connection with the same
     // hash and peer_id. If we do. close this connection.
     if (!t->attach_peer(this)) return false;
@@ -1821,8 +1824,8 @@ void peer_connection::on_hello(const error_code& error)
         m_options.m_nPort = hello.m_network_point.m_nPort;
         parse_misc_info(hello.m_list);
         DBG("hello {"
-                << " sp=" << hello.m_server_network_point
-                << " pp=" << hello.m_network_point
+                << " server point = " << hello.m_server_network_point
+                << " network point = " << hello.m_network_point
                 << "} <== " << m_remote);
         md4_hash file_hash = m_ses.callbacked_lowid(hello.m_network_point.m_nIP);
 

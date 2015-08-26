@@ -942,6 +942,7 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
 
 bool session_impl::add_active_transfer(const boost::shared_ptr<transfer>& t)
 {
+    DBG("add active transfer:" << t->hash().toString());
     return m_active_transfers.insert(std::make_pair(t->hash(), t)).second;
 }
 
@@ -960,6 +961,7 @@ bool session_impl::remove_active_transfer(const boost::shared_ptr<transfer>& t)
 
 void session_impl::remove_active_transfer(transfer_map::iterator i)
 {
+    DBG("remove active transfer: " << i->second->hash().toString());
     if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
     m_active_transfers.erase(i);
     m_next_connect_transfer.validate();
@@ -1537,7 +1539,7 @@ void session_impl::update_active_transfers()
              end(m_active_transfers.end()); i != end;)
     {
         transfer& t = *i->second;
-        if (!t.active() && t.last_active() > 5) remove_active_transfer(i++);
+        if (!t.active() && t.last_active() > 20) remove_active_transfer(i++);
         else ++i;
     }
 }
