@@ -38,5 +38,6 @@ message(STATUS "DATA_MODEL      = ${bitness}")
 message(STATUS "BOOST_HOME      = ${boost_home}")
 message(STATUS "PRODUCTION      = ${PRODUCTION}")
 message(STATUS "BUILD_TESTS     = ${BUILD_TESTS}")
-message(STATUS "BUILD_TOOLS	= ${BUILD_TOOLS}")
+message(STATUS "BUILD_TOOLS	    = ${BUILD_TOOLS}")
+message(STATUS "BUILD_SHARED    = ${BUILD_SHARED}")
 

@@ -256,6 +256,7 @@ namespace libed2k
 
     bool transfer::attach_peer(peer_connection* p)
     {
+        DBG("transfer::attach_peer");
         LIBED2K_ASSERT(!p->has_transfer());
 
         if (m_ses.m_ip_filter.access(p->remote().address()) & ip_filter::blocked)
@@ -288,6 +289,7 @@ namespace libed2k
 
         LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
+        DBG("activate transfer");
         activate(true);
 
         return true;

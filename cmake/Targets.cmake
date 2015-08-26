@@ -1,8 +1,12 @@
 file(GLOB_RECURSE headers include/*.hpp)
 file(GLOB_RECURSE sources src/*.cpp src/*.c)
 
-
+if (BUILD_SHARED)
+add_library(ed2k SHARED ${headers} ${sources})
+else()
 add_library(ed2k STATIC ${headers} ${sources})
+endif()
+
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
 set_target_properties(ed2k PROPERTIES LINK_FLAGS ${l_flags})
 
