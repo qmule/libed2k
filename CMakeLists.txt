@@ -15,5 +15,6 @@ option (BUILD_SHARED "Build shared library." FALSE)
 include(cmake/Environment.cmake)
 include(cmake/Linux.cmake)
 include(cmake/Windows.cmake)
+include(cmake/Android.cmake)
 include(cmake/Targets.cmake)
 

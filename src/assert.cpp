@@ -116,7 +116,7 @@ std::string demangle(char const* name) { return name; }
 #include <libed2k/version.hpp>
 
 // execinfo.h is available in the MacOS X 10.5 SDK.
-#if (defined __linux__ || (defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050))
+#if (!defined __ANDROID__ && defined __linux__ || (!defined __ANDROID__ && defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= 1050))
 #include <execinfo.h>
 
 namespace libed2k {
