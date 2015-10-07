@@ -13,5 +13,7 @@ option (BUILD_TOOLS "Build tools." TRUE)
 option (BUILD_SHARED "Build shared library." FALSE) 
 
 include(cmake/Environment.cmake)
+include(cmake/Linux.cmake)
+include(cmake/Android.cmake)
 include(cmake/Targets.cmake)
 

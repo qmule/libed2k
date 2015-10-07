@@ -200,9 +200,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 // ==== LINUX ===
+// avoid android cross compiler treats as linux
 #elif defined __linux__
 #define LIBED2K_LINUX
-#define LIBED2K_USE_IFADDRS 1
+
+#if !defined __ANDROID__
+  #define LIBED2K_USE_IFADDRS 1
+#endif
+
 #define LIBED2K_USE_NETLINK 1
 #define LIBED2K_USE_IFCONF 1
 #define LIBED2K_HAS_SALEN 0

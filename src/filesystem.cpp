@@ -69,7 +69,15 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h> // for F_LOG2PHYS
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/statvfs.h>
+
+#ifndef __ANDROID__
+#include <sys/statvfs.h> 
+#else 
+#include <sys/vfs.h> 
+#define statvfs statfs 
+#define fstatvfs fstatfs 
+#endif
+
 #include <errno.h>
 #include <dirent.h>
 
@@ -82,7 +90,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <linux/fs.h>  // FS_IOC_FIEMAP
 #endif
 
+#ifndef __ANDROID__
 #include <asm/unistd.h> // For __NR_fallocate
+#endif
 
 // circumvent the lack of support in glibc
 static int my_fallocate(int fd, int mode, loff_t offset, loff_t len)
@@ -113,7 +123,7 @@ static int my_fallocate(int fd, int mode, loff_t offset, loff_t len)
 // related functions support 64-bit offsets.
 // this test makes sure lseek() returns a type
 // at least 64 bits wide
-BOOST_STATIC_ASSERT(sizeof(lseek(0, 0, 0)) >= 8);
+//BOOST_STATIC_ASSERT(sizeof(lseek(0, 0, 0)) >= 8);
 
 #endif // posix part
 

@@ -4,28 +4,31 @@ else(DEFINED ENV{DATA_MODEL})
     message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
 endif(DEFINED ENV{DATA_MODEL})
 
-find_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
+# Search packages for host system instead of packages for target system
+# in case of cross compilation these macro should be defined by toolchain file
+if(NOT COMMAND find_host_package)
+  macro(find_host_package)
+    find_package(${ARGN})
+  endmacro()
+endif()
+if(NOT COMMAND find_host_program)
+  macro(find_host_program)
+    find_program(${ARGN})
+  endmacro()
+endif()
+
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+find_host_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
 file(MAKE_DIRECTORY ${out_dir})
 
-if(bitness MATCHES "64")
-    set(cxx_flags "-m64 -D_LP64")
-    set(l_flags "-m64")
-else(bitness MATCHES "64")
-    set(cxx_flags "-m32 -D_FILE_OFFSET_BITS=64")
-    set(l_flags "-m32")
-endif(bitness MATCHES "64")
-
 if(PRODUCTION)
-    set(cxx_flags "${cxx_flags} -O2")
     set(out_dir "${out_dir}/release")
 else(DEFINED production)
-    set(cxx_flags "${cxx_flags} -O0 -rdynamic -g -DDEBUG -D_DEBUG -DLIBED2K_DEBUG")
     set(out_dir "${out_dir}/debug")
 endif(PRODUCTION)
-
-set(cxx_flags "${cxx_flags} -Wall -Wno-long-long -Wpointer-arith -Wformat -pedantic -ansi -fPIC -std=c++98 -D__STDC_LIMIT_MACROS -DLIBED2K_USE_BOOST_DATE_TIME")
 
 set(CMAKE_CXX_FLAGS ${cxx_flags})
 if(DEFINED boost_home)
