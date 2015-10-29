@@ -1,7 +1,19 @@
+if( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+    MESSAGE( STATUS "64 bits compiler detected" )
+    SET( EX_PLATFORM 64 )
+    SET( EX_PLATFORM_NAME "x64" )
+else( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+    MESSAGE( STATUS "32 bits compiler detected" )
+    SET( EX_PLATFORM 32 )
+    SET( EX_PLATFORM_NAME "x86" )
+endif( CMAKE_SIZEOF_VOID_P EQUAL 8 )
+
+# set bitness
 if(DEFINED ENV{DATA_MODEL})
     set(bitness $ENV{DATA_MODEL})
 else(DEFINED ENV{DATA_MODEL})
-    message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
+    message( STATUS "DATA_MODEL is not set. Use platform ${EX_PLATFORM}")
+    set(bitness ${EX_PLATFORM})
 endif(DEFINED ENV{DATA_MODEL})
 
 # Search packages for host system instead of packages for target system
@@ -18,9 +30,11 @@ if(NOT COMMAND find_host_program)
 endif()
 
 set(Boost_USE_STATIC_LIBS ON)
+set(BOOST_LIBRARIES system thread random date_time)
 
-find_host_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+if (BUILD_TESTS)
+        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
+endif()
 
 file(MAKE_DIRECTORY ${out_dir})
 
@@ -38,9 +52,8 @@ endif(DEFINED boost_home)
 include_directories(include)
 
 message(STATUS "DATA_MODEL      = ${bitness}")
-message(STATUS "BOOST_HOME      = ${boost_home}")
 message(STATUS "PRODUCTION      = ${PRODUCTION}")
 message(STATUS "BUILD_TESTS     = ${BUILD_TESTS}")
-message(STATUS "BUILD_TOOLS	    = ${BUILD_TOOLS}")
+message(STATUS "BUILD_TOOLS     = ${BUILD_TOOLS}")
 message(STATUS "BUILD_SHARED    = ${BUILD_SHARED}")
 

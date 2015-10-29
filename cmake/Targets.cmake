@@ -1,3 +1,12 @@
+if (BUILD_TESTS)
+        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
+endif()
+
+find_host_package(Boost 1.40 REQUIRED ${BOOST_LIBRARIES})
+include_directories(${Boost_INCLUDE_DIR} )
+link_directories(${Boost_LIBRARY_DIRS})
+
+
 file(GLOB_RECURSE headers include/*.hpp)
 file(GLOB_RECURSE sources src/*.cpp src/*.c)
 
