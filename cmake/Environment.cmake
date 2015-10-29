@@ -17,7 +17,7 @@ if(NOT COMMAND find_host_program)
   endmacro()
 endif()
 
-set(Boost_USE_STATIC_RUNTIME OFF)
+set(Boost_USE_STATIC_LIBS ON)
 
 find_host_package(Boost 1.40 REQUIRED system thread random date_time unit_test_framework)
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
