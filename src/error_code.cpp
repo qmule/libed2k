@@ -2,12 +2,12 @@
 
 namespace libed2k
 {
-    const char* libed2k_error_category::name() const
+    const char* libed2k_error_category::name() const throw()
     {
         return "libed2k error";
     }
 
-    std::string libed2k_error_category::message(int ev) const
+    std::string libed2k_error_category::message(int ev) const 
     {
         static const char* msgs[errors::num_errors] =
         {

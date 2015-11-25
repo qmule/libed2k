@@ -2,10 +2,6 @@
 #include <locale.h>
 #include <cctype>
 
-#ifndef WIN32
-#include <iconv.h>
-#endif
-
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/tokenizer.hpp>
