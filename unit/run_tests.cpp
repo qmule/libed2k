@@ -1,8 +1,11 @@
 #ifndef WIN32
 #define BOOST_TEST_DYN_LINK
 #endif
+
 #define BOOST_TEST_MODULE main
-#include <string>
+#ifndef _AIX
+#include <boost/test/included/unit_test.hpp>
+#endif
 #include <boost/test/unit_test.hpp>
 
 #include "libed2k/error_code.hpp"

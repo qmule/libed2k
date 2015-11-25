@@ -55,10 +55,3 @@ set(l_flags "${l_flags} -lpthread")
 
 set(cxx_definitions ${cxx_definitions} __STDC_LIMIT_MACROS LIBED2K_USE_BOOST_DATE_TIME)
 
-
-if(DEFINED ENV{DATA_MODEL})
-    set(bitness $ENV{DATA_MODEL})
-else(DEFINED ENV{DATA_MODEL})
-    message(FATAL_ERROR "DATA_MODEL is not set. Use export DATA_MODEL=32 or DATA_MODEL=64")
-endif(DEFINED ENV{DATA_MODEL})
-
