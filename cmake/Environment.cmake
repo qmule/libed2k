@@ -29,6 +29,8 @@ if(NOT COMMAND find_host_program)
   endmacro()
 endif()
 
+## Boost libraries
+#set(Boost_USE_STATIC_RUNTIME OFF)
 set(Boost_USE_STATIC_LIBS ON)
 set(BOOST_LIBRARIES system thread random date_time)
 
@@ -44,11 +46,7 @@ else(DEFINED production)
     set(out_dir "${out_dir}/debug")
 endif(PRODUCTION)
 
-set(CMAKE_CXX_FLAGS ${cxx_flags})
-if(DEFINED boost_home)
-include_directories("${boost_home}/include")
-set(l_flags "${l_flags} -L${boost_home}/lib")
-endif(DEFINED boost_home)
+
 include_directories(include)
 
 message(STATUS "DATA_MODEL      = ${bitness}")

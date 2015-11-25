@@ -34,14 +34,9 @@ endif(bitness MATCHES "64")
 if(DEFINED production)
     set(cxx_flags "${cxx_flags} -O2")
 else(DEFINED production)
-    set(cxx_flags "${cxx_flags} -DLIBED2K_DEBUG -O0 -rdynamic")
+    set(cxx_flags "${cxx_flags} -DLIBED2K_DEBUG -O0 -rdynamic -g")
 endif(DEFINED production)
 
-if(PRODUCTION)
-    set(cxx_flags "${cxx_flags} -O2")
-else(DEFINED production)
-    set(cxx_flags "${cxx_flags} -O0 -rdynamic -g")
-endif(PRODUCTION)
 
 if(DEFINED profiling)
     set(cxx_flags "${cxx_flags} -pg")
@@ -49,7 +44,7 @@ endif(DEFINED profiling)
 
 set(c_flags "${cxx_flags} -fPIC")
 set(cxx_flags "${cxx_flags} -D__STDC_LIMIT_MACROS -DLIBED2K_USE_BOOST_DATE_TIME")
-set(cxx_definitions "${cxx_definitions} -Wall -Wno-long-long -Wpointer-arith -Wformat -Wno-unknown-pragmas -pedantic -ansi -fPIC -std=c++98")
+set(cxx_flags "${cxx_flags} -Wall -Wno-long-long -Wpointer-arith -Wformat -Wno-unknown-pragmas -fPIC")
 
 
 if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
@@ -57,6 +52,9 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
 endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
 
 set(l_flags "${l_flags} -lpthread")
+
+set(cxx_definitions ${cxx_definitions} __STDC_LIMIT_MACROS LIBED2K_USE_BOOST_DATE_TIME)
+
 
 if(DEFINED ENV{DATA_MODEL})
     set(bitness $ENV{DATA_MODEL})
