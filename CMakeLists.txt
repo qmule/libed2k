@@ -10,7 +10,9 @@ set(out_dir "${PROJECT_SOURCE_DIR}/bin")
 option (PRODUCTION  "Build project in production mode." FALSE)
 option (BUILD_TESTS "Build unit tests." TRUE)
 option (BUILD_TOOLS "Build tools." TRUE)
-option (BUILD_SHARED "Build shared library." FALSE) 
+option (BUILD_SHARED "Build shared library." FALSE)
+
+add_definitions(-DLIBED2K_UPNP_LOGGING=1)
 
 include(cmake/Environment.cmake)
 include(cmake/Linux.cmake)

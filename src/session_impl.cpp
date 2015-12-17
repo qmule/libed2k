@@ -264,6 +264,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_ssl_mapping[1] = -1;
 #endif
 
+#ifdef LIBED2K_UPNP_LOGGING
+     m_upnp_log.open("upnp.log", std::ios::in | std::ios::out | std::ios::trunc);
+#endif
     m_thread.reset(new boost::thread(boost::ref(*this)));
 }
 
@@ -1544,9 +1547,9 @@ void session_impl::update_active_transfers()
     }
 }
 
-natpmp* session_impl::start_natpmp()
+void session_impl::start_natpmp()
 {
-    if (m_natpmp) return m_natpmp.get();
+    if (m_natpmp) return;
 
     // the natpmp constructor may fail and call the callbacks
     // into the session_impl.
@@ -1554,7 +1557,7 @@ natpmp* session_impl::start_natpmp()
         m_io_service, m_listen_interface.address(),
         boost::bind(&session_impl::on_port_mapping, this, _1, _2, _3, _4, 0),
         boost::bind(&session_impl::on_port_map_log, this, _1, 0));
-    if (n == 0) return 0;
+    if (n == 0) return;
 
     m_natpmp = n;
 
@@ -1567,12 +1570,11 @@ natpmp* session_impl::start_natpmp()
         m_udp_mapping[0] = m_natpmp->add_mapping(
             natpmp::udp, m_listen_interface.port(), m_listen_interface.port());
     }
-    return n;
 }
 
-upnp* session_impl::start_upnp()
+void session_impl::start_upnp()
 {
-    if (m_upnp) return m_upnp.get();
+    if (m_upnp) return;
 
     // the upnp constructor may fail and call the callbacks
     upnp* u = new (std::nothrow) upnp(
@@ -1582,7 +1584,7 @@ upnp* session_impl::start_upnp()
         boost::bind(&session_impl::on_port_map_log, this, _1, 1),
         m_settings.upnp_ignore_nonrouters);
 
-    if (u == 0) return 0;
+    if (u == 0) return;
 
     m_upnp = u;
 
@@ -1596,7 +1598,6 @@ upnp* session_impl::start_upnp()
         m_udp_mapping[1] = m_upnp->add_mapping(
             upnp::udp, m_listen_interface.port(), m_listen_interface.port());
     }
-    return u;
 }
 
 void session_impl::stop_natpmp()
@@ -1618,6 +1619,23 @@ void session_impl::stop_upnp()
 #endif
     }
     m_upnp = 0;
+}
+
+int session_impl::add_port_mapping(int t, int external_port
+    , int local_port)
+{
+    int ret = 0;
+    if (m_upnp) ret = m_upnp->add_mapping((upnp::protocol_type)t, external_port
+        , local_port);
+    if (m_natpmp) ret = m_natpmp->add_mapping((natpmp::protocol_type)t, external_port
+        , local_port);
+    return ret;
+}
+
+void session_impl::delete_port_mapping(int handle)
+{
+    if (m_upnp) m_upnp->delete_mapping(handle);
+    if (m_natpmp) m_natpmp->delete_mapping(handle);
 }
 
 void session_impl::remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_port)

@@ -231,16 +231,12 @@ namespace libed2k
         m_impl->m_tpm.cancel_transfer_params(filepath);
     }
     
-    natpmp* session::start_natpmp()
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return m_impl->start_natpmp();
+    void session::start_natpmp() {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::start_natpmp, m_impl));
     }
     
-    upnp* session::start_upnp()
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return m_impl->start_upnp();
+    void session::start_upnp() {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::start_upnp, m_impl));
     }
 
     void session::stop_natpmp()
@@ -253,5 +249,15 @@ namespace libed2k
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
         m_impl->stop_upnp();
+    }
+
+    int session::add_port_mapping(protocol_type t, int external_port, int local_port) {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->add_port_mapping(t, external_port, local_port);
+    }
+
+    void session::delete_port_mapping(int handle) {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->delete_port_mapping(handle);
     }
 }

@@ -28,6 +28,10 @@
 #include "libed2k/io_service.hpp"
 #include "libed2k/udp_socket.hpp"
 
+#ifdef LIBED2K_UPNP_LOGGING
+#include <fstream>
+#endif
+
 namespace libed2k {
 
     class peer_connection;
@@ -137,6 +141,10 @@ namespace libed2k {
 
         class session_impl : public session_impl_base
         {
+        private:
+#ifdef LIBED2K_UPNP_LOGGING
+            std::ofstream m_upnp_log;
+#endif
         public:
 
             // the size of each allocation that is chained in the send buffer
@@ -304,11 +312,14 @@ namespace libed2k {
             void update_rate_settings();
             void update_active_transfers();
 
-			natpmp* start_natpmp();
-			upnp* start_upnp();
+			void start_natpmp();
+			void start_upnp();
 
 			void stop_natpmp();
 			void stop_upnp();
+
+			int add_port_mapping(int t, int external_port, int local_port);
+			void delete_port_mapping(int handle);
 
             boost::object_pool<peer> m_ipv4_peer_pool;
 
