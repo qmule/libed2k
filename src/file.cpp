@@ -577,8 +577,8 @@ namespace libed2k
             m_list.add_tag(make_string_tag(libed2k::filename(filename), FT_FILENAME, true));
             m_list.add_tag(make_string_tag(libed2k::filename(filename), FT_FILENAME, true));  // write same name for backward compatibility
             m_list.add_tag(make_typed_tag(static_cast<boost::uint32_t>(libed2k::file_size(filename)), FT_FILESIZE, true));
-            m_list.add_tag(make_typed_tag(fs_trans.nLowPart, FT_ATTRANSFERRED, true));
-            m_list.add_tag(make_typed_tag(fs_trans.nHighPart, FT_ATTRANSFERREDHI, true));
+            m_list.add_tag(make_typed_tag(fs_trans.u.nLowPart, FT_ATTRANSFERRED, true));
+            m_list.add_tag(make_typed_tag(fs_trans.u.nHighPart, FT_ATTRANSFERREDHI, true));
             m_list.add_tag(make_typed_tag(nRequested, FT_ATREQUESTED, true));
             m_list.add_tag(make_typed_tag(nAccepted, FT_ATACCEPTED, true));
             m_list.add_tag(make_typed_tag(nPriority, FT_ULPRIORITY, true));
@@ -684,22 +684,6 @@ namespace libed2k
             m_known_file_list.m_collection[n].dump();
         }
     }
-
-    transfer_resume_data::transfer_resume_data(const md4_hash& hash,
-            const std::string& save_path,
-            const std::string& filename,
-            size_type size,
-            const std::vector<char>& fr_data):
-            m_hash(hash), m_filepath(combine_path(save_path, filename)), m_filesize(size)
-    {
-        if (!fr_data.empty())
-        {
-            m_fast_resume_data.add_tag(make_blob_tag(fr_data, FT_FAST_RESUME_DATA, true));
-        }
-    }
-
-    transfer_resume_data::transfer_resume_data()
-    {}
 
     transfer_params_maker::transfer_params_maker(alert_manager& am, const std::string& known_filepath) :
             m_am(am),
@@ -957,8 +941,6 @@ namespace libed2k
                 ec =  rp.second;
             }
         }
-
-        if (m_am.pending()) libed2k::sleep(500);
 
         if (!m_am.post_alert(transfer_params_alert(atp, ec)))
         {

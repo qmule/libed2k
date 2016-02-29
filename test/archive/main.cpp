@@ -5,7 +5,7 @@
 #include <boost/iostreams/device/array.hpp>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/stream.hpp>
-#include "archive.hpp"
+#include "libed2k/archive.hpp"
 
 
 using namespace libed2k::archive;

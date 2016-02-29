@@ -7,7 +7,7 @@ namespace libed2k
         return "libed2k error";
     }
 
-    std::string libed2k_error_category::message(int ev) const
+    std::string libed2k_error_category::message(int ev) const 
     {
         static const char* msgs[errors::num_errors] =
         {

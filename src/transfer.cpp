@@ -172,10 +172,27 @@ namespace libed2k
             activate(true);
     }
 
+    const session_settings& transfer::settings() const
+    {
+        return m_ses.settings();
+    }
+
+    bool transfer::valid_metadata() const
+    {
+        return m_info->is_valid();
+    }
+
     bool transfer::want_more_peers() const
     {
-        return !is_paused() && m_state == transfer_status::downloading &&
-            m_policy.num_peers() == 0 && !m_abort;
+        return
+            /*m_connections.size() < m_max_connections &&*/
+            !is_paused() &&
+            ((m_state != transfer_status::checking_files &&
+              m_state != transfer_status::checking_resume_data &&
+              m_state != transfer_status::queued_for_checking) || !valid_metadata()) &&
+            m_policy.num_connect_candidates() > 0 && !m_abort &&
+            (m_ses.settings().seeding_outgoing_connections ||
+             (m_state != transfer_status::seeding && m_state != transfer_status::finished));
     }
 
     void transfer::request_peers()
@@ -184,18 +201,22 @@ namespace libed2k
         m_ses.m_server_connection->post_sources_request(hash(), size());
     }
 
-    void transfer::add_peer(const tcp::endpoint& peer)
+    void transfer::add_peer(const tcp::endpoint& peer, int source)
     {
-        m_policy.add_peer(peer);
-    }
+        m_policy.add_peer(peer, source, 0);
 
-    bool transfer::want_more_connections() const
-    {
-        return !m_abort && !is_paused() && m_state == transfer_status::downloading;
+        state_updated();
     }
 
     bool transfer::connect_to_peer(peer* peerinfo)
     {
+        LIBED2K_ASSERT(peerinfo);
+        LIBED2K_ASSERT(peerinfo->connection == 0);
+        LIBED2K_ASSERT(peerinfo->next_connect <= m_ses.session_time());
+
+        peerinfo->last_connected = m_ses.session_time();
+        peerinfo->next_connect = 0;
+
         tcp::endpoint ep(peerinfo->endpoint);
         LIBED2K_ASSERT((m_ses.m_ip_filter.access(peerinfo->address()) & ip_filter::blocked) == 0);
 
@@ -235,6 +256,7 @@ namespace libed2k
 
     bool transfer::attach_peer(peer_connection* p)
     {
+        DBG("transfer::attach_peer");
         LIBED2K_ASSERT(!p->has_transfer());
 
         if (m_ses.m_ip_filter.access(p->remote().address()) & ip_filter::blocked)
@@ -262,11 +284,12 @@ namespace libed2k
             p->disconnect(errors::session_closing);
             return false;
         }
-        if (!m_policy.new_connection(*p))
+        if (!m_policy.new_connection(*p, m_ses.session_time()))
             return false;
 
         LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
+        DBG("activate transfer");
         activate(true);
 
         return true;
@@ -303,7 +326,7 @@ namespace libed2k
             }
         }
 
-        m_policy.connection_closed(*c);
+        m_policy.connection_closed(*c, m_ses.session_time());
         c->set_peer(0);
         m_connections.erase(c);
     }
@@ -349,7 +372,8 @@ namespace libed2k
 
     bool transfer::try_connect_peer()
     {
-        return m_policy.connect_one_peer();
+        LIBED2K_ASSERT(want_more_peers());
+        return m_policy.connect_one_peer(m_ses.session_time());
     }
 
     void transfer::piece_passed(int index)
@@ -446,6 +470,8 @@ namespace libed2k
 
         if (m_abort) return;
 
+        m_policy.recalculate_connect_candidates();
+
         // we need to keep the object alive during this operation
         m_storage->async_release_files(
             boost::bind(&transfer::on_files_released, shared_from_this(), _1, _2));
@@ -481,7 +507,11 @@ namespace libed2k
         }
         else
         {
-            // TODO: reset last_connected, to force fast reconnect after leaving upload mode
+            // reset last_connected, to force fast reconnect after leaving upload mode
+            for (policy::peers_t::iterator i = m_policy.begin_peer(), end(m_policy.end_peer()); i != end; ++i)
+            {
+                (*i)->last_connected = 0;
+            }
 
             // send_block_requests on all peers
             for (std::set<peer_connection*>::iterator i = m_connections.begin(),
@@ -1220,7 +1250,7 @@ namespace libed2k
 
     void transfer::second_tick(stat& accumulator, int tick_interval_ms, const ptime& now)
     {
-        if (m_minute_timer.expired(now) && want_more_peers())
+        if (m_minute_timer.expired(now) && m_connections.size() == 0)
             request_peers();
 
         // if we're in upload only mode and we're auto-managed
@@ -1392,11 +1422,11 @@ namespace libed2k
 
         __file_size fs;
         fs.nQuadPart = size();
-        entry.m_list.add_tag(make_typed_tag(fs.nLowPart, FT_FILESIZE, true));
+        entry.m_list.add_tag(make_typed_tag(fs.u.nLowPart, FT_FILESIZE, true));
 
-        if (fs.nHighPart > 0)
+        if (fs.u.nHighPart > 0)
         {
-            entry.m_list.add_tag(make_typed_tag(fs.nHighPart, FT_FILESIZE_HI, true));
+            entry.m_list.add_tag(make_typed_tag(fs.u.nHighPart, FT_FILESIZE_HI, true));
         }
 
         bool bFileTypeAdded = false;

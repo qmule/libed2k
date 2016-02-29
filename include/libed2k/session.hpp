@@ -76,7 +76,7 @@ namespace libed2k {
         void post_search_request(search_request& sr);
         void post_search_more_result_request();
         void post_cancel_search();
-        bool listen_on(int port, const char* net_interface = 0);
+        void listen_on(int port, const char* net_interface = 0);
         bool is_listening() const;
         unsigned short listen_port() const;
         void set_settings(const session_settings& settings);
@@ -100,20 +100,30 @@ namespace libed2k {
         void make_transfer_parameters(const std::string& filepath);
         void cancel_transfer_parameters(const std::string& filepath);
 
-        natpmp* start_natpmp();
-        upnp* start_upnp();
+        // protocols used by add_port_mapping()
+        enum protocol_type { udp = 1, tcp = 2 };
+        void start_natpmp();
+        void start_upnp();
 
         void stop_natpmp();
         void stop_upnp();
 
 #ifndef LIBED2K_DISABLE_DHT
-		void start_dht();
-		void stop_dht();
-		void set_dht_settings(dht_settings const& settings);
-		void add_dht_node(std::pair<std::string, int> const& node);
-		void add_dht_router(std::pair<std::string, int> const& node);
-		bool is_dht_running() const;
+        void start_dht();
+        void stop_dht();
+        void set_dht_settings(dht_settings const& settings);
+        void add_dht_node(std::pair<std::string, int> const& node);
+        void add_dht_router(std::pair<std::string, int> const& node);
+        bool is_dht_running() const;
 #endif
+
+        // add_port_mapping adds a port forwarding on UPnP and/or NAT-PMP,
+        // whichever is enabled. The return value is a handle referring to the
+        // port mapping that was just created. Pass it to delete_port_mapping()
+        // to remove it.
+        int add_port_mapping(protocol_type t, int external_port, int local_port);
+        void delete_port_mapping(int handle);
+
 
     private:
         void init(const fingerprint& id, const char* listen_interface,

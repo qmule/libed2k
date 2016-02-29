@@ -3,14 +3,14 @@
 
 #ifdef LIBED2K_DEBUG
 
-#include <boost/logging/format_fwd.hpp>
+#include "boost/logging/format_fwd.hpp"
 
 // Step 1: Optimize : use a cache string, to make formatting the message faster
 BOOST_LOG_FORMAT_MSG( optimize::cache_string_one_str<> )
 
 #ifndef BOOST_LOG_COMPILE_FAST
-#include <boost/logging/format.hpp>
-#include <boost/logging/writer/ts_write.hpp>
+#include "boost/logging/format.hpp"
+#include "boost/logging/writer/ts_write.hpp"
 #endif
 
 using namespace boost::logging;

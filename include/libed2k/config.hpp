@@ -200,9 +200,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 // ==== LINUX ===
+// avoid android cross compiler treats as linux
 #elif defined __linux__
 #define LIBED2K_LINUX
-#define LIBED2K_USE_IFADDRS 1
+
+#if !defined __ANDROID__
+  #define LIBED2K_USE_IFADDRS 1
+#endif
+
 #define LIBED2K_USE_NETLINK 1
 #define LIBED2K_USE_IFCONF 1
 #define LIBED2K_HAS_SALEN 0
@@ -332,7 +337,9 @@ namespace libed2k
 
 // libiconv presence, not implemented yet
 #ifndef LIBED2K_USE_ICONV
+#ifndef __ANDROID__
 #define LIBED2K_USE_ICONV 1
+#endif
 #endif
 
 #ifndef LIBED2K_HAS_SALEN
@@ -380,7 +387,9 @@ namespace libed2k
 #endif // LIBED2K_USE_WSTRING
 
 #ifndef LIBED2K_HAS_FALLOCATE
+#ifndef __ANDROID__
 #define LIBED2K_HAS_FALLOCATE 1
+#endif
 #endif
 
 #ifndef LIBED2K_EXPORT
@@ -412,7 +421,7 @@ namespace libed2k
 #endif
 
 #ifndef LIBED2K_USE_IPV6
-#define LIBED2K_USE_IPV6 1
+#define LIBED2K_USE_IPV6 0
 #endif
 
 #ifndef LIBED2K_USE_MLOCK
@@ -446,7 +455,7 @@ namespace libed2k
 #endif
 
 #ifndef LIBED2K_USE_I2P
-#define LIBED2K_USE_I2P 1
+#define LIBED2K_USE_I2P 0
 #endif
 
 #ifndef LIBED2K_HAS_STRDUP

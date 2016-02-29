@@ -30,6 +30,10 @@
 #include "libed2k/bloom_filter.hpp"
 #include "libed2k/kademlia/dht_tracker.hpp"
 
+#ifdef LIBED2K_UPNP_LOGGING
+#include <fstream>
+#endif
+
 namespace libed2k {
 
     class peer_connection;
@@ -139,6 +143,10 @@ namespace libed2k {
 
         class session_impl : public session_impl_base
         {
+        private:
+#ifdef LIBED2K_UPNP_LOGGING
+            std::ofstream m_upnp_log;
+#endif
         public:
 
             // the size of each allocation that is chained in the send buffer
@@ -257,14 +265,18 @@ namespace libed2k {
                 m_total_failed_bytes += b;
             }
 
-            std::pair<char*, int> allocate_buffer(int size);
-            void free_buffer(char* buf, int size);
+            std::pair<char*, int> allocate_send_buffer(int size);
+            void free_send_buffer(char* buf, int size);
 
             char* allocate_disk_buffer(char const* category);
             void free_disk_buffer(char* buf);
+
+            char* allocate_z_buffer();
+            void free_z_buffer(char* buf);
+
             bool can_write_to_disk() const { return m_disk_thread.can_write(); }
 
-            std::string buffer_usage();
+            std::string send_buffer_usage();
 
             void on_disk_queue();
 
@@ -302,11 +314,12 @@ namespace libed2k {
             void update_rate_settings();
             void update_active_transfers();
 
-			natpmp* start_natpmp();
-			upnp* start_upnp();
+			void start_natpmp();
+			void start_upnp();
 
 			void stop_natpmp();
 			void stop_upnp();
+
 
 			void set_external_address(address const& ip
 			                                , int source_type, address const& source);
@@ -389,6 +402,11 @@ namespace libed2k {
             tcp::resolver m_host_resolver;
             boost::object_pool<peer> m_peer_pool;
 
+            int add_port_mapping(int t, int external_port, int local_port);
+            void delete_port_mapping(int handle);
+
+            boost::object_pool<peer> m_ipv4_peer_pool;
+
             // this vector is used to store the block_info
             // objects pointed to by partial_piece_info returned
             // by torrent::get_download_queue.
@@ -398,6 +416,9 @@ namespace libed2k {
             // buffers from.
             boost::pool<> m_send_buffers;
             boost::mutex m_send_buffer_mutex;
+
+            // this pool is used to allocate and recycle compressed data buffers
+            boost::pool<> m_z_buffers;
 
             // used to skipping data in connections
             std::vector<char> m_skip_buffer;
@@ -474,6 +495,9 @@ namespace libed2k {
 
             // is true if the session is paused
             bool m_paused;
+
+            ptime m_created;
+            int session_time() const { return total_seconds(time_now() - m_created); }
 
             duration_timer m_second_timer;
             // the timer used to fire the tick

@@ -94,6 +94,8 @@ namespace libed2k
          */
         void handle_read_packet(const error_code& error, size_t nSize);
 
+        std::string compress_output_data(const std::string&);
+
         /**
           * write structures into socket
          */
@@ -137,7 +139,28 @@ namespace libed2k
 
         last_action_time = time_now();
         bool write_in_progress = !m_write_order.empty();
-        m_write_order.push_back(make_message(t));
+
+        m_write_order.push_back(std::make_pair(libed2k_header(), std::string()));
+
+        boost::iostreams::back_insert_device<std::string> inserter(m_write_order.back().second);
+        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> > s(inserter);
+
+        // Serialize the data first so we know how large it is.
+        archive::ed2k_oarchive oa(s);
+        oa << t;
+        s.flush();
+        std::string compressed_string = compress_output_data(m_write_order.back().second);
+
+        if (!compressed_string.empty())
+        {
+            m_write_order.back().second = compressed_string;
+            m_write_order.back().first.m_protocol = OP_PACKEDPROT;
+        }
+
+        m_write_order.back().first.m_size     = m_write_order.back().second.size() + 1;  // packet size without protocol type and packet body size field
+        m_write_order.back().first.m_type     = packet_type<T>::value;
+
+        //DBG("server_connection::do_write " << packetToString(packet_type<T>::value) << " size: " << m_write_order.back().second.size() + 1);
 
         if (!write_in_progress)
         {

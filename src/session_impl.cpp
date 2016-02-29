@@ -117,6 +117,7 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_host_resolver(m_io_service),
     m_peer_pool(500),
     m_send_buffers(send_buffer_size),
+    m_z_buffers(BLOCK_SIZE),
     m_skip_buffer(4096),
     m_filepool(40),
     m_disk_thread(m_io_service, boost::bind(&session_impl::on_disk_queue, this), m_filepool, BLOCK_SIZE),
@@ -126,9 +127,10 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_server_connection(new server_connection(*this)),
     m_next_connect_transfer(m_active_transfers),
     m_paused(false),
+    m_created(time_now_hires()),
     m_second_timer(seconds(1)),
     m_timer(m_io_service),
-    m_last_tick(time_now_hires()),
+    m_last_tick(m_created),
     m_total_failed_bytes(0),
     m_total_redundant_bytes(0),
     m_queue_pos(0),
@@ -267,6 +269,9 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_ssl_mapping[1] = -1;
 #endif
 
+#ifdef LIBED2K_UPNP_LOGGING
+     m_upnp_log.open("upnp.log", std::ios::in | std::ios::out | std::ios::trunc);
+#endif
     m_thread.reset(new boost::thread(boost::ref(*this)));
 }
 
@@ -948,6 +953,7 @@ void session_impl::remove_transfer(const transfer_handle& h, int options)
 
 bool session_impl::add_active_transfer(const boost::shared_ptr<transfer>& t)
 {
+    DBG("add active transfer:" << t->hash().toString());
     return m_active_transfers.insert(std::make_pair(t->hash(), t)).second;
 }
 
@@ -966,6 +972,7 @@ bool session_impl::remove_active_transfer(const boost::shared_ptr<transfer>& t)
 
 void session_impl::remove_active_transfer(transfer_map::iterator i)
 {
+    DBG("remove active transfer: " << i->second->hash().toString());
     if (i == m_next_connect_transfer) m_next_connect_transfer.inc();
     m_active_transfers.erase(i);
     m_next_connect_transfer.validate();
@@ -1007,7 +1014,7 @@ peer_connection_handle session_impl::add_peer_connection(net_identifier np, erro
     return (peer_connection_handle(c, this));
 }
 
-std::pair<char*, int> session_impl::allocate_buffer(int size)
+std::pair<char*, int> session_impl::allocate_send_buffer(int size)
 {
     int num_buffers = (size + send_buffer_size - 1) / send_buffer_size;
 
@@ -1017,7 +1024,7 @@ std::pair<char*, int> session_impl::allocate_buffer(int size)
                           num_buffers * send_buffer_size);
 }
 
-void session_impl::free_buffer(char* buf, int size)
+void session_impl::free_send_buffer(char* buf, int size)
 {
     int num_buffers = size / send_buffer_size;
 
@@ -1035,7 +1042,17 @@ void session_impl::free_disk_buffer(char* buf)
     m_disk_thread.free_buffer(buf);
 }
 
-std::string session_impl::buffer_usage()
+char* session_impl::allocate_z_buffer()
+{
+    return (char*)m_z_buffers.ordered_malloc();
+}
+
+void session_impl::free_z_buffer(char* buf)
+{
+    m_z_buffers.ordered_free(buf);
+}
+
+std::string session_impl::send_buffer_usage()
 {
     int send_buffer_capacity = 0;
     int used_send_buffer = 0;
@@ -1316,7 +1333,7 @@ void session_impl::connect_new_peers()
         for (;;)
         {
             transfer& t = *m_next_connect_transfer->second;
-            if (t.want_more_connections())
+            if (t.want_more_peers())
             {
                 try
                 {
@@ -1533,14 +1550,14 @@ void session_impl::update_active_transfers()
              end(m_active_transfers.end()); i != end;)
     {
         transfer& t = *i->second;
-        if (!t.active() && t.last_active() > 5) remove_active_transfer(i++);
+        if (!t.active() && t.last_active() > 20) remove_active_transfer(i++);
         else ++i;
     }
 }
 
-natpmp* session_impl::start_natpmp()
+void session_impl::start_natpmp()
 {
-    if (m_natpmp) return m_natpmp.get();
+    if (m_natpmp) return;
 
     // the natpmp constructor may fail and call the callbacks
     // into the session_impl.
@@ -1548,7 +1565,7 @@ natpmp* session_impl::start_natpmp()
         m_io_service, m_listen_interface.address(),
         boost::bind(&session_impl::on_port_mapping, this, _1, _2, _3, _4, 0),
         boost::bind(&session_impl::on_port_map_log, this, _1, 0));
-    if (n == 0) return 0;
+    if (n == 0) return;
 
     m_natpmp = n;
 
@@ -1561,12 +1578,11 @@ natpmp* session_impl::start_natpmp()
         m_udp_mapping[0] = m_natpmp->add_mapping(
             natpmp::udp, m_listen_interface.port(), m_listen_interface.port());
     }
-    return n;
 }
 
-upnp* session_impl::start_upnp()
+void session_impl::start_upnp()
 {
-    if (m_upnp) return m_upnp.get();
+    if (m_upnp) return;
 
     // the upnp constructor may fail and call the callbacks
     upnp* u = new (std::nothrow) upnp(
@@ -1576,7 +1592,7 @@ upnp* session_impl::start_upnp()
         boost::bind(&session_impl::on_port_map_log, this, _1, 1),
         m_settings.upnp_ignore_nonrouters);
 
-    if (u == 0) return 0;
+    if (u == 0) return;
 
     m_upnp = u;
 
@@ -1590,7 +1606,6 @@ upnp* session_impl::start_upnp()
         m_udp_mapping[1] = m_upnp->add_mapping(
             upnp::udp, m_listen_interface.port(), m_listen_interface.port());
     }
-    return u;
 }
 
 void session_impl::stop_natpmp()
@@ -1612,6 +1627,23 @@ void session_impl::stop_upnp()
 #endif
     }
     m_upnp = 0;
+}
+
+int session_impl::add_port_mapping(int t, int external_port
+    , int local_port)
+{
+    int ret = 0;
+    if (m_upnp) ret = m_upnp->add_mapping((upnp::protocol_type)t, external_port
+        , local_port);
+    if (m_natpmp) ret = m_natpmp->add_mapping((natpmp::protocol_type)t, external_port
+        , local_port);
+    return ret;
+}
+
+void session_impl::delete_port_mapping(int handle)
+{
+    if (m_upnp) m_upnp->delete_mapping(handle);
+    if (m_natpmp) m_natpmp->delete_mapping(handle);
 }
 
 void session_impl::remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_port)

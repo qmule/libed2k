@@ -169,6 +169,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\asio.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\assert.cpp"
 				>
 			</File>
@@ -297,6 +301,17 @@
 				>
 			</File>
 			<File
+<<<<<<< HEAD
+=======
+				RelativePath="..\src\md4_hash.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\miniz.c"
+				>
+			</File>
+			<File
+>>>>>>> develop
 				RelativePath="..\src\natpmp.cpp"
 				>
 			</File>
@@ -579,7 +594,11 @@
 				>
 			</File>
 			<File
+<<<<<<< HEAD
 				RelativePath="..\include\libed2k\debug.hpp"
+=======
+				RelativePath="..\include\logging\defaults.hpp"
+>>>>>>> develop
 				>
 			</File>
 			<File
@@ -632,6 +651,22 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\fingerprint.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format_all.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format_fwd.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\format_ts.hpp"
 				>
 			</File>
 			<File
@@ -695,6 +730,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\logging\logging.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\include\libed2k\max.hpp"
 				>
 			</File>
@@ -752,6 +791,10 @@
 			</File>
 			<File
 				RelativePath="..\include\libed2k\policy.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\logging\profile.hpp"
 				>
 			</File>
 			<File

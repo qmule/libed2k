@@ -20,6 +20,7 @@
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/io_service.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/filesystem.hpp"
 
 using namespace libed2k;
 
@@ -405,13 +406,16 @@ int main(int argc, char* argv[])
 
     libed2k::fingerprint print;
     libed2k::session_settings settings;
+    settings.peer_connect_timeout = 60;
+    settings.peer_timeout = 60;
+
     settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
     //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
     ses.set_alert_mask(alert::all_categories);
 
-    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 20, 20, 10, 10, 10);
+    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 60, 60, 60, 60, 60);
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
@@ -474,7 +478,7 @@ int main(int argc, char* argv[])
             {
                 // execute search
                 DBG("Execute search request: " << strArg);
-                search_request sr = libed2k::generateSearchRequest(1000000000,0,1,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
+                search_request sr = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, libed2k::convert_from_native(strArg));
                 ses.post_search_request(sr);
                 break;
             }
@@ -651,7 +655,7 @@ int main(int argc, char* argv[])
 
                     if (!rd->m_handle.is_valid()) continue;
 
-                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.save_path(), rd->m_handle.name(), rd->m_handle.size(), vFastResumeData);
+                    libed2k::transfer_resume_data trd(rd->m_handle.hash(), rd->m_handle.name(), rd->m_handle.size(), rd->m_handle.is_seed(), vFastResumeData);
 
                     // prepare storage filename
                     std::string strStorage = std::string("./") + rd->m_handle.hash().toString();
@@ -686,7 +690,7 @@ int main(int argc, char* argv[])
 
                         libed2k::add_transfer_params params;
                         params.seed_mode = false;
-                        params.file_path= trd.m_filepath.m_collection;
+                        params.file_path= trd.m_filename.m_collection;
                         params.file_size = trd.m_filesize;
 
                         if (trd.m_fast_resume_data.size() > 0)
@@ -762,14 +766,8 @@ int main(int argc, char* argv[])
             case cc_listen:
                 {
                     settings.listen_port = atoi(strArg.c_str());
-                    if (ses.listen_on(settings.listen_port))
-                    {
-                        DBG("Ok, listen on " << strArg);
-                    }
-                    else
-                    {
-                        DBG("Unable to reset port");
-                    }
+                    ses.listen_on(settings.listen_port);
+                    DBG("Try listen on " << strArg);
                     break;
                 }
             case cc_tr:
