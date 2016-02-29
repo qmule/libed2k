@@ -1531,20 +1531,20 @@ namespace libed2k
         boost::uint8_t  version;
     };
 
+    struct kad_booststrap_req {
+        template<typename Archive>
+        void serialize(Archive& ar) {}
+    };
+
     struct kad_booststrap_res{
         md4_hash    kad_id;
         boost::uint16_t port;
         boost::uint8_t  kad_version;
-        container_holder<boost::uint16_t, std::deque<kad_booststrap_res> >  contacts;
+        container_holder<boost::uint16_t, std::deque<kad_booststrap_req> >  contacts;
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & kad_id & port & kad_version & contacts;
         }
-    };
-
-    struct kad_booststrap_req{
-        template<typename Archive>
-        void serialize(Archive& ar){}
     };
 
     /**

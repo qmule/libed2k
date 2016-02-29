@@ -1,22 +1,15 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libed2k", "libed2k.vcproj", "{02157584-77D1-45C8-A21E-C4687083B024}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.24720.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libed2k", "libed2k.vcxproj", "{02157584-77D1-45C8-A21E-C4687083B024}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unittest", "unittest.vcproj", "{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}"
-	ProjectSection(ProjectDependencies) = postProject
-		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "unittest", "unittest.vcxproj", "{A0E14C72-EE04-4C5E-BA23-73CEAE0A109E}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conn", "conn.vcproj", "{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}"
-	ProjectSection(ProjectDependencies) = postProject
-		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conn", "conn.vcxproj", "{1B7C6EB9-DC64-4035-A21C-1837EC1850C0}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "collecttion_dumper", "collection_dumper.vcproj", "{32175069-A8D8-401E-A256-938D36B9DADF}"
-	ProjectSection(ProjectDependencies) = postProject
-		{02157584-77D1-45C8-A21E-C4687083B024} = {02157584-77D1-45C8-A21E-C4687083B024}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "collecttion_dumper", "collection_dumper.vcxproj", "{32175069-A8D8-401E-A256-938D36B9DADF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

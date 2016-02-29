@@ -2,7 +2,7 @@
 
 namespace libed2k
 {
-    const char* libed2k_error_category::name() const
+    const char* libed2k_error_category::name() const BOOST_SYSTEM_NOEXCEPT
     {
         return "libed2k error";
     }

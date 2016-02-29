@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef PRId64
 // MinGW uses microsofts runtime
 #if defined _MSC_VER || defined __MINGW32__
-#define PRId64 "I64d"
+#define PRId64 "lld"
 #define PRIu64 "I64u"
 #define PRIu32 "u"
 #else
