@@ -573,7 +573,7 @@ void incoming_error(entry& e, char const* msg)
 	l.push_back(entry(msg));
 }
 
-void node_impl::incoming_request(kad_booststrap_req const& h){
+void node_impl::incoming_request(kad_bootstrap_req const& h){
 
 }
 

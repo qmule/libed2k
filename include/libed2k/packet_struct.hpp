@@ -1520,11 +1520,111 @@ namespace libed2k
         }
     };
 
-    // KAD implementation
-
+    // COMMON KAD packages
     /**
-     * base structure for KAD answers
-     */
+      * KAD identifier compatible with eMule format serialization
+      *
+    */
+    struct kad_id : public md4_hash {
+
+        kad_id();
+        kad_id(const md4_hash& h);
+        kad_id(const md4_hash::md4hash_container&);
+
+        template<typename Archive>
+        void save(Archive& ar) {
+            for (unsigned i = 0; i < sizeof(m_hash); ++i) {
+                ar & m_hash[(i / 4) * 4 + 3 - (i % 4)];
+                //uint32_t value = (((uint32_t)m_hash[i] << 24) | ((uint32_t)m_hash[i+1] << 16) | ((uint32_t)m_hash[i+2] << 8) | ((uint32_t)m_hash[i+3]));
+                //ar & value;
+            }
+        }
+
+        template<typename Archive> 
+        void load(Archive& ar) {
+            for (unsigned i = 0; i < sizeof(m_hash); ++i) {
+                uint8_t c;
+                ar & c;
+                m_hash[(i / 4)*4 + 3 - (i % 4)] = c;
+            }
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
+    struct kad_net_identifier {
+        client_id_type  address;
+        uint16_t        udp_port;
+        uint16_t        tcp_port;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & address & udp_port & tcp_port;
+        }
+    };
+
+    struct kad_entry {
+        kad_id              kid;
+        kad_net_identifier  address;
+        uint8_t             tail;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & kid & address & tail;
+        }
+    };    
+
+    // BOOTSTRAP packages
+    struct kad_bootstrap_req {
+        kad_id  kid;
+        kad_net_identifier  address;
+        uint8_t tail;
+
+        template<typename Archive> 
+        void serialize(Archive& ar) {
+            ar & kid & address & tail;
+        }
+    };
+
+    typedef container_holder<uint16_t, std::vector<kad_entry> >   kad_bootstrap_res;
+
+    // HELLO packages
+    struct kad_hello_base {
+        kad_id  kid;
+        kad_net_identifier  address;
+        uint8_t tail;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & kid & address & tail;
+        }
+    };
+
+    struct kad_hello_req : public kad_hello_base {};
+    struct kad_hello_res : public kad_hello_base {};
+
+    // SEARCH sources packages
+    struct kademlia_req {
+        uint8_t num_of_contacts;
+        kad_id  kid_target;
+        kad_id  kid_receiver;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & num_of_contacts & kid_target & kid_receiver;
+        }
+    };
+
+    struct kademlia_res {
+        kad_id  kid_target;
+        container_holder<uint8_t, std::vector<kad_entry> >    results;
+        template<typename Archive>
+        void searialize(Archive& ar) {
+            ar & kid_target & results;
+        }
+    };
+    
+    /*
     struct kad_answer_base{
         md4_hash    kad_id;
         md4_hash    key_id;
@@ -1554,12 +1654,7 @@ namespace libed2k
         }
     };
 
-    /**
-      * hello chain
-      * kad_hello_req ->
-      * kad_hello_res <-
-      * kad_hello_res_ack ->
-     */
+
     struct kad_hello_req{
         md4_hash    client_id;
         boost::uint16_t port;
@@ -1592,9 +1687,6 @@ namespace libed2k
         }
     };
 
-    /*
-     * this is response package as answer to search request FILE, KEYWORD, NOTES
-     */
     struct kad_search_response{
         kad_answer_base header;
         md4_hash        answer;
@@ -1623,6 +1715,7 @@ namespace libed2k
         md4_hash    file_id;
         boost::uint16_t port;
     };
+    */
 
     struct sources_request_base{
         md4_hash    file_hash;
@@ -1694,7 +1787,7 @@ namespace libed2k
     struct sources_answer2: public sources_answer_base{
         sources_answer2(int version): sources_answer_base(version){}
     };
-
+    
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;
@@ -1856,6 +1949,7 @@ namespace libed2k
     };
 
     // kad packet types
+    /*
     template<> struct packet_type<kad_booststrap_req>{
         static const proto_type value       = KADEMLIA2_BOOTSTRAP_REQ;
         static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
@@ -1876,6 +1970,7 @@ namespace libed2k
         static const proto_type value       = KADEMLIA2_HELLO_RES_ACK;
         static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
     };
+    */
 
     template<> struct packet_type<sources_request>{
         static const proto_type value       = OP_REQUESTSOURCES;
@@ -1893,6 +1988,7 @@ namespace libed2k
         static const proto_type value       = OP_ANSWERSOURCES2;
         static const proto_type protocol    = OP_EMULEPROT;
     };
+    
 
     // helper for get type from item
     template<typename T>

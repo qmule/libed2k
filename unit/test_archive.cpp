@@ -825,5 +825,26 @@ BOOST_AUTO_TEST_CASE(test_incorrect_packet_2)
     BOOST_CHECK_NO_THROW(ia_corr >> t);
 }
 
+BOOST_AUTO_TEST_CASE(test_kad_id_serialization) {    
+    const boost::uint32_t m_source_archive[4] = { 0x00000102, 0x0304, 0x0506, 0x0708 };
+    const char* dataPtr = (const char*)&m_source_archive[0];    
+
+    boost::iostreams::stream_buffer<ASourceDevice> array_source_buffer(dataPtr, sizeof(m_source_archive));
+    std::istream in_array_stream(&array_source_buffer);
+    libed2k::archive::ed2k_iarchive in_array_archive(in_array_stream);
+    libed2k::kad_id kid;
+    in_array_archive >> kid;
+    const boost::uint8_t tdata[16] = { '\x00', '\x00', '\x01', '\x02', '\x00', '\x00', '\x03', '\x04', '\x00', '\x00', '\x05', '\x06', '\x00', '\x00', '\x07', '\x08'};
+    libed2k::kad_id tmpl_kid(tdata);
+    BOOST_CHECK_EQUAL(tmpl_kid, kid);
+    std::ostringstream sstream(std::ios_base::binary);
+    libed2k::archive::ed2k_oarchive out_string_archive(sstream);
+    out_string_archive << kid;
+    BOOST_REQUIRE_EQUAL(libed2k::md4_hash::size, sstream.str().size());
+    for (size_t i = 0; i < libed2k::md4_hash::size; i+=4) {
+        BOOST_CHECK_EQUAL(m_source_archive[i/4], *((boost::uint32_t*)(sstream.str().c_str() + i)));
+    }
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()

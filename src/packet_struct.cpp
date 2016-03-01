@@ -108,7 +108,7 @@ namespace libed2k
                 "OP_ASKSHAREDDENIEDANS"//       = 0x61  // (null)
         };
 
-        if (protocol < sizeof(chData)/sizeof(chData[0]))
+        if (protocol < sizeof(chData) / sizeof(chData[0]))
         {
             return (chData[static_cast<unsigned int>(protocol)]);
         }
@@ -120,19 +120,19 @@ namespace libed2k
     const char* toString(search_request_entry::SRE_Operation so)
     {
         static const char* chOperations[] =
-                {
-                        "AND",
-                        "OR",
-                        "NOT"
-                };
+        {
+                "AND",
+                "OR",
+                "NOT"
+        };
 
         return (chOperations[so]);
     }
 
     net_identifier::net_identifier() : m_nIP(0), m_nPort(0) {}
-    net_identifier::net_identifier(boost::uint32_t nIP, boost::uint16_t nPort):
+    net_identifier::net_identifier(boost::uint32_t nIP, boost::uint16_t nPort) :
         m_nIP(nIP), m_nPort(nPort) {}
-    net_identifier::net_identifier(const tcp::endpoint& ep):
+    net_identifier::net_identifier(const tcp::endpoint& ep) :
         m_nIP(address2int(ep.address())), m_nPort(ep.port()) {}
 
     std::string net_identifier::to_string() const
@@ -176,8 +176,8 @@ namespace libed2k
     }
 
     shared_file_entry::shared_file_entry(const md4_hash& hFile, boost::uint32_t nFileId, boost::uint16_t nPort) :
-            m_hFile(hFile),
-            m_network_point(nFileId, nPort)
+        m_hFile(hFile),
+        m_network_point(nFileId, nPort)
     {
     }
 
@@ -194,13 +194,13 @@ namespace libed2k
         m_sources.dump();
     }
 
-    client_hello_answer::client_hello_answer(){}
+    client_hello_answer::client_hello_answer() {}
     client_hello_answer::client_hello_answer(const md4_hash& client_hash,
-                    const net_identifier& np,
-                    const net_identifier& sp,
-                    const std::string& client_name,
-                    const std::string& program_name,
-                    boost::uint32_t version)
+        const net_identifier& np,
+        const net_identifier& sp,
+        const std::string& client_name,
+        const std::string& program_name,
+        boost::uint32_t version)
     {
         //!< TODO - possible this info is not need
         boost::uint32_t nUdpPort = 0;
@@ -223,82 +223,82 @@ namespace libed2k
             ", server_port: " << m_server_network_point.m_nPort << "}");
     }
 
-    client_hello::client_hello(): client_hello_answer(), m_nHashLength(MD4_DIGEST_LENGTH) {}
+    client_hello::client_hello() : client_hello_answer(), m_nHashLength(MD4_DIGEST_LENGTH) {}
 
     client_hello::client_hello(const md4_hash& client_hash,
-            const net_identifier& np,
-            const net_identifier& sp,
-            const std::string& client_name,
-            const std::string& program_name,
-            boost::uint32_t version) : client_hello_answer(client_hash, np, sp, client_name, program_name, version), m_nHashLength(MD4_DIGEST_LENGTH){}
+        const net_identifier& np,
+        const net_identifier& sp,
+        const std::string& client_name,
+        const std::string& program_name,
+        boost::uint32_t version) : client_hello_answer(client_hash, np, sp, client_name, program_name, version), m_nHashLength(MD4_DIGEST_LENGTH) {}
 
     // special meta tag types
-    const tg_type SEARCH_TYPE_BOOL      = '\x00';
-    const tg_type SEARCH_TYPE_STR       = '\x01';
-    const tg_type SEARCH_TYPE_STR_TAG   = '\x02';
-    const tg_type SEARCH_TYPE_UINT32    = '\x03';
-    const tg_type SEARCH_TYPE_UINT64    = '\x08';
+    const tg_type SEARCH_TYPE_BOOL = '\x00';
+    const tg_type SEARCH_TYPE_STR = '\x01';
+    const tg_type SEARCH_TYPE_STR_TAG = '\x02';
+    const tg_type SEARCH_TYPE_UINT32 = '\x03';
+    const tg_type SEARCH_TYPE_UINT64 = '\x08';
 
     search_request_entry::search_request_entry(SRE_Operation soper)
     {
-        m_type      = SEARCH_TYPE_BOOL;
-        m_operator  = soper;
+        m_type = SEARCH_TYPE_BOOL;
+        m_operator = soper;
     }
 
     search_request_entry::search_request_entry(const std::string& strValue)
     {
-        m_type      = SEARCH_TYPE_STR;
-        m_strValue  = strValue;
-        m_operator  = SRE_END;
+        m_type = SEARCH_TYPE_STR;
+        m_strValue = strValue;
+        m_operator = SRE_END;
     }
 
     search_request_entry::search_request_entry(tg_type nMetaTagId, const std::string& strValue)
     {
-        m_type      = SEARCH_TYPE_STR_TAG;
-        m_strValue  = strValue;
+        m_type = SEARCH_TYPE_STR_TAG;
+        m_strValue = strValue;
         m_meta_type = nMetaTagId;
-        m_operator  = SRE_END;
+        m_operator = SRE_END;
     }
 
     search_request_entry::search_request_entry(const std::string strMetaTagName, const std::string& strValue)
     {
-        m_type          = SEARCH_TYPE_STR_TAG;
-        m_strValue      = strValue;
-        m_strMetaName   = strMetaTagName;
-        m_operator  = SRE_END;
+        m_type = SEARCH_TYPE_STR_TAG;
+        m_strValue = strValue;
+        m_strMetaName = strMetaTagName;
+        m_operator = SRE_END;
     }
 
     search_request_entry::search_request_entry(tg_type nMetaTagId, boost::uint8_t nOperator, boost::uint64_t nValue)
     {
         m_meta_type = nMetaTagId;
-        m_operator  = nOperator;
+        m_operator = nOperator;
 
         if (nValue > 0xFFFFFFFFL)
         {
-            m_nValue64  = nValue;
-            m_type      = SEARCH_TYPE_UINT64;
+            m_nValue64 = nValue;
+            m_type = SEARCH_TYPE_UINT64;
         }
         else
         {
-            m_nValue32  = static_cast<boost::uint32_t>(nValue);
-            m_type      = SEARCH_TYPE_UINT32;
+            m_nValue32 = static_cast<boost::uint32_t>(nValue);
+            m_type = SEARCH_TYPE_UINT32;
         }
     }
 
     search_request_entry::search_request_entry(const std::string& strMetaTagName, boost::uint8_t nOperator, boost::uint64_t nValue)
     {
-        m_strValue  = strMetaTagName;
-        m_operator  = nOperator;
+        m_strValue = strMetaTagName;
+        m_operator = nOperator;
 
         if (nValue > 0xFFFFFFFFL)
         {
-            m_nValue64  = nValue;
-            m_type      = SEARCH_TYPE_UINT64;
+            m_nValue64 = nValue;
+            m_type = SEARCH_TYPE_UINT64;
         }
         else
         {
-            m_nValue32  = static_cast<boost::uint32_t>(nValue);
-            m_type      = SEARCH_TYPE_UINT32;
+            m_nValue32 = static_cast<boost::uint32_t>(nValue);
+            m_type = SEARCH_TYPE_UINT32;
         }
     }
 
@@ -343,7 +343,7 @@ namespace libed2k
 
         if (m_type == SEARCH_TYPE_UINT32 || m_type == SEARCH_TYPE_UINT64)
         {
-            (m_type == SEARCH_TYPE_UINT32)?(ar & m_nValue32):(ar & m_nValue64);
+            (m_type == SEARCH_TYPE_UINT32) ? (ar & m_nValue32) : (ar & m_nValue64);
 
             ar & m_operator;
 
@@ -426,34 +426,34 @@ namespace libed2k
     std::string sre_operation2string(boost::uint8_t oper)
     {
         static const char* s[] =
-                {
-                    "SRE_AND",
-                    "SRE_OR",
-                    "SRE_NOT",
-                    "SRE_OBR",
-                    "SRE_CBR",
-                    "SRE_END"
-                };
+        {
+            "SRE_AND",
+            "SRE_OR",
+            "SRE_NOT",
+            "SRE_OBR",
+            "SRE_CBR",
+            "SRE_END"
+        };
 
-        LIBED2K_ASSERT(static_cast<size_t>(oper) < sizeof(s)/sizeof(s[0]));
+        LIBED2K_ASSERT(static_cast<size_t>(oper) < sizeof(s) / sizeof(s[0]));
         return s[oper];
     }
 
     global_server_state_res::global_server_state_res(size_t nMaxSize) :
-            m_nChallenge(0),
-            m_nUsersCount(0),
-            m_nFilesCount(0),
-            m_nCurrentMaxUsers(0),
-            m_nSoftFiles(0),
-            m_nHardFiles(0),
-            m_nUDPFlags(0),
-            m_nLowIdUsers(0),
-            m_nUDPObfuscationPort(0),
-            m_nTCPObfuscationPort(0),
-            m_nServerUDPKey(0),
-            m_nMaxSize(nMaxSize)
-     {
-     }
+        m_nChallenge(0),
+        m_nUsersCount(0),
+        m_nFilesCount(0),
+        m_nCurrentMaxUsers(0),
+        m_nSoftFiles(0),
+        m_nHardFiles(0),
+        m_nUDPFlags(0),
+        m_nLowIdUsers(0),
+        m_nUDPObfuscationPort(0),
+        m_nTCPObfuscationPort(0),
+        m_nServerUDPKey(0),
+        m_nMaxSize(nMaxSize)
+    {
+    }
 
     client_message::client_message() : m_nMsgLength(0)
     {}
@@ -472,14 +472,14 @@ namespace libed2k
     }
 
     peer_connection_options::peer_connection_options() : m_nVersion(0),
-                 m_nModVersion(0),
-                 m_nPort(0),
-                 m_nUDPPort(0),
-                 m_nBuddyUDP(0),
-                 m_nClientVersion(0),
-                 m_nCompatibleClient(0),
-                 m_bOsInfoSupport(false),
-                 m_bValueBasedTypeTags(false)
+        m_nModVersion(0),
+        m_nPort(0),
+        m_nUDPPort(0),
+        m_nBuddyUDP(0),
+        m_nClientVersion(0),
+        m_nCompatibleClient(0),
+        m_bOsInfoSupport(false),
+        m_bValueBasedTypeTags(false)
     {}
 
     misc_options::misc_options()
@@ -494,17 +494,17 @@ namespace libed2k
 
     void misc_options::load(boost::uint32_t opts)
     {
-        m_nAICHVersion          = (opts >> (4*7+1)) & 0x07;
-        m_nUnicodeSupport       = (opts >> 4*7) & 0x01;
-        m_nUDPVer               = (opts >> 4*6) & 0x0f;
-        m_nDataCompVer          = (opts >> 4*5) & 0x0f;
-        m_nSupportSecIdent      = (opts >> 4*4) & 0x0f;
-        m_nSourceExchange1Ver   = (opts >> 4*3) & 0x0f;
-        m_nExtendedRequestsVer  = (opts >> 4*2) & 0x0f;
-        m_nAcceptCommentVer     = (opts >> 4*1) & 0x0f;
-        m_nNoViewSharedFiles    = (opts >> 1*2) & 0x01;
-        m_nMultiPacket          = (opts >> 1*1) & 0x01;
-        m_nSupportsPreview      = (opts >> 1*0) & 0x01;
+        m_nAICHVersion = (opts >> (4 * 7 + 1)) & 0x07;
+        m_nUnicodeSupport = (opts >> 4 * 7) & 0x01;
+        m_nUDPVer = (opts >> 4 * 6) & 0x0f;
+        m_nDataCompVer = (opts >> 4 * 5) & 0x0f;
+        m_nSupportSecIdent = (opts >> 4 * 4) & 0x0f;
+        m_nSourceExchange1Ver = (opts >> 4 * 3) & 0x0f;
+        m_nExtendedRequestsVer = (opts >> 4 * 2) & 0x0f;
+        m_nAcceptCommentVer = (opts >> 4 * 1) & 0x0f;
+        m_nNoViewSharedFiles = (opts >> 1 * 2) & 0x01;
+        m_nMultiPacket = (opts >> 1 * 1) & 0x01;
+        m_nSupportsPreview = (opts >> 1 * 0) & 0x01;
     }
 
     misc_options2::misc_options2() : m_options(0)
@@ -572,40 +572,40 @@ namespace libed2k
 
     boost::uint32_t misc_options::generate() const
     {
-        return  ((m_nAICHVersion           << ((4*7)+1)) |
-                (m_nUnicodeSupport        << 4*7) |
-                (m_nUDPVer                << 4*6) |
-                (m_nDataCompVer           << 4*5) |
-                (m_nSupportSecIdent       << 4*4) |
-                (m_nSourceExchange1Ver    << 4*3) |
-                (m_nExtendedRequestsVer   << 4*2) |
-                (m_nAcceptCommentVer      << 4*1) |
-                (m_nNoViewSharedFiles     << 1*2) |
-                (m_nMultiPacket           << 1*1) |
-                (m_nSupportsPreview       << 1*0));
+        return  ((m_nAICHVersion << ((4 * 7) + 1)) |
+            (m_nUnicodeSupport << 4 * 7) |
+            (m_nUDPVer << 4 * 6) |
+            (m_nDataCompVer << 4 * 5) |
+            (m_nSupportSecIdent << 4 * 4) |
+            (m_nSourceExchange1Ver << 4 * 3) |
+            (m_nExtendedRequestsVer << 4 * 2) |
+            (m_nAcceptCommentVer << 4 * 1) |
+            (m_nNoViewSharedFiles << 1 * 2) |
+            (m_nMultiPacket << 1 * 1) |
+            (m_nSupportsPreview << 1 * 0));
     }
 
     EClientSoftware uagent2csoft(const md4_hash& ua_hash)
     {
         EClientSoftware cs = SO_UNKNOWN;
 
-        if ( ua_hash[5] == 13  && ua_hash[14] == 110 )
+        if (ua_hash[5] == 13 && ua_hash[14] == 110)
         {
-            cs =  SO_OLDEMULE;
+            cs = SO_OLDEMULE;
         }
-        else if ( ua_hash[5] == 14  && ua_hash[14] == 111 )
+        else if (ua_hash[5] == 14 && ua_hash[14] == 111)
         {
             cs = SO_EMULE;
         }
-        else if ( ua_hash[5] == 'M' && ua_hash[14] == 'L' )
+        else if (ua_hash[5] == 'M' && ua_hash[14] == 'L')
         {
             cs = SO_MLDONKEY;
         }
-        else if ( ua_hash[5] == 'L' && ua_hash[14] == 'K')
+        else if (ua_hash[5] == 'L' && ua_hash[14] == 'K')
         {
             cs = SO_LIBED2K;
         }
-        else if ( ua_hash[5] == 'Q' && ua_hash[14] == 'M')
+        else if (ua_hash[5] == 'Q' && ua_hash[14] == 'M')
         {
             cs = SO_QMULE;
         }
@@ -613,29 +613,34 @@ namespace libed2k
         return cs;
     }
 
-    message extract_message(const char* p, int bytes, error_code& ec){
+    message extract_message(const char* p, int bytes, error_code& ec) {
         LIBED2K_ASSERT(p);
         message res;
         ec = errors::no_error;
 
-        if (bytes < sizeof(libed2k_header)){
+        if (bytes < sizeof(libed2k_header)) {
             ec = errors::invalid_packet_size;
         }
 
-        if (!ec){
+        if (!ec) {
             res.first.assign(p);
             ec = res.first.check_packet();
         }
 
-        if (!ec){
-            if (res.first.body_size() > bytes){
+        if (!ec) {
+            if (res.first.body_size() > bytes) {
                 ec = errors::invalid_packet_size;
-            } else{
-                res.second.assign(p+sizeof(libed2k_header), res.first.body_size());
+            }
+            else {
+                res.second.assign(p + sizeof(libed2k_header), res.first.body_size());
             }
         }
 
         return res;
     }
+
+    kad_id::kad_id() : md4_hash() {}
+    kad_id::kad_id(const md4_hash& h) : md4_hash(h) {}
+    kad_id::kad_id(const md4_hash::md4hash_container& c) : md4_hash(c) {}
 
 }

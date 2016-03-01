@@ -138,7 +138,7 @@ namespace libed2k
             iterator end() { return m_hash+number_size; }
 
             std::string to_string() const { return std::string((char const*)&m_hash[0], number_size); }
-        private:
+        protected:
             md4hash_container   m_hash;
         };
 

@@ -282,7 +282,7 @@ private:
 	// since it might have references to it
 	std::set<traversal_algorithm*> m_running_requests;
 
-	void incoming_request(kad_booststrap_req const& h);
+	void incoming_request(kad_bootstrap_req const& h);
 	void incoming_request(kad_hello_req const& h);
 
 	node_id m_id;
