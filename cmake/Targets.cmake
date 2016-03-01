@@ -7,13 +7,18 @@ include_directories(${Boost_INCLUDE_DIR} )
 link_directories(${Boost_LIBRARY_DIRS})
 
 
-file(GLOB_RECURSE headers include/*.hpp)
+file(GLOB headers include/libed2k/*.hpp)
+file(GLOB headers_kad include/libed2k/kademlia/*.hpp)
+
+source_group(include FILES ${headers})
+source_group(include\\kademlia FILES ${headers_kad})
+
 file(GLOB_RECURSE sources src/*.cpp src/*.c)
 
 if (BUILD_SHARED)
-add_library(ed2k SHARED ${headers} ${sources})
+add_library(ed2k SHARED ${headers} ${headers_kad} ${sources})
 else()
-add_library(ed2k STATIC ${headers} ${sources})
+add_library(ed2k STATIC ${headers} ${headers_kad} ${sources})
 endif()
 
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
