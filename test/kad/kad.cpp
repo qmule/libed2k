@@ -195,14 +195,56 @@ int main(int argc, char* argv[])
 {
     LOGGER_INIT(LOG_ALL)
 
-    if (argc < 4)
+    if (argc < 2)
     {
-        ERR("Set server host, port and incoming directory");
+        ERR("Set nodes.dat full path");
         return (1);
     }
 
-    DBG("Server: " << argv[1] << " port: " << argv[2]);
+    DBG("File nodes: " << argv[1]);
 
+
+    std::ifstream fstream(argv[1], std::ios_base::binary | std::ios_base::in);
+
+    if (fstream)
+    {
+        using libed2k::kad_nodes_dat;
+        using libed2k::kad_entry;
+        libed2k::archive::ed2k_iarchive ifa(fstream);
+        kad_nodes_dat nodes;
+
+        try
+        {
+            ifa >> nodes;
+            DBG(argv[1] << " successfully loaded");
+            DBG("nodes.dat version:" << nodes.version);
+
+            for(size_t i = 0; i != nodes.bootstrap_container.m_collection.size(); ++i) {
+                DBG("bootstrap " << nodes.bootstrap_container.m_collection[i].kid.toString()
+                        << " ip:" << libed2k::int2ipstr(nodes.bootstrap_container.m_collection[i].address.address)
+                        << " udp:" << nodes.bootstrap_container.m_collection[i].address.udp_port
+                        << " tcp:" << nodes.bootstrap_container.m_collection[i].address.tcp_port);
+            }
+
+            for(std::list<kad_entry>::const_iterator itr = nodes.contacts_container.begin(); itr != nodes.contacts_container.end(); ++itr) {
+                DBG("nodes " << itr->kid.toString()
+                        << " ip:" << libed2k::int2ipstr(itr->address.address)
+                        << " udp:" << itr->address.udp_port
+                        << " tcp:" << itr->address.tcp_port);
+            }
+        }
+        catch(libed2k_exception& e)
+        {
+            DBG("error on load nodes.dat " << e.what());
+            return 2;
+        }
+    }
+    else {
+        DBG("unable to open " << argv[1]);
+        return 3;
+    }
+
+    /*
     // immediately convert to utf8
     std::string strIncomingDirectory = libed2k::convert_from_native(argv[3]);
 
@@ -265,7 +307,7 @@ int main(int argc, char* argv[])
     io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));
     io.post(boost::bind(&boost::asio::deadline_timer::cancel, &fs_timer));
     t.join();
-
+*/
     return 0;
 }
 

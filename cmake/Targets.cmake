@@ -28,7 +28,7 @@ set_target_properties(ed2k PROPERTIES COMPILE_FLAGS ${cxx_flags})
 target_compile_definitions(ed2k PRIVATE ${cxx_definitions})
 
 if (BUILD_TOOLS)
-    foreach(ed2k_component conn archive dumper)
+    foreach(ed2k_component conn archive dumper kad)
         file(GLOB_RECURSE component_headers test/${ed2k_component}/*hpp)
         file(GLOB_RECURSE component_sources test/${ed2k_component}/*cpp)
         add_executable(${ed2k_component} ${headers} ${component_headers} ${component_sources})

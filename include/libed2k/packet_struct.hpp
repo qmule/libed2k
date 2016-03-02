@@ -1721,13 +1721,18 @@ namespace libed2k
         uint32_t    dw_key;
         uint32_t    dw_ip;
         uint8_t     verified;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & dw_key & dw_ip & verified;
+        }
     };
 
     struct kad_nodes_dat {
         uint32_t    num_contacts;
         uint32_t    version;
         uint32_t    bootstrap_edition;
-        container_holder<uint32_t, std::list<kad_entry> >   bootstrap_container;
+        container_holder<uint32_t, std::deque<kad_entry> >   bootstrap_container;
         std::list<kad_entry>        contacts_container;
         std::list<kad_entry_ext>    ext_container;
 
