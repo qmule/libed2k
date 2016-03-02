@@ -39,11 +39,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/hasher.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/address.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k { namespace dht
 {
 
-typedef libed2k::md4_hash node_id;
+typedef libed2k::kad_id node_id;
 
 // returns the distance between the two nodes
 // using the kademlia XOR-metric
