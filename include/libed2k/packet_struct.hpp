@@ -1717,6 +1717,58 @@ namespace libed2k
     };
     */
 
+    struct kad_entry_ext {
+        uint32_t    dw_key;
+        uint32_t    dw_ip;
+        uint8_t     verified;
+    };
+
+    struct kad_nodes_dat {
+        uint32_t    num_contacts;
+        uint32_t    version;
+        uint32_t    bootstrap_edition;
+        container_holder<uint32_t, std::list<kad_entry> >   bootstrap_container;
+        std::list<kad_entry>        contacts_container;
+        std::list<kad_entry_ext>    ext_container;
+
+        template<typename Archive>
+        void save(Archive& ar) {
+            LIBED2K_ASSERT(false);
+        }
+
+        template<typename Archive>
+        void load(Archive& ar) {
+            ar & num_contacts;
+            if (num_contacts == 0) {
+                ar & version;
+                if (version == 3) {
+                    ar & bootstrap_edition;
+                    if (bootstrap_edition == 1) {
+                        ar & bootstrap_container;
+                        return;
+                    }
+                }
+
+                if (version >= 1 && version <= 3) {
+                    ar & num_contacts;
+                }
+            }
+
+            for (size_t i = 0; i != num_contacts; ++i) {
+                kad_entry ke;
+                kad_entry_ext kee;
+                ar & ke;
+                contacts_container.push_back(ke);
+                if (version >= 2) {
+                    ar & kee;
+                    ext_container.push_back(kee);
+                }
+            }
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
+    };
+
     struct sources_request_base{
         md4_hash    file_hash;
         template<typename Archive>

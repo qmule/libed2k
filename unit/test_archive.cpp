@@ -846,5 +846,10 @@ BOOST_AUTO_TEST_CASE(test_kad_id_serialization) {
     }
 }
 
+BOOST_AUTO_TEST_CASE(test_instantiation) {
+    using namespace libed2k;
+    kad_nodes_dat knd;
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
