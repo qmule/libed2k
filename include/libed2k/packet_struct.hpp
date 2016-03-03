@@ -1728,6 +1728,9 @@ namespace libed2k
         }
     };
 
+    /**
+      * this structure describes standard emule nodes.dat file internal structure
+    */
     struct kad_nodes_dat {
         uint32_t    num_contacts;
         uint32_t    version;
@@ -1774,7 +1777,7 @@ namespace libed2k
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
-    struct sources_request_base{
+    struct sources_request_base {
         md4_hash    file_hash;
         template<typename Archive>
         void serialize(Archive& ar) {

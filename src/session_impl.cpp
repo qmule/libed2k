@@ -712,6 +712,12 @@ void session_impl::on_receive_udp(error_code const& e, udp::endpoint const& ep, 
 
         return;
     }
+
+    // now process only dht packets
+#ifndef TORRENT_DISABLE_DHT
+    // this is probably a dht message
+    if (m_dht) m_dht->on_receive(ep, buf, len);
+#endif
 }
 
 void session_impl::on_receive_udp_hostname(error_code const& e, char const* hostname, char const* buf, int len)

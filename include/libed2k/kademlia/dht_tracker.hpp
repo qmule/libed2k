@@ -73,6 +73,9 @@ namespace libed2k { namespace dht
 
 	struct dht_tracker
 	{
+        typedef boost::function<void(const error_code&, const char*, size_t)> dht_packet_handler;
+        typedef std::map<std::pair<proto_type, proto_type>, dht_packet_handler> dht_handler_map;
+
 		friend void intrusive_ptr_add_ref(dht_tracker const*);
 		friend void intrusive_ptr_release(dht_tracker const*);
 		friend bool send_callback(void* userdata, entry& e, udp::endpoint const& addr, int flags);
@@ -100,7 +103,9 @@ namespace libed2k { namespace dht
 		void on_unreachable(udp::endpoint const& ep);
 
 	private:
-	
+
+        dht_handler_map dht_request_handlers;
+
 		boost::intrusive_ptr<dht_tracker> self()
 		{ return boost::intrusive_ptr<dht_tracker>(this); }
 

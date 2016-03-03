@@ -577,6 +577,10 @@ void node_impl::incoming_request(kad_bootstrap_req const& h){
 
 }
 
+void node_impl::incoming_request(kademlia_req const& h) {
+
+}
+
 // build response
 void node_impl::incoming_request(kad_hello_req const& m)
 {
