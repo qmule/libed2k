@@ -1566,13 +1566,34 @@ namespace libed2k
     struct kad_entry {
         kad_id              kid;
         kad_net_identifier  address;
-        uint8_t             tail;
+        uint8_t             version;
 
         template<typename Archive>
         void serialize(Archive& ar) {
-            ar & kid & address & tail;
+            ar & kid & address & version;
         }
-    };    
+    };
+
+    struct kad2_common_res {
+        kad_id      kid;
+        uint16_t    tcp_port;
+        uint8_t     version;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & kid & tcp_port & version;
+        }
+    };
+
+    struct kad_info_entry {
+        md4_hash        hash;
+        tag_list<uint8_t> tags;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & hash & tags;
+        }
+    };
 
     // BOOTSTRAP packages
     struct kad_bootstrap_req {
@@ -1587,6 +1608,22 @@ namespace libed2k
     };
 
     typedef container_holder<uint16_t, std::vector<kad_entry> >   kad_bootstrap_res;
+    
+    struct kad2_bootstrap_req {
+
+        template<typename Archive>
+        void serialize(Archive& ar) {}
+    };
+
+    struct kad2_bootstrap_res {
+        kad2_common_res client_info;
+        container_holder<uint16_t, std::deque<kad_entry> > contacts;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_info & contacts;
+        }
+    };
 
     // HELLO packages
     struct kad_hello_base {
@@ -1603,15 +1640,28 @@ namespace libed2k
     struct kad_hello_req : public kad_hello_base {};
     struct kad_hello_res : public kad_hello_base {};
 
+    struct kad2_hello_base {
+        kad2_common_res client_info;
+        tag_list<uint8_t>   tags;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_info & tags;
+        }
+    };
+
+    struct kad2_hello_req : public kad2_hello_base {};
+    struct kad2_hello_res : public kad2_hello_base {};
+
     // SEARCH sources packages
     struct kademlia_req {
-        uint8_t num_of_contacts;
+        uint8_t search_type;
         kad_id  kid_target;
         kad_id  kid_receiver;
 
         template<typename Archive>
         void serialize(Archive& ar) {
-            ar & num_of_contacts & kid_target & kid_receiver;
+            ar & search_type & kid_target & kid_receiver;
         }
     };
 
@@ -1623,7 +1673,193 @@ namespace libed2k
             ar & kid_target & results;
         }
     };
+
+    struct kademlia2_req : public kademlia_req {};
+    struct kademlia2_res : public kademlia_res {};
+
+    struct kad_search_req {
+        kad_id  target_id;
+        
+    };
+
+    struct kad_search_res {
+        kad_id  target_id;
+        container_holder<uint16_t, std::deque<kad_info_entry> > results;
+
+        template<typename Archive>
+        void searialize(Archive& ar) {
+            ar & target_id & results;
+        }
+    };
+
+    struct kad2_search_res {
+        kad_id  source_id;
+        kad_id  target_id;
+        container_holder<uint16_t, std::deque<kad_info_entry> > results;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & source_id & target_id & results;
+        }
+    };
+
+    struct kad_search_notes_req {
+        kad_id  target_id;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & target_id;
+        }
+    };
     
+    struct kad_search_notes_res {
+        kad_id  note_id;
+        container_holder<uint16_t, std::deque<kad_info_entry> > notes;
+    };
+
+    struct kad2_search_sources_req {
+        kad_id  target_id;
+        uint16_t    start_position;
+        uint64_t    size;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & target_id & start_position & size;
+            start_position &= 0x7FFF;   // temp code
+        }
+    };
+
+    struct kad2_search_key_req {
+        kad_id  target_id;
+        uint16_t start_position;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & target_id & start_position;
+        }
+    };
+
+    struct kad2_search_notes_req {
+        kad_id      target_id;
+        uint64_t    filesize;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & target_id & filesize;
+        }
+    };
+
+    // PUBLISH packages
+
+    struct kad2_publish_key_req {
+        kad_id  client_id;
+        container_holder<uint16_t, std::deque<kad_info_entry> >  keys;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id & keys;
+        }
+    };
+
+    struct kad2_publish_source_req {
+        kad_id  client_id;
+        kad_id  source_id;
+        tag_list<uint8_t>   tags;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & client_id & source_id & tags;
+        }
+    };
+
+
+    struct kad_publish_node_req {
+        kad_id  node_it;
+        kad_id  publisher_id;
+        tag_list<uint8_t>   tags;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & note_id & publisher_id & tags;
+        }
+    };
+
+    struct kad2_publish_res {
+        kad_id  target_id;
+        uint8_t count;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & target_id; // &count;
+            // read last field with catch exception - possibly isn't exist
+        }
+    };
+
+
+    struct kad2_publish_key_res : public kad2_publish_res {};
+    struct kad2_publish_source_res : public kad2_publish_res {};
+    struct kad2_publish_note_res : public kad2_publish_res {};
+
+
+    // FIREWALLED
+
+    struct kad_firewalled_req {
+        uint16_t    tcp_port;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & tcp_port;
+        }
+    };
+
+    struct kad2_firewalled_req {
+        uint16_t    tcp_port;
+        kad_id      user_id;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & tcp_port & user_id;
+        }
+    };
+
+    struct kad_firewalled_res {
+        client_id_type ip;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & ip;
+        }
+    };
+
+    struct kad_firewalled_ack_res {
+        template<typename Archive>
+        void serialize(Archive& ar) {}
+    };
+
+    struct kad2_firewalled_up {
+        uint8_t error_code;
+        uint16_t    incoming_port;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & error_code & incoming_port; 
+        }
+    };
+
+
+    // PING+PONG
+
+    struct ping_pong {
+        uint16_t    udp_port;
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & udp_port;
+        }
+    };
+
+    struct kad2_ping : public ping_pong {};
+    struct kad2_pong : public ping_pong {};
+
     /*
     struct kad_answer_base{
         md4_hash    kad_id;
