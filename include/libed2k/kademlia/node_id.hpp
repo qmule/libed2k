@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/hasher.hpp"
 #include "libed2k/assert.hpp"
 #include "libed2k/address.hpp"
-#include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 
 namespace libed2k { namespace dht
 {

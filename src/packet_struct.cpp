@@ -1,4 +1,5 @@
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 #include "libed2k/util.hpp"
 
 namespace libed2k

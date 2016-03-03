@@ -14,6 +14,7 @@
 #include "libed2k/archive.hpp"
 #include "libed2k/ctag.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 #include "libed2k/log.hpp"
 #include "libed2k/file.hpp"
 #include "libed2k/base_connection.hpp"
