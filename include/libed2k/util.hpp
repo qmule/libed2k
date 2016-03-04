@@ -194,7 +194,7 @@ namespace libed2k
         return (nId < HIGHEST_LOWID_ED2K);
     }
 
-    inline boost::uint64_t make_full_ed2k_version(int client_id, int a, int b, int c){
+    inline boost::uint64_t make_full_ed2k_version(boost::uint64_t client_id, boost::uint64_t a, boost::uint64_t b, boost::uint64_t c) {
         return ((client_id << 24) | (a << 17 ) | (b << 10) | (c << 7));
     }
 

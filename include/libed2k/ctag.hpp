@@ -24,103 +24,103 @@ if (!x)\
 typedef boost::uint8_t tg_nid_type;
 typedef boost::uint8_t tg_type;
 
-const tg_nid_type FT_UNDEFINED          = '\x00';    // undefined tag
-const tg_nid_type FT_FILENAME           = '\x01';    // <string>
-const tg_nid_type FT_FILESIZE           = '\x02';    // <uint32>
-const tg_nid_type FT_FILESIZE_HI        = '\x3A';    // <uint32>
-const tg_nid_type FT_FILETYPE           = '\x03';    // <string> or <uint32>
-const tg_nid_type FT_FILEFORMAT         = '\x04';    // <string>
-const tg_nid_type FT_LASTSEENCOMPLETE   = '\x05';    // <uint32>
-const tg_nid_type FT_TRANSFERRED        = '\x08';    // <uint32>
-const tg_nid_type FT_GAPSTART           = '\x09';    // <uint32>
-const tg_nid_type FT_GAPEND             = '\x0A';    // <uint32>
-const tg_nid_type FT_PARTFILENAME       = '\x12';    // <string>
-const tg_nid_type FT_OLDDLPRIORITY      = '\x13';    // Not used anymore
-const tg_nid_type FT_STATUS             = '\x14';    // <uint32>
-const tg_nid_type FT_SOURCES            = '\x15';    // <uint32>
-const tg_nid_type FT_PERMISSIONS        = '\x16';    // <uint32>
-const tg_nid_type FT_OLDULPRIORITY      = '\x17';    // Not used anymore
-const tg_nid_type FT_DLPRIORITY         = '\x18';    // Was 13
-const tg_nid_type FT_ULPRIORITY         = '\x19';    // Was 17
-const tg_nid_type FT_KADLASTPUBLISHKEY  = '\x20';    // <uint32>
-const tg_nid_type FT_KADLASTPUBLISHSRC  = '\x21';    // <uint32>
-const tg_nid_type FT_FLAGS              = '\x22';    // <uint32>
-const tg_nid_type FT_DL_ACTIVE_TIME     = '\x23';    // <uint32>
-const tg_nid_type FT_CORRUPTEDPARTS     = '\x24';    // <string>
-const tg_nid_type FT_DL_PREVIEW         = '\x25';
-const tg_nid_type FT_KADLASTPUBLISHNOTES= '\x26';    // <uint32>
-const tg_nid_type FT_AICH_HASH          = '\x27';
-const tg_nid_type FT_FILEHASH           = '\x28';
-const tg_nid_type FT_COMPLETE_SOURCES   = '\x30';    // nr. of sources which share a
-const tg_nid_type FT_FAST_RESUME_DATA   = '\x31';   // fast resume data array
+const tg_nid_type FT_UNDEFINED          = 0x00u;    // undefined tag
+const tg_nid_type FT_FILENAME           = 0x01u;    // <string>
+const tg_nid_type FT_FILESIZE           = 0x02u;    // <uint32>
+const tg_nid_type FT_FILESIZE_HI        = 0x3Au;    // <uint32>
+const tg_nid_type FT_FILETYPE           = 0x03u;    // <string> or <uint32>
+const tg_nid_type FT_FILEFORMAT         = 0x04u;    // <string>
+const tg_nid_type FT_LASTSEENCOMPLETE   = 0x05u;    // <uint32>
+const tg_nid_type FT_TRANSFERRED        = 0x08u;    // <uint32>
+const tg_nid_type FT_GAPSTART           = 0x09u;    // <uint32>
+const tg_nid_type FT_GAPEND             = 0x0Au;    // <uint32>
+const tg_nid_type FT_PARTFILENAME       = 0x12u;    // <string>
+const tg_nid_type FT_OLDDLPRIORITY      = 0x13u;    // Not used anymore
+const tg_nid_type FT_STATUS             = 0x14u;    // <uint32>
+const tg_nid_type FT_SOURCES            = 0x15u;    // <uint32>
+const tg_nid_type FT_PERMISSIONS        = 0x16u;    // <uint32>
+const tg_nid_type FT_OLDULPRIORITY      = 0x17u;    // Not used anymore
+const tg_nid_type FT_DLPRIORITY         = 0x18u;    // Was 13
+const tg_nid_type FT_ULPRIORITY         = 0x19u;    // Was 17
+const tg_nid_type FT_KADLASTPUBLISHKEY  = 0x20u;    // <uint32>
+const tg_nid_type FT_KADLASTPUBLISHSRC  = 0x21u;    // <uint32>
+const tg_nid_type FT_FLAGS              = 0x22u;    // <uint32>
+const tg_nid_type FT_DL_ACTIVE_TIME     = 0x23u;    // <uint32>
+const tg_nid_type FT_CORRUPTEDPARTS     = 0x24u;    // <string>
+const tg_nid_type FT_DL_PREVIEW         = 0x25u;
+const tg_nid_type FT_KADLASTPUBLISHNOTES= 0x26u;    // <uint32>
+const tg_nid_type FT_AICH_HASH          = 0x27u;
+const tg_nid_type FT_FILEHASH           = 0x28u;
+const tg_nid_type FT_COMPLETE_SOURCES   = 0x30u;    // nr. of sources which share a
+const tg_nid_type FT_FAST_RESUME_DATA   = 0x31u;   // fast resume data array
 
 
 // complete version of the
 // associated file (supported
 // by eserver 16.46+) statistic
 
-const tg_nid_type FT_PUBLISHINFO        = '\x33';    // <uint32>
-const tg_nid_type FT_ATTRANSFERRED      = '\x50';    // <uint32>
-const tg_nid_type FT_ATREQUESTED        = '\x51';    // <uint32>
-const tg_nid_type FT_ATACCEPTED         = '\x52';    // <uint32>
-const tg_nid_type FT_CATEGORY           = '\x53';    // <uint32>
-const tg_nid_type FT_ATTRANSFERREDHI    = '\x54';    // <uint32>
-const tg_nid_type FT_MEDIA_ARTIST       = '\xD0';    // <string>
-const tg_nid_type FT_MEDIA_ALBUM        = '\xD1';    // <string>
-const tg_nid_type FT_MEDIA_TITLE        = '\xD2';    // <string>
-const tg_nid_type FT_MEDIA_LENGTH       = '\xD3';    // <uint32> !!!
-const tg_nid_type FT_MEDIA_BITRATE      = '\xD4';    // <uint32>
-const tg_nid_type FT_MEDIA_CODEC        = '\xD5';    // <string>
-const tg_nid_type FT_FILERATING         = '\xF7';    // <uint8>
+const tg_nid_type FT_PUBLISHINFO        = 0x33u;    // <uint32>
+const tg_nid_type FT_ATTRANSFERRED      = 0x50u;    // <uint32>
+const tg_nid_type FT_ATREQUESTED        = 0x51u;    // <uint32>
+const tg_nid_type FT_ATACCEPTED         = 0x52u;    // <uint32>
+const tg_nid_type FT_CATEGORY           = 0x53u;    // <uint32>
+const tg_nid_type FT_ATTRANSFERREDHI    = 0x54u;    // <uint32>
+const tg_nid_type FT_MEDIA_ARTIST       = 0xD0u;    // <string>
+const tg_nid_type FT_MEDIA_ALBUM        = 0xD1u;    // <string>
+const tg_nid_type FT_MEDIA_TITLE        = 0xD2u;    // <string>
+const tg_nid_type FT_MEDIA_LENGTH       = 0xD3u;    // <uint32> !!!
+const tg_nid_type FT_MEDIA_BITRATE      = 0xD4u;    // <uint32>
+const tg_nid_type FT_MEDIA_CODEC        = 0xD5u;    // <string>
+const tg_nid_type FT_FILERATING         = 0xF7u;    // <uint8>
 
 
 // server tags
-const tg_nid_type ST_SERVERNAME         = '\x01'; // <string>
+const tg_nid_type ST_SERVERNAME         = 0x01u; // <string>
 // Unused (0x02-0x0A)
-const tg_nid_type ST_DESCRIPTION        = '\x0B'; // <string>
-const tg_nid_type ST_PING               = '\x0C'; // <uint32>
-const tg_nid_type ST_FAIL               = '\x0D'; // <uint32>
-const tg_nid_type ST_PREFERENCE         = '\x0E'; // <uint32>
+const tg_nid_type ST_DESCRIPTION        = 0x0Bu; // <string>
+const tg_nid_type ST_PING               = 0x0Cu; // <uint32>
+const tg_nid_type ST_FAIL               = 0x0Du; // <uint32>
+const tg_nid_type ST_PREFERENCE         = 0x0Eu; // <uint32>
         // Unused (0x0F-0x84)
-const tg_nid_type ST_DYNIP              = '\x85';
-const tg_nid_type ST_LASTPING_DEPRECATED= '\x86'; // <uint32> // DEPRECATED, use 0x90
-const tg_nid_type ST_MAXUSERS           = '\x87';
-const tg_nid_type ST_SOFTFILES          = '\x88';
-const tg_nid_type ST_HARDFILES          = '\x89';
+const tg_nid_type ST_DYNIP              = 0x85u;
+const tg_nid_type ST_LASTPING_DEPRECATED= 0x86u; // <uint32> // DEPRECATED, use 0x90
+const tg_nid_type ST_MAXUSERS           = 0x87u;
+const tg_nid_type ST_SOFTFILES          = 0x88u;
+const tg_nid_type ST_HARDFILES          = 0x89u;
         // Unused (0x8A-0x8F)
-const tg_nid_type ST_LASTPING           = '\x90'; // <uint32>
-const tg_nid_type ST_VERSION            = '\x91'; // <string>
-const tg_nid_type ST_UDPFLAGS           = '\x92'; // <uint32>
-const tg_nid_type ST_AUXPORTSLIST       = '\x93'; // <string>
-const tg_nid_type ST_LOWIDUSERS         = '\x94'; // <uint32>
-const tg_nid_type ST_UDPKEY             = '\x95'; // <uint32>
-const tg_nid_type ST_UDPKEYIP           = '\x96'; // <uint32>
-const tg_nid_type ST_TCPPORTOBFUSCATION = '\x97'; // <uint16>
-const tg_nid_type ST_UDPPORTOBFUSCATION = '\x98'; // <uint16>
+const tg_nid_type ST_LASTPING           = 0x90u; // <uint32>
+const tg_nid_type ST_VERSION            = 0x91u; // <string>
+const tg_nid_type ST_UDPFLAGS           = 0x92u; // <uint32>
+const tg_nid_type ST_AUXPORTSLIST       = 0x93u; // <string>
+const tg_nid_type ST_LOWIDUSERS         = 0x94u; // <uint32>
+const tg_nid_type ST_UDPKEY             = 0x95u; // <uint32>
+const tg_nid_type ST_UDPKEYIP           = 0x96u; // <uint32>
+const tg_nid_type ST_TCPPORTOBFUSCATION = 0x97u; // <uint16>
+const tg_nid_type ST_UDPPORTOBFUSCATION = 0x98u; // <uint16>
 
 // client tags
-const tg_nid_type CT_NAME                         = '\x01';
-const tg_nid_type CT_SERVER_UDPSEARCH_FLAGS       = '\x0E';
-const tg_nid_type CT_PORT                         = '\x0F';
-const tg_nid_type CT_VERSION                      = '\x11';
-const tg_nid_type CT_SERVER_FLAGS                 = '\x20'; // currently only used to inform a server about supported features
-const tg_nid_type CT_EMULECOMPAT_OPTIONS          = '\xEF';
-const tg_nid_type CT_EMULE_RESERVED1              = '\xF0';
-const tg_nid_type CT_EMULE_RESERVED2              = '\xF1';
-const tg_nid_type CT_EMULE_RESERVED3              = '\xF2';
-const tg_nid_type CT_EMULE_RESERVED4              = '\xF3';
-const tg_nid_type CT_EMULE_RESERVED5              = '\xF4';
-const tg_nid_type CT_EMULE_RESERVED6              = '\xF5';
-const tg_nid_type CT_EMULE_RESERVED7              = '\xF6';
-const tg_nid_type CT_EMULE_RESERVED8              = '\xF7';
-const tg_nid_type CT_EMULE_RESERVED9              = '\xF8';
-const tg_nid_type CT_EMULE_UDPPORTS               = '\xF9';
-const tg_nid_type CT_EMULE_MISCOPTIONS1           = '\xFA';
-const tg_nid_type CT_EMULE_VERSION                = '\xFB';
-const tg_nid_type CT_EMULE_BUDDYIP                = '\xFC';
-const tg_nid_type CT_EMULE_BUDDYUDP               = '\xFD';
-const tg_nid_type CT_EMULE_MISCOPTIONS2           = '\xFE';
-const tg_nid_type CT_EMULE_RESERVED13             = '\xFF';
+const tg_nid_type CT_NAME                         = 0x01u;
+const tg_nid_type CT_SERVER_UDPSEARCH_FLAGS       = 0x0Eu;
+const tg_nid_type CT_PORT                         = 0x0Fu;
+const tg_nid_type CT_VERSION                      = 0x11u;
+const tg_nid_type CT_SERVER_FLAGS                 = 0x20u; // currently only used to inform a server about supported features
+const tg_nid_type CT_EMULECOMPAT_OPTIONS          = 0xEFu;
+const tg_nid_type CT_EMULE_RESERVED1              = 0xF0u;
+const tg_nid_type CT_EMULE_RESERVED2              = 0xF1u;
+const tg_nid_type CT_EMULE_RESERVED3              = 0xF2u;
+const tg_nid_type CT_EMULE_RESERVED4              = 0xF3u;
+const tg_nid_type CT_EMULE_RESERVED5              = 0xF4u;
+const tg_nid_type CT_EMULE_RESERVED6              = 0xF5u;
+const tg_nid_type CT_EMULE_RESERVED7              = 0xF6u;
+const tg_nid_type CT_EMULE_RESERVED8              = 0xF7u;
+const tg_nid_type CT_EMULE_RESERVED9              = 0xF8u;
+const tg_nid_type CT_EMULE_UDPPORTS               = 0xF9u;
+const tg_nid_type CT_EMULE_MISCOPTIONS1           = 0xFAu;
+const tg_nid_type CT_EMULE_VERSION                = 0xFBu;
+const tg_nid_type CT_EMULE_BUDDYIP                = 0xFCu;
+const tg_nid_type CT_EMULE_BUDDYUDP               = 0xFDu;
+const tg_nid_type CT_EMULE_MISCOPTIONS2           = 0xFEu;
+const tg_nid_type CT_EMULE_RESERVED13             = 0xFFu;
 
 // old emule flags
 const unsigned int ET_COMPRESSION          = 0x20u;
@@ -613,7 +613,6 @@ protected:
 
 private:
     std::vector<char> m_value;
-    tg_type m_type;
 };
 
 template<class T>
