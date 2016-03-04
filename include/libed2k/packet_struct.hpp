@@ -277,21 +277,21 @@ namespace libed2k
     const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
     const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
 
-    /**
-      * supported protocols
-     */
-    const proto_type    OP_EDONKEYHEADER        = '\xE3';
-    const proto_type    OP_EDONKEYPROT          = OP_EDONKEYHEADER;
-    const proto_type    OP_PACKEDPROT           = '\xD4';
-    const proto_type    OP_EMULEPROT            = '\xC5';
+	/**
+	  * supported protocols
+	 */
+	const proto_type    OP_EDONKEYHEADER        = 0xE3u;
+	const proto_type    OP_EDONKEYPROT          = OP_EDONKEYHEADER;
+	const proto_type    OP_PACKEDPROT           = 0xD4u;
+	const proto_type    OP_EMULEPROT            = 0xC5u;
 
     // Reserved for later UDP headers (important for EncryptedDatagramSocket)
-    const proto_type    OP_UDPRESERVEDPROT1     = '\xA3';   // unused
-    const proto_type    OP_UDPRESERVEDPROT2     = '\xB2';   // unused
+    const proto_type    OP_UDPRESERVEDPROT1     = 0xA3u;   // unused
+    const proto_type    OP_UDPRESERVEDPROT2     = 0xB2u;   // unused
 
-    // Kademlia 1/2
-    const proto_type    OP_KADEMLIAHEADER       = '\xE4';
-    const proto_type    OP_KADEMLIAPACKEDPROT   = '\xE5';
+                                                        // Kademlia 1/2
+    const proto_type    OP_KADEMLIAHEADER       = 0xE4u;
+    const proto_type    OP_KADEMLIAPACKEDPROT = 0xE5u;
 
     #define SOURCE_EXCHG_LEVEL 0
 
@@ -1542,7 +1542,7 @@ namespace libed2k
         boost::uint8_t  flag;   // something unknown
         int sx_version;
 
-        sources_answer_element(int version): sx_version(version){}
+        sources_answer_element(int version): flag(0u), sx_version(version){}
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & client_id & server_id;
@@ -1560,7 +1560,7 @@ namespace libed2k
         boost::uint16_t size;
         sae_container elems;
         int sx_version;
-        sources_answer_base(int version) : sx_version(version){}
+        sources_answer_base(int version) : size(0u), sx_version(version){}
         template<typename Archive>
         void load(Archive& ar) {
             ar & file_hash & size;
@@ -1587,10 +1587,10 @@ namespace libed2k
         sources_answer(int version): sources_answer_base(version){}
     };
 
-    struct sources_answer2: public sources_answer_base{
-        sources_answer2(int version): sources_answer_base(version){}
+    struct sources_answer2 : public sources_answer_base {
+        sources_answer2(int version) : sources_answer_base(version) {}
     };
-    
+
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
         static const proto_type protocol = OP_EDONKEYPROT;

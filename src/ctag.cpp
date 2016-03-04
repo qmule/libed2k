@@ -160,7 +160,7 @@ std::string tagIdtoString(tg_nid_type tid)
 }
 
 // base tag
-base_tag::base_tag(const std::string& strName, tg_nid_type nNameId) : m_strName(strName), m_nNameId(nNameId)
+base_tag::base_tag(const std::string& strName, tg_nid_type nNameId) : m_strName(strName), m_nNameId(nNameId), m_bNewED2K(false)
 {
 }
 
