@@ -11,6 +11,10 @@ namespace libed2k {
     */
     struct kad_id : public md4_hash {
 
+        enum {
+            kad_total_bits = md4_hash::size * 8
+        };
+
         kad_id();
         kad_id(const md4_hash& h);
         kad_id(const md4_hash::md4hash_container&);
