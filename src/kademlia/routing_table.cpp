@@ -46,6 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/kademlia/node_id.hpp"
 #include "libed2k/session_settings.hpp"
 #include "libed2k/time.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 
 using boost::uint8_t;
 
@@ -127,7 +128,7 @@ void routing_table::print_state(std::ostream& os) const
 		<< "node_id: " << m_id << "\n\n";
 
 	os << "number of nodes per bucket:\n-- live ";
-	for (int i = 8; i < 160; ++i)
+	for (int i = 8; i < kad_id::kad_total_bits; ++i)
 		os << "-";
 	os << "\n";
 
@@ -140,7 +141,7 @@ void routing_table::print_state(std::ostream& os) const
 		}
 		os << "\n";
 	}
-	for (int i = 0; i < 160; ++i) os << "+";
+	for (int i = 0; i < kad_id::kad_total_bits; ++i) os << "+";
 	os << "\n";
 
 	for (int k = 0; k < m_bucket_size; ++k)
@@ -153,7 +154,7 @@ void routing_table::print_state(std::ostream& os) const
 		os << "\n";
 	}
 	os << "-- cached ";
-	for (int i = 10; i < 160; ++i)
+	for (int i = 10; i < kad_id::kad_total_bits; ++i)
 		os << "-";
 	os << "\n\n";
 
@@ -237,7 +238,7 @@ bool routing_table::need_refresh(node_id& target) const
 	target[(num_bits - 1) / 8] |=
 		(~(m_id[(num_bits - 1) / 8])) & (0x80 >> ((num_bits - 1) % 8));
 
-	LIBED2K_ASSERT(distance_exp(m_id, target) == 160 - num_bits);
+	LIBED2K_ASSERT(distance_exp(m_id, target) == kad_id::kad_total_bits - num_bits);
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	LIBED2K_LOG(table) << "need_refresh [ bucket: " << num_bits << " target: " << target << " ]";
@@ -258,7 +259,7 @@ void routing_table::replacement_cache(bucket_t& nodes) const
 
 routing_table::table_t::iterator routing_table::find_bucket(node_id const& id)
 {
-//	LIBED2K_ASSERT(id != m_id);
+	LIBED2K_ASSERT(id != m_id);
 
 	int num_buckets = m_buckets.size();
 	if (num_buckets == 0)
@@ -478,7 +479,7 @@ bool routing_table::add_node(node_entry const& e)
 		// only nodes that are pinged and haven't failed
 		// can split the bucket, and we can only split
 		// the last bucket
-		can_split = (boost::next(i) == m_buckets.end() && m_buckets.size() < 160);
+		can_split = (boost::next(i) == m_buckets.end() && m_buckets.size() < kad_id::kad_total_bits);
 
 		// if the node we're trying to insert is considered pinged,
 		// we may replace other nodes that aren't pinged
@@ -567,7 +568,7 @@ bool routing_table::add_node(node_entry const& e)
 	m_buckets.push_back(routing_table_node());
 	// the extra seconds added to the end is to prioritize
 	// buckets closer to us when refreshing
-	m_buckets.back().last_active = min_time() + seconds(160 - m_buckets.size());
+	m_buckets.back().last_active = min_time() + seconds(kad_id::kad_total_bits - m_buckets.size());
 	bucket_t& new_bucket = m_buckets.back().live_nodes;
 	bucket_t& new_replacement_bucket = m_buckets.back().replacements;
 
@@ -578,7 +579,7 @@ bool routing_table::add_node(node_entry const& e)
 	b = &i->live_nodes;
 	rb = &i->replacements;
 
-	// move any node whose (160 - distane_exp(m_id, id)) >= (i - m_buckets.begin())
+	// move any node whose (kad_id::kad_total_bits - distane_exp(m_id, id)) >= (i - m_buckets.begin())
 	// to the new bucket
 	for (bucket_t::iterator j = b->begin(); j != b->end();)
 	{
