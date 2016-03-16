@@ -714,7 +714,7 @@ void session_impl::on_receive_udp(error_code const& e, udp::endpoint const& ep, 
     }
 
     // now process only dht packets
-#ifndef TORRENT_DISABLE_DHT
+#ifndef LIBED2K_DISABLE_DHT
     // this is probably a dht message
     if (m_dht) m_dht->on_receive(ep, buf, len);
 #endif
