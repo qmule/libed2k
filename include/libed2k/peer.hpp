@@ -15,7 +15,7 @@ namespace libed2k {
             endpoint(ep), connection(NULL), last_connected(0), next_connect(0),
             connectable(conn), seed(false), failcount(0), fast_reconnects(0),
             trust_points(0), source(src)
-#ifndef TORRENT_DISABLE_DHT
+#ifndef LIBED2K_DISABLE_DHT
             , added_to_dht(false)
 #endif
         {}
