@@ -25,6 +25,7 @@ set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
 set_target_properties(ed2k PROPERTIES LINK_FLAGS ${l_flags})
 set_target_properties(ed2k PROPERTIES COMPILE_FLAGS ${cxx_flags})
 
+set(cxx_definitions ${cxx_definitions} LIBED2K_DHT_VERBOSE_LOGGING)
 target_compile_definitions(ed2k PRIVATE ${cxx_definitions})
 
 if (BUILD_TOOLS)

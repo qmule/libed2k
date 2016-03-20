@@ -23,37 +23,14 @@
 
 using namespace libed2k;
 
-enum KAD_CMD
-{
-    kad_empty
-};
-
-KAD_CMD extract_cmd(const std::string& strCMD, std::string& strArg)
-{
-    if (strCMD.empty())
-    {
-        return kad_empty;
-    }
-
-    std::string::size_type nPos = strCMD.find_first_of(":");
-    std::string strCommand;
-
-    if (nPos == std::string::npos)
-    {
-       strCommand = strCMD;
-       strArg.clear();
-    }
-    else
-    {
-        strCommand = strCMD.substr(0, nPos);
-        strArg = strCMD.substr(nPos+1);
-    }
-
-    return kad_empty;
+std::deque<std::string> split_del(const std::string& input, char delimeter) {
+    std::istringstream ss(input);
+    std::deque<std::string> res;
+    std::string part;
+    while (std::getline(ss, part, delimeter)) res.push_back(part);
+    return res;
 }
 
-libed2k::shared_files_list vSF;
-boost::mutex m_sf_mutex;
 
 void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
 {
@@ -91,35 +68,9 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
             DBG("ALERT: server_identity_alert: " << p->server_hash << " name:  " << p->server_name << " descr: " << p->server_descr);
         }
         else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
-        {
-            boost::mutex::scoped_lock l(m_sf_mutex);
+        {           
             DBG("ALERT: RESULT: " << p->m_files.m_collection.size());
-            vSF.clear();
-            vSF = p->m_files;
-
-            boost::uint64_t nSize = 0;
-
-            for (size_t n = 0; n < vSF.m_size; ++n)
-            {
-                boost::shared_ptr<base_tag> low = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE);
-                boost::shared_ptr<base_tag> hi = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_FILESIZE_HI);
-                boost::shared_ptr<base_tag> src = vSF.m_collection[n].m_list.getTagByNameId(libed2k::FT_SOURCES);
-
-                if (low.get())
-                {
-                    nSize = low->asInt();
-                }
-
-                if (hi.get())
-                {
-                    nSize += hi->asInt() << 32;
-                }
-
-                DBG("ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
-                    << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
-                    << " size: " << nSize
-                    << " src: " << src->asInt());
-            }
+ 
         }
         else if(dynamic_cast<peer_message_alert*>(a.get()))
         {
@@ -191,72 +142,21 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
     pt->async_wait(boost::bind(&alerts_reader, boost::asio::placeholders::error, pt, ps));
 }
 
-int main(int argc, char* argv[])
-{
+// load nodes from standard emule nodes.dat file
+bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd);
+
+int main(int argc, char* argv[]) {
     LOGGER_INIT(LOG_ALL)
-
-    if (argc < 2)
-    {
-        ERR("Set nodes.dat full path");
-        return (1);
-    }
-
-    DBG("File nodes: " << argv[1]);
-
-
-    std::ifstream fstream(argv[1], std::ios_base::binary | std::ios_base::in);
-
-    if (fstream)
-    {
-        using libed2k::kad_nodes_dat;
-        using libed2k::kad_entry;
-        libed2k::archive::ed2k_iarchive ifa(fstream);
-        kad_nodes_dat nodes;
-
-        try
-        {
-            ifa >> nodes;
-            DBG(argv[1] << " successfully loaded");
-            DBG("nodes.dat version:" << nodes.version);
-
-            for(size_t i = 0; i != nodes.bootstrap_container.m_collection.size(); ++i) {
-                DBG("bootstrap " << nodes.bootstrap_container.m_collection[i].kid.toString()
-                        << " ip:" << libed2k::int2ipstr(nodes.bootstrap_container.m_collection[i].address.address)
-                        << " udp:" << nodes.bootstrap_container.m_collection[i].address.udp_port
-                        << " tcp:" << nodes.bootstrap_container.m_collection[i].address.tcp_port);
-            }
-
-            for(std::list<kad_entry>::const_iterator itr = nodes.contacts_container.begin(); itr != nodes.contacts_container.end(); ++itr) {
-                DBG("nodes " << itr->kid.toString()
-                        << " ip:" << libed2k::int2ipstr(itr->address.address)
-                        << " udp:" << itr->address.udp_port
-                        << " tcp:" << itr->address.tcp_port);
-            }
-        }
-        catch(libed2k_exception& e)
-        {
-            DBG("error on load nodes.dat " << e.what());
-            return 2;
-        }
-    }
-    else {
-        DBG("unable to open " << argv[1]);
-        return 3;
-    }
-
-    /*
-    // immediately convert to utf8
-    std::string strIncomingDirectory = libed2k::convert_from_native(argv[3]);
-
+    std::cout << "---- kad started\n"
+    << "---- press q/Q/quit to exit\n"
+    << "---- press something other for process alerts \n"
+    << "---- enter commands using command;param1;param2;....\n";
+    
     libed2k::fingerprint print;
     libed2k::session_settings settings;
-    settings.m_known_file = "./known.met";
     settings.listen_port = 4668;
-    //settings.server_
     libed2k::session ses(print, "0.0.0.0", settings);
-    ses.set_alert_mask(alert::all_categories);
-
-    libed2k::server_connection_parameters scp("New server", argv[1], atoi(argv[2]), 20, 20, 10, 10, 10);
+    ses.set_alert_mask(alert::all_categories);    
 
     libed2k::io_service io;
     boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
@@ -264,42 +164,27 @@ int main(int argc, char* argv[])
     alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
     boost::thread t(boost::bind(&libed2k::io_service::run, &io));
 
-    libed2k::search_request order = libed2k::generateSearchRequest(0,0,0,0, "", "", "", 0, 0, "db2");
+    std::string input;
 
-    std::cout << "---- libed2k_client started\n"
-              << "---- press q to exit\n"
-              << "---- press something other for process alerts " << std::endl;
-
-
-    std::string strAlex = "109.191.73.222";
-    std::string strDore = "192.168.161.54";
-    std::string strDiman = "88.206.52.81";
-    ip::address a(ip::address::from_string(strDore.c_str()));
-    int nPort = 4667;
-
-    DBG("addr: "<< int2ipstr(address2int(a)));
-    std::string strUser;
-    libed2k::peer_connection_handle pch;
-
-    net_identifier ni(address2int(a), nPort);
-
-    std::string strArg;
-    std::deque<std::string> vpaths;
-    ses.server_connect(scp);
-
-    while ((std::cin >> strUser))
-    {
-        DBG("process: " << strUser);
-
-        if (strUser == "quit")
-        {
-            break;
-        }
-
-        switch(extract_cmd(strUser, strArg))
-        {
-            default:
-                break;
+    while ((std::cin >> input)) {
+        std::deque<std::string> command = split_del(input, ';');
+        if (command.empty()) continue;
+        if (command.at(0) == "quit" || command.at(0) == "q" || command.at(0) == "Q")  break;
+        if (command.at(0) == "load") {
+            if (command.size() < 2) {
+                DBG("load command must have at least one specified nodes.dat file path");
+            }
+            else {
+                for (size_t i = 1; i != command.size(); ++i) {
+                    libed2k::kad_nodes_dat knd;
+                    if (load_nodes(command.at(i), knd)) {
+                        DBG("file " << command.at(i) << " load succesfully");
+                    }
+                    else {
+                        DBG("file " << command.at(i) << " load failed");
+                    }
+                }
+            }
         }
     }
 
@@ -307,8 +192,54 @@ int main(int argc, char* argv[])
     io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));
     io.post(boost::bind(&boost::asio::deadline_timer::cancel, &fs_timer));
     t.join();
-*/
     return 0;
+}
+
+bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd) {
+    DBG("File nodes: " << filename);
+
+    std::ifstream fstream(filename, std::ios_base::binary | std::ios_base::in);
+
+    if (fstream) {
+        using libed2k::kad_nodes_dat;
+        using libed2k::kad_entry;
+        libed2k::archive::ed2k_iarchive ifa(fstream);        
+
+        try
+        {
+            ifa >> knd;       
+            /*
+            DBG("nodes.dat version:" << knd.version);
+
+            for (size_t i = 0; i != knd.bootstrap_container.m_collection.size(); ++i) {
+                DBG("bootstrap " << knd.bootstrap_container.m_collection[i].kid.toString()
+                    << " ip:" << libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address)
+                    << " udp:" << knd.bootstrap_container.m_collection[i].address.udp_port
+                    << " tcp:" << knd.bootstrap_container.m_collection[i].address.tcp_port);
+                    
+            }
+
+            for (std::list<kad_entry>::const_iterator itr = knd.contacts_container.begin(); itr != knd.contacts_container.end(); ++itr) {
+                DBG("nodes " << itr->kid.toString()
+                    << " ip:" << libed2k::int2ipstr(itr->address.address)
+                    << " udp:" << itr->address.udp_port
+                    << " tcp:" << itr->address.tcp_port);
+                    
+            }
+            */
+        }
+        catch (libed2k_exception& e)
+        {
+            DBG("error on load nodes.dat " << e.what());
+            return false;
+        }
+    }
+    else {
+        DBG("unable to open " << filename);
+        return false;
+    }
+
+    return true;
 }
 
 
