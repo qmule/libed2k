@@ -179,12 +179,39 @@ int main(int argc, char* argv[]) {
                     libed2k::kad_nodes_dat knd;
                     if (load_nodes(command.at(i), knd)) {
                         DBG("file " << command.at(i) << " load succesfully");
+                        DBG("nodes.dat file version: " << knd.version);
+
+                        for (size_t i = 0; i != knd.bootstrap_container.m_collection.size(); ++i) {
+                            DBG("bootstrap " << knd.bootstrap_container.m_collection[i].kid.toString()
+                                << " ip:" << libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address)
+                                << " udp:" << knd.bootstrap_container.m_collection[i].address.udp_port
+                                << " tcp:" << knd.bootstrap_container.m_collection[i].address.tcp_port);
+                            ses.add_dht_router(std::make_pair(libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address),
+                                knd.bootstrap_container.m_collection[i].address.udp_port));
+                        }
+
+                        for (std::list<kad_entry>::const_iterator itr = knd.contacts_container.begin(); itr != knd.contacts_container.end(); ++itr) {
+                            DBG("nodes " << itr->kid.toString()
+                                << " ip:" << libed2k::int2ipstr(itr->address.address)
+                                << " udp:" << itr->address.udp_port
+                                << " tcp:" << itr->address.tcp_port);
+                                ses.add_dht_router(std::make_pair(libed2k::int2ipstr(itr->address.address), itr->address.udp_port)
+                            );
+                        }
+                                               
+                        
                     }
                     else {
                         DBG("file " << command.at(i) << " load failed");
                     }
                 }
             }
+        }
+        else if (command.at(0) == "startdht") {
+            ses.start_dht();
+        }
+        else if (command.at(0) == "stopdht") {
+            ses.stop_dht();
         }
     }
 

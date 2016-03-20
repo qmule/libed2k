@@ -1147,6 +1147,7 @@ void session_impl::abort()
 
     stop_upnp();
     stop_natpmp();
+    stop_dht();
 
     DBG("aborting all transfers (" << m_transfers.size() << ")");
     // abort all transfers
@@ -1857,8 +1858,7 @@ void session_impl::set_external_address(address const& ip
 #endif
         // TODO: report errors as alerts
         if (e) return;
-        while (host != tcp::resolver::iterator())
-        {
+        while (host != tcp::resolver::iterator()) {
             // router nodes should be added before the DHT is started (and bootstrapped)
             udp::endpoint ep(host->endpoint().address(), host->endpoint().port());
             if (m_dht) m_dht->add_router_node(ep);

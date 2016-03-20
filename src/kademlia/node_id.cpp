@@ -142,8 +142,8 @@ node_id generate_id_impl(address const& ip_, boost::uint32_t r)
 	id[1] = (c >> 16) & 0xff;
 	id[2] = ((c >> 8) & 0xf8) | (random() & 0x7);
 
-	for (int i = 3; i < 19; ++i) id[i] = random();
-	id[19] = r;
+	for (int i = 3; i < 15; ++i) id[i] = random();
+	id[15] = r;
 
 	return id;
 }

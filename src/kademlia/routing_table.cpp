@@ -259,7 +259,7 @@ void routing_table::replacement_cache(bucket_t& nodes) const
 
 routing_table::table_t::iterator routing_table::find_bucket(node_id const& id)
 {
-	LIBED2K_ASSERT(id != m_id);
+	//LIBED2K_ASSERT(id != m_id);
 
 	int num_buckets = m_buckets.size();
 	if (num_buckets == 0)
