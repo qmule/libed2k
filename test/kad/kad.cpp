@@ -225,7 +225,7 @@ int main(int argc, char* argv[]) {
 bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd) {
     DBG("File nodes: " << filename);
 
-    std::ifstream fstream(filename, std::ios_base::binary | std::ios_base::in);
+    std::ifstream fstream(filename.c_str(), std::ios_base::binary | std::ios_base::in);
 
     if (fstream) {
         using libed2k::kad_nodes_dat;
