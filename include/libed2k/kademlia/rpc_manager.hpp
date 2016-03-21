@@ -85,6 +85,11 @@ public:
 	bool invoke(entry& e, udp::endpoint target
 		, observer_ptr o);
 
+    template<class Packet>
+    bool invoke(const Packet& p, udp::endpoint target, observer_ptr o) {
+        std::string transaction_id = transaction_identifier(transaction_identifier<Packet>::id, target);
+    }
+
 	void add_our_id(entry& e);
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
@@ -98,6 +103,8 @@ public:
 	void free_observer(void* ptr);
 
 	int num_allocated_observers() const { return m_allocated_observers; }
+
+    std::string transaction_identifier(const char packet_tid, udp::endpoint target);
 
 private:
 

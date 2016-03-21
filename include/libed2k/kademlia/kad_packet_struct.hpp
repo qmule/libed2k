@@ -517,6 +517,20 @@ namespace libed2k {
         static const proto_type value       = OP_ANSWERSOURCES2;
         static const proto_type protocol    = OP_EMULEPROT;
     };
+
+
+    /**
+    *   special transaction identifier on packet type
+    */
+    template<typename T> struct transaction_identifier;
+
+    template<> struct transaction_identifier<kad2_ping> {
+        static const char  id = 'p';
+    };
+
+    template<> struct transaction_identifier<kad2_pong> {
+        static const char  id = 'p';
+    };
 }
 
 #endif //__KAD_PACKET_STRUCT__

@@ -50,6 +50,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/kademlia/observer.hpp>
 #include <libed2k/hasher.hpp>
 #include <libed2k/time.hpp>
+#include "libed2k/util.hpp"
 #include <time.h> // time()
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -469,6 +470,13 @@ bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 		return true;
 	}
 	return false;
+}
+
+std::string rpc_manager::transaction_identifier(const char packet_tid, udp::endpoint target) {
+    LIBED2K_ASSERT(packet_tid != NULL);
+    std::stringstream ss;
+    ss << packet_tid << "_" << address2int(target.address()) << "_" << target.port();
+    return ss.str();
 }
 
 observer::~observer()
