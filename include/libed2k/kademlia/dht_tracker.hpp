@@ -52,6 +52,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/socket.hpp"
 #include "libed2k/thread.hpp"
 #include "libed2k/deadline_timer.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k
 {
@@ -78,7 +79,7 @@ namespace libed2k { namespace dht
 
 		friend void intrusive_ptr_add_ref(dht_tracker const*);
 		friend void intrusive_ptr_release(dht_tracker const*);
-		friend bool send_callback(void* userdata, entry& e, udp::endpoint const& addr, int flags);
+		friend bool send_callback(void* userdata, const message& e, udp::endpoint const& addr, int flags);
 		dht_tracker(libed2k::aux::session_impl& ses, rate_limited_udp_socket& sock
 			, dht_settings const& settings, entry const* state = 0);
 
@@ -117,7 +118,7 @@ namespace libed2k { namespace dht
 		void refresh_timeout(error_code const& e);
 		void tick(error_code const& e);
 
-		bool send_packet(libed2k::entry& e, udp::endpoint const& addr, int send_flags);
+		bool send_packet(const message& e, udp::endpoint const& addr, int send_flags);
 
 		node_impl m_dht;
 		libed2k::aux::session_impl& m_ses;

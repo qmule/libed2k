@@ -325,7 +325,7 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		o->timeout();
 		entry e;
 		incoming_error(e, "missing 'r' key");
-		m_send(m_userdata, e, m.addr, 0);
+		//m_send(m_userdata, e, m.addr, 0);
 		return false;
 	}
 
@@ -335,7 +335,7 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		o->timeout();
 		entry e;
 		incoming_error(e, "missing 'id' key");
-		m_send(m_userdata, e, m.addr, 0);
+		//m_send(m_userdata, e, m.addr, 0);
 		return false;
 	}
 
@@ -461,14 +461,15 @@ bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 		<< e["q"].string() << " -> " << target_addr;
 #endif
 
-	if (m_send(m_userdata, e, target_addr, 1))
-	{
-		m_transactions.push_back(o);
+    // TODO - remove this whole function
+	//if (m_send(m_userdata, e, target_addr, 1))
+	//{
+	//	m_transactions.push_back(o);
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-		o->m_was_sent = true;
+	//	o->m_was_sent = true;
 #endif
-		return true;
-	}
+	//	return true;
+	//}
 	return false;
 }
 

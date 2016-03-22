@@ -39,13 +39,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/pool.hpp>
 #include <boost/function/function3.hpp>
 
-#include <libed2k/socket.hpp>
-#include <libed2k/entry.hpp>
-#include <libed2k/kademlia/node_id.hpp>
-#include <libed2k/kademlia/logging.hpp>
-#include <libed2k/kademlia/observer.hpp>
-
+#include "libed2k/socket.hpp"
+#include "libed2k/entry.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/kademlia/logging.hpp"
+#include "libed2k/kademlia/observer.hpp"
 #include "libed2k/ptime.hpp"
+#include "libed2k/packet_struct.hpp"
 
 namespace libed2k { namespace aux { struct session_impl; } }
 
@@ -68,7 +68,7 @@ class routing_table;
 class LIBED2K_EXTRA_EXPORT rpc_manager
 {
 public:
-	typedef bool (*send_fun)(void* userdata, entry&, udp::endpoint const&, int);
+	typedef bool (*send_fun)(void* userdata, const message&, udp::endpoint const&, int);
 
 	rpc_manager(node_id const& our_id
 		, routing_table& table, send_fun const& sf

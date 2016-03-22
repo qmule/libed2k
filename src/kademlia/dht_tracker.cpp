@@ -149,7 +149,7 @@ namespace libed2k { namespace dht
 		return node_id(node_id(nid->string().c_str()));
 	}
 
-	bool send_callback(void* userdata, entry& e, udp::endpoint const& addr, int flags)
+	bool send_callback(void* userdata, const message& e, udp::endpoint const& addr, int flags)
 	{
 		dht_tracker* self = (dht_tracker*)userdata;
 		return self->send_packet(e, addr, flags);
@@ -566,7 +566,7 @@ namespace libed2k { namespace dht
 		m_dht.add_router_node(node);
 	}
 
-	bool dht_tracker::send_packet(libed2k::entry& e, udp::endpoint const& addr, int send_flags)
+	bool dht_tracker::send_packet(const message& e, udp::endpoint const& addr, int send_flags)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 		using libed2k::bencode;
@@ -574,10 +574,10 @@ namespace libed2k { namespace dht
 
 		static char const version_str[] = {'L', 'T'
 			, LIBED2K_VERSION_MAJOR, LIBED2K_VERSION_MINOR};
-		e["v"] = std::string(version_str, version_str + 4);
+		//e["v"] = std::string(version_str, version_str + 4);
 
 		m_send_buf.clear();
-		bencode(std::back_inserter(m_send_buf), e);
+		//bencode(std::back_inserter(m_send_buf), e);
 		error_code ec;
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -597,7 +597,7 @@ namespace libed2k { namespace dht
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			m_total_out_bytes += m_send_buf.size();
-		
+		/*
 			if (e["y"].string() == "r")
 			{
 				// TODO: fix this stats logging
@@ -608,6 +608,7 @@ namespace libed2k { namespace dht
 			{
 				m_queries_out_bytes += m_send_buf.size();
 			}
+            */
 			LIBED2K_LOG(dht_tracker) << "==> " << addr << " " << log_line.str();
 #endif
 			return true;
