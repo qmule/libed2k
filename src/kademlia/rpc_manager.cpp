@@ -276,20 +276,21 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 	LIBED2K_INVARIANT_CHECK;
 
 	if (m_destructing) return false;
+    // TODO - use emule msg format - generate transaction id, search observer and so on
 
 	// we only deal with replies, not queries
-	LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "r");
+	//LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "r");
 
 	// if we don't have the transaction id in our
 	// request list, ignore the packet
 
-	std::string transaction_id = m.message.dict_find_string_value("t");
+	//std::string transaction_id = m.message.dict_find_string_value("t");
 
-	std::string::const_iterator i = transaction_id.begin();	
-	int tid = transaction_id.size() != 2 ? -1 : io::read_uint16(i);
+	//std::string::const_iterator i = transaction_id.begin();	
+	//int tid = transaction_id.size() != 2 ? -1 : io::read_uint16(i);
 
 	observer_ptr o;
-
+    /*
 	for (transactions_t::iterator i = m_transactions.begin()
 		, end(m_transactions.end()); i != end; ++i)
 	{
@@ -300,12 +301,12 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		m_transactions.erase(i);
 		break;
 	}
-
+    */
 	if (!o)
 	{
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		LIBED2K_LOG(rpc) << "Reply with unknown transaction id size: " 
-			<< transaction_id.size() << " from " << m.addr;
+		//LIBED2K_LOG(rpc) << "Reply with unknown transaction id size: " 
+	//		<< transaction_id.size() << " from " << m.addr;
 #endif
 //		entry e;
 //		incoming_error(e, "invalid transaction id");
@@ -319,6 +320,7 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		<< std::endl;
 #endif
 
+    /*
 	lazy_entry const* ret_ent = m.message.dict_find_dict("r");
 	if (ret_ent == 0)
 	{
@@ -338,13 +340,13 @@ bool rpc_manager::incoming(msg const& m, node_id* id)
 		//m_send(m_userdata, e, m.addr, 0);
 		return false;
 	}
-
+    */
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
-		<< tid << " from " << m.addr;
+	//LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
+	//	<< tid << " from " << m.addr;
 #endif
-	o->reply(m);
-	*id = node_id(node_id_ent->string_ptr());
+	//o->reply(m);
+	//*id = node_id(node_id_ent->string_ptr());
 
 	// we found an observer for this reply, hence the node is not spoofing
 	// add it to the routing table

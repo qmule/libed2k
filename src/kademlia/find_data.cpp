@@ -56,6 +56,7 @@ using detail::read_v6_endpoint;
 
 void find_data_observer::reply(msg const& m)
 {
+/*
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	std::stringstream log_line;
 	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
@@ -167,6 +168,7 @@ void find_data_observer::reply(msg const& m)
 	LIBED2K_LOG(traversal) << log_line.str();
 #endif
 	done();
+*/
 }
 
 void add_entry_fun(void* userdata, node_entry const& e)

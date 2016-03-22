@@ -42,6 +42,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/asio/ip/udp.hpp>
 #endif
 
+#include "libed2k/packet_struct.hpp"
+
 namespace libed2k {
 namespace dht {
 
@@ -51,9 +53,9 @@ typedef std::vector<tcp::endpoint> peers_t;
 
 struct msg
 {
-	msg(lazy_entry const& m, udp::endpoint const& ep): message(m), addr(ep) {}
+	msg(message const& m, udp::endpoint const& ep): m_message(m), addr(ep) {}
 	// the message
-	lazy_entry const& message;
+	message const& m_message;
 
 	// the address of the process sending or receiving
 	// the message.
