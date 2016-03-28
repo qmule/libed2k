@@ -292,6 +292,13 @@ public:
     void incoming_request(kad_hello_req const& h);
     void incoming_request(kademlia_req const& h);
 
+    template<typename Request>
+    void incoming_request(const Request& req) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        LIBED2K_LOG(node) << " unhandled request incoming ";
+#endif
+    }
+
 private:
 	external_ip_fun m_ext_ip;
 

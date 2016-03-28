@@ -531,6 +531,20 @@ namespace libed2k {
     template<> struct transaction_identifier<kad2_pong> {
         static const char  id = 'p';
     };
+
+
+    // bootstrap request/response identifiers
+    template<> struct transaction_identifier<kad2_bootstrap_req> {  static const char   id = 'b'; };
+    template<> struct transaction_identifier<kad2_bootstrap_res> {  static const char   id = 'b'; };
+
+    // hello request/response
+    template<> struct transaction_identifier<kad2_hello_req> { static const char id = 'h'; };
+    template<> struct transaction_identifier<kad2_hello_res> { static const char id = 'h'; };
+
+    // kademlia request/response
+    template<> struct transaction_identifier<kademlia2_req> { static const char id = 'k'; };
+    template<> struct transaction_identifier<kademlia2_res> { static const char id = 'k'; };
+
 }
 
 #endif //__KAD_PACKET_STRUCT__

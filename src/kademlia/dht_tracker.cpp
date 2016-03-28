@@ -405,6 +405,72 @@ namespace libed2k { namespace dht
         error_code ec;
         message msg = extract_message(buf, bytes_transferred, ec);
 
+        // bytes count should be at least as packet header size
+        if (ec) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+            LIBED2K_LOG(dht_tracker) << " message extract error: " << ec;
+#endif
+            return;
+        }
+
+        if (msg.first.m_protocol != OP_KADEMLIAHEADER) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+            LIBED2K_LOG(dht_tracker) << " packet protocol type is not KAD";
+#endif
+            return;
+        }
+
+        typedef boost::iostreams::basic_array_source<char> Device;
+        boost::iostreams::stream_buffer<Device> buffer(&buf[sizeof(libed2k_header)], bytes_transferred - sizeof(libed2k_header));
+        std::istream in_array_stream(&buffer);
+        archive::ed2k_iarchive ia(in_array_stream);
+
+        /**
+          * incoming requests
+        */
+        switch (msg.first.m_type) {
+        case KADEMLIA_BOOTSTRAP_REQ_DEPRECATED:
+        case KADEMLIA_HELLO_REQ_DEPRECATED:
+        case KADEMLIA_REQ_DEPRECATED: {
+            kademlia_req req;
+            ia >> req;
+            m_dht.incoming_request(req);
+            break;
+        }
+        case KADEMLIA_SEARCH_REQ:
+        case KADEMLIA_SEARCH_NOTES_REQ:
+        case KADEMLIA_PUBLISH_REQ:
+        case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED:
+        case KADEMLIA_FIREWALLED_REQ:
+        case KADEMLIA_FINDBUDDY_REQ:
+        case KADEMLIA_CALLBACK_REQ:
+            break;
+        case KADEMLIA2_BOOTSTRAP_REQ:
+                //KADEMLIA2_BOOTSTRAP_RES = 0x09,
+        case KADEMLIA2_HELLO_REQ:
+                //KADEMLIA2_HELLO_RES = 0x19,
+        case KADEMLIA2_REQ:
+                //KADEMLIA2_HELLO_RES_ACK = 0x22, // <NodeID><uint8 tags>
+                //KADEMLIA2_RES = 0x29,
+        case KADEMLIA2_SEARCH_KEY_REQ:
+        case KADEMLIA2_SEARCH_SOURCE_REQ:
+        case KADEMLIA2_SEARCH_NOTES_REQ:
+                //KADEMLIA2_SEARCH_RES = 0x3B,
+        case KADEMLIA2_PUBLISH_KEY_REQ:
+        case KADEMLIA2_PUBLISH_SOURCE_REQ:
+        case KADEMLIA2_PUBLISH_NOTES_REQ:
+                //KADEMLIA2_PUBLISH_RES = 0x4B,
+                //KADEMLIA2_PUBLISH_RES_ACK = 0x4C, // (null)
+        case KADEMLIA_FIREWALLED2_REQ:
+        case KADEMLIA2_PING:
+            break;
+                //KADEMLIA2_PONG = 0x61, // (null)
+                //KADEMLIA2_FIREWALLUDP = 0x62  // <errorcode [1]><UDPPort_Used [2]>
+        default:
+            break;
+        }
+
+        /*
         try {
             libed2k_header header;
             if (bytes_transferred < sizeof(libed2k_header)) {
@@ -435,14 +501,7 @@ namespace libed2k { namespace dht
             ec = e.error();
         }
 
-
-		// bytes count should be at least as packet header size
-		if (ec){
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			LIBED2K_LOG(dht_tracker) << " message extract error: " << ec;
-#endif
-			return;
-		}
+        */
 
 		// account for IP and UDP overhead
 		m_received_bytes += bytes_transferred + (ep.address().is_v6() ? 48 : 28);
