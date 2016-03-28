@@ -39,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/pool.hpp>
 #include <boost/function/function3.hpp>
 
+#include "libed2k/invariant_check.hpp"
 #include "libed2k/socket.hpp"
 #include "libed2k/entry.hpp"
 #include "libed2k/kademlia/node_id.hpp"
@@ -82,13 +83,44 @@ public:
 	bool incoming(msg const&, node_id* id);
 	time_duration tick();
 
+    template<typename T>
+    inline bool invoke(T& t, udp::endpoint target, observer_ptr o) {
+        LIBED2K_INVARIANT_CHECK;
+        if (m_destructing) return false;
+
+        append_data(t);
+        o->set_target(target);
+        o->set_transaction_id(transaction_identifier<T>::id);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
+            << request_name(t) << " -> " << target;
+#endif
+
+        message msg = make_message(t);
+
+        if (m_send(m_userdata, msg, target, 1)) {
+            m_transactions.push_back(o);
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
+            o->m_was_sent = true;
+#endif
+            return true;
+        }
+
+        return false;
+    }
+
+    template<typename T>
+    inline void append_data(T& t) const {
+        // do nothing by default
+    }
+
+    template<typename T>
+    inline std::string request_name(const T& t) const {
+        return std::string("undefined");
+    }
+
 	bool invoke(entry& e, udp::endpoint target
 		, observer_ptr o);
-
-    template<class Packet>
-    bool invoke(const Packet& p, udp::endpoint target, observer_ptr o) {
-        std::string transaction_id = transaction_identifier(transaction_identifier<Packet>::id, target);
-    }
 
 	void add_our_id(entry& e);
 
@@ -103,9 +135,6 @@ public:
 	void free_observer(void* ptr);
 
 	int num_allocated_observers() const { return m_allocated_observers; }
-
-    std::string transaction_identifier(const char packet_tid, udp::endpoint target);
-
 private:
 
 	boost::uint32_t calc_connection_id(udp::endpoint addr);
@@ -124,6 +153,16 @@ private:
 	int m_allocated_observers;
 	bool m_destructing;
 };
+
+template<>
+inline std::string rpc_manager::request_name(const kad2_ping& t) const {
+    return std::string("kad2_ping");
+}
+
+template<>
+inline void rpc_manager::append_data(kad2_hello_req& t) const {    
+    t.client_info.kid = m_our_id;
+}
 
 } } // namespace libed2k::dht
 

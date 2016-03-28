@@ -212,6 +212,8 @@ bool find_data::invoke(observer_ptr o)
 		return false;
 	}
 
+    //find peers request
+
 	entry e;
 	e["y"] = "q";
 	e["q"] = "get_peers";

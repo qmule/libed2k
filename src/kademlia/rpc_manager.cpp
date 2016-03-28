@@ -39,7 +39,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/bind.hpp>
 
 #include <libed2k/io.hpp>
-#include <libed2k/invariant_check.hpp>
 #include <libed2k/kademlia/node_id.hpp> // for generate_random_id
 #include <libed2k/kademlia/rpc_manager.hpp>
 #include <libed2k/kademlia/logging.hpp>
@@ -473,13 +472,6 @@ bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 	//	return true;
 	//}
 	return false;
-}
-
-std::string rpc_manager::transaction_identifier(const char packet_tid, udp::endpoint target) {
-    LIBED2K_ASSERT(packet_tid != NULL);
-    std::stringstream ss;
-    ss << packet_tid << "_" << address2int(target.address()) << "_" << target.port();
-    return ss.str();
 }
 
 observer::~observer()

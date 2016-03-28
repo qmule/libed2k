@@ -258,6 +258,8 @@ namespace
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 			o->m_in_constructor = false;
 #endif
+            // TODO 
+            // prepare announce packet
 			entry e;
 			e["y"] = "q";
 			e["q"] = "announce_peer";
@@ -266,6 +268,7 @@ namespace
 			a["port"] = listen_port;
 			a["token"] = i->second;
 			a["seed"] = int(seed);
+
 			node.m_rpc.invoke(e, i->first.ep(), o);
 		}
 	}
@@ -295,10 +298,8 @@ void node_impl::add_node(udp::endpoint node)
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	o->m_in_constructor = false;
 #endif
-	entry e;
-	e["y"] = "q";
-	e["q"] = "ping";
-	m_rpc.invoke(e, node, o);
+    kad2_ping packet;
+    m_rpc.invoke(packet, node, o);
 }
 
 void node_impl::announce(md4_hash const& info_hash, int listen_port, bool seed

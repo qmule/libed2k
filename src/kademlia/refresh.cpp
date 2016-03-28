@@ -70,12 +70,17 @@ observer_ptr refresh::new_observer(void* ptr
 
 bool refresh::invoke(observer_ptr o)
 {
+    kad2_hello_req p;
+    return m_node.m_rpc.invoke(p, o->target_ep(), o);
+    /*
+    // refresh packet here
 	entry e;
 	e["y"] = "q";
 	e["q"] = "find_node";
 	entry& a = e["a"];
 	a["target"] = target().to_string();
 	return m_node.m_rpc.invoke(e, o->target_ep(), o);
+    */
 }
 
 bootstrap::bootstrap(

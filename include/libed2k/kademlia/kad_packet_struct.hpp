@@ -518,32 +518,45 @@ namespace libed2k {
         static const proto_type protocol    = OP_EMULEPROT;
     };
 
+    template<> struct packet_type<kad2_ping> {
+        static const proto_type value = KADEMLIA2_PING;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad2_pong> {
+        static const proto_type value = KADEMLIA2_PONG;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad2_hello_req> {
+        static const proto_type value = KADEMLIA2_HELLO_REQ;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad2_hello_res> {
+        static const proto_type value = KADEMLIA2_HELLO_RES;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
 
     /**
     *   special transaction identifier on packet type
     */
     template<typename T> struct transaction_identifier;
 
-    template<> struct transaction_identifier<kad2_ping> {
-        static const char  id = 'p';
-    };
-
-    template<> struct transaction_identifier<kad2_pong> {
-        static const char  id = 'p';
-    };
-
+    template<> struct transaction_identifier<kad2_ping> { static const uint16_t id = 112; };
+    template<> struct transaction_identifier<kad2_pong> { static const uint16_t id = 112; };
 
     // bootstrap request/response identifiers
-    template<> struct transaction_identifier<kad2_bootstrap_req> {  static const char   id = 'b'; };
-    template<> struct transaction_identifier<kad2_bootstrap_res> {  static const char   id = 'b'; };
+    template<> struct transaction_identifier<kad2_bootstrap_req> {  static const uint16_t id = 98; };
+    template<> struct transaction_identifier<kad2_bootstrap_res> {  static const uint16_t id = 98; };
 
     // hello request/response
-    template<> struct transaction_identifier<kad2_hello_req> { static const char id = 'h'; };
-    template<> struct transaction_identifier<kad2_hello_res> { static const char id = 'h'; };
+    template<> struct transaction_identifier<kad2_hello_req> { static const uint16_t id = 104; };
+    template<> struct transaction_identifier<kad2_hello_res> { static const uint16_t id = 104; };
 
     // kademlia request/response
-    template<> struct transaction_identifier<kademlia2_req> { static const char id = 'k'; };
-    template<> struct transaction_identifier<kademlia2_res> { static const char id = 'k'; };
+    template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 107; };
+    template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 107; };
 
 }
 
