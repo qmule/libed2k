@@ -39,7 +39,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <boost/pool/pool.hpp>
 #include <boost/function/function3.hpp>
 
-#include "libed2k/invariant_check.hpp"
 #include "libed2k/socket.hpp"
 #include "libed2k/entry.hpp"
 #include "libed2k/kademlia/node_id.hpp"
@@ -84,40 +83,15 @@ public:
 	time_duration tick();
 
     template<typename T>
-    inline bool invoke(T& t, udp::endpoint target, observer_ptr o) {
-        LIBED2K_INVARIANT_CHECK;
-        if (m_destructing) return false;
+    bool invoke(T& t, udp::endpoint target, observer_ptr o);
 
-        append_data(t);
-        o->set_target(target);
-        o->set_transaction_id(transaction_identifier<T>::id);
+    template<typename T>
+    void append_data(T& t) const;
+
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
-            << request_name(t) << " -> " << target;
-#endif
-
-        message msg = make_message(t);
-
-        if (m_send(m_userdata, msg, target, 1)) {
-            m_transactions.push_back(o);
-#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-            o->m_was_sent = true;
-#endif
-            return true;
-        }
-
-        return false;
-    }
-
     template<typename T>
-    inline void append_data(T& t) const {
-        // do nothing by default
-    }
-
-    template<typename T>
-    inline std::string request_name(const T& t) const {
-        return std::string("undefined");
-    }
+    std::string request_name(const T& t) const;
+#endif
 
 	bool invoke(entry& e, udp::endpoint target
 		, observer_ptr o);
@@ -153,16 +127,6 @@ private:
 	int m_allocated_observers;
 	bool m_destructing;
 };
-
-template<>
-inline std::string rpc_manager::request_name(const kad2_ping& t) const {
-    return std::string("kad2_ping");
-}
-
-template<>
-inline void rpc_manager::append_data(kad2_hello_req& t) const {    
-    t.client_info.kid = m_our_id;
-}
 
 } } // namespace libed2k::dht
 

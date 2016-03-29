@@ -38,6 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/bind.hpp>
 
+#include "libed2k/invariant_check.hpp"
 #include <libed2k/io.hpp>
 #include <libed2k/kademlia/node_id.hpp> // for generate_random_id
 #include <libed2k/kademlia/rpc_manager.hpp>
@@ -473,6 +474,65 @@ bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 	//}
 	return false;
 }
+
+template<typename T>
+bool rpc_manager::invoke(T& t, udp::endpoint target, observer_ptr o) {
+    LIBED2K_INVARIANT_CHECK;
+    if (m_destructing) return false;
+
+    append_data(t);
+    o->set_target(target);
+    o->set_transaction_id(transaction_identifier<T>::id);
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+    LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
+        << request_name(t) << " -> " << target;
+#endif
+
+    message msg = make_message(t);
+
+    if (m_send(m_userdata, msg, target, 1)) {
+        m_transactions.push_back(o);
+#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
+        o->m_was_sent = true;
+#endif
+        return true;
+    }
+
+    return false;
+}
+
+template bool rpc_manager::invoke<kad2_ping>(kad2_ping& t, udp::endpoint target, observer_ptr o);
+template bool rpc_manager::invoke<kad2_hello_req>(kad2_hello_req& t, udp::endpoint target, observer_ptr o);
+
+template<typename T>
+void rpc_manager::append_data(T& t) const {
+    // do nothing by default
+}
+
+template<>
+void rpc_manager::append_data<kad2_hello_req>(kad2_hello_req& t) const {
+    t.client_info.kid = m_our_id;
+}
+
+template void rpc_manager::append_data<kad2_ping>(kad2_ping& t) const;
+
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+template<typename T>
+std::string rpc_manager::request_name(const T& t) const {
+    return std::string();
+}
+
+template<>
+std::string rpc_manager::request_name<kad2_ping>(const kad2_ping& t) const {
+    return std::string("kad2_ping");
+}
+
+template<>
+std::string rpc_manager::request_name<kad2_hello_req>(const kad2_hello_req& t) const {
+    return std::string("kad2_hello_req");
+}
+
+#endif
 
 observer::~observer()
 {
