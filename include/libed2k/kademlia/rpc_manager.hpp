@@ -80,8 +80,16 @@ public:
 	// returns true if the node needs a refresh
 	// if so, id is assigned the node id to refresh
 	bool incoming(msg const&, node_id* id);
+
+    template<typename T>
+    bool incoming(const T&, udp::endpoint target, node_id* id);
+
 	time_duration tick();
 
+
+    /**
+      * rpc invocation
+    */
     template<typename T>
     bool invoke(T& t, udp::endpoint target, observer_ptr o);
 
@@ -93,8 +101,11 @@ public:
     std::string request_name(const T& t) const;
 #endif
 
+    // TODO - remove it
 	bool invoke(entry& e, udp::endpoint target
 		, observer_ptr o);
+
+
 
 	void add_our_id(entry& e);
 
