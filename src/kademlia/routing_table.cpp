@@ -270,7 +270,7 @@ routing_table::table_t::iterator routing_table::find_bucket(node_id const& id)
 		++num_buckets;
 	}
 
-	int bucket_index = (std::min)(159 - distance_exp(m_id, id), num_buckets - 1);
+	int bucket_index = (std::min)(kad_id::kad_total_bits - 1 - distance_exp(m_id, id), num_buckets - 1);
 	LIBED2K_ASSERT(bucket_index < int(m_buckets.size()));
 	LIBED2K_ASSERT(bucket_index >= 0);
 
@@ -583,7 +583,7 @@ bool routing_table::add_node(node_entry const& e)
 	// to the new bucket
 	for (bucket_t::iterator j = b->begin(); j != b->end();)
 	{
-		if (distance_exp(m_id, j->id) >= 159 - bucket_index)
+		if (distance_exp(m_id, j->id) >= kad_id::kad_total_bits - 1 - bucket_index)
 		{
 			++j;
 			continue;
@@ -598,7 +598,7 @@ bool routing_table::add_node(node_entry const& e)
 	// into the main bucket
 	for (bucket_t::iterator j = rb->begin(); j != rb->end();)
 	{
-		if (distance_exp(m_id, j->id) >= 159 - bucket_index)
+		if (distance_exp(m_id, j->id) >= kad_id::kad_total_bits - 1 - bucket_index)
 		{
 			if (int(b->size()) >= m_bucket_size)
 			{
@@ -620,7 +620,7 @@ bool routing_table::add_node(node_entry const& e)
 
 	bool added = false;
 	// now insert the new node in the appropriate bucket
-	if (distance_exp(m_id, e.id) >= 159 - bucket_index)
+	if (distance_exp(m_id, e.id) >= kad_id::kad_total_bits - 1 - bucket_index)
 	{
 		if (int(b->size()) < m_bucket_size)
 		{
