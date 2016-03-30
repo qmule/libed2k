@@ -644,4 +644,37 @@ namespace libed2k
     kad_id::kad_id(const md4_hash& h) : md4_hash(h) {}
     kad_id::kad_id(const md4_hash::md4hash_container& c) : md4_hash(c) {}
 
+
+    std::string kad2string(int op) {
+        switch(op) {
+        case KADEMLIA2_BOOTSTRAP_REQ: return "KADEMLIA2_BOOTSTRAP_REQ";
+        case KADEMLIA2_BOOTSTRAP_RES: return "KADEMLIA2_BOOTSTRAP_RES";
+        case KADEMLIA2_HELLO_REQ: return "KADEMLIA2_HELLO_REQ";
+        case KADEMLIA2_HELLO_RES: return "KADEMLIA2_HELLO_RES";
+        case KADEMLIA2_REQ: return "KADEMLIA2_REQ";
+        case KADEMLIA2_HELLO_RES_ACK: return "KADEMLIA2_HELLO_RES_ACK";
+        case KADEMLIA2_RES: return "KADEMLIA2_RES";
+        case KADEMLIA2_SEARCH_KEY_REQ: return "KADEMLIA2_SEARCH_KEY_REQ";
+        case KADEMLIA2_SEARCH_SOURCE_REQ: return "KADEMLIA2_SEARCH_SOURCE_REQ";
+        case KADEMLIA2_SEARCH_NOTES_REQ: return "KADEMLIA2_SEARCH_NOTES_REQ";
+        case KADEMLIA2_SEARCH_RES: return "KADEMLIA2_SEARCH_RES";
+        case KADEMLIA2_PUBLISH_KEY_REQ: return "KADEMLIA2_PUBLISH_KEY_REQ";
+        case KADEMLIA2_PUBLISH_SOURCE_REQ: return "KADEMLIA2_PUBLISH_SOURCE_REQ";
+        case KADEMLIA2_PUBLISH_NOTES_REQ: return "KADEMLIA2_PUBLISH_NOTES_REQ";
+        case KADEMLIA2_PUBLISH_RES: return "KADEMLIA2_PUBLISH_RES";
+        case KADEMLIA2_PUBLISH_RES_ACK: return "KADEMLIA2_PUBLISH_RES_ACK";
+        case KADEMLIA_FIREWALLED2_REQ: return "KADEMLIA_FIREWALLED2_REQ";
+        case KADEMLIA2_PING: return "KADEMLIA2_PING";
+        case KADEMLIA2_PONG: return "KADEMLIA2_PONG";
+        case KADEMLIA2_FIREWALLUDP: return "KADEMLIA2_FIREWALLUDP";
+        default: {
+            std::stringstream ss;
+            ss << "UNKNOWN " << op;
+            return ss.str();
+        }
+
+        return std::string();
+    }
+    }
+
 }

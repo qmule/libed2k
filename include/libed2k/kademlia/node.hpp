@@ -199,7 +199,9 @@ public:
 	void add_router_node(udp::endpoint router);
 		
 	void unreachable(udp::endpoint const& ep);
-	void incoming(message const& m);
+
+	template<typename T>
+	void incoming(const T& t, udp::endpoint target);
 
 	int num_torrents() const { return m_map.size(); }
 	int num_peers() const
@@ -287,10 +289,6 @@ private:
 public:
 	routing_table m_table;
 	rpc_manager m_rpc;
-
-    void incoming_request(kad_bootstrap_req const& h);
-    void incoming_request(kad_hello_req const& h);
-    void incoming_request(kademlia_req const& h);
 
     template<typename Request>
     void incoming_request(const Request& req) {

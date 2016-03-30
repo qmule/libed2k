@@ -425,6 +425,10 @@ namespace libed2k { namespace dht
         std::istream in_array_stream(&buffer);
         archive::ed2k_iarchive ia(in_array_stream);
 
+
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        LIBED2K_LOG(dht_tracker) << kad2string(msg.first.m_type) << " <<< " << ep.address();
+#endif
         /**
           * incoming requests
         */
@@ -437,38 +441,91 @@ namespace libed2k { namespace dht
             m_dht.incoming_request(req);
             break;
         }
+
         case KADEMLIA_SEARCH_REQ:
         case KADEMLIA_SEARCH_NOTES_REQ:
         case KADEMLIA_PUBLISH_REQ:
         case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED:
         case KADEMLIA_FIREWALLED_REQ:
         case KADEMLIA_FINDBUDDY_REQ:
+            break;
         case KADEMLIA_CALLBACK_REQ:
             break;
-        case KADEMLIA2_BOOTSTRAP_REQ:
-                //KADEMLIA2_BOOTSTRAP_RES = 0x09,
-        case KADEMLIA2_HELLO_REQ:
-                //KADEMLIA2_HELLO_RES = 0x19,
-        case KADEMLIA2_REQ:
-                //KADEMLIA2_HELLO_RES_ACK = 0x22, // <NodeID><uint8 tags>
-                //KADEMLIA2_RES = 0x29,
-        case KADEMLIA2_SEARCH_KEY_REQ:
-        case KADEMLIA2_SEARCH_SOURCE_REQ:
-        case KADEMLIA2_SEARCH_NOTES_REQ:
-                //KADEMLIA2_SEARCH_RES = 0x3B,
-        case KADEMLIA2_PUBLISH_KEY_REQ:
-        case KADEMLIA2_PUBLISH_SOURCE_REQ:
-        case KADEMLIA2_PUBLISH_NOTES_REQ:
-                //KADEMLIA2_PUBLISH_RES = 0x4B,
-                //KADEMLIA2_PUBLISH_RES_ACK = 0x4C, // (null)
-        case KADEMLIA_FIREWALLED2_REQ:
-        case KADEMLIA2_PING:
-            break;
-                //KADEMLIA2_PONG = 0x61, // (null)
-                //KADEMLIA2_FIREWALLUDP = 0x62  // <errorcode [1]><UDPPort_Used [2]>
-        default:
+        case KADEMLIA2_BOOTSTRAP_REQ: {
             break;
         }
+        case KADEMLIA2_BOOTSTRAP_RES: {
+            break;
+        }
+        case KADEMLIA2_HELLO_REQ: {
+            break;
+        }
+        case KADEMLIA2_HELLO_RES: {
+            kad2_hello_res p;
+            ia >> p;
+            m_dht.incoming(p, ep);
+            break;
+        }
+        case KADEMLIA2_REQ: {
+            break;
+        }
+        case KADEMLIA2_HELLO_RES_ACK: {
+            break;
+        }
+        case KADEMLIA2_RES: {
+            break;
+        }
+        case KADEMLIA2_SEARCH_KEY_REQ: {
+            break;
+        }
+        case KADEMLIA2_SEARCH_SOURCE_REQ: {
+            break;
+        }
+        case KADEMLIA2_SEARCH_NOTES_REQ: {
+            break;
+        }
+        case KADEMLIA2_SEARCH_RES: {
+            break;
+        }
+        case KADEMLIA2_PUBLISH_KEY_REQ: {
+            break;
+        }
+        case KADEMLIA2_PUBLISH_SOURCE_REQ: {
+
+            break;
+        }
+        case KADEMLIA2_PUBLISH_NOTES_REQ: {
+            break;
+        }
+        case KADEMLIA2_PUBLISH_RES: {
+            break;
+        }
+        case KADEMLIA2_PUBLISH_RES_ACK: {
+            break;
+        }
+        case KADEMLIA_FIREWALLED2_REQ: {
+            break;
+        }
+        case KADEMLIA2_PING: {
+            break;
+        }
+        case KADEMLIA2_PONG: {
+            kad2_pong p;
+            ia >> p;
+            m_dht.incoming(p, ep);
+            break;
+        }
+
+        case KADEMLIA2_FIREWALLUDP: {
+            break;
+        }
+        default: {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+            LIBED2K_LOG(dht_tracker) << "not handled packet type " << msg.first.m_type << " <<< " << ep.address();
+#endif
+            break;
+        }
+        };
 
         /*
         try {
@@ -558,7 +615,7 @@ namespace libed2k { namespace dht
 		m_total_in_bytes += bytes_transferred;
 #endif
 
-		m_dht.incoming(msg);
+		//m_dht.incoming(msg);
 	}
 
 	void add_node_fun(void* userdata, node_entry const& e)

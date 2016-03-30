@@ -1919,6 +1919,7 @@ namespace libed2k
 	}
 
 	message extract_message(const char* p, int bytes, error_code& ec);
+	std::string kad2string(int op);
 }
 
 

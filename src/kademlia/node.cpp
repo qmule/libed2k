@@ -206,8 +206,8 @@ void node_impl::unreachable(udp::endpoint const& ep)
 	m_rpc.unreachable(ep);
 }
 
-void node_impl::incoming(message const& m)
-{
+//void node_impl::incoming(message const& m)
+//{
     // parse incoming message to packet
     // detect packet type - request/response
     // for response - check order for request
@@ -227,7 +227,7 @@ void node_impl::incoming(message const& m)
 			//incoming_request(m, e);
 		//	//m_send(m_userdata, e, m.addr, 0);
 		//	break;
-}
+//}
 
 namespace
 {
@@ -574,17 +574,9 @@ void incoming_error(entry& e, char const* msg)
 	l.push_back(entry(msg));
 }
 
-void node_impl::incoming_request(kad_bootstrap_req const& h){
-
-}
-
-void node_impl::incoming_request(kademlia_req const& h) {
-
-}
-
 // build response
-void node_impl::incoming_request(kad_hello_req const& m)
-{
+//void node_impl::incoming_request(kad_hello_req const& m)
+//{
 	// TODO implement emule protocol instead messages
 	/*
 	e = entry(entry::dictionary_t);
@@ -1035,7 +1027,16 @@ void node_impl::incoming_request(kad_hello_req const& m)
 		return;
 	}
 	*/
+//}
+
+template<typename T>
+void node_impl::incoming(const T& t, udp::endpoint target) {
+    node_id id;
+    if (m_rpc.incoming(t, target, &id)) refresh(id, boost::bind(&nop));
 }
+
+template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
+template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
 
 
 } } // namespace libed2k::dht
