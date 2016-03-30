@@ -282,7 +282,7 @@ void node_impl::add_router_node(udp::endpoint router)
 	m_table.add_router_node(router);
 }
 
-void node_impl::add_node(udp::endpoint node)
+void node_impl::add_node(udp::endpoint node, node_id id)
 {
 	// ping the node, and if we get a reply, it
 	// will be added to the routing table
@@ -294,7 +294,7 @@ void node_impl::add_node(udp::endpoint node)
 	// to free itself from the pool when it's being released
 	boost::intrusive_ptr<traversal_algorithm> algo(
 		new traversal_algorithm(*this, (node_id::min)()));
-	observer_ptr o(new (ptr) null_observer(algo, node, node_id(0)));
+	observer_ptr o(new (ptr) null_observer(algo, node, id));
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	o->m_in_constructor = false;
 #endif

@@ -186,8 +186,8 @@ int main(int argc, char* argv[]) {
                                 << " ip:" << libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address)
                                 << " udp:" << knd.bootstrap_container.m_collection[i].address.udp_port
                                 << " tcp:" << knd.bootstrap_container.m_collection[i].address.tcp_port);
-                            ses.add_dht_router(std::make_pair(libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address),
-                                knd.bootstrap_container.m_collection[i].address.udp_port));
+                            ses.add_dht_node(std::make_pair(libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address),
+                                knd.bootstrap_container.m_collection[i].address.udp_port), knd.bootstrap_container.m_collection[i].kid.toString());
                         }
 
                         for (std::list<kad_entry>::const_iterator itr = knd.contacts_container.begin(); itr != knd.contacts_container.end(); ++itr) {
@@ -195,11 +195,8 @@ int main(int argc, char* argv[]) {
                                 << " ip:" << libed2k::int2ipstr(itr->address.address)
                                 << " udp:" << itr->address.udp_port
                                 << " tcp:" << itr->address.tcp_port);
-                                ses.add_dht_router(std::make_pair(libed2k::int2ipstr(itr->address.address), itr->address.udp_port)
-                            );
+                                ses.add_dht_node(std::make_pair(libed2k::int2ipstr(itr->address.address), itr->address.udp_port), itr->kid.toString());
                         }
-                                               
-                        
                     }
                     else {
                         DBG("file " << command.at(i) << " load failed");

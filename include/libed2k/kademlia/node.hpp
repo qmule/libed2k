@@ -244,7 +244,7 @@ public:
 	// pings the given node, and adds it to
 	// the routing table if it respons and if the
 	// bucket is not full.
-	void add_node(udp::endpoint node);
+	void add_node(udp::endpoint node, node_id id);
 
 	void replacement_cache(bucket_t& nodes) const
 	{ m_table.replacement_cache(nodes); }

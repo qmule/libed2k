@@ -113,6 +113,7 @@ namespace libed2k {
         void stop_dht();
         void set_dht_settings(dht_settings const& settings);
         void add_dht_node(std::pair<std::string, int> const& node);
+        void add_dht_node(std::pair<std::string, int> const& node, const std::string& id);
         void add_dht_router(std::pair<std::string, int> const& node);
         bool is_dht_running() const;
 #endif

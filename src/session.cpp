@@ -278,6 +278,11 @@ namespace libed2k
       m_impl->add_dht_node_name(node);
     }
 
+    void session::add_dht_node(std::pair<std::string, int> const& node, const std::string& id) {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->add_dht_node(node, id);
+    }
+
     void session::add_dht_router(std::pair<std::string, int> const& node)
     {
       boost::mutex::scoped_lock l(m_impl->m_mutex);

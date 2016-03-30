@@ -1838,9 +1838,21 @@ void session_impl::set_external_address(address const& ip
         if (m_dht) m_dht->add_node(node);
     }
 
+    void session_impl::add_dht_node(std::pair<std::string, int> const& node, const std::string& id) {
+        if (m_dht) {
+            kad_id h = md4_hash::fromString(id);
+            error_code ec;
+            ip::address addr = ip::address::from_string(node.first, ec);
+            if (h != md4_hash::invalid && !ec) {
+                DBG("add node " << node.first << ":" << node.second << " with " << id);
+                m_dht->add_node(udp::endpoint(addr, node.second), h);
+            }
+        }
+    }
+
     void session_impl::add_dht_router(std::pair<std::string, int> const& node)
     {
-#if defined TORRENT_ASIO_DEBUGGING
+#if defined LIBED2K_ASIO_DEBUGGING
         add_outstanding_async("session_impl::on_dht_router_name_lookup");
 #endif
         char port[7];
@@ -1853,7 +1865,7 @@ void session_impl::set_external_address(address const& ip
     void session_impl::on_dht_router_name_lookup(error_code const& e
         , tcp::resolver::iterator host)
     {
-#if defined TORRENT_ASIO_DEBUGGING
+#if defined LIBED2K_ASIO_DEBUGGING
         complete_async("session_impl::on_dht_router_name_lookup");
 #endif
         // TODO: report errors as alerts

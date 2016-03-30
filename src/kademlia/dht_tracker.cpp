@@ -652,10 +652,10 @@ namespace libed2k { namespace dht
 		return ret;
 	}
 
-	void dht_tracker::add_node(udp::endpoint node)
+	void dht_tracker::add_node(udp::endpoint node, node_id id)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
-		m_dht.add_node(node);
+		m_dht.add_node(node, id);
 	}
 
 	void dht_tracker::add_node(std::pair<std::string, int> const& node)
@@ -673,7 +673,7 @@ namespace libed2k { namespace dht
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 		if (e || host == udp::resolver::iterator()) return;
-		add_node(host->endpoint());
+		add_node(host->endpoint(), node_id(0));
 	}
 
 	void dht_tracker::add_router_node(udp::endpoint const& node)
@@ -684,6 +684,8 @@ namespace libed2k { namespace dht
 
 	bool dht_tracker::send_packet(const message& e, udp::endpoint const& addr, int send_flags)
 	{
+        // TODO - fix this exit with correct emule send packet code
+        return true;
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 		using libed2k::bencode;
 		using libed2k::entry;

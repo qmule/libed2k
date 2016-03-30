@@ -108,7 +108,7 @@ void bootstrap::done()
 	{
 		if ((*i)->flags & observer::flag_queried) continue;
 		// this will send a ping
-		m_node.add_node((*i)->target_ep());
+		m_node.add_node((*i)->target_ep(), (*i)->id());
 	}
 	refresh::done();
 }
