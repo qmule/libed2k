@@ -684,27 +684,22 @@ namespace libed2k { namespace dht
 
 	bool dht_tracker::send_packet(const message& e, udp::endpoint const& addr, int send_flags)
 	{
-        // TODO - fix this exit with correct emule send packet code
-        return true;
 		LIBED2K_ASSERT(m_ses.is_network_thread());
-		using libed2k::bencode;
-		using libed2k::entry;
-
-		static char const version_str[] = {'L', 'T'
-			, LIBED2K_VERSION_MAJOR, LIBED2K_VERSION_MINOR};
-		//e["v"] = std::string(version_str, version_str + 4);
 
 		m_send_buf.clear();
-		//bencode(std::back_inserter(m_send_buf), e);
 		error_code ec;
-
+        
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		std::stringstream log_line;
-		lazy_entry print;
-		int ret = lazy_bdecode(&m_send_buf[0], &m_send_buf[0] + m_send_buf.size(), print, ec);
-		LIBED2K_ASSERT(ret == 0);
-		log_line << print_entry(print, true);
+		//lazy_entry print;
+		//int ret = lazy_bdecode(&m_send_buf[0], &m_send_buf[0] + m_send_buf.size(), print, ec);
+		//LIBED2K_ASSERT(ret == 0);
+		//log_line << print_entry(print, true);
+        log_line << kad2string(e.first.m_type) << " size " << e.first.m_size;
 #endif
+
+        std::copy((const char*)&(e.first), (const char*)(&(e.first)) + sizeof(e.first), std::back_inserter(m_send_buf));
+        std::copy(e.second.begin(), e.second.end(), std::back_inserter(m_send_buf));
 
 		if (m_sock.send(addr, &m_send_buf[0], (int)m_send_buf.size(), ec, send_flags))
 		{
