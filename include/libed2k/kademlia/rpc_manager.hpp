@@ -84,6 +84,9 @@ public:
     template<typename T>
     bool incoming(const T&, udp::endpoint target, node_id* id);
 
+    template<typename T>
+    node_id extract_packet_node_id(const T&);
+
 	time_duration tick();
 
 

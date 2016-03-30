@@ -371,11 +371,13 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
         break;
     }
 
+    uint16_t i = transaction_identifier<T>::id;
+
     if (!o)
     {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
         LIBED2K_LOG(rpc) << "Reply with unknown transaction id: "  
-        		<< transaction_identifier<T>::id << " from " << target;
+        		<< i << " from " << target;
 #endif
         //incoming_error(e, "invalid transaction id");
         //m_send(m_userdata, e, m.addr, 0);
@@ -391,17 +393,34 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
-    	<< transaction_identifier<T>::id << " from " << target.address();
+    	<< i << " from " << target.address();
 #endif
 
     // prepare correct observer call
     //o->reply(m);
-    // TODO - extract actual node_id here
-    *id = node_id::libed2k; //node_id(node_id_ent->string_ptr());
+
+    *id = extract_packet_node_id(t);
+
+    // we have no node_id in packet - set it from observer
+    if (*id == node_id::invalid) *id = o->id();
 
     // we found an observer for this reply, hence the node is not spoofing
     // add it to the routing table
     return m_table.node_seen(*id, target);
+}
+
+
+template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint target, node_id* id);
+template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
+
+template<typename T>
+node_id rpc_manager::extract_packet_node_id(const T&) {
+    return node_id::invalid;
+}
+
+template<>
+node_id rpc_manager::extract_packet_node_id<kad2_hello_res>(const kad2_hello_res& t) {
+    return t.client_info.kid;
 }
 
 time_duration rpc_manager::tick()
