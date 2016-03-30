@@ -365,7 +365,7 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     , end(m_transactions.end()); i != end; ++i) {
         LIBED2K_ASSERT(*i);
         if ((*i)->transaction_id() != transaction_identifier<T>::id || 
-            (*i)->target_addr() != target.address) continue;
+            (*i)->target_addr() != target.address()) continue;
         o = *i;
         m_transactions.erase(i);
         break;
@@ -384,23 +384,24 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     std::ofstream reply_stats("round_trip_ms.log", std::ios::app);
-    reply_stats << target.address << "\t" << total_milliseconds(time_now_hires() - o->sent())
+    reply_stats << target.address() << "\t" << total_milliseconds(time_now_hires() - o->sent())
         << std::endl;
 #endif
 
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
-    	<< transaction_identifier<T>::id << " from " << target.address;
+    	<< transaction_identifier<T>::id << " from " << target.address();
 #endif
 
     // prepare correct observer call
     //o->reply(m);
-    *id = node_id(node_id_ent->string_ptr());
+    // TODO - extract actual node_id here
+    *id = node_id::libed2k; //node_id(node_id_ent->string_ptr());
 
     // we found an observer for this reply, hence the node is not spoofing
     // add it to the routing table
-    return m_table.node_seen(*id, target.address);
+    return m_table.node_seen(*id, target);
 }
 
 time_duration rpc_manager::tick()
