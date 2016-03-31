@@ -376,7 +376,7 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     if (!o)
     {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        LIBED2K_LOG(rpc) << "Reply with unknown transaction id: "  
+        LIBED2K_LOG(rpc) << "Reply with unknown transaction id: "
         		<< i << " from " << target;
 #endif
         //incoming_error(e, "invalid transaction id");
@@ -412,6 +412,7 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
 
 template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
+template bool rpc_manager::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res& t, udp::endpoint target, node_id* id);
 
 template<typename T>
 node_id rpc_manager::extract_packet_node_id(const T&) {
@@ -573,6 +574,7 @@ bool rpc_manager::invoke(T& t, udp::endpoint target, observer_ptr o) {
 
 template bool rpc_manager::invoke<kad2_ping>(kad2_ping& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kad2_hello_req>(kad2_hello_req& t, udp::endpoint target, observer_ptr o);
+template bool rpc_manager::invoke<kad2_bootstrap_req>(kad2_bootstrap_req& t, udp::endpoint target, observer_ptr o);
 
 template<typename T>
 void rpc_manager::append_data(T& t) const {
@@ -600,6 +602,11 @@ std::string rpc_manager::request_name<kad2_ping>(const kad2_ping& t) const {
 template<>
 std::string rpc_manager::request_name<kad2_hello_req>(const kad2_hello_req& t) const {
     return std::string("kad2_hello_req");
+}
+
+template<>
+std::string rpc_manager::request_name<kad2_bootstrap_req>(const kad2_bootstrap_req& t) const {
+    return std::string("kad2_bootstrap_req");
 }
 
 #endif

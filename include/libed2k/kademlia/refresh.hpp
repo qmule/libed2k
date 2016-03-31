@@ -66,11 +66,10 @@ public:
 		, done_callback const& callback);
 
 	virtual char const* name() const;
-
 protected:
 
 	virtual void done();
-
+	virtual bool invoke(observer_ptr o);
 };
 
 } } // namespace libed2k::dht

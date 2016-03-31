@@ -538,6 +538,16 @@ namespace libed2k {
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
 
+    template<> struct packet_type<kad2_bootstrap_req> {
+        static const proto_type value = KADEMLIA2_BOOTSTRAP_REQ;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad2_bootstrap_res> {
+        static const proto_type value = KADEMLIA2_BOOTSTRAP_RES;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
     /**
     *   special transaction identifier on packet type
     */
@@ -557,7 +567,6 @@ namespace libed2k {
     // kademlia request/response
     template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 107; };
     template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 107; };
-
 }
 
 #endif //__KAD_PACKET_STRUCT__

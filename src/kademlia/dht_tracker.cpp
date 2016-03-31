@@ -427,7 +427,7 @@ namespace libed2k { namespace dht
 
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        LIBED2K_LOG(dht_tracker) << kad2string(msg.first.m_type) << " <<< " << ep.address();
+        LIBED2K_LOG(dht_tracker) << kad2string(msg.first.m_type) << " <== " << ep.address();
 #endif
         /**
           * incoming requests
@@ -455,6 +455,9 @@ namespace libed2k { namespace dht
             break;
         }
         case KADEMLIA2_BOOTSTRAP_RES: {
+            kad2_bootstrap_res p;
+            ia >> p;
+            m_dht.incoming(p, ep);
             break;
         }
         case KADEMLIA2_HELLO_REQ: {
