@@ -1037,6 +1037,7 @@ void node_impl::incoming(const T& t, udp::endpoint target) {
 
 template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
 template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
+template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&, udp::endpoint);
 
 
 } } // namespace libed2k::dht

@@ -113,5 +113,14 @@ void bootstrap::done()
 	refresh::done();
 }
 
+bool bootstrap::invoke(observer_ptr o) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+    LIBED2K_LOG(traversal) << " [" << this << "]"
+        << " bootstrapping ==> " << o->target_addr();
+#endif
+    kad2_bootstrap_req p;
+    return m_node.m_rpc.invoke(p, o->target_ep(), o);
+}
+
 } } // namespace libed2k::dht
 

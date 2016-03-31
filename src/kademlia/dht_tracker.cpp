@@ -427,7 +427,7 @@ namespace libed2k { namespace dht
 
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        LIBED2K_LOG(dht_tracker) << kad2string(msg.first.m_type) << " <<< " << ep.address();
+        LIBED2K_LOG(dht_tracker) << kad2string(msg.first.m_type) << " <== " << ep.address();
 #endif
         /**
           * incoming requests
@@ -455,6 +455,9 @@ namespace libed2k { namespace dht
             break;
         }
         case KADEMLIA2_BOOTSTRAP_RES: {
+            kad2_bootstrap_res p;
+            ia >> p;
+            m_dht.incoming(p, ep);
             break;
         }
         case KADEMLIA2_HELLO_REQ: {
@@ -697,9 +700,11 @@ namespace libed2k { namespace dht
 		//log_line << print_entry(print, true);
         log_line << kad2string(e.first.m_type) << " size " << e.first.m_size;
 #endif
-
         std::copy((const char*)&(e.first), (const char*)(&(e.first)) + sizeof(e.first), std::back_inserter(m_send_buf));
         std::copy(e.second.begin(), e.second.end(), std::back_inserter(m_send_buf));
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        log_line << " data size " << m_send_buf.size();
+#endif
 
 		if (m_sock.send(addr, &m_send_buf[0], (int)m_send_buf.size(), ec, send_flags))
 		{
