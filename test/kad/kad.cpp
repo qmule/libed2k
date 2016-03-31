@@ -170,7 +170,18 @@ int main(int argc, char* argv[]) {
         std::deque<std::string> command = split_del(input, ';');
         if (command.empty()) continue;
         if (command.at(0) == "quit" || command.at(0) == "q" || command.at(0) == "Q")  break;
-        if (command.at(0) == "load") {
+
+        if (command.at(0) == "add") {
+            if (command.size() < 3) {
+                DBG("add command must have ip;udp_port additional information");
+            }
+            else {
+                int udp_port = atoi(command.at(2).c_str());
+                DBG("add dht node " << command.at(1) << ":" << udp_port);
+                ses.add_dht_node(std::make_pair(command.at(1), udp_port), std::string("00000000000000000000000000000000"));
+            }
+        }
+        else if (command.at(0) == "load") {
             if (command.size() < 2) {
                 DBG("load command must have at least one specified nodes.dat file path");
             }

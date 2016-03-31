@@ -1843,7 +1843,7 @@ void session_impl::set_external_address(address const& ip
             kad_id h = md4_hash::fromString(id);
             error_code ec;
             ip::address addr = ip::address::from_string(node.first, ec);
-            if (h != md4_hash::invalid && !ec) {
+            if (!ec) {
                 DBG("add node " << node.first << ":" << node.second << " with " << id);
                 m_dht->add_node(udp::endpoint(addr, node.second), h);
             }
