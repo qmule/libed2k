@@ -68,7 +68,7 @@ class routing_table;
 class LIBED2K_EXTRA_EXPORT rpc_manager
 {
 public:
-	typedef bool (*send_fun)(void* userdata, const message&, udp::endpoint const&, int);
+	typedef bool (*send_fun)(void* userdata, const udp_message&, udp::endpoint const&, int);
 
 	rpc_manager(node_id const& our_id
 		, routing_table& table, send_fun const& sf

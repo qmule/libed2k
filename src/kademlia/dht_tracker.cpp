@@ -149,7 +149,7 @@ namespace libed2k { namespace dht
 		return node_id(node_id(nid->string().c_str()));
 	}
 
-	bool send_callback(void* userdata, const message& e, udp::endpoint const& addr, int flags)
+	bool send_callback(void* userdata, const udp_message& e, udp::endpoint const& addr, int flags)
 	{
 		dht_tracker* self = (dht_tracker*)userdata;
 		return self->send_packet(e, addr, flags);
@@ -403,36 +403,45 @@ namespace libed2k { namespace dht
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 
         error_code ec;
-        message msg = extract_message(buf, bytes_transferred, ec);
+        udp_libed2k_header uh;
+
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        std::string incoming(buf, bytes_transferred);
+        LIBED2K_LOG(dht_tracker) << " incoming data: " << to_hex(incoming);
+#endif
+
+        //message msg = extract_message(buf, bytes_transferred, ec);
 
         // bytes count should be at least as packet header size
-        if (ec) {
+        if (bytes_transferred < sizeof(udp_libed2k_header)) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-            LIBED2K_LOG(dht_tracker) << " message extract error: " << ec;
+            LIBED2K_LOG(dht_tracker) << " message extract error: incoming udp message too short";
 #endif
             return;
         }
 
-        if (msg.first.m_protocol != OP_KADEMLIAHEADER) {
+        uh = *(reinterpret_cast<const udp_libed2k_header*>(buf));
+
+        if (uh.m_protocol != OP_KADEMLIAHEADER) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-            LIBED2K_LOG(dht_tracker) << " packet protocol type is not KAD";
-#endif
+            LIBED2K_LOG(dht_tracker) << " packet protocol type is not KAD: " << std::hex << (int)uh.m_protocol << " from " << ep.address();
+#endif 
             return;
         }
 
         typedef boost::iostreams::basic_array_source<char> Device;
-        boost::iostreams::stream_buffer<Device> buffer(&buf[sizeof(libed2k_header)], bytes_transferred - sizeof(libed2k_header));
+        boost::iostreams::stream_buffer<Device> buffer(&buf[sizeof(udp_libed2k_header)], bytes_transferred - sizeof(udp_libed2k_header));
         std::istream in_array_stream(&buffer);
         archive::ed2k_iarchive ia(in_array_stream);
 
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        LIBED2K_LOG(dht_tracker) << kad2string(msg.first.m_type) << " <== " << ep.address();
+        LIBED2K_LOG(dht_tracker) << kad2string(uh.m_type) << " <== " << ep.address();
 #endif
         /**
           * incoming requests
         */
-        switch (msg.first.m_type) {
+        switch (uh.m_type) {
         case KADEMLIA_BOOTSTRAP_REQ_DEPRECATED:
         case KADEMLIA_HELLO_REQ_DEPRECATED:
         case KADEMLIA_REQ_DEPRECATED: {
@@ -524,7 +533,7 @@ namespace libed2k { namespace dht
         }
         default: {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-            LIBED2K_LOG(dht_tracker) << "not handled packet type " << msg.first.m_type << " <<< " << ep.address();
+            LIBED2K_LOG(dht_tracker) << "not handled packet type " << uh.m_type << " <<< " << ep.address();
 #endif
             break;
         }
@@ -685,7 +694,7 @@ namespace libed2k { namespace dht
 		m_dht.add_router_node(node);
 	}
 
-	bool dht_tracker::send_packet(const message& e, udp::endpoint const& addr, int send_flags)
+	bool dht_tracker::send_packet(const udp_message& e, udp::endpoint const& addr, int send_flags)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 
@@ -698,7 +707,7 @@ namespace libed2k { namespace dht
 		//int ret = lazy_bdecode(&m_send_buf[0], &m_send_buf[0] + m_send_buf.size(), print, ec);
 		//LIBED2K_ASSERT(ret == 0);
 		//log_line << print_entry(print, true);
-        log_line << kad2string(e.first.m_type) << " size " << e.first.m_size;
+        log_line << kad2string(e.first.m_type) << " size " << e.second.size();
 #endif
         std::copy((const char*)&(e.first), (const char*)(&(e.first)) + sizeof(e.first), std::back_inserter(m_send_buf));
         std::copy(e.second.begin(), e.second.end(), std::back_inserter(m_send_buf));

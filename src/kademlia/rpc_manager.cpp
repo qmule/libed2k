@@ -397,7 +397,8 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
 #endif
 
     // prepare correct observer call
-    //o->reply(m);
+    msg m(std::make_pair(libed2k_header(), std::string()), target);
+    o->reply(m);
 
     *id = extract_packet_node_id(t);
 
@@ -559,7 +560,7 @@ bool rpc_manager::invoke(T& t, udp::endpoint target, observer_ptr o) {
         << request_name(t) << " -> " << target;
 #endif
 
-    message msg = make_message(t);
+    udp_message msg = make_udp_message(t);
 
     if (m_send(m_userdata, msg, target, 1)) {
         m_transactions.push_back(o);

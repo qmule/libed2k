@@ -337,16 +337,19 @@ namespace libed2k {
 
     // PING+PONG
 
-    struct ping_pong {
+    struct kad2_ping {
+        template<typename Archive>
+        void serialize(Archive& ar) {
+        }
+    };
+
+    struct kad2_pong {
         uint16_t    udp_port;
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & udp_port;
         }
     };
-
-    struct kad2_ping : public ping_pong {};
-    struct kad2_pong : public ping_pong {};
 
     /*
     struct kad_answer_base{

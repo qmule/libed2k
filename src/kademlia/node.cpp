@@ -91,7 +91,7 @@ void purge_peers(std::set<peer_entry>& peers)
 void nop() {}
 
 node_impl::node_impl(libed2k::alert_manager& alerts
-	, bool (*f)(void*, const message&, udp::endpoint const&, int)
+	, bool (*f)(void*, const udp_message&, udp::endpoint const&, int)
 	, dht_settings const& settings, node_id nid, address const& external_address
 	, external_ip_fun ext_ip, void* userdata)
 	: m_settings(settings)

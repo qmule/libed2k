@@ -380,6 +380,13 @@ namespace libed2k
 #pragma pack(push)
 #pragma pack(1)
 
+    Packed_Struct udp_libed2k_header {
+        proto_type  m_protocol;
+        proto_type  m_type;
+
+        udp_libed2k_header() : m_protocol(OP_KADEMLIAHEADER), m_type(0) {}
+    };
+
     Packed_Struct libed2k_header
     {
         typedef boost::uint32_t size_type;
@@ -1917,6 +1924,23 @@ namespace libed2k
 		msg.first.m_type = packet_type<T>::value;
 		return msg;
 	}
+
+    typedef std::pair<udp_libed2k_header, std::string>  udp_message;
+
+    template<typename T>
+    inline udp_message make_udp_message(const T& t) {
+        udp_message msg;
+        msg.first.m_protocol = packet_type<T>::protocol;
+        boost::iostreams::back_insert_device<std::string> inserter(msg.second);
+        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
+            s(inserter);
+        // Serialize the data first so we know how large it is.
+        archive::ed2k_oarchive oa(s);
+        oa << const_cast<T&>(t);
+        s.flush();
+        msg.first.m_type = packet_type<T>::value;
+        return msg;
+    };
 
 	message extract_message(const char* p, int bytes, error_code& ec);
 	std::string kad2string(int op);
