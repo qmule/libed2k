@@ -4,6 +4,28 @@
 #include "libed2k/packet_struct.hpp"
 
 namespace libed2k {
+
+
+// MOD Note: end
+#define EDONKEYVERSION                  0x3C
+#define KADEMLIA_VERSION1_46c           0x01 /*45b - 46c*/
+#define KADEMLIA_VERSION2_47a           0x02 /*47a*/
+#define KADEMLIA_VERSION3_47b           0x03 /*47b*/
+#define KADEMLIA_VERSION5_48a           0x05 // -0.48a
+#define KADEMLIA_VERSION6_49aBETA       0x06 // -0.49aBETA1, needs to support: OP_FWCHECKUDPREQ (!), obfuscation, direct callbacks, source type 6, UDP firewallcheck
+#define KADEMLIA_VERSION7_49a           0x07 // -0.49a needs to support OP_KAD_FWTCPCHECK_ACK, KADEMLIA_FIREWALLED2_REQ
+#define KADEMLIA_VERSION8_49b           0x08 // TAG_KADMISCOPTIONS, KADEMLIA2_HELLO_RES_ACK
+#define KADEMLIA_VERSION9_50a           0x09 // handling AICH hashes on keyword storage
+#define KADEMLIA_VERSION                0x09 // Change CT_EMULE_MISCOPTIONS2 if Kadversion becomes >= 15 (0x0F)
+
+
+#define KADEMLIA_FIND_VALUE     0x02
+#define KADEMLIA_STORE          0x04
+#define KADEMLIA_FIND_NODE      0x0B
+#define KADEMLIA_FIND_VALUE_MORE    KADEMLIA_FIND_NODE
+
+//#define KADEMLIA_VERSION    0x08    /* 0.49b */
+
     // COMMON KAD packages
     /**
       * KAD identifier compatible with eMule format serialization
@@ -129,7 +151,7 @@ namespace libed2k {
     struct kad_hello_res : public kad_hello_base {};
 
     struct kad2_hello_base {
-        kad2_common_res client_info;
+        kad2_common_res     client_info;
         tag_list<uint8_t>   tags;
 
         template<typename Archive>

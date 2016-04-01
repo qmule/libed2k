@@ -263,13 +263,6 @@ namespace libed2k
         KADEMLIA_FINDBUDDY_RES              = 0x5A  // <TCPPORT (sender) [2]>
     };
 
-    #define KADEMLIA_FIND_VALUE     0x02
-    #define KADEMLIA_STORE          0x04
-    #define KADEMLIA_FIND_NODE      0x0B
-    #define KADEMLIA_FIND_VALUE_MORE    KADEMLIA_FIND_NODE
-
-    #define KADEMLIA_VERSION    0x08    /* 0.49b */
-
     const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
     const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
     const boost::uint8_t ED2K_SEARCH_OP_LESS            = 2;

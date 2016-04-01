@@ -187,7 +187,7 @@ public:
 
 	node_impl(libed2k::alert_manager& alerts
 		, bool (*f)(void*, const udp_message&, udp::endpoint const&, int)
-		, dht_settings const& settings, node_id nid, address const& external_address
+		, dht_settings const& settings, node_id nid, address const& external_address, int external_udp_port
 		, external_ip_fun ext_ip, void* userdata);
 
 	virtual ~node_impl() {}
@@ -291,11 +291,7 @@ public:
 	rpc_manager m_rpc;
 
     template<typename Request>
-    void incoming_request(const Request& req) {
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        LIBED2K_LOG(node) << " unhandled request incoming ";
-#endif
-    }
+    void incoming_request(const Request& req, udp::endpoint target);
 
 private:
 	external_ip_fun m_ext_ip;
@@ -312,6 +308,7 @@ private:
 	libed2k::alert_manager& m_alerts;
 	bool (*m_send)(void*, const udp_message&, udp::endpoint const&, int);
 	void* m_userdata;
+	int m_external_udp_port;
 };
 
 

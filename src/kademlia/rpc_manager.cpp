@@ -585,6 +585,8 @@ void rpc_manager::append_data(T& t) const {
 template<>
 void rpc_manager::append_data<kad2_hello_req>(kad2_hello_req& t) const {
     t.client_info.kid = m_our_id;
+    t.client_info.tcp_port = 4661;
+    t.client_info.version = KADEMLIA_VERSION;
 }
 
 template void rpc_manager::append_data<kad2_ping>(kad2_ping& t) const;

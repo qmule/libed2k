@@ -92,7 +92,7 @@ void nop() {}
 
 node_impl::node_impl(libed2k::alert_manager& alerts
 	, bool (*f)(void*, const udp_message&, udp::endpoint const&, int)
-	, dht_settings const& settings, node_id nid, address const& external_address
+	, dht_settings const& settings, node_id nid, address const& external_address, int external_udp_port
 	, external_ip_fun ext_ip, void* userdata)
 	: m_settings(settings)
 	, m_id(nid == (node_id::min)() || !verify_id(nid, external_address) ? generate_id(external_address) : nid)
@@ -103,6 +103,7 @@ node_impl::node_impl(libed2k::alert_manager& alerts
 	, m_alerts(alerts)
 	, m_send(f)
 	, m_userdata(userdata)
+    , m_external_udp_port(external_udp_port)
 {
 	m_secret[0] = random();
 	m_secret[1] = std::rand();
@@ -1039,6 +1040,14 @@ template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
 template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
 template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&, udp::endpoint);
 
+
+template<>
+void node_impl::incoming_request(const kad2_ping& req, udp::endpoint target) {
+    kad2_pong p;
+    p.udp_port = m_external_udp_port;
+    udp_message msg = make_udp_message(p);
+    m_send(m_userdata, msg, target, 0);
+}
 
 } } // namespace libed2k::dht
 
