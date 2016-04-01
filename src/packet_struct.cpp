@@ -646,35 +646,61 @@ namespace libed2k
 
 
     std::string kad2string(int op) {
-        switch(op) {
-        case KADEMLIA2_BOOTSTRAP_REQ: return "KADEMLIA2_BOOTSTRAP_REQ";
-        case KADEMLIA2_BOOTSTRAP_RES: return "KADEMLIA2_BOOTSTRAP_RES";
-        case KADEMLIA2_HELLO_REQ: return "KADEMLIA2_HELLO_REQ";
-        case KADEMLIA2_HELLO_RES: return "KADEMLIA2_HELLO_RES";
-        case KADEMLIA2_REQ: return "KADEMLIA2_REQ";
-        case KADEMLIA2_HELLO_RES_ACK: return "KADEMLIA2_HELLO_RES_ACK";
-        case KADEMLIA2_RES: return "KADEMLIA2_RES";
-        case KADEMLIA2_SEARCH_KEY_REQ: return "KADEMLIA2_SEARCH_KEY_REQ";
-        case KADEMLIA2_SEARCH_SOURCE_REQ: return "KADEMLIA2_SEARCH_SOURCE_REQ";
-        case KADEMLIA2_SEARCH_NOTES_REQ: return "KADEMLIA2_SEARCH_NOTES_REQ";
-        case KADEMLIA2_SEARCH_RES: return "KADEMLIA2_SEARCH_RES";
-        case KADEMLIA2_PUBLISH_KEY_REQ: return "KADEMLIA2_PUBLISH_KEY_REQ";
-        case KADEMLIA2_PUBLISH_SOURCE_REQ: return "KADEMLIA2_PUBLISH_SOURCE_REQ";
-        case KADEMLIA2_PUBLISH_NOTES_REQ: return "KADEMLIA2_PUBLISH_NOTES_REQ";
-        case KADEMLIA2_PUBLISH_RES: return "KADEMLIA2_PUBLISH_RES";
-        case KADEMLIA2_PUBLISH_RES_ACK: return "KADEMLIA2_PUBLISH_RES_ACK";
-        case KADEMLIA_FIREWALLED2_REQ: return "KADEMLIA_FIREWALLED2_REQ";
-        case KADEMLIA2_PING: return "KADEMLIA2_PING";
-        case KADEMLIA2_PONG: return "KADEMLIA2_PONG";
-        case KADEMLIA2_FIREWALLUDP: return "KADEMLIA2_FIREWALLUDP";
-        default: {
-            std::stringstream ss;
-            ss << "UNKNOWN " << op;
-            return ss.str();
+        switch (op) {
+            case KADEMLIA2_BOOTSTRAP_REQ: return "KADEMLIA2_BOOTSTRAP_REQ";
+            case KADEMLIA2_BOOTSTRAP_RES: return "KADEMLIA2_BOOTSTRAP_RES";
+            case KADEMLIA2_HELLO_REQ: return "KADEMLIA2_HELLO_REQ";
+            case KADEMLIA2_HELLO_RES: return "KADEMLIA2_HELLO_RES";
+            case KADEMLIA2_REQ: return "KADEMLIA2_REQ";
+            case KADEMLIA2_HELLO_RES_ACK: return "KADEMLIA2_HELLO_RES_ACK";
+            case KADEMLIA2_RES: return "KADEMLIA2_RES";
+            case KADEMLIA2_SEARCH_KEY_REQ: return "KADEMLIA2_SEARCH_KEY_REQ";
+            case KADEMLIA2_SEARCH_SOURCE_REQ: return "KADEMLIA2_SEARCH_SOURCE_REQ";
+            case KADEMLIA2_SEARCH_NOTES_REQ: return "KADEMLIA2_SEARCH_NOTES_REQ";
+            case KADEMLIA2_SEARCH_RES: return "KADEMLIA2_SEARCH_RES";
+            case KADEMLIA2_PUBLISH_KEY_REQ: return "KADEMLIA2_PUBLISH_KEY_REQ";
+            case KADEMLIA2_PUBLISH_SOURCE_REQ: return "KADEMLIA2_PUBLISH_SOURCE_REQ";
+            case KADEMLIA2_PUBLISH_NOTES_REQ: return "KADEMLIA2_PUBLISH_NOTES_REQ";
+            case KADEMLIA2_PUBLISH_RES: return "KADEMLIA2_PUBLISH_RES";
+            case KADEMLIA2_PUBLISH_RES_ACK: return "KADEMLIA2_PUBLISH_RES_ACK";
+            case KADEMLIA_FIREWALLED2_REQ: return "KADEMLIA_FIREWALLED2_REQ";
+            case KADEMLIA2_PING: return "KADEMLIA2_PING";
+            case KADEMLIA2_PONG: return "KADEMLIA2_PONG";
+            case KADEMLIA2_FIREWALLUDP: return "KADEMLIA2_FIREWALLUDP";
+            default: break;
         }
 
-        return std::string();
-    }
+        switch (op) {
+            case KADEMLIA_BOOTSTRAP_REQ_DEPRECATED: return "KADEMLIA_BOOTSTRAP_REQ_DEPRECATED"; // = 0x00, // <PEER (sender) [25]>
+            case KADEMLIA_BOOTSTRAP_RES_DEPRECATED: return "KADEMLIA_BOOTSTRAP_RES_DEPRECATED"; // = 0x08, // <CNT [2]> <PEER [25]>*(CNT)
+            case KADEMLIA_HELLO_REQ_DEPRECATED: return "KADEMLIA_HELLO_REQ_DEPRECATED"; // = 0x10, // <PEER (sender) [25]>
+            case KADEMLIA_HELLO_RES_DEPRECATED: return "KADEMLIA_HELLO_RES_DEPRECATED"; // = 0x18, // <PEER (receiver) [25]>
+            case KADEMLIA_REQ_DEPRECATED: return "KADEMLIA_REQ_DEPRECATED"; // = 0x20, // <TYPE [1]> <HASH (target) [16]> <HASH (receiver) 16>
+            case KADEMLIA_RES_DEPRECATED: return "KADEMLIA_RES_DEPRECATED"; // = 0x28, // <HASH (target) [16]> <CNT> <PEER [25]>*(CNT)
+            case KADEMLIA_SEARCH_REQ: return "KADEMLIA_SEARCH_REQ"; // = 0x30, // <HASH (key) [16]> <ext 0/1 [1]> <SEARCH_TREE>[ext]
+                                      // UNUSED               = 0x31, // Old Opcode, don't use.
+            case KADEMLIA_SEARCH_NOTES_REQ: return "KADEMLIA_SEARCH_NOTES_REQ"; // = 0x32, // <HASH (key) [16]>
+            case KADEMLIA_SEARCH_RES: return "KADEMLIA_SEARCH_RES"; // = 0x38, // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+                                        // UNUSED               = 0x39, // Old Opcode, don't use.
+            case KADEMLIA_SEARCH_NOTES_RES: return "KADEMLIA_SEARCH_NOTES_RES"; // = 0x3A, // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+            case  KADEMLIA_PUBLISH_REQ: return "KADEMLIA_PUBLISH_REQ"; // = 0x40, // <HASH (key) [16]> <CNT1 [2]> (<HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+                                            // UNUSED               = 0x41, // Old Opcode, don't use.
+            case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED: return "KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED"; // = 0x42, // <HASH (key) [16]> <HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+            case KADEMLIA_PUBLISH_RES: return "KADEMLIA_PUBLISH_RES"; // = 0x48, // <HASH (key) [16]>
+                                            // UNUSED               = 0x49, // Old Opcode, don't use.
+            case KADEMLIA_PUBLISH_NOTES_RES_DEPRECATED: return "KADEMLIA_PUBLISH_NOTES_RES_DEPRECATED"; // = 0x4A, // <HASH (key) [16]>
+            case KADEMLIA_FIREWALLED_REQ: return "KADEMLIA_FIREWALLED_REQ"; // = 0x50, // <TCPPORT (sender) [2]>
+            case KADEMLIA_FINDBUDDY_REQ: return "KADEMLIA_FINDBUDDY_REQ"; // = 0x51, // <TCPPORT (sender) [2]>
+            case KADEMLIA_CALLBACK_REQ: return "KADEMLIA_CALLBACK_REQ"; // = 0x52, // <TCPPORT (sender) [2]>
+            case KADEMLIA_FIREWALLED_RES: return "KADEMLIA_FIREWALLED_RES"; // = 0x58, // <IP (sender) [4]>
+            case KADEMLIA_FIREWALLED_ACK_RES: return "KADEMLIA_FIREWALLED_ACK_RES"; // = 0x59, // (null)
+            case KADEMLIA_FINDBUDDY_RES: return "KADEMLIA_FINDBUDDY_RES"; // = 0x5A  // <TCPPORT (sender) [2]>
+            default: break;
+        };
+
+        std::stringstream ss;
+        ss << "UNKNOWN " << op;
+        return ss.str();
     }
 
 }

@@ -455,7 +455,11 @@ namespace libed2k { namespace dht
         case KADEMLIA_SEARCH_NOTES_REQ:
         case KADEMLIA_PUBLISH_REQ:
         case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED:
-        case KADEMLIA_FIREWALLED_REQ:
+        case KADEMLIA_FIREWALLED_REQ: {
+            kad_firewalled_req p;
+            ia >> p;
+            m_dht.incoming_request(p, ep);
+        }
         case KADEMLIA_FINDBUDDY_REQ:
             break;
         case KADEMLIA_CALLBACK_REQ:

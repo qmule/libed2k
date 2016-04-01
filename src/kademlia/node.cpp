@@ -1049,5 +1049,13 @@ void node_impl::incoming_request(const kad2_ping& req, udp::endpoint target) {
     m_send(m_userdata, msg, target, 0);
 }
 
+template<>
+void node_impl::incoming_request(const kad_firewalled_req& req, udp::endpoint target) {
+    kad_firewalled_res p;
+    p.ip = address2int(target.address());
+    udp_message msg = make_udp_message(p);
+    m_send(m_userdata, msg, target, 0);
+}
+
 } } // namespace libed2k::dht
 

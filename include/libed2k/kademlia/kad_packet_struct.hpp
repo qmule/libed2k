@@ -16,7 +16,7 @@ namespace libed2k {
 #define KADEMLIA_VERSION7_49a           0x07 // -0.49a needs to support OP_KAD_FWTCPCHECK_ACK, KADEMLIA_FIREWALLED2_REQ
 #define KADEMLIA_VERSION8_49b           0x08 // TAG_KADMISCOPTIONS, KADEMLIA2_HELLO_RES_ACK
 #define KADEMLIA_VERSION9_50a           0x09 // handling AICH hashes on keyword storage
-#define KADEMLIA_VERSION                0x09 // Change CT_EMULE_MISCOPTIONS2 if Kadversion becomes >= 15 (0x0F)
+#define KADEMLIA_VERSION                KADEMLIA_VERSION5_48a // Change CT_EMULE_MISCOPTIONS2 if Kadversion becomes >= 15 (0x0F)
 
 
 #define KADEMLIA_FIND_VALUE     0x02
@@ -573,6 +573,16 @@ namespace libed2k {
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
 
+    template<> struct packet_type<kad_firewalled_req> {
+        static const proto_type value = KADEMLIA_FIREWALLED_REQ;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad_firewalled_res> {
+        static const proto_type value = KADEMLIA_FIREWALLED_RES;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
     /**
     *   special transaction identifier on packet type
     */
@@ -592,6 +602,11 @@ namespace libed2k {
     // kademlia request/response
     template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 107; };
     template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 107; };
+
+
+    // firewalled 
+    template<> struct transaction_identifier<kad_firewalled_req> { static const uint16_t id = 'f';  };
+    template<> struct transaction_identifier<kad_firewalled_res> { static const uint16_t id = 'f';  };
 }
 
 #endif //__KAD_PACKET_STRUCT__
