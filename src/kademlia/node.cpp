@@ -1069,5 +1069,15 @@ void node_impl::incoming_request(const kad2_hello_req& req, udp::endpoint target
     add_node(target, req.client_info.kid);
 }
 
+template<>
+void node_impl::incoming_request(const kad2_bootstrap_req& req, udp::endpoint target) {
+    kad2_bootstrap_res p;
+    p.client_info.kid = m_id;
+    p.client_info.tcp_port = 4661;
+    p.client_info.version = KADEMLIA_VERSION;
+    udp_message msg = make_udp_message(p);
+    m_send(m_userdata, msg, target, 0);
+}
+
 } } // namespace libed2k::dht
 

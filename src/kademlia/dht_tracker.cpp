@@ -466,6 +466,9 @@ namespace libed2k { namespace dht
         case KADEMLIA_CALLBACK_REQ:
             break;
         case KADEMLIA2_BOOTSTRAP_REQ: {
+            kad2_bootstrap_req p;
+            ia >> p;
+            m_dht.incoming_request(p, ep);
             break;
         }
         case KADEMLIA2_BOOTSTRAP_RES: {

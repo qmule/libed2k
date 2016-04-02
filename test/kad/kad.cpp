@@ -166,6 +166,8 @@ int main(int argc, char* argv[]) {
 
     std::string input;
 
+    ses.start_dht();
+
     while ((std::cin >> input)) {
         std::deque<std::string> command = split_del(input, ';');
         if (command.empty()) continue;
