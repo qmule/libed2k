@@ -201,7 +201,7 @@ public:
 	void unreachable(udp::endpoint const& ep);
 
 	template<typename T>
-	void incoming(const T& t, udp::endpoint target);
+	void incoming(const T& t, udp::endpoint target);    
 
 	int num_torrents() const { return m_map.size(); }
 	int num_peers() const

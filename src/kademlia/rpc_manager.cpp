@@ -532,7 +532,7 @@ bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
-		<< e["q"].string() << " -> " << target_addr;
+		<< e["q"].string() << " ==> " << target_addr;
 #endif
 
     // TODO - remove this whole function
@@ -557,7 +557,7 @@ bool rpc_manager::invoke(T& t, udp::endpoint target, observer_ptr o) {
     o->set_transaction_id(transaction_identifier<T>::id);
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
-        << request_name(t) << " -> " << target;
+        << request_name(t) << " ==> " << target;
 #endif
 
     udp_message msg = make_udp_message(t);
