@@ -89,7 +89,7 @@ struct observer : boost::noncopyable
 	virtual ~observer();
 
 	// this is called when a reply is received
-	virtual void reply(msg const& m) = 0;
+	virtual void reply(const kad_contacts_res&, udp::endpoint ep) = 0;
 
 	// this is called if no response has been received after
 	// a few seconds, before the request has timed out

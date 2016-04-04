@@ -396,9 +396,7 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     	<< i << " from " << target.address();
 #endif
 
-    // prepare correct observer call
-    msg m(std::make_pair(libed2k_header(), std::string()), target);
-    o->reply(m);
+    o->reply(extract_result(t), target);
 
     *id = extract_packet_node_id(t);
 
@@ -410,10 +408,10 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     return m_table.node_seen(*id, target);
 }
 
-
 template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res& t, udp::endpoint target, node_id* id);
+template bool rpc_manager::incoming<kademlia2_res>(const kademlia2_res& t, udp::endpoint target, node_id* id);
 
 template<typename T>
 node_id rpc_manager::extract_packet_node_id(const T&) {
@@ -423,6 +421,16 @@ node_id rpc_manager::extract_packet_node_id(const T&) {
 template<>
 node_id rpc_manager::extract_packet_node_id<kad2_hello_res>(const kad2_hello_res& t) {
     return t.client_info.kid;
+}
+
+template<>
+const kad_contacts_res& rpc_manager::extract_result<kad2_bootstrap_res>(const kad2_bootstrap_res& t) const {
+    return t.contacts.m_collection;
+}
+
+template<>
+const kad_contacts_res& rpc_manager::extract_result<kademlia2_res>(const kademlia2_res& t) const {
+    return t.results.m_collection;
 }
 
 time_duration rpc_manager::tick()

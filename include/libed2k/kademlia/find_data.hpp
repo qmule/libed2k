@@ -102,7 +102,7 @@ public:
 		, udp::endpoint const& ep, node_id const& id)
 		: observer(algorithm, ep, id)
 	{}
-	void reply(msg const&);
+	void reply(const kad_contacts_res&, udp::endpoint);
 };
 
 } } // namespace libed2k::dht

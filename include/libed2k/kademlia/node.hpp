@@ -162,7 +162,7 @@ public:
 		: observer(algo, ep, id)
 	{}
 
-	void reply(msg const&) { flags |= flag_done; }
+	void reply(const kad_contacts_res&, udp::endpoint) { flags |= flag_done; }
 };
 
 struct count_peers

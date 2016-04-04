@@ -39,6 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <libed2k/io.hpp>
 #include <libed2k/socket.hpp>
 #include <libed2k/socket_io.hpp>
+#include "libed2k/util.hpp"
 #include <vector>
 
 namespace libed2k { namespace dht
@@ -54,43 +55,81 @@ using detail::read_v4_endpoint;
 using detail::read_v6_endpoint;
 #endif
 
-void find_data_observer::reply(msg const& m)
+/**
+ * emule code for extract information about source from file
+ *  // Process a possible source to a file.
+    // Set of data we could receive from the result.
+    uint8 uType = 0;
+    uint32 uIP = 0;
+    uint16 uTCPPort = 0;
+    uint16 uUDPPort = 0;
+    uint32 uBuddyIP = 0;
+    uint16 uBuddyPort = 0;
+    //uint32 uClientID = 0;
+    CUInt128 uBuddy;
+    uint8 byCryptOptions = 0; // 0 = not supported
+
+    for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
+    {
+        CKadTag* pTag = *itTagList;
+        if (!pTag->m_name.Compare(TAG_SOURCETYPE))
+            uType = (uint8)pTag->GetInt();
+        else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+            uIP = (uint32)pTag->GetInt();
+        else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+            uTCPPort = (uint16)pTag->GetInt();
+        else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+            uUDPPort = (uint16)pTag->GetInt();
+        else if (!pTag->m_name.Compare(TAG_SERVERIP))
+            uBuddyIP = (uint32)pTag->GetInt();
+        else if (!pTag->m_name.Compare(TAG_SERVERPORT))
+            uBuddyPort = (uint16)pTag->GetInt();
+        //else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
+        //  uClientID = pTag->GetInt();
+        else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
+        {
+            uchar ucharBuddyHash[16];
+            if (pTag->IsStr() && strmd4(pTag->GetStr(), ucharBuddyHash))
+                md4cpy(uBuddy.GetDataPtr(), ucharBuddyHash);
+            else
+                TRACE("+++ Invalid TAG_BUDDYHASH tag\n");
+        }
+        else if (!pTag->m_name.Compare(TAG_ENCRYPTION))
+            byCryptOptions = (uint8)pTag->GetInt();
+
+        delete pTag;
+    }
+    delete plistInfo;
+
+    // Process source based on it's type. Currently only one method is needed to process all types.
+    switch( uType )
+    {
+        case 1:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+            m_uAnswers++;
+            theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
+            theApp.downloadqueue->KademliaSearchFile(m_uSearchID, &uAnswer, &uBuddy, uType, uIP, uTCPPort, uUDPPort, uBuddyIP, uBuddyPort, byCryptOptions);
+            break;
+    }
+*/
+
+void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 {
-/*
+
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	std::stringstream log_line;
 	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
-#endif
 
-	lazy_entry const* r = m.message.dict_find_dict("r");
-	if (!r)
-	{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		LIBED2K_LOG(traversal) << "[" << m_algorithm.get() << "] missing response dict";
-#endif
-		return;
+	for(kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
+	    log_line << int2ipstr(itr->address.address) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
 	}
-
-	lazy_entry const* id = r->dict_find_string("id");
-	if (!id || id->string_length() != 20)
-	{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		LIBED2K_LOG(traversal) << "[" << m_algorithm.get() << "] invalid id in response";
 #endif
-		return;
-	}
 
-	lazy_entry const* token = r->dict_find_string("token");
-	if (token)
-	{
-		static_cast<find_data*>(m_algorithm.get())->got_write_token(
-			node_id(id->string_ptr()), token->string_value());
-
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		log_line << " token: " << to_hex(token->string_value());
-#endif
-	}
-
+	/* TODO - implements this part
+	 *  seems this code will be in second reply function format
 	// look for peers
 	lazy_entry const* n = r->dict_find_list("values");
 	if (n)
@@ -118,7 +157,9 @@ void find_data_observer::reply(msg const& m)
 		}
 		static_cast<find_data*>(m_algorithm.get())->got_peers(peer_list);
 	}
+*/
 
+	/*
 	// look for nodes
 	n = r->dict_find_string("nodes");
 	if (n)
@@ -163,12 +204,13 @@ void find_data_observer::reply(msg const& m)
 #endif
 		}
 	}
+*/
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	log_line << " ]";
 	LIBED2K_LOG(traversal) << log_line.str();
 #endif
 	done();
-*/
+
 }
 
 void add_entry_fun(void* userdata, node_entry const& e)

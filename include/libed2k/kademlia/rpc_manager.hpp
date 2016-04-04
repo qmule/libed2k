@@ -60,7 +60,7 @@ struct null_observer : public observer
 {
 	null_observer(boost::intrusive_ptr<traversal_algorithm> const& a
 		, udp::endpoint const& ep, node_id const& id): observer(a, ep, id) {}
-	virtual void reply(msg const&) { flags |= flag_done; }
+	virtual void reply(const kad_contacts_res&, udp::endpoint) { flags |= flag_done; }
 };
 
 class routing_table;
@@ -98,6 +98,17 @@ public:
 
     template<typename T>
     void append_data(T& t) const;
+
+    /**
+     * generates kad_contacts_res data structure from typed packages
+     * by default returns empty structure for packages without infomation about contacts
+     * specialized for bootstrap and kademlia2_res
+     */
+    template<typename T>
+    const kad_contacts_res& extract_result(const T& t) const {
+        static const kad_contacts_res empty;
+        return empty;
+    }
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     template<typename T>

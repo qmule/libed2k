@@ -117,7 +117,13 @@ namespace libed2k {
         }
     };
 
-    typedef container_holder<uint16_t, std::vector<kad_entry> >   kad_bootstrap_res;
+    /**
+     * this is common kad information reply in bootstrap and kademlia2_res
+     * will use in observer reply call also
+     */
+    typedef std::deque<kad_entry>   kad_contacts_res;
+
+    typedef container_holder<uint16_t, kad_contacts_res >   kad_bootstrap_res;
 
     struct kad2_bootstrap_req {
 
@@ -127,7 +133,7 @@ namespace libed2k {
 
     struct kad2_bootstrap_res {
         kad2_common_res client_info;
-        container_holder<uint16_t, std::deque<kad_entry> > contacts;
+        container_holder<uint16_t, kad_contacts_res > contacts;
 
         template<typename Archive>
         void serialize(Archive& ar) {
@@ -177,7 +183,7 @@ namespace libed2k {
 
     struct kademlia_res {
         kad_id  kid_target;
-        container_holder<uint8_t, std::vector<kad_entry> >    results;
+        container_holder<uint8_t, kad_contacts_res >    results;
         template<typename Archive>
         void searialize(Archive& ar) {
             ar & kid_target & results;
