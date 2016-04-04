@@ -164,16 +164,24 @@ int main(int argc, char* argv[]) {
     alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
     boost::thread t(boost::bind(&libed2k::io_service::run, &io));
 
-    std::string input;
-
-    ses.start_dht();
+    std::string input;    
 
     while ((std::cin >> input)) {
         std::deque<std::string> command = split_del(input, ';');
         if (command.empty()) continue;
         if (command.at(0) == "quit" || command.at(0) == "q" || command.at(0) == "Q")  break;
 
-        if (command.at(0) == "add") {
+        if (command.at(0) == "bootstrap") {
+            if (command.size() < 3) {
+                DBG("bootstrap command must have ip;udp_port additional information");
+            }
+            else {
+                int udp_port = atoi(command.at(2).c_str());
+                DBG("add dht router node " << command.at(1) << ":" << udp_port);
+                ses.add_dht_router(std::make_pair(command.at(1), udp_port));
+            }
+        }
+        else if (command.at(0) == "add") {
             if (command.size() < 3) {
                 DBG("add command must have ip;udp_port additional information");
             }

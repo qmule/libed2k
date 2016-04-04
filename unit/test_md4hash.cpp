@@ -12,6 +12,7 @@
 #include <boost/test/unit_test.hpp>
 #include "libed2k/hasher.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/node_id.hpp"
 #include "common.hpp"
 
 
@@ -117,16 +118,6 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
         BOOST_CHECK_EQUAL(libed2k::md4_hash::fromHashset(part_hashset), itr->second);
         delete chFullBuffer;
     }
-}
-
-BOOST_AUTO_TEST_CASE(test_kad_support_methods){
-    libed2k::md4_hash hash = libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5");
-    size_t i = 0;
-    for(libed2k::md4_hash::const_iterator itr = hash.begin(); itr != hash.end(); ++itr){
-        BOOST_CHECK_EQUAL(*itr, hash[i++]);
-    }
-
-    BOOST_CHECK_EQUAL(i, libed2k::md4_hash::size);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

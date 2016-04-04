@@ -108,6 +108,9 @@ void bootstrap::done()
 	{
 		if ((*i)->flags & observer::flag_queried) continue;
 		// this will send a ping
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        LIBED2K_LOG(traversal) << "ping " << int2ipstr(address2int((*i)->target_ep().address()));
+#endif
 		m_node.add_node((*i)->target_ep(), (*i)->id());
 	}
 	refresh::done();

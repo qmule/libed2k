@@ -122,10 +122,6 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	std::stringstream log_line;
 	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
-
-	for(kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
-	    log_line << int2ipstr(itr->address.address) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
-	}
 #endif
 
 	/* TODO - implements this part
@@ -158,6 +154,19 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 		static_cast<find_data*>(m_algorithm.get())->got_peers(peer_list);
 	}
 */
+    for (kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        log_line << int2ipstr(itr->address.address) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
+#endif
+        error_code ec;
+        ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
+        if (!ec) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+            log_line << " traverse started ";
+            m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
+#endif
+        }
+    }
 
 	/*
 	// look for nodes
