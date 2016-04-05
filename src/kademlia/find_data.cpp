@@ -156,10 +156,10 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 */
     for (kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        log_line << int2ipstr(itr->address.address) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
+        log_line << int2ipstr(ntohl(itr->address.address)) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
 #endif
         error_code ec;
-        ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
+        ip::address addr = ip::address::from_string(int2ipstr(ntohl(itr->address.address)), ec);
         if (!ec) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
             log_line << " traverse started ";

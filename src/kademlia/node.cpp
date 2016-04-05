@@ -1088,6 +1088,7 @@ kad_entry entry_to_emule(const node_entry& e) {
     ke.address.address = address2int(e.addr);
     ke.address.udp_port = e.port;
     ke.kid = e.id;
+    return ke;
 }
 
 template<>

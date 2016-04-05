@@ -171,10 +171,13 @@ int main(int argc, char* argv[]) {
         if (command.empty()) continue;
         if (command.at(0) == "quit" || command.at(0) == "q" || command.at(0) == "Q")  break;
 
-        if (command.at(0) == "forward") {
-            DBG("forward ports using UPnP/NatPMP");
-            ses.start_upnp();
-            ses.start_natpmp();
+        if (command.at(0) == "upnp") {
+            DBG("forward ports using UPnP");
+            ses.start_upnp();            
+        }
+        else if (command.at(0) == "natpmp") {
+            DBG("forward ports using NatPmP");
+            ses.stop_natpmp();
         }
         else if (command.at(0) == "bootstrap") {
             if (command.size() < 3) {

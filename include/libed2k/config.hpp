@@ -314,7 +314,7 @@ namespace libed2k
     {
         va_list lp;
         va_start(lp, fmt);
-        int ret = _vsnprintf(buf, len, fmt, lp);
+        int ret = vsnprintf(buf, len, fmt, lp);
         va_end(lp);
         if (ret < 0) { buf[len-1] = 0; ret = len-1; }
         return ret;
