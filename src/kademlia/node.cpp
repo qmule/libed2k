@@ -92,18 +92,21 @@ void nop() {}
 
 node_impl::node_impl(libed2k::alert_manager& alerts
 	, bool (*f)(void*, const udp_message&, udp::endpoint const&, int)
-	, dht_settings const& settings, node_id nid, address const& external_address, int external_udp_port
+	, dht_settings const& settings
+	, node_id nid
+	, address const& external_address
+	, uint16_t port
 	, external_ip_fun ext_ip, void* userdata)
 	: m_settings(settings)
 	, m_id(nid == (node_id::min)() || !verify_id(nid, external_address) ? generate_id(external_address) : nid)
 	, m_table(m_id, 8, settings)
-	, m_rpc(m_id, m_table, f, userdata)
+	, m_rpc(m_id, m_table, f, userdata, port)
 	, m_ext_ip(ext_ip)
 	, m_last_tracker_tick(time_now())
 	, m_alerts(alerts)
 	, m_send(f)
 	, m_userdata(userdata)
-    , m_external_udp_port(external_udp_port)
+    , m_port(port)
 {
 	m_secret[0] = random();
 	m_secret[1] = std::rand();
@@ -1044,7 +1047,7 @@ template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&,
 template<>
 void node_impl::incoming_request(const kad2_ping& req, udp::endpoint target) {
     kad2_pong p;
-    p.udp_port = m_external_udp_port;
+    p.udp_port = m_port;
     udp_message msg = make_udp_message(p);
     m_send(m_userdata, msg, target, 0);
 }
@@ -1061,7 +1064,7 @@ template<>
 void node_impl::incoming_request(const kad2_hello_req& req, udp::endpoint target) {
     kad2_hello_res p;
     p.client_info.kid = m_id;
-    p.client_info.tcp_port = 4661;
+    p.client_info.tcp_port = m_port;
     p.client_info.version = KADEMLIA_VERSION;
     udp_message msg = make_udp_message(p);
     m_send(m_userdata, msg, target, 0);

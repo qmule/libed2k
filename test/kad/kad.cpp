@@ -171,7 +171,12 @@ int main(int argc, char* argv[]) {
         if (command.empty()) continue;
         if (command.at(0) == "quit" || command.at(0) == "q" || command.at(0) == "Q")  break;
 
-        if (command.at(0) == "bootstrap") {
+        if (command.at(0) == "forward") {
+            DBG("forward ports using UPnP/NatPMP");
+            ses.start_upnp();
+            ses.start_natpmp();
+        }
+        else if (command.at(0) == "bootstrap") {
             if (command.size() < 3) {
                 DBG("bootstrap command must have ip;udp_port additional information");
             }

@@ -162,7 +162,8 @@ enum { observer_size = max3<
 
 rpc_manager::rpc_manager(node_id const& our_id
 	, routing_table& table, send_fun const& sf
-	, void* userdata)
+	, void* userdata
+	, uint16_t port)
 	: m_pool_allocator(observer_size, 10)
 	, m_send(sf)
 	, m_userdata(userdata)
@@ -172,6 +173,7 @@ rpc_manager::rpc_manager(node_id const& our_id
 	, m_random_number(generate_random_id())
 	, m_allocated_observers(0)
 	, m_destructing(false)
+    , m_port(port)
 {
 	std::srand(time(0));
 
@@ -593,7 +595,7 @@ void rpc_manager::append_data(T& t) const {
 template<>
 void rpc_manager::append_data<kad2_hello_req>(kad2_hello_req& t) const {
     t.client_info.kid = m_our_id;
-    t.client_info.tcp_port = 4661;
+    t.client_info.tcp_port = m_port;
     t.client_info.version = KADEMLIA_VERSION;
 }
 

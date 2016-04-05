@@ -187,7 +187,7 @@ public:
 
 	node_impl(libed2k::alert_manager& alerts
 		, bool (*f)(void*, const udp_message&, udp::endpoint const&, int)
-		, dht_settings const& settings, node_id nid, address const& external_address, int external_udp_port
+		, dht_settings const& settings, node_id nid, address const& external_address, uint16_t port
 		, external_ip_fun ext_ip, void* userdata);
 
 	virtual ~node_impl() {}
@@ -308,7 +308,7 @@ private:
 	libed2k::alert_manager& m_alerts;
 	bool (*m_send)(void*, const udp_message&, udp::endpoint const&, int);
 	void* m_userdata;
-	int m_external_udp_port;
+	uint16_t m_port;
 };
 
 

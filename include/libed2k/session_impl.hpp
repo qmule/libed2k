@@ -512,10 +512,6 @@ namespace libed2k {
 
             int m_queue_pos;
 
-            // see m_external_listen_port. This is the same
-            // but for the udp port used by the DHT.
-            int m_external_udp_port;
-
             rate_limited_udp_socket m_udp_socket;
 
             boost::intrusive_ptr<natpmp> m_natpmp;

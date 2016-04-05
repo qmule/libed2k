@@ -134,7 +134,6 @@ session_impl::session_impl(const fingerprint& id, const char* listen_interface,
     m_total_failed_bytes(0),
     m_total_redundant_bytes(0),
     m_queue_pos(0),
-    m_external_udp_port(0),
     m_udp_socket(m_io_service,
                  boost::bind(&session_impl::on_receive_udp, this, _1, _2, _3, _4),
                  boost::bind(&session_impl::on_receive_udp_hostname, this, _1, _2, _3, _4),
@@ -417,7 +416,6 @@ void session_impl::open_listen_port()
     }
     else
     {
-        m_external_udp_port = m_udp_socket.local_port();
         maybe_update_udp_mapping(0, m_listen_interface.port(), m_listen_interface.port());
         maybe_update_udp_mapping(1, m_listen_interface.port(), m_listen_interface.port());
     }
@@ -657,7 +655,6 @@ void session_impl::on_port_mapping(int mapping, address const& ip, int port,
 
     if (mapping == m_udp_mapping[map_transport] && port != 0)
     {
-        m_external_udp_port = port;
         m_alerts.post_alert_should(portmap_alert(mapping, port, map_transport));
         return;
     }
@@ -1185,7 +1182,6 @@ void session_impl::abort()
     // #error closing the udp socket here means that
     // the uTP connections cannot be closed gracefully
     m_udp_socket.close();
-    m_external_udp_port = 0;
 
     m_disk_thread.abort();
 }

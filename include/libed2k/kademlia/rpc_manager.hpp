@@ -72,7 +72,7 @@ public:
 
 	rpc_manager(node_id const& our_id
 		, routing_table& table, send_fun const& sf
-		, void* userdata);
+		, void* userdata, uint16_t port);
 	~rpc_manager();
 
 	void unreachable(udp::endpoint const& ep);
@@ -151,6 +151,7 @@ private:
 	node_id m_random_number;
 	int m_allocated_observers;
 	bool m_destructing;
+	uint16_t m_port;
 };
 
 } } // namespace libed2k::dht

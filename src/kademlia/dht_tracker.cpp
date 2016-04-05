@@ -160,7 +160,8 @@ namespace libed2k { namespace dht
 	dht_tracker::dht_tracker(libed2k::aux::session_impl& ses, rate_limited_udp_socket& sock
 		, dht_settings const& settings, entry const* state)
 		: m_dht(ses.m_alerts, &send_callback, settings, extract_node_id(state)
-			, ses.external_address(), ses.m_external_udp_port
+			, ses.external_address()
+			, ses.listen_port()
 			, boost::bind(&aux::session_impl::set_external_address, &ses, _1, _2, _3)
 			, this)
 		, m_ses(ses)
