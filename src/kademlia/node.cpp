@@ -1042,6 +1042,7 @@ void node_impl::incoming(const T& t, udp::endpoint target) {
 template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
 template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
 template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&, udp::endpoint);
+template void node_impl::incoming<kademlia2_res>(const kademlia2_res&, udp::endpoint);
 
 
 template<>
@@ -1078,6 +1079,24 @@ void node_impl::incoming_request(const kad2_bootstrap_req& req, udp::endpoint ta
     p.client_info.kid = m_id;
     p.client_info.tcp_port = 4661;
     p.client_info.version = KADEMLIA_VERSION;
+    udp_message msg = make_udp_message(p);
+    m_send(m_userdata, msg, target, 0);
+}
+
+kad_entry entry_to_emule(const node_entry& e) {
+    kad_entry ke;
+    ke.address.address = address2int(e.addr);
+    ke.address.udp_port = e.port;
+    ke.kid = e.id;
+}
+
+template<>
+void node_impl::incoming_request(const kademlia2_req& req, udp::endpoint target) {
+    kademlia2_res p;
+    int count = req.search_type;
+    std::vector<node_entry> res;
+    m_table.find_node(req.kid_target, res, routing_table::include_failed, count);
+    std::transform(res.begin(), res.end(), std::back_inserter(p.results.m_collection), boost::bind(&entry_to_emule, _1));
     udp_message msg = make_udp_message(p);
     m_send(m_userdata, msg, target, 0);
 }

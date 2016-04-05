@@ -185,7 +185,7 @@ namespace libed2k {
         kad_id  kid_target;
         container_holder<uint8_t, kad_contacts_res >    results;
         template<typename Archive>
-        void searialize(Archive& ar) {
+        void serialize(Archive& ar) {
             ar & kid_target & results;
         }
     };
@@ -586,6 +586,16 @@ namespace libed2k {
 
     template<> struct packet_type<kad_firewalled_res> {
         static const proto_type value = KADEMLIA_FIREWALLED_RES;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kademlia2_req> {
+        static const proto_type value = KADEMLIA2_REQ;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kademlia2_res> {
+        static const proto_type value = KADEMLIA2_RES;
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
 

@@ -461,6 +461,7 @@ namespace libed2k { namespace dht
             kad_firewalled_req p;
             ia >> p;
             m_dht.incoming_request(p, ep);
+            break;
         }
         case KADEMLIA_FINDBUDDY_REQ:
             break;
@@ -491,12 +492,18 @@ namespace libed2k { namespace dht
             break;
         }
         case KADEMLIA2_REQ: {
+            kademlia2_req p;
+            ia >> p;
+            m_dht.incoming_request(p, ep);
             break;
         }
         case KADEMLIA2_HELLO_RES_ACK: {
             break;
         }
         case KADEMLIA2_RES: {
+            kademlia2_res p;
+            ia >> p;
+            m_dht.incoming(p, ep);
             break;
         }
         case KADEMLIA2_SEARCH_KEY_REQ: {
