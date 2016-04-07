@@ -118,10 +118,10 @@ using detail::read_v6_endpoint;
 
 void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 {
-
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	std::stringstream log_line;
-	log_line << "[" << m_algorithm.get() << "] incoming get_peer response [ ";
+	//std::stringstream log_line;
+	//log_line << "[" << m_algorithm.get() << "] reply";
+    LIBED2K_LOG(traversal) << "reply " << m_algorithm.get() << " count " << r.size();
 #endif
 
 	/* TODO - implements this part
@@ -155,14 +155,14 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 	}
 */
     for (kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        log_line << int2ipstr(ntohl(itr->address.address)) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
-#endif
+//#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+//        log_line << int2ipstr(ntohl(itr->address.address)) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
+//#endif
         error_code ec;
         ip::address addr = ip::address::from_string(int2ipstr(ntohl(itr->address.address)), ec);
         if (!ec) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-            log_line << " traverse started ";
+            LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(ntohl(itr->address.address));
             m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
 #endif
         }
@@ -215,8 +215,8 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 	}
 */
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	log_line << " ]";
-	LIBED2K_LOG(traversal) << log_line.str();
+	//log_line << " ]";
+	//LIBED2K_LOG(traversal) << log_line.str();
 #endif
 	done();
 

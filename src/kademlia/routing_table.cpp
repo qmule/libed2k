@@ -647,6 +647,11 @@ bool routing_table::add_node(node_entry const& e)
 		}
 	}
 	if (added) m_ips.insert(e.addr.to_v4().to_bytes());
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+    if (added) {
+        LIBED2K_LOG(table) << "added: " << e.id << " " << e.addr;
+    }
+#endif
 	return ret;
 }
 

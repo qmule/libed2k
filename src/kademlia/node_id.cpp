@@ -163,7 +163,7 @@ bool verify_id(node_id const& nid, address const& source_ip)
 	// no need to verify local IPs, they would be incorrect anyway
 	if (is_local(source_ip)) return true;
 
-	node_id h = generate_id_impl(source_ip, nid[19]);
+	node_id h = generate_id_impl(source_ip, nid[15]);
 	return nid[0] == h[0] && nid[1] == h[1] && (nid[2] & 0xf8) == (h[2] & 0xf8);
 }
 

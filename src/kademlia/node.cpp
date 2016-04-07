@@ -99,7 +99,7 @@ node_impl::node_impl(libed2k::alert_manager& alerts
 	, external_ip_fun ext_ip, void* userdata)
 	: m_settings(settings)
 	, m_id(nid == (node_id::min)() || !verify_id(nid, external_address) ? generate_id(external_address) : nid)
-	, m_table(m_id, 8, settings)
+	, m_table(m_id, 10, settings)
 	, m_rpc(m_id, m_table, f, userdata, port)
 	, m_ext_ip(ext_ip)
 	, m_last_tracker_tick(time_now())
