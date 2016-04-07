@@ -24,6 +24,8 @@ namespace libed2k {
 #define KADEMLIA_FIND_NODE      0x0B
 #define KADEMLIA_FIND_VALUE_MORE    KADEMLIA_FIND_NODE
 
+#define KADEMLIA_TOLERANCE_ZONE 24
+
 //#define KADEMLIA_VERSION    0x08    /* 0.49b */
 
     // COMMON KAD packages
