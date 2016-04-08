@@ -89,6 +89,7 @@ private:
 	nodes_callback m_nodes_callback;
 	std::map<node_id, std::string> m_write_tokens;
 	node_id const m_target;
+    node_id const m_id;
 	bool m_done:1;
 	bool m_got_peers:1;
 	bool m_noseeds:1;

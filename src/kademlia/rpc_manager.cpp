@@ -586,6 +586,7 @@ bool rpc_manager::invoke(T& t, udp::endpoint target, observer_ptr o) {
 template bool rpc_manager::invoke<kad2_ping>(kad2_ping& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kad2_hello_req>(kad2_hello_req& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kad2_bootstrap_req>(kad2_bootstrap_req& t, udp::endpoint target, observer_ptr o);
+template bool rpc_manager::invoke<kademlia2_req>(kademlia2_req& t, udp::endpoint target, observer_ptr o);
 
 template<typename T>
 void rpc_manager::append_data(T& t) const {

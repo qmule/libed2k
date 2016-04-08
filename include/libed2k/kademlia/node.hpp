@@ -226,7 +226,7 @@ public:
 	{ m_table.print_state(os); }
 #endif
 
-	void announce(md4_hash const& info_hash, int listen_port, bool seed
+	void announce(node_id const& info_hash, int listen_port, bool seed
 		, boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
 	bool verify_token(std::string const& token, char const* info_hash

@@ -296,6 +296,10 @@ namespace libed2k
       return r;
     }
 
+    void session::find_keyword(const std::string& keyword) {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::find_keyword, m_impl, keyword));
+    }
+
 #endif
 
     int session::add_port_mapping(protocol_type t, int external_port, int local_port) {

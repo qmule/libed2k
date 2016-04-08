@@ -238,6 +238,7 @@ find_data::find_data(
 	, m_data_callback(dcallback)
 	, m_nodes_callback(ncallback)
 	, m_target(target)
+    , m_id(node.nid())
 	, m_done(false)
 	, m_got_peers(false)
 	, m_noseeds(noseeds)
@@ -264,7 +265,13 @@ bool find_data::invoke(observer_ptr o)
 	}
 
     //find peers request
+    kademlia2_req req;
+    req.kid_receiver = m_id;
+    req.kid_target = m_target;
+    req.search_type = KADEMLIA_FIND_VALUE;
+    return m_node.m_rpc.invoke(req, o->target_ep(), o);
 
+    /*
 	entry e;
 	e["y"] = "q";
 	e["q"] = "get_peers";
@@ -272,6 +279,7 @@ bool find_data::invoke(observer_ptr o)
 	a["info_hash"] = m_target.to_string();
 	if (m_noseeds) a["noseed"] = 1;
 	return m_node.m_rpc.invoke(e, o->target_ep(), o);
+    */
 }
 
 void find_data::got_peers(std::vector<tcp::endpoint> const& peers)

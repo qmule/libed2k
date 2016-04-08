@@ -171,7 +171,12 @@ int main(int argc, char* argv[]) {
         if (command.empty()) continue;
         if (command.at(0) == "quit" || command.at(0) == "q" || command.at(0) == "Q")  break;
 
-        if (command.at(0) == "upnp") {
+        if (command.at(0) == "find") {
+            for (size_t i = 1; i != command.size(); ++i) {
+                ses.find_keyword(command.at(i));
+            }
+        }
+        else if (command.at(0) == "upnp") {
             DBG("forward ports using UPnP");
             ses.start_upnp();            
         }

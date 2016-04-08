@@ -165,7 +165,7 @@ namespace libed2k
 	{
 	public:
 
-		hasher(){ MD4_Init(&m_context); }
+		hasher() { MD4_Init(&m_context); }
 		hasher(const char* data, int len)
 		{
 			LIBED2K_ASSERT(data != 0);
@@ -193,6 +193,12 @@ namespace libed2k
 			MD4_Final(digest.getContainer(), &m_context);
 			return digest;
 		}
+
+        static md4_hash from_string(const std::string& str) {
+            hasher h;
+            h.update(str);
+            return h.final();
+        }
 
 	private:
 		MD4_CTX m_context;

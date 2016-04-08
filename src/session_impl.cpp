@@ -1742,7 +1742,7 @@ void session_impl::set_external_address(address const& ip
         i = std::max_element(m_external_addresses.begin(), m_external_addresses.end());
         LIBED2K_ASSERT(i != m_external_addresses.end());
 
-#if defined TORRENT_VERBOSE_LOGGING
+#if defined LIBED2K_VERBOSE_LOGGING
         for (std::vector<external_ip_t>::iterator j = m_external_addresses.begin()
             , end(m_external_addresses.end()); j != end; ++j)
         {
@@ -1753,7 +1753,7 @@ void session_impl::set_external_address(address const& ip
 #endif
         if (i->addr == m_external_address) return;
 
-#if defined TORRENT_VERBOSE_LOGGING
+#if defined LIBED2K_VERBOSE_LOGGING
         (*m_logger) << "  external IP updated\n";
 #endif
         m_external_address = i->addr;
@@ -1873,6 +1873,18 @@ void session_impl::set_external_address(address const& ip
             m_dht_router_nodes.push_back(ep);
             ++host;
         }
+    }
+
+    void session_impl::find_keyword(const std::string& keyword) {
+        md4_hash kh();
+        if (m_dht) m_dht->announce(hasher::from_string(keyword)
+            , listen_port()
+            , true
+            , boost::bind(&session_impl::on_find_result, this, _1));
+    }
+
+    void session_impl::on_find_result(std::vector<tcp::endpoint> const& peers) {
+
     }
 
 #endif

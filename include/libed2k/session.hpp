@@ -116,6 +116,7 @@ namespace libed2k {
         void add_dht_node(std::pair<std::string, int> const& node, const std::string& id);
         void add_dht_router(std::pair<std::string, int> const& node);
         bool is_dht_running() const;
+        void find_keyword(const std::string& keyword);
 #endif
 
         // add_port_mapping adds a port forwarding on UPnP and/or NAT-PMP,

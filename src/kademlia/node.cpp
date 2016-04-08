@@ -306,7 +306,7 @@ void node_impl::add_node(udp::endpoint node, node_id id)
     m_rpc.invoke(packet, node, o);
 }
 
-void node_impl::announce(md4_hash const& info_hash, int listen_port, bool seed
+void node_impl::announce(node_id const& info_hash, int listen_port, bool seed
 	, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING

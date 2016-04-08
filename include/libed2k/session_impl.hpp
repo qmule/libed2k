@@ -391,6 +391,9 @@ namespace libed2k {
             deadline_timer m_dht_announce_timer;
             void on_dht_router_name_lookup(error_code const& e
                     , tcp::resolver::iterator host);
+            void find_keyword(const std::string& keyword);
+
+            void on_find_result(std::vector<tcp::endpoint> const& peers);
 #endif
 
             // when as a socks proxy is used for peers, also
