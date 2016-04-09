@@ -72,6 +72,7 @@ namespace libed2k {
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & address & udp_port & tcp_port;
+            address = ntohl(address);
         }
     };
 

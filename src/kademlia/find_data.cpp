@@ -159,10 +159,10 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 //        log_line << int2ipstr(ntohl(itr->address.address)) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
 //#endif
         error_code ec;
-        ip::address addr = ip::address::from_string(int2ipstr(ntohl(itr->address.address)), ec);
+        ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
         if (!ec) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-            LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(ntohl(itr->address.address));
+            LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
             m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
 #endif
         }
@@ -266,7 +266,7 @@ bool find_data::invoke(observer_ptr o)
 
     //find peers request
     kademlia2_req req;
-    req.kid_receiver = m_id;
+    req.kid_receiver = o->id();
     req.kid_target = m_target;
     req.search_type = KADEMLIA_FIND_VALUE;
     return m_node.m_rpc.invoke(req, o->target_ep(), o);
@@ -306,11 +306,14 @@ void find_data::done()
 		observer_ptr const& o = *i;
 		if (o->flags & observer::flag_no_id) continue;
 		if ((o->flags & observer::flag_queried) == 0) continue;
-		std::map<node_id, std::string>::iterator j = m_write_tokens.find(o->id());
-		if (j == m_write_tokens.end()) continue;
-		results.push_back(std::make_pair(node_entry(o->id(), o->target_ep()), j->second));
+		//std::map<node_id, std::string>::iterator j = m_write_tokens.find(o->id());
+		//if (j == m_write_tokens.end()) continue;
+        int distance = distance_exp(m_target, o->id());
+        if (distance > KADEMLIA_TOLERANCE_ZONE) continue;
+		results.push_back(std::make_pair(node_entry(o->id(), o->target_ep()), ""));
 		--num_results;
 	}
+
 	m_nodes_callback(results, m_got_peers);
 
 	traversal_algorithm::done();

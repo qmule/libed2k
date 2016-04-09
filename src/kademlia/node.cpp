@@ -253,7 +253,7 @@ namespace
 			, end(v.end()); i != end; ++i)
 		{
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			LIBED2K_LOG(node) << "  distance: " << (160 - distance_exp(ih, i->first.id));
+			LIBED2K_LOG(node) << "  distance: " << (distance_exp(ih, i->first.id));
 #endif
 
 			void* ptr = node.m_rpc.allocate_observer();
@@ -273,7 +273,7 @@ namespace
 			a["token"] = i->second;
 			a["seed"] = int(seed);
 
-			node.m_rpc.invoke(e, i->first.ep(), o);
+			//node.m_rpc.invoke(e, i->first.ep(), o);
 		}
 	}
 }
