@@ -516,6 +516,9 @@ namespace libed2k { namespace dht
             break;
         }
         case KADEMLIA2_SEARCH_RES: {
+            kad2_search_key_res p;
+            ia >> p;
+            m_dht.incoming(p, ep);
             break;
         }
         case KADEMLIA2_PUBLISH_KEY_REQ: {

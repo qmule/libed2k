@@ -268,6 +268,27 @@ namespace libed2k {
         }
     };
 
+    struct search_keyword_item {
+        kad_id  answer;
+        tag_list<uint8_t>   info;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & answer & info;
+        }
+    };
+
+    struct kad2_search_key_res {
+        kad_id  origin;
+        kad_id  target;
+        container_holder<uint16_t, std::deque<search_keyword_item> > result;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & origin & target & result;
+        }
+    };
+
     // PUBLISH packages
 
     struct kad2_publish_key_req {
@@ -602,6 +623,16 @@ namespace libed2k {
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
 
+    template<> struct packet_type<kad2_search_key_req> {
+        static const proto_type value = KADEMLIA2_SEARCH_KEY_REQ;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad2_search_key_res> {
+        static const proto_type value = KADEMLIA2_SEARCH_RES;
+        static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
     /**
     *   special transaction identifier on packet type
     */
@@ -621,6 +652,10 @@ namespace libed2k {
     // kademlia request/response
     template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 107; };
     template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 107; };
+
+    // kademlia search keywords req/res
+    template<> struct transaction_identifier<kad2_search_key_req> { static const uint16_t id = 'k'; };
+    template<> struct transaction_identifier<kad2_search_key_res> { static const uint16_t id = 'k'; };
 
 
     // firewalled 

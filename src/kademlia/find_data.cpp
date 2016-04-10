@@ -219,7 +219,6 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 	//LIBED2K_LOG(traversal) << log_line.str();
 #endif
 	done();
-
 }
 
 void add_entry_fun(void* userdata, node_entry const& e)
@@ -309,7 +308,10 @@ void find_data::done()
 		//std::map<node_id, std::string>::iterator j = m_write_tokens.find(o->id());
 		//if (j == m_write_tokens.end()) continue;
         int distance = distance_exp(m_target, o->id());
-        if (distance > KADEMLIA_TOLERANCE_ZONE) continue;
+//#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+//        LIBED2K_LOG(traversal) << o->id() << " distance " << distance;
+//#endif
+        //if (distance > KADEMLIA_TOLERANCE_ZONE) continue;
 		results.push_back(std::make_pair(node_entry(o->id(), o->target_ep()), ""));
 		--num_results;
 	}

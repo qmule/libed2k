@@ -414,6 +414,7 @@ template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint
 template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kademlia2_res>(const kademlia2_res& t, udp::endpoint target, node_id* id);
+template bool rpc_manager::incoming<kad2_search_key_res>(const kad2_search_key_res& t, udp::endpoint target, node_id* id);
 
 template<typename T>
 node_id rpc_manager::extract_packet_node_id(const T&) {
@@ -439,8 +440,8 @@ time_duration rpc_manager::tick()
 {
 	LIBED2K_INVARIANT_CHECK;
 
-	const static int short_timeout = 1;
-	const static int timeout = 8;
+	const static int short_timeout = 2;
+	const static int timeout = 12;
 
 	//	look for observers that have timed out
 
@@ -587,6 +588,7 @@ template bool rpc_manager::invoke<kad2_ping>(kad2_ping& t, udp::endpoint target,
 template bool rpc_manager::invoke<kad2_hello_req>(kad2_hello_req& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kad2_bootstrap_req>(kad2_bootstrap_req& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kademlia2_req>(kademlia2_req& t, udp::endpoint target, observer_ptr o);
+template bool rpc_manager::invoke<kad2_search_key_req>(kad2_search_key_req&, udp::endpoint target, observer_ptr o);
 
 template<typename T>
 void rpc_manager::append_data(T& t) const {

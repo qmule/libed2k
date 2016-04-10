@@ -236,7 +236,7 @@ void node_impl::unreachable(udp::endpoint const& ep)
 namespace
 {
 	void announce_fun(std::vector<std::pair<node_entry, std::string> > const& v
-		, node_impl& node, int listen_port, md4_hash const& ih, bool seed)
+		, node_impl& node, int listen_port, node_id const& ih, bool seed)
 	{
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		LIBED2K_LOG(node) << "sending announce_peer [ ih: " << ih
@@ -264,7 +264,11 @@ namespace
 #endif
             // TODO 
             // prepare announce packet
-			entry e;
+            kad2_search_key_req req;
+            req.start_position = 0;
+            req.target_id = ih;
+
+			/*entry e;
 			e["y"] = "q";
 			e["q"] = "announce_peer";
 			entry& a = e["a"];
@@ -274,6 +278,9 @@ namespace
 			a["seed"] = int(seed);
 
 			//node.m_rpc.invoke(e, i->first.ep(), o);
+            */
+
+            node.m_rpc.invoke(req, i->first.ep(), o);
 		}
 	}
 }
@@ -1043,7 +1050,7 @@ template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
 template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
 template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&, udp::endpoint);
 template void node_impl::incoming<kademlia2_res>(const kademlia2_res&, udp::endpoint);
-
+template void node_impl::incoming<kad2_search_key_res>(const kad2_search_key_res&, udp::endpoint);
 
 template<>
 void node_impl::incoming_request(const kad2_ping& req, udp::endpoint target) {
