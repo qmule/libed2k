@@ -55,6 +55,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "libed2k/version.hpp"
 #include "libed2k/escape_string.hpp"
 
+#define MINIZ_HEADER_FILE_ONLY
+#include "../miniz.c"
+
 using boost::ref;
 using libed2k::dht::node_impl;
 using libed2k::dht::node_id;
@@ -406,13 +409,6 @@ namespace libed2k { namespace dht
         error_code ec;
         udp_libed2k_header uh;
 
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        std::string incoming(buf, bytes_transferred);
-        LIBED2K_LOG(dht_tracker) << " incoming data: " << to_hex(incoming);
-#endif
-
-        //message msg = extract_message(buf, bytes_transferred, ec);
-
         // bytes count should be at least as packet header size
         if (bytes_transferred < sizeof(udp_libed2k_header)) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -423,15 +419,43 @@ namespace libed2k { namespace dht
 
         uh = *(reinterpret_cast<const udp_libed2k_header*>(buf));
 
-        if (uh.m_protocol != OP_KADEMLIAHEADER) {
+        if (uh.m_protocol != OP_KADEMLIAHEADER && uh.m_protocol != OP_KADEMLIAPACKEDPROT) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
             LIBED2K_LOG(dht_tracker) << " packet protocol type is not KAD: " << std::hex << (int)uh.m_protocol << " from " << ep.address();
 #endif 
             return;
         }
 
+        std::vector<uint8_t> container;
+
+        if (uh.m_protocol == OP_KADEMLIAPACKEDPROT) {
+                // unzip data
+                container.resize(bytes_transferred * 10 + 300);
+                uLongf nSize = container.size();
+                int nRet = uncompress((Bytef*)&container[0], &nSize, (const Bytef*)(buf + 2), bytes_transferred - 2);
+
+                if (nRet != Z_OK)
+                {
+                    ERR("Unzip error: " << mz_error(nRet));
+                    return;
+                }
+
+                //container[0] = OP_KADEMLIAHEADER;
+                //container[1] = uh.m_type;
+                uh.m_protocol = OP_KADEMLIAHEADER;
+                container.resize(nSize);
+        }
+        else {
+            container.assign(buf + 2, buf + bytes_transferred);
+        }
+
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+        std::string cincoming((char*)&container[0], container.size());
+        LIBED2K_LOG(dht_tracker) << " incoming data: " << to_hex(cincoming);
+#endif
+
         typedef boost::iostreams::basic_array_source<char> Device;
-        boost::iostreams::stream_buffer<Device> buffer(&buf[sizeof(udp_libed2k_header)], bytes_transferred - sizeof(udp_libed2k_header));
+        boost::iostreams::stream_buffer<Device> buffer((char*)&container[0], container.size());
         std::istream in_array_stream(&buffer);
         archive::ed2k_iarchive ia(in_array_stream);
 
@@ -517,7 +541,13 @@ namespace libed2k { namespace dht
         }
         case KADEMLIA2_SEARCH_RES: {
             kad2_search_key_res p;
+            DBG("start search res parsing");
             ia >> p;
+            DBG("search res for " << p.target << " count " << p.result.m_collection.size());
+            for (std::deque<search_keyword_item>::const_iterator itr = p.result.m_collection.begin(); itr != p.result.m_collection.end(); ++itr) {
+                DBG("answer " << itr->answer);
+                itr->info.dump();
+            }
             m_dht.incoming(p, ep);
             break;
         }

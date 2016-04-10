@@ -638,25 +638,24 @@ namespace libed2k {
     */
     template<typename T> struct transaction_identifier;
 
-    template<> struct transaction_identifier<kad2_ping> { static const uint16_t id = 112; };
-    template<> struct transaction_identifier<kad2_pong> { static const uint16_t id = 112; };
+    template<> struct transaction_identifier<kad2_ping> { static const uint16_t id = 'p'; };
+    template<> struct transaction_identifier<kad2_pong> { static const uint16_t id = 'p'; };
 
     // bootstrap request/response identifiers
-    template<> struct transaction_identifier<kad2_bootstrap_req> {  static const uint16_t id = 98; };
-    template<> struct transaction_identifier<kad2_bootstrap_res> {  static const uint16_t id = 98; };
+    template<> struct transaction_identifier<kad2_bootstrap_req> {  static const uint16_t id = 'b'; };
+    template<> struct transaction_identifier<kad2_bootstrap_res> {  static const uint16_t id = 'b'; };
 
     // hello request/response
-    template<> struct transaction_identifier<kad2_hello_req> { static const uint16_t id = 104; };
-    template<> struct transaction_identifier<kad2_hello_res> { static const uint16_t id = 104; };
+    template<> struct transaction_identifier<kad2_hello_req> { static const uint16_t id = 'h'; };
+    template<> struct transaction_identifier<kad2_hello_res> { static const uint16_t id = 'h'; };
 
     // kademlia request/response
-    template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 107; };
-    template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 107; };
+    template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 'l'; };
+    template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 'l'; };
 
     // kademlia search keywords req/res
     template<> struct transaction_identifier<kad2_search_key_req> { static const uint16_t id = 'k'; };
     template<> struct transaction_identifier<kad2_search_key_res> { static const uint16_t id = 'k'; };
-
 
     // firewalled 
     template<> struct transaction_identifier<kad_firewalled_req> { static const uint16_t id = 'f';  };

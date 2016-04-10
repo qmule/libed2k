@@ -886,6 +886,34 @@ void tag_list<size_type>::load(archive::ed2k_iarchive& ar)
             continue;
         }
 
+        // TODO - add correct bsob handler instead of this stub
+        if (nType == TAGTYPE_BSOB) {
+            uint8_t len;
+            ar & len;
+
+#ifdef WIN32
+            // windows generates exceptions independent by exceptions flags in stream
+            try
+            {
+                ar.container().seekg((len), std::ios::cur);
+            }
+            catch (std::ios_base::failure&)
+            {
+                throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
+            }
+#else
+            ar.container().seekg((len), std::ios::cur);
+#endif
+
+            // check status
+            if (!ar.container().good())
+            {
+                throw libed2k::libed2k_exception(libed2k::errors::unexpected_istream_error);
+            }
+
+            continue;
+        }
+
         switch (nType)
         {
         case TAGTYPE_UINT64:
