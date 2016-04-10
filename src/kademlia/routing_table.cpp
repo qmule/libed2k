@@ -416,7 +416,9 @@ bool routing_table::add_node(node_entry const& e)
 		// in this bucket
 		LIBED2K_ASSERT(j->id == e.id && j->ep() == e.ep());
 		j->timeout_count = 0;
-//		LIBED2K_LOG(table) << "updating node: " << i->id << " " << i->addr;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(table) << "updating node: " << j->id << " " << j->addr;
+#endif
 		return ret;
 	}
 
@@ -494,7 +496,9 @@ bool routing_table::add_node(node_entry const& e)
 			b->erase(j);
 			b->push_back(e);
 			m_ips.insert(e.addr.to_v4().to_bytes());
-//			LIBED2K_LOG(table) << "replacing unpinged node: " << e.id << " " << e.addr;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(table) << "replacing unpinged node: " << e.id << " " << e.addr;
+#endif
 			return ret;
 		}
 
@@ -516,7 +520,9 @@ bool routing_table::add_node(node_entry const& e)
 			b->erase(j);
 			b->push_back(e);
 			m_ips.insert(e.addr.to_v4().to_bytes());
-//			LIBED2K_LOG(table) << "replacing stale node: " << e.id << " " << e.addr;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+			LIBED2K_LOG(table) << "replacing stale node: " << e.id << " " << e.addr;
+#endif
 			return ret;
 		}
 	}
@@ -557,7 +563,9 @@ bool routing_table::add_node(node_entry const& e)
 		if (rb->empty()) rb->reserve(m_bucket_size);
 		rb->push_back(e);
 		m_ips.insert(e.addr.to_v4().to_bytes());
-//		LIBED2K_LOG(table) << "inserting node in replacement cache: " << e.id << " " << e.addr;
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+		LIBED2K_LOG(table) << "inserting node in replacement cache: " << e.id << " " << e.addr;
+#endif
 		return ret;
 	}
 
@@ -646,12 +654,8 @@ bool routing_table::add_node(node_entry const& e)
 			added = true;
 		}
 	}
+
 	if (added) m_ips.insert(e.addr.to_v4().to_bytes());
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-    if (added) {
-        LIBED2K_LOG(table) << "added: " << e.id << " " << e.addr;
-    }
-#endif
 	return ret;
 }
 
