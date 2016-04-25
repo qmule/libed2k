@@ -1876,7 +1876,6 @@ void session_impl::set_external_address(address const& ip
     }
 
     void session_impl::find_keyword(const std::string& keyword) {
-        md4_hash kh();
         if (m_dht) m_dht->announce(hasher::from_string(keyword)
             , listen_port()
             , true

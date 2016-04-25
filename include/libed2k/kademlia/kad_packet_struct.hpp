@@ -99,7 +99,7 @@ namespace libed2k {
     };
 
     struct kad_info_entry {
-        md4_hash        hash;
+        kad_id hash;
         tag_list<uint8_t> tags;
 
         template<typename Archive>
