@@ -416,8 +416,8 @@ namespace libed2k
             case OP_EDONKEYPROT:
             case OP_EMULEPROT:
             case OP_KADEMLIAHEADER:
+            case OP_PACKEDPROT:
                 break;
-            case OP_PACKEDPROT:       return errors::unsupported_packed_type;
             case OP_UDPRESERVEDPROT1: return errors::unsupported_udp_res1_type;
             case OP_UDPRESERVEDPROT2: return errors::unsupported_udp_res2_type;
             case OP_KADEMLIAPACKEDPROT: return errors::unsupported_kad_packed_type;
