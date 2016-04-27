@@ -398,7 +398,7 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     	<< i << " from " << target.address();
 #endif
 
-    o->reply(extract_result(t), target);
+    o->reply(t, target);
 
     *id = extract_packet_node_id(t);
 

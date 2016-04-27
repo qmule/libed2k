@@ -103,8 +103,13 @@ public:
 		, udp::endpoint const& ep, node_id const& id)
 		: observer(algorithm, ep, id)
 	{}
-	void reply(const kad_contacts_res&, udp::endpoint);
-  void reply(const kad2_search_res&, udp::endpoint);
+
+  // this is called when a reply is received 
+  virtual void reply(const kad2_pong&, udp::endpoint ep);
+  virtual void reply(const kad2_hello_res&, udp::endpoint ep);
+  virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep);
+  virtual void reply(const kademlia2_res&, udp::endpoint ep);
+  virtual void reply(const kad2_search_res&, udp::endpoint ep);
 };
 
 } } // namespace libed2k::dht

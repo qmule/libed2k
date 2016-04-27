@@ -60,8 +60,12 @@ struct null_observer : public observer
 {
 	null_observer(boost::intrusive_ptr<traversal_algorithm> const& a
 		, udp::endpoint const& ep, node_id const& id): observer(a, ep, id) {}
-	virtual void reply(const kad_contacts_res&, udp::endpoint) { flags |= flag_done; }
-  virtual void reply(const kad2_search_res&, udp::endpoint) {}
+
+  virtual void reply(const kad2_pong&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kad2_hello_res&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kademlia2_res&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kad2_search_res&, udp::endpoint ep) { flags |= flag_done; }
 };
 
 class routing_table;

@@ -162,8 +162,12 @@ public:
 		: observer(algo, ep, id)
 	{}
 
-	void reply(const kad_contacts_res&, udp::endpoint) { flags |= flag_done; }
-  void reply(const kad2_search_res&, udp::endpoint) {}
+
+  virtual void reply(const kad2_pong&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kad2_hello_res&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kademlia2_res&, udp::endpoint ep) { flags |= flag_done; }
+  virtual void reply(const kad2_search_res&, udp::endpoint ep) { flags |= flag_done; }
 };
 
 struct count_peers

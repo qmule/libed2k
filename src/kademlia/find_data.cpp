@@ -116,6 +116,57 @@ using detail::read_v6_endpoint;
     }
 */
 
+void find_data_observer::reply(const kad2_pong& r, udp::endpoint ep) {
+  done();
+}
+
+void find_data_observer::reply(const kad2_hello_res& r, udp::endpoint ep) {
+  done();
+}
+
+void find_data_observer::reply(const kad2_bootstrap_res& r, udp::endpoint ep) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+  LIBED2K_LOG(traversal) << "kad2_bootstrap reply " << m_algorithm.get() << " count " << r.contacts.m_collection.size();
+#endif
+
+  for (kad_contacts_res::const_iterator itr = r.contacts.m_collection.begin(); itr != r.contacts.m_collection.end(); ++itr) {    
+    error_code ec;
+    ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
+    if (!ec) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+      LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
+      m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
+#endif
+    }
+  }
+
+  done();
+}
+
+void find_data_observer::reply(const kademlia2_res& r, udp::endpoint ep) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+  LIBED2K_LOG(traversal) << "kademliad2_res reply " << m_algorithm.get() << " count " << r.results.m_collection.size();
+#endif
+
+  for (kad_contacts_res::const_iterator itr = r.results.m_collection.begin(); itr != r.results.m_collection.end(); ++itr) {
+    error_code ec;
+    ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
+    if (!ec) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+      LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
+      m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
+#endif
+    }
+  }
+
+  done();
+}
+
+void find_data_observer::reply(const kad2_search_res& r, udp::endpoint ep) {
+  done();
+}
+
+/*
 void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -154,11 +205,11 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 		static_cast<find_data*>(m_algorithm.get())->got_peers(peer_list);
 	}
 */
-    for (kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
+    //for (kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
 //#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 //        log_line << int2ipstr(ntohl(itr->address.address)) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
 //#endif
-        error_code ec;
+        /*error_code ec;
         ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
         if (!ec) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -167,7 +218,7 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 #endif
         }
     }
-
+    */
 	/*
 	// look for nodes
 	n = r->dict_find_string("nodes");
@@ -214,16 +265,13 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 		}
 	}
 */
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+//#ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	//log_line << " ]";
 	//LIBED2K_LOG(traversal) << log_line.str();
-#endif
-	done();
-}
+//#endif
+//	done();
+//}
 
-void find_data_observer::reply(const kad2_search_res&, udp::endpoint) {
-  // temporary do nothing
-}
 
 void add_entry_fun(void* userdata, node_entry const& e)
 {

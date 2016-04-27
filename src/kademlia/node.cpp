@@ -262,11 +262,10 @@ namespace
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 			o->m_in_constructor = false;
 #endif
-            // TODO 
-            // prepare announce packet
-            kad2_search_key_req req;
-            req.start_position = 0;
-            req.target_id = ih;
+
+      kad2_search_key_req req;
+      req.start_position = 0;
+      req.target_id = ih;
 
 			/*entry e;
 			e["y"] = "q";
@@ -280,7 +279,7 @@ namespace
 			//node.m_rpc.invoke(e, i->first.ep(), o);
             */
 
-            node.m_rpc.invoke(req, i->first.ep(), o);
+      node.m_rpc.invoke(req, i->first.ep(), o);
 		}
 	}
 }

@@ -88,10 +88,11 @@ struct observer : boost::noncopyable
 
 	virtual ~observer();
 
-	// this is called when a reply is received
-	virtual void reply(const kad_contacts_res&, udp::endpoint ep) = 0;
-
-  // this is called when a search result reply is received
+	// this is called when a reply is received 
+  virtual void reply(const kad2_pong&, udp::endpoint ep) = 0;
+  virtual void reply(const kad2_hello_res&, udp::endpoint ep) = 0;
+	virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep) = 0;
+  virtual void reply(const kademlia2_res&, udp::endpoint ep) = 0;
   virtual void reply(const kad2_search_res&, udp::endpoint ep) = 0;
 
 	// this is called if no response has been received after
