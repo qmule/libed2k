@@ -96,7 +96,7 @@ public:
 
 
     /**
-      * rpc invocation
+      * standard rpc invocation
     */
     template<typename T>
     bool invoke(T& t, udp::endpoint target, observer_ptr o);

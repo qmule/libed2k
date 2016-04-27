@@ -235,6 +235,46 @@ void node_impl::unreachable(udp::endpoint const& ep)
 
 namespace
 {
+
+  void search_keywords(std::vector<std::pair<node_entry, std::string> > const& v,
+    node_impl& node, int listen_port, node_id const& target) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+    LIBED2K_LOG(node) << "sending search keywords [ target: " << target << " port: " << listen_port
+      << " total nodes: " << v.size() << " ]";
+#endif
+    for (std::vector<std::pair<node_entry, std::string> >::const_iterator i = v.begin()
+      , end(v.end()); i != end; ++i)
+    {
+      kad2_search_key_req req;
+      req.start_position = 0;
+      req.target_id = target;
+      node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
+    }
+  }
+
+  void search_notes(std::vector<std::pair<node_entry, std::string> > const& v,
+    node_impl& node, int listen_port, node_id const& target) {
+    // do nothing now
+  }
+
+  void search_sources(std::vector<std::pair<node_entry, std::string> > const& v,
+    node_impl& node, int listen_port, node_id const& target) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+    LIBED2K_LOG(node) << "sending search keywords [ target: " << target << " port: " << listen_port
+      << " total nodes: " << v.size() << " ]";
+#endif
+    for (std::vector<std::pair<node_entry, std::string> >::const_iterator i = v.begin()
+      , end(v.end()); i != end; ++i)
+    {
+      kad2_search_sources_req req;
+      req.start_position = 0;
+      req.target_id = target;
+      req.size = 0; // TODO - add correct file size
+      node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
+    }
+  }
+
+  // will be in publish 
 	void announce_fun(std::vector<std::pair<node_entry, std::string> > const& v
 		, node_impl& node, int listen_port, node_id const& ih, bool seed)
 	{

@@ -554,19 +554,27 @@ bool rpc_manager::invoke(T& t, udp::endpoint target, observer_ptr o) {
     if (m_destructing) return false;
 
     append_data(t);
-    o->set_target(target);
-    o->set_transaction_id(transaction_identifier<T>::id);
+    if (o) {
+      o->set_target(target);
+      o->set_transaction_id(transaction_identifier<T>::id);
+    }
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-    LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
+    if (o) {
+      LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
         << request_name(t) << " ==> " << target;
+    }
+    else {
+      LIBED2K_LOG(rpc) << "[" << "] invoking "
+        << request_name(t) << " ==> " << target;
+    }
 #endif
 
     udp_message msg = make_udp_message(t);
 
     if (m_send(m_userdata, msg, target, 1)) {
-        m_transactions.push_back(o);
+      if (o) m_transactions.push_back(o);
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-        o->m_was_sent = true;
+        if (o) o->m_was_sent = true;
 #endif
         return true;
     }
@@ -579,6 +587,9 @@ template bool rpc_manager::invoke<kad2_hello_req>(kad2_hello_req& t, udp::endpoi
 template bool rpc_manager::invoke<kad2_bootstrap_req>(kad2_bootstrap_req& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kademlia2_req>(kademlia2_req& t, udp::endpoint target, observer_ptr o);
 template bool rpc_manager::invoke<kad2_search_key_req>(kad2_search_key_req&, udp::endpoint target, observer_ptr o);
+template bool rpc_manager::invoke<kad2_search_notes_req>(kad2_search_notes_req&, udp::endpoint target, observer_ptr o);
+template bool rpc_manager::invoke<kad2_search_sources_req>(kad2_search_sources_req&, udp::endpoint target, observer_ptr o);
+
 
 template<typename T>
 void rpc_manager::append_data(T& t) const {

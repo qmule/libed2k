@@ -614,6 +614,16 @@ namespace libed2k {
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
 
+    template<> struct packet_type<kad2_search_notes_req> {
+      static const proto_type value = KADEMLIA2_SEARCH_NOTES_REQ;
+      static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
+    template<> struct packet_type<kad2_search_sources_req> {
+      static const proto_type value = KADEMLIA2_SEARCH_SOURCE_REQ;
+      static const proto_type protocol = OP_KADEMLIAHEADER;
+    };
+
     template<> struct packet_type<kad2_search_res> {
         static const proto_type value = KADEMLIA2_SEARCH_RES;
         static const proto_type protocol = OP_KADEMLIAHEADER;
