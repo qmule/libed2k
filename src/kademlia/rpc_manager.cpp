@@ -426,16 +426,6 @@ node_id rpc_manager::extract_packet_node_id<kad2_hello_res>(const kad2_hello_res
     return t.client_info.kid;
 }
 
-template<>
-const kad_contacts_res& rpc_manager::extract_result<kad2_bootstrap_res>(const kad2_bootstrap_res& t) const {
-    return t.contacts.m_collection;
-}
-
-template<>
-const kad_contacts_res& rpc_manager::extract_result<kademlia2_res>(const kademlia2_res& t) const {
-    return t.results.m_collection;
-}
-
 time_duration rpc_manager::tick()
 {
 	LIBED2K_INVARIANT_CHECK;

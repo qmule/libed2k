@@ -104,17 +104,6 @@ public:
     template<typename T>
     void append_data(T& t) const;
 
-    /**
-     * generates kad_contacts_res data structure from typed packages
-     * by default returns empty structure for packages without infomation about contacts
-     * specialized for bootstrap and kademlia2_res
-     */
-    template<typename T>
-    const kad_contacts_res& extract_result(const T& t) const {
-        static const kad_contacts_res empty;
-        return empty;
-    }
-
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     template<typename T>
     std::string request_name(const T& t) const;
