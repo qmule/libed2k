@@ -104,6 +104,7 @@ public:
 		: observer(algorithm, ep, id)
 	{}
 	void reply(const kad_contacts_res&, udp::endpoint);
+  void reply(const kad2_search_res&, udp::endpoint);
 };
 
 } } // namespace libed2k::dht

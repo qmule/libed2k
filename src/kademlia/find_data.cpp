@@ -221,6 +221,10 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 	done();
 }
 
+void find_data_observer::reply(const kad2_search_res&, udp::endpoint) {
+  // temporary do nothing
+}
+
 void add_entry_fun(void* userdata, node_entry const& e)
 {
 	traversal_algorithm* f = (traversal_algorithm*)userdata;

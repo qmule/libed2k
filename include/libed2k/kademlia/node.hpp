@@ -163,6 +163,7 @@ public:
 	{}
 
 	void reply(const kad_contacts_res&, udp::endpoint) { flags |= flag_done; }
+  void reply(const kad2_search_res&, udp::endpoint) {}
 };
 
 struct count_peers

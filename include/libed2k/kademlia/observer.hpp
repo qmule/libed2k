@@ -91,6 +91,9 @@ struct observer : boost::noncopyable
 	// this is called when a reply is received
 	virtual void reply(const kad_contacts_res&, udp::endpoint ep) = 0;
 
+  // this is called when a search result reply is received
+  virtual void reply(const kad2_search_res&, udp::endpoint ep) = 0;
+
 	// this is called if no response has been received after
 	// a few seconds, before the request has timed out
 	void short_timeout();

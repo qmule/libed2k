@@ -367,7 +367,7 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     , end(m_transactions.end()); i != end; ++i) {
         LIBED2K_ASSERT(*i);
         if ((*i)->transaction_id() != transaction_identifier<T>::id || 
-            (*i)->target_addr() != target.address()) continue;
+          (*i)->target_addr() != target.address()) continue;
         o = *i;
         m_transactions.erase(i);
         break;
@@ -414,7 +414,7 @@ template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint
 template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kademlia2_res>(const kademlia2_res& t, udp::endpoint target, node_id* id);
-template bool rpc_manager::incoming<kad2_search_key_res>(const kad2_search_key_res& t, udp::endpoint target, node_id* id);
+template bool rpc_manager::incoming<kad2_search_res>(const kad2_search_res& t, udp::endpoint target, node_id* id);
 
 template<typename T>
 node_id rpc_manager::extract_packet_node_id(const T&) {

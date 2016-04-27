@@ -43,12 +43,15 @@ namespace libed2k {
         kad_id(const md4_hash& h);
         kad_id(const md4_hash::md4hash_container&);
 
+        /**
+        * save/load as 4 32 bits digits in little endian save as 4 32 bits digits network byte order
+        * rotate bytes in each 4 byte portion
+        *
+        */
         template<typename Archive>
         void save(Archive& ar) {
             for (unsigned i = 0; i < sizeof(m_hash); ++i) {
                 ar & m_hash[(i / 4) * 4 + 3 - (i % 4)];
-                //uint32_t value = (((uint32_t)m_hash[i] << 24) | ((uint32_t)m_hash[i+1] << 16) | ((uint32_t)m_hash[i+2] << 8) | ((uint32_t)m_hash[i+3]));
-                //ar & value;
             }
         }
 
@@ -211,6 +214,10 @@ namespace libed2k {
         }
     };
 
+
+    /**
+    * common KAD2 common search result for keywords, notes and sources 
+    */
     struct kad2_search_res {
         kad_id  source_id;
         kad_id  target_id;
@@ -265,27 +272,6 @@ namespace libed2k {
         template<typename Archive>
         void serialize(Archive& ar) {
             ar & target_id & filesize;
-        }
-    };
-
-    struct search_keyword_item {
-        kad_id  answer;
-        tag_list<uint8_t>   info;
-
-        template<typename Archive>
-        void serialize(Archive& ar) {
-            ar & answer & info;
-        }
-    };
-
-    struct kad2_search_key_res {
-        kad_id  origin;
-        kad_id  target;
-        container_holder<uint16_t, std::deque<search_keyword_item> > result;
-
-        template<typename Archive>
-        void serialize(Archive& ar) {
-            ar & origin & target & result;
         }
     };
 
@@ -628,7 +614,7 @@ namespace libed2k {
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
 
-    template<> struct packet_type<kad2_search_key_res> {
+    template<> struct packet_type<kad2_search_res> {
         static const proto_type value = KADEMLIA2_SEARCH_RES;
         static const proto_type protocol = OP_KADEMLIAHEADER;
     };
@@ -653,9 +639,15 @@ namespace libed2k {
     template<> struct transaction_identifier<kademlia2_req> { static const uint16_t id = 'l'; };
     template<> struct transaction_identifier<kademlia2_res> { static const uint16_t id = 'l'; };
 
-    // kademlia search keywords req/res
-    template<> struct transaction_identifier<kad2_search_key_req> { static const uint16_t id = 'k'; };
-    template<> struct transaction_identifier<kad2_search_key_res> { static const uint16_t id = 'k'; };
+    // kademlia search keywords, notes and sources
+    // equal identifiers since response is one type for all these requests
+    template<> struct transaction_identifier<kad2_search_key_req> { static const uint16_t id = 's'; };
+    template<> struct transaction_identifier<kad2_search_notes_req> { static const uint16_t id = 's'; };
+    template<> struct transaction_identifier<kad2_search_sources_req> { static const uint16_t id = 's'; };
+
+    // we have one packet format for all three requests above
+    template<> struct transaction_identifier<kad2_search_res> { static const uint16_t id = 's';  };
+
 
     // firewalled 
     template<> struct transaction_identifier<kad_firewalled_req> { static const uint16_t id = 'f';  };

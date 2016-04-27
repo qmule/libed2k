@@ -540,13 +540,13 @@ namespace libed2k { namespace dht
             break;
         }
         case KADEMLIA2_SEARCH_RES: {
-            kad2_search_key_res p;
+            kad2_search_res p;
             DBG("start search res parsing");
             ia >> p;
-            DBG("search res for " << p.target << " count " << p.result.m_collection.size());
-            for (std::deque<search_keyword_item>::const_iterator itr = p.result.m_collection.begin(); itr != p.result.m_collection.end(); ++itr) {
-                DBG("answer " << itr->answer);
-                itr->info.dump();
+            DBG("search res for " << p.target_id << " count " << p.results.m_collection.size());
+            for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {
+                DBG("answer " << itr->hash);
+                itr->tags.dump();
             }
             m_dht.incoming(p, ep);
             break;
