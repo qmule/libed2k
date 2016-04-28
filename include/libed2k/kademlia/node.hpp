@@ -231,8 +231,14 @@ public:
 	{ m_table.print_state(os); }
 #endif
 
-	void announce(node_id const& info_hash, int listen_port, bool seed
+	void announce(node_id const& info_hash, int listen_port
 		, boost::function<void(std::vector<tcp::endpoint> const&)> f);
+
+  void search_keywords(node_id const& info_hash, int listen_port
+    , boost::function<void(std::vector<tcp::endpoint> const&)> f);
+
+  void search_sources(node_id const& info_hash, int listen_port
+    , boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
 	bool verify_token(std::string const& token, char const* info_hash
 		, udp::endpoint const& addr);

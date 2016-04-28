@@ -1876,9 +1876,8 @@ void session_impl::set_external_address(address const& ip
     }
 
     void session_impl::find_keyword(const std::string& keyword) {
-        if (m_dht) m_dht->announce(hasher::from_string(keyword)
+        if (m_dht) m_dht->search_keywords(hasher::from_string(keyword)
             , listen_port()
-            , true
             , boost::bind(&session_impl::on_find_result, this, _1));
     }
 

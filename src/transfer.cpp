@@ -1869,7 +1869,7 @@ namespace libed2k
         boost::weak_ptr<transfer> self(shared_from_this());
 
         m_ses.m_dht->announce(hash()
-            , port, is_seed()
+            , port
             , boost::bind(&transfer::on_dht_announce_response_disp, self, _1));
     }
 

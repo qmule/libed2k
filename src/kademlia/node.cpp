@@ -236,7 +236,7 @@ void node_impl::unreachable(udp::endpoint const& ep)
 namespace
 {
 
-  void search_keywords(std::vector<std::pair<node_entry, std::string> > const& v,
+  void search_keywords_fun(std::vector<std::pair<node_entry, std::string> > const& v,
     node_impl& node, int listen_port, node_id const& target) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(node) << "sending search keywords [ target: " << target << " port: " << listen_port
@@ -252,12 +252,12 @@ namespace
     }
   }
 
-  void search_notes(std::vector<std::pair<node_entry, std::string> > const& v,
+  void search_notes_fun(std::vector<std::pair<node_entry, std::string> > const& v,
     node_impl& node, int listen_port, node_id const& target) {
     // do nothing now
   }
 
-  void search_sources(std::vector<std::pair<node_entry, std::string> > const& v,
+  void search_sources_fun(std::vector<std::pair<node_entry, std::string> > const& v,
     node_impl& node, int listen_port, node_id const& target) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(node) << "sending search keywords [ target: " << target << " port: " << listen_port
@@ -276,7 +276,7 @@ namespace
 
   // will be in publish 
 	void announce_fun(std::vector<std::pair<node_entry, std::string> > const& v
-		, node_impl& node, int listen_port, node_id const& ih, bool seed)
+		, node_impl& node, int listen_port, node_id const& ih)
 	{
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 		LIBED2K_LOG(node) << "sending announce_peer [ ih: " << ih
@@ -352,7 +352,7 @@ void node_impl::add_node(udp::endpoint node, node_id id)
     m_rpc.invoke(packet, node, o);
 }
 
-void node_impl::announce(node_id const& info_hash, int listen_port, bool seed
+void node_impl::announce(node_id const& info_hash, int listen_port
 	, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -362,9 +362,38 @@ void node_impl::announce(node_id const& info_hash, int listen_port, bool seed
 	// for info-hash id. then send announce_peer to them.
 	boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
 		, boost::bind(&announce_fun, _1, boost::ref(*this)
-		, listen_port, info_hash, seed), seed));
+		, listen_port, info_hash)));
 	ta->start();
 }
+
+void node_impl::search_keywords(node_id const& info_hash, int listen_port
+  , boost::function<void(std::vector<tcp::endpoint> const&)> f)
+{
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+  LIBED2K_LOG(node) << "search keywords [ ih: " << info_hash << " p: " << listen_port << " ]";
+#endif
+  // search for nodes with ids close to id or with peers
+  // for info-hash id. then send announce_peer to them.
+  boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
+    , boost::bind(&search_keywords_fun, _1, boost::ref(*this)
+      , listen_port, info_hash)));
+  ta->start();
+}
+
+void node_impl::search_sources(node_id const& info_hash, int listen_port
+  , boost::function<void(std::vector<tcp::endpoint> const&)> f)
+{
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+  LIBED2K_LOG(node) << "search sources [ ih: " << info_hash << " p: " << listen_port << " ]";
+#endif
+  // search for nodes with ids close to id or with peers
+  // for info-hash id. then send announce_peer to them.
+  boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
+    , boost::bind(&search_sources_fun, _1, boost::ref(*this)
+      , listen_port, info_hash)));
+  ta->start();
+}
+
 
 void node_impl::tick()
 {

@@ -385,13 +385,24 @@ namespace libed2k { namespace dht
 #endif
 	}
 
-	void dht_tracker::announce(md4_hash const& ih, int listen_port, bool seed
+	void dht_tracker::announce(md4_hash const& ih, int listen_port
 		, boost::function<void(std::vector<tcp::endpoint> const&)> f)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
-		//TODO use md4_hash
-		m_dht.announce(ih, listen_port, seed, f);
+		m_dht.announce(ih, listen_port, f);
 	}
+
+  void dht_tracker::search_keywords(md4_hash& ih, int listen_port
+    , boost::function<void(std::vector<tcp::endpoint> const&)> f) {
+    LIBED2K_ASSERT(m_ses.is_network_thread());
+    m_dht.search_keywords(ih, listen_port, f);
+  }
+
+  void dht_tracker::search_sources(md4_hash& ih, int listen_port
+    , boost::function<void(std::vector<tcp::endpoint> const&)> f) {
+    LIBED2K_ASSERT(m_ses.is_network_thread());
+    m_dht.search_sources(ih, listen_port, f);
+  }
 
 
 	void dht_tracker::on_unreachable(udp::endpoint const& ep)
