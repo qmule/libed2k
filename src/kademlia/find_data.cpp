@@ -283,7 +283,8 @@ find_data::find_data(
 	node_impl& node
 	, node_id target
 	, data_callback const& dcallback
-	, nodes_callback const& ncallback)
+	, nodes_callback const& ncallback
+  , uint8_t search_type)
 	: traversal_algorithm(node, target)
 	, m_data_callback(dcallback)
 	, m_nodes_callback(ncallback)
@@ -291,6 +292,7 @@ find_data::find_data(
   , m_id(node.nid())
 	, m_done(false)
 	, m_got_peers(false)
+  , m_search_type(search_type)
 {
 	node.m_table.for_each_node(&add_entry_fun, 0, (traversal_algorithm*)this);
 }
@@ -317,7 +319,7 @@ bool find_data::invoke(observer_ptr o)
     kademlia2_req req;
     req.kid_receiver = o->id();
     req.kid_target = m_target;
-    req.search_type = KADEMLIA_FIND_VALUE;
+    req.search_type = m_search_type;
     return m_node.m_rpc.invoke(req, o->target_ep(), o);
 
     /*

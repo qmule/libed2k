@@ -362,7 +362,7 @@ void node_impl::announce(node_id const& info_hash, int listen_port
 	// for info-hash id. then send announce_peer to them.
 	boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
 		, boost::bind(&announce_fun, _1, boost::ref(*this)
-		, listen_port, info_hash)));
+		, listen_port, info_hash), KADEMLIA_STORE));
 	ta->start();
 }
 
@@ -376,7 +376,7 @@ void node_impl::search_keywords(node_id const& info_hash, int listen_port
   // for info-hash id. then send announce_peer to them.
   boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
     , boost::bind(&search_keywords_fun, _1, boost::ref(*this)
-      , listen_port, info_hash)));
+      , listen_port, info_hash), KADEMLIA_FIND_VALUE));
   ta->start();
 }
 
@@ -390,7 +390,7 @@ void node_impl::search_sources(node_id const& info_hash, int listen_port
   // for info-hash id. then send announce_peer to them.
   boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
     , boost::bind(&search_sources_fun, _1, boost::ref(*this)
-      , listen_port, info_hash)));
+      , listen_port, info_hash), KADEMLIA_FIND_NODE));
   ta->start();
 }
 
