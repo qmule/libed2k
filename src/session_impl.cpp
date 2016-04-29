@@ -1881,8 +1881,37 @@ void session_impl::set_external_address(address const& ip
             , boost::bind(&session_impl::on_find_result, this, _1));
     }
 
+    void session_impl::find_sources(const md4_hash& hash, size_type size) {
+      if (m_dht) m_dht->search_sources(hash
+        , listen_port()
+        , size
+        , boost::bind(&session_impl::on_find_result, this, _1));
+    }
+
     void session_impl::on_find_result(std::vector<tcp::endpoint> const& peers) {
 
+    }
+
+    void session_impl::on_find_dht_source(const md4_hash& hash
+        , uint8_t type
+        , client_id_type ip
+        , uint16_t port
+        , client_id_type low_id) {
+        DBG("dht found peer " << hash << " type " << type << " ip " << int2ipstr(ip) << " port " << port << " low id " << low_id);
+
+        if (ip != 0) {
+            boost::shared_ptr<transfer> transfer_ptr = find_transfer(hash).lock();
+            if (transfer_ptr) {
+                tcp::endpoint peer(
+                    ip::address::from_string(int2ipstr(ip)), port);
+                transfer_ptr->add_peer(peer, peer_info::dht);
+                DBG("peer added to transfer");
+            }
+        }
+    }
+
+    void session_impl::on_find_dht_keyword(const md4_hash& h, const std::deque<kad_info_entry>& kk) {
+        m_alerts.post_alert_should(dht_keyword_search_result_alert(h, kk));
     }
 
 #endif

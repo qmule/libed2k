@@ -98,7 +98,9 @@ namespace libed2k { namespace dht
     void search_keywords(md4_hash& ih, int listen_port
       , boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
-    void search_sources(md4_hash& ih, int listen_port
+    void search_sources(const md4_hash& ih
+      , int listen_port
+      , size_type size
       , boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
 		void dht_status(session_status& s);

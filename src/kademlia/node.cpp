@@ -257,8 +257,11 @@ namespace
     // do nothing now
   }
 
-  void search_sources_fun(std::vector<std::pair<node_entry, std::string> > const& v,
-    node_impl& node, int listen_port, node_id const& target) {
+  void search_sources_fun(std::vector<std::pair<node_entry, std::string> > const& v
+    , node_impl& node
+    , int listen_port
+    , size_type size
+    , node_id const& target) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(node) << "sending search keywords [ target: " << target << " port: " << listen_port
       << " total nodes: " << v.size() << " ]";
@@ -269,7 +272,7 @@ namespace
       kad2_search_sources_req req;
       req.start_position = 0;
       req.target_id = target;
-      req.size = 0; // TODO - add correct file size
+      req.size = size;
       node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
     }
   }
@@ -380,7 +383,9 @@ void node_impl::search_keywords(node_id const& info_hash, int listen_port
   ta->start();
 }
 
-void node_impl::search_sources(node_id const& info_hash, int listen_port
+void node_impl::search_sources(node_id const& info_hash
+  , int listen_port
+  , size_type size
   , boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -389,8 +394,12 @@ void node_impl::search_sources(node_id const& info_hash, int listen_port
   // search for nodes with ids close to id or with peers
   // for info-hash id. then send announce_peer to them.
   boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
-    , boost::bind(&search_sources_fun, _1, boost::ref(*this)
-      , listen_port, info_hash), KADEMLIA_FIND_NODE));
+    , boost::bind(&search_sources_fun
+      , _1
+      , boost::ref(*this)
+      , listen_port
+      , size
+      , info_hash), KADEMLIA_FIND_NODE));
   ta->start();
 }
 

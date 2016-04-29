@@ -71,7 +71,7 @@ public:
 	find_data(node_impl& node, node_id target
 		, data_callback const& dcallback
 		, nodes_callback const& ncallback
-    , uint8_t search_type);
+        , uint8_t search_type);
 
 	virtual char const* name() const { return "get_peers"; }
 
@@ -92,7 +92,7 @@ private:
     node_id const m_id;
 	bool m_done:1;
 	bool m_got_peers:1;
-  uint8_t  m_search_type;
+    uint8_t  m_search_type;
 };
 
 class find_data_observer : public observer

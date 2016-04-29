@@ -392,8 +392,11 @@ namespace libed2k {
             void on_dht_router_name_lookup(error_code const& e
                     , tcp::resolver::iterator host);
             void find_keyword(const std::string& keyword);
+            void find_sources(const md4_hash& hash, size_type size);
 
             void on_find_result(std::vector<tcp::endpoint> const& peers);
+            void on_find_dht_source(const md4_hash& hash, uint8_t type, client_id_type ip, uint16_t port, client_id_type low_id);
+            void on_find_dht_keyword(const md4_hash& h, const std::deque<kad_info_entry>&);
 #endif
 
             // when as a socks proxy is used for peers, also

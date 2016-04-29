@@ -6,6 +6,7 @@
 #include "libed2k/alert.hpp"
 #include "libed2k/error_code.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/socket_io.hpp"
 #include "libed2k/entry.hpp"
@@ -986,6 +987,30 @@ namespace libed2k
         }
 
         address external_address;
+    };
+
+    struct dht_keyword_search_result_alert : alert {
+
+        dht_keyword_search_result_alert(const md4_hash& h, const std::deque<kad_info_entry>& entries)
+            : m_hash(h), m_entries(entries)
+        {}
+
+        virtual std::auto_ptr<alert> clone() const {
+            return std::auto_ptr<alert>(new dht_keyword_search_result_alert(*this));
+        }
+
+        virtual char const* what() const { return "DHT search ketyword result"; }
+        virtual int category() const { return static_category; }
+
+
+        const static int static_category = alert::dht_notification;
+        virtual std::string message() const
+        {
+            return "DHT search keyword result";
+        }
+
+        md4_hash    m_hash;
+        std::deque<kad_info_entry>  m_entries;
     };
 }
 

@@ -284,15 +284,15 @@ find_data::find_data(
 	, node_id target
 	, data_callback const& dcallback
 	, nodes_callback const& ncallback
-  , uint8_t search_type)
+    , uint8_t search_type)
 	: traversal_algorithm(node, target)
 	, m_data_callback(dcallback)
 	, m_nodes_callback(ncallback)
 	, m_target(target)
-  , m_id(node.nid())
+    , m_id(node.nid())
 	, m_done(false)
 	, m_got_peers(false)
-  , m_search_type(search_type)
+    , m_search_type(search_type)
 {
 	node.m_table.for_each_node(&add_entry_fun, 0, (traversal_algorithm*)this);
 }

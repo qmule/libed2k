@@ -199,6 +199,7 @@ namespace libed2k
     {
         APP("request peers by hash: " << hash() << ", size: " << size());
         m_ses.m_server_connection->post_sources_request(hash(), size());
+        m_ses.find_sources(hash(), size()); // search for sources via dht
     }
 
     void transfer::add_peer(const tcp::endpoint& peer, int source)

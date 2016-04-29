@@ -398,10 +398,12 @@ namespace libed2k { namespace dht
     m_dht.search_keywords(ih, listen_port, f);
   }
 
-  void dht_tracker::search_sources(md4_hash& ih, int listen_port
+  void dht_tracker::search_sources(const md4_hash& ih
+    , int listen_port
+    , size_type size
     , boost::function<void(std::vector<tcp::endpoint> const&)> f) {
     LIBED2K_ASSERT(m_ses.is_network_thread());
-    m_dht.search_sources(ih, listen_port, f);
+    m_dht.search_sources(ih, listen_port, size, f);
   }
 
 
@@ -415,7 +417,7 @@ namespace libed2k { namespace dht
 	// used by the library
 	void dht_tracker::on_receive(udp::endpoint const& ep, char const* buf, int bytes_transferred)
 	{
-		LIBED2K_ASSERT(m_ses.is_network_thread());
+        LIBED2K_ASSERT(m_ses.is_network_thread());
 
         error_code ec;
         udp_libed2k_header uh;
@@ -551,58 +553,58 @@ namespace libed2k { namespace dht
             break;
         }
         case KADEMLIA2_SEARCH_RES: {
-          /*
-          Search types and tags:
+            /*
+            Search types and tags:
 
-          File search:
-          uint8 uType = 0;
-          uint32 uIP = 0;
-          uint16 uTCPPort = 0;
-          uint16 uUDPPort = 0;
-          uint32 uBuddyIP = 0;
-          uint16 uBuddyPort = 0;
-          //uint32 uClientID = 0;
-          CUInt128 uBuddy;
-          uint8 byCryptOptions = 0; // 0 = not supported
+            File search:
+            uint8 uType = 0;
+            uint32 uIP = 0;
+            uint16 uTCPPort = 0;
+            uint16 uUDPPort = 0;
+            uint32 uBuddyIP = 0;
+            uint16 uBuddyPort = 0;
+            //uint32 uClientID = 0;
+            CUInt128 uBuddy;
+            uint8 byCryptOptions = 0; // 0 = not supported
 
-          for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
-          {
-          CKadTag* pTag = *itTagList;
-          if (!pTag->m_name.Compare(TAG_SOURCETYPE))
-          uType = (uint8)pTag->GetInt();
-          else if (!pTag->m_name.Compare(TAG_SOURCEIP))
-          uIP = (uint32)pTag->GetInt();
-          else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
-          uTCPPort = (uint16)pTag->GetInt();
-          else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
-          uUDPPort = (uint16)pTag->GetInt();
-          else if (!pTag->m_name.Compare(TAG_SERVERIP))
-          uBuddyIP = (uint32)pTag->GetInt();
-          else if (!pTag->m_name.Compare(TAG_SERVERPORT))
-          uBuddyPort = (uint16)pTag->GetInt();
-          //else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
-          //  uClientID = pTag->GetInt();
-          else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
-          {
-          uchar ucharBuddyHash[16];
-          if (pTag->IsStr() && strmd4(pTag->GetStr(), ucharBuddyHash))
-          md4cpy(uBuddy.GetDataPtr(), ucharBuddyHash);
-          else
-          TRACE("+++ Invalid TAG_BUDDYHASH tag\n");
-          }
+            for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
+            {
+            CKadTag* pTag = *itTagList;
+            if (!pTag->m_name.Compare(TAG_SOURCETYPE))
+            uType = (uint8)pTag->GetInt();
+            else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+            uIP = (uint32)pTag->GetInt();
+            else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+            uTCPPort = (uint16)pTag->GetInt();
+            else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+            uUDPPort = (uint16)pTag->GetInt();
+            else if (!pTag->m_name.Compare(TAG_SERVERIP))
+            uBuddyIP = (uint32)pTag->GetInt();
+            else if (!pTag->m_name.Compare(TAG_SERVERPORT))
+            uBuddyPort = (uint16)pTag->GetInt();
+            //else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
+            //  uClientID = pTag->GetInt();
+            else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
+            {
+            uchar ucharBuddyHash[16];
+            if (pTag->IsStr() && strmd4(pTag->GetStr(), ucharBuddyHash))
+            md4cpy(uBuddy.GetDataPtr(), ucharBuddyHash);
+            else
+            TRACE("+++ Invalid TAG_BUDDYHASH tag\n");
+            }
           
-          Keywords search:
+            Keywords search:
 
-          1488[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILENAME} {val: "Lady Gaga - Love Game.mp3"}
-          1489[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_FILESIZE} {val: 4560868}
-          1490[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_SOURCES} {val: 1}
-          1491[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILETYPE} {val: "Audio"}
-          1492[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_MEDIA_ALBUM} {val: "The Fame"}
-          1493[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_LENGTH} {val: 214}
-          1494[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_BITRATE} {val: 170}
-          1495[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_PUBLISHINFO} {val: 33686170}
+            1488[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILENAME} {val: "Lady Gaga - Love Game.mp3"}
+            1489[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_FILESIZE} {val: 4560868}
+            1490[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_SOURCES} {val: 1}
+            1491[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILETYPE} {val: "Audio"}
+            1492[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_MEDIA_ALBUM} {val: "The Fame"}
+            1493[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_LENGTH} {val: 214}
+            1494[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_BITRATE} {val: 170}
+            1495[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_PUBLISHINFO} {val: 33686170}
           
-          */
+            */
 
 
             kad2_search_res p;
@@ -613,6 +615,25 @@ namespace libed2k { namespace dht
                 DBG("answer " << itr->hash);
                 itr->tags.dump();
             }
+
+            if (!p.results.m_collection.empty()) {
+                // probe result type
+                if (p.results.m_collection.front().tags.getTagByNameId(TAG_SOURCETYPE)) {
+                    // sources answer
+                    for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {                        
+                        m_ses.on_find_dht_source(p.target_id
+                            , itr->tags.getIntTagByNameId(TAG_SOURCETYPE)
+                            , ntohl(itr->tags.getIntTagByNameId(TAG_SOURCEIP))
+                            , itr->tags.getIntTagByNameId(TAG_SOURCEPORT)
+                            , itr->tags.getIntTagByNameId(TAG_CLIENTLOWID));
+                    }
+                }
+                else {
+                    // now it is always keywords result
+                    m_ses.on_find_dht_keyword(p.target_id, p.results.m_collection);
+                }
+            }
+
             m_dht.incoming(p, ep);
             break;
         }
