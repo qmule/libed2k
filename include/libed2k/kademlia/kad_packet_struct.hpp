@@ -73,10 +73,18 @@ namespace libed2k {
         uint16_t        tcp_port;
 
         template<typename Archive>
-        void serialize(Archive& ar) {
+        void load(Archive& ar) {
             ar & address & udp_port & tcp_port;
             address = ntohl(address);
         }
+
+        template<typename Archive>
+        void save(Archive& ar) {
+            client_id_type local_address = htonl(address);
+            ar & local_address & udp_port & tcp_port;
+        }
+
+        LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
     struct kad_entry {
@@ -506,7 +514,16 @@ namespace libed2k {
 
         template<typename Archive>
         void save(Archive& ar) {
-            LIBED2K_ASSERT(false);
+            // back serialization hardcoded to version 1 to avoid useless emule features
+            version = 1;
+            num_contacts = 0;
+            ar & num_contacts;
+            ar & version;
+            num_contacts = contacts_container.size();
+            ar & num_contacts;
+            for (std::list<kad_entry>::const_iterator itr = contacts_container.begin(); itr != contacts_container.end(); ++itr) {
+                ar & *itr;
+            }
         }
 
         template<typename Archive>
