@@ -253,7 +253,7 @@ namespace libed2k
 
 #ifndef LIBED2K_DISABLE_DHT
 
-    void session::start_dht()
+    void session::start_dht(entry const& startup_state/* = entry()*/)
     {
       // the state is loaded in load_state()
       boost::mutex::scoped_lock l(m_impl->m_mutex);
@@ -298,6 +298,11 @@ namespace libed2k
 
     void session::find_keyword(const std::string& keyword) {
         m_impl->m_io_service.post(boost::bind(&aux::session_impl::find_keyword, m_impl, keyword));
+    }
+
+    entry session::dht_state() {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->dht_state();
     }
 
 #endif

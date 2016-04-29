@@ -15,6 +15,7 @@
 #include "libed2k/session_status.hpp"
 #include "libed2k/filesystem.hpp"
 #include "libed2k/session_settings.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k {
 
@@ -109,7 +110,7 @@ namespace libed2k {
         void stop_upnp();
 
 #ifndef LIBED2K_DISABLE_DHT
-        void start_dht();
+        void start_dht(entry const& startup_state = entry());
         void stop_dht();
         void set_dht_settings(dht_settings const& settings);
         void add_dht_node(std::pair<std::string, int> const& node);
@@ -117,6 +118,7 @@ namespace libed2k {
         void add_dht_router(std::pair<std::string, int> const& node);
         bool is_dht_running() const;
         void find_keyword(const std::string& keyword);
+        entry dht_state();
 #endif
 
         // add_port_mapping adds a port forwarding on UPnP and/or NAT-PMP,
