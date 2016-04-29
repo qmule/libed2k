@@ -414,7 +414,7 @@ template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint
 template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kademlia2_res>(const kademlia2_res& t, udp::endpoint target, node_id* id);
-template bool rpc_manager::incoming<kad2_search_res>(const kad2_search_res& t, udp::endpoint target, node_id* id);
+//template bool rpc_manager::incoming<kad2_search_res>(const kad2_search_res& t, udp::endpoint target, node_id* id);
 
 template<typename T>
 node_id rpc_manager::extract_packet_node_id(const T&) {

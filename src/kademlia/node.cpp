@@ -1127,7 +1127,7 @@ template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
 template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
 template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&, udp::endpoint);
 template void node_impl::incoming<kademlia2_res>(const kademlia2_res&, udp::endpoint);
-template void node_impl::incoming<kad2_search_res>(const kad2_search_res&, udp::endpoint);
+//template void node_impl::incoming<kad2_search_res>(const kad2_search_res&, udp::endpoint);
 
 template<>
 void node_impl::incoming_request(const kad2_ping& req, udp::endpoint target) {

@@ -162,10 +162,6 @@ void find_data_observer::reply(const kademlia2_res& r, udp::endpoint ep) {
   done();
 }
 
-void find_data_observer::reply(const kad2_search_res& r, udp::endpoint ep) {
-  done();
-}
-
 /*
 void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 {

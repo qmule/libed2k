@@ -633,8 +633,6 @@ namespace libed2k { namespace dht
                     m_ses.on_find_dht_keyword(p.target_id, p.results.m_collection);
                 }
             }
-
-            m_dht.incoming(p, ep);
             break;
         }
         case KADEMLIA2_PUBLISH_KEY_REQ: {
