@@ -463,8 +463,13 @@ namespace libed2k { namespace dht
         }
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-        std::string cincoming((char*)&container[0], container.size());
-        LIBED2K_LOG(dht_tracker) << " incoming data: " << to_hex(cincoming);
+        if (container.empty()) {
+            LIBED2K_LOG(dht_tracker) << " incoming data: empty(only header)";
+        }
+        else {
+            std::string cincoming((char*)&container[0], container.size());
+            LIBED2K_LOG(dht_tracker) << " incoming data: " << to_hex(cincoming);
+        }
 #endif
 
         typedef boost::iostreams::basic_array_source<char> Device;

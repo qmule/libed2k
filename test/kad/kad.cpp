@@ -20,6 +20,7 @@
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/io_service.hpp"
 #include "libed2k/server_connection.hpp"
+#include "libed2k/entry.hpp"
 
 using namespace libed2k;
 
@@ -145,6 +146,10 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
 // load nodes from standard emule nodes.dat file
 bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd);
 
+libed2k::entry load_dht_state();
+void save_dht_state(const libed2k::entry& e);
+
+
 int main(int argc, char* argv[]) {
     LOGGER_INIT(LOG_ALL)
     std::cout << "---- kad started\n"
@@ -164,7 +169,7 @@ int main(int argc, char* argv[]) {
     alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
     boost::thread t(boost::bind(&libed2k::io_service::run, &io));
 
-    std::string input;    
+    std::string input;
 
     while ((std::cin >> input)) {
         std::deque<std::string> command = split_del(input, ';');
@@ -239,12 +244,15 @@ int main(int argc, char* argv[]) {
             }
         }
         else if (command.at(0) == "startdht") {
-            ses.start_dht();
+            ses.start_dht(load_dht_state());
         }
         else if (command.at(0) == "stopdht") {
+            save_dht_state(ses.dht_state());
             ses.stop_dht();
         }
     }
+
+    save_dht_state(ses.dht_state());
 
     // cancel background operations and wait
     io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));
@@ -298,6 +306,30 @@ bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd) {
     }
 
     return true;
+}
+
+libed2k::entry load_dht_state() {
+    libed2k::entry e;
+    std::ifstream fs("dht_state.dat", std::ios_base::binary);
+    if (fs) {
+        std::noskipws(fs);
+        std::string content((std::istreambuf_iterator<char>(fs)),
+            (std::istreambuf_iterator<char>()));
+        e = libed2k::bdecode(content.c_str(), content.c_str() + content.size());
+    }
+
+    return e;
+}
+
+
+void save_dht_state(const libed2k::entry& e) {
+    std::ofstream fs("dht_state.dat", std::ios_base::binary);
+    if (fs) {
+        std::noskipws(fs);
+        std::vector<char> out;
+        libed2k::bencode(std::back_inserter(out), e);
+        std::copy(out.begin(), out.end(), std::ostreambuf_iterator<char>(fs));
+    }
 }
 
 
