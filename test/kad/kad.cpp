@@ -32,6 +32,20 @@ std::deque<std::string> split_del(const std::string& input, char delimeter) {
     return res;
 }
 
+struct dht_keyword {
+    libed2k::kad_id id;
+    std::string name;
+    libed2k::size_type size;
+    unsigned int sources;
+    dht_keyword(const libed2k::kad_info_entry& info) {
+        id = info.hash;
+        name = info.tags.getStringTagByNameId(libed2k::FT_FILENAME);
+        size = info.tags.getIntTagByNameId(libed2k::FT_FILESIZE);
+        sources = info.tags.getIntTagByNameId(libed2k::FT_SOURCES);
+    }
+};
+
+std::deque<dht_keyword> dht_keywords;
 
 void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
 {
@@ -130,6 +144,13 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         		DBG("ALERT: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
         		ps->add_transfer(p->m_atp);
         	}
+        }
+        else if (dht_keyword_search_result_alert* p = dynamic_cast<dht_keyword_search_result_alert*>(a.get()))
+        {
+            for (std::deque<libed2k::kad_info_entry>::const_iterator& itr = p->m_entries.begin(); itr != p->m_entries.end(); ++itr) {
+                dht_keywords.push_back(dht_keyword(*itr));
+                DBG("search keyword added << " << dht_keywords.size() << ":" << dht_keywords.back().name << " << sources:" << dht_keywords.back().sources);
+            }
         }
         else
         {
@@ -249,6 +270,23 @@ int main(int argc, char* argv[]) {
         else if (command.at(0) == "stopdht") {
             save_dht_state(ses.dht_state());
             ses.stop_dht();
+        }
+        else if (command.at(0) == "download") {
+            if (command.size() < 2) {
+                DBG("command download must have one parameter - index of search entry");
+            }
+            else {
+                int index = atoi(command.at(1).c_str());
+                if (index >= 0 && index < dht_keywords.size()) {
+                    libed2k::add_transfer_params params;
+                    dht_keyword k = dht_keywords.at(index);
+                    params.file_hash = k.id;
+                    params.file_path = std::string("./") + k.name;                    
+                    params.file_size = k.size;
+                    ses.add_transfer(params);
+                    DBG("download " << k.name << " started");
+                }
+            }
         }
     }
 
