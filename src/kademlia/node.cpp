@@ -263,7 +263,7 @@ namespace
     , size_type size
     , node_id const& target) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-    LIBED2K_LOG(node) << "sending search keywords [ target: " << target << " port: " << listen_port
+    LIBED2K_LOG(node) << "sending search sources [ target: " << target << " port: " << listen_port
       << " total nodes: " << v.size() << " ]";
 #endif
     for (std::vector<std::pair<node_entry, std::string> >::const_iterator i = v.begin()

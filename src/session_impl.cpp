@@ -1904,7 +1904,7 @@ void session_impl::set_external_address(address const& ip
             if (transfer_ptr) {
                 tcp::endpoint peer(
                     ip::address::from_string(int2ipstr(ip)), port);
-                transfer_ptr->add_peer(peer, peer_info::dht);
+                transfer_ptr->add_peer(peer, /*peer_info::dht*/peer_info::tracker);
                 DBG("peer added to transfer");
             }
         }

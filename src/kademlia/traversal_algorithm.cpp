@@ -151,8 +151,8 @@ void traversal_algorithm::add_entry(node_id const& id, udp::endpoint addr, unsig
 		LIBED2K_ASSERT(std::find_if(m_results.begin(), m_results.end()
 			, boost::bind(&observer::id, _1) == id) == m_results.end());
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		LIBED2K_LOG(traversal) << "[" << this << ":" << name()
-			<< "] adding result: " << id << " " << addr;
+        LIBED2K_LOG(traversal) << "[" << this << ":" << name()
+            << "] adding result: " << id << " " << addr << " distance " << distance_exp(m_target, o->id());
 #endif
 		i = m_results.insert(i, o);
 	}

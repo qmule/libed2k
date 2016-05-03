@@ -465,6 +465,7 @@ namespace libed2k { namespace dht
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
         if (container.empty()) {
             LIBED2K_LOG(dht_tracker) << " incoming data: empty(only header)";
+            return;
         }
         else {
             std::string cincoming((char*)&container[0], container.size());

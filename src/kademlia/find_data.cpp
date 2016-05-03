@@ -145,7 +145,7 @@ void find_data_observer::reply(const kad2_bootstrap_res& r, udp::endpoint ep) {
 
 void find_data_observer::reply(const kademlia2_res& r, udp::endpoint ep) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-  LIBED2K_LOG(traversal) << "kademliad2_res reply " << m_algorithm.get() << " count " << r.results.m_collection.size();
+  LIBED2K_LOG(traversal) << "kademlia2_res reply " << m_algorithm.get() << " count " << r.results.m_collection.size();
 #endif
 
   for (kad_contacts_res::const_iterator itr = r.results.m_collection.begin(); itr != r.results.m_collection.end(); ++itr) {

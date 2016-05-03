@@ -288,6 +288,12 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        else if (command.at(0) == "print") {
+            size_t i = 0;
+            for (std::deque<dht_keyword>::const_iterator itr = dht_keywords.begin(); itr != dht_keywords.end(); ++itr) {
+                DBG(std::setw(3) << i++ << " " << itr->name << " size " << itr->size << " sources " << itr->sources);
+            }
+        }
     }
 
     save_dht_state(ses.dht_state());
