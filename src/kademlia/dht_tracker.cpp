@@ -472,12 +472,14 @@ namespace libed2k { namespace dht
             LIBED2K_LOG(dht_tracker) << " incoming data: " << to_hex(cincoming);
         }
 #endif
+        // TODO - need total fix for serialization
+        const char* incoming = NULL;
+        if (!container.empty()) incoming = (const char*)&container[0];
 
         typedef boost::iostreams::basic_array_source<char> Device;
-        boost::iostreams::stream_buffer<Device> buffer((char*)&container[0], container.size());
+        boost::iostreams::stream_buffer<Device> buffer(incoming, container.size());
         std::istream in_array_stream(&buffer);
         archive::ed2k_iarchive ia(in_array_stream);
-
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
         LIBED2K_LOG(dht_tracker) << kad2string(uh.m_type) << " <== " << ep.address();
@@ -491,7 +493,6 @@ namespace libed2k { namespace dht
         case KADEMLIA_REQ_DEPRECATED: {
             kademlia_req req;
             ia >> req;
-            //m_dht.incoming_request(req);
             break;
         }
 
