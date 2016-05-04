@@ -625,8 +625,9 @@ namespace libed2k { namespace dht
                 // probe result type
                 if (p.results.m_collection.front().tags.getTagByNameId(TAG_SOURCETYPE)) {
                     // sources answer
-                    for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {                        
-                        m_ses.on_find_dht_source(p.target_id
+                    for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {
+                        md4_hash h = p.target_id;
+                        m_ses.on_find_dht_source(h
                             , itr->tags.getIntTagByNameId(TAG_SOURCETYPE)
                             , ntohl(itr->tags.getIntTagByNameId(TAG_SOURCEIP))
                             , itr->tags.getIntTagByNameId(TAG_SOURCEPORT)

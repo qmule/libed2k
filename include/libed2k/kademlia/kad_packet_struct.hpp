@@ -43,6 +43,10 @@ namespace libed2k {
         kad_id(const md4_hash& h);
         kad_id(const md4_hash::md4hash_container&);
 
+        operator md4_hash() {
+            return md4_hash(m_hash);
+        }
+
         /**
         * save/load as 4 32 bits digits in little endian save as 4 32 bits digits network byte order
         * rotate bytes in each 4 byte portion
