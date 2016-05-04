@@ -392,7 +392,7 @@ namespace libed2k { namespace dht
 		m_dht.announce(ih, listen_port, f);
 	}
 
-  void dht_tracker::search_keywords(md4_hash& ih, int listen_port
+  void dht_tracker::search_keywords(const md4_hash& ih, int listen_port
     , boost::function<void(std::vector<tcp::endpoint> const&)> f) {
     LIBED2K_ASSERT(m_ses.is_network_thread());
     m_dht.search_keywords(ih, listen_port, f);

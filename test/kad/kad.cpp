@@ -147,7 +147,7 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
         }
         else if (dht_keyword_search_result_alert* p = dynamic_cast<dht_keyword_search_result_alert*>(a.get()))
         {
-            for (std::deque<libed2k::kad_info_entry>::const_iterator& itr = p->m_entries.begin(); itr != p->m_entries.end(); ++itr) {
+            for (std::deque<libed2k::kad_info_entry>::const_iterator itr = p->m_entries.begin(); itr != p->m_entries.end(); ++itr) {
                 dht_keywords.push_back(dht_keyword(*itr));
                 DBG("search keyword added << " << dht_keywords.size() << ":" << dht_keywords.back().name << " << sources:" << dht_keywords.back().sources);
             }
