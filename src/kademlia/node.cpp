@@ -210,29 +210,6 @@ void node_impl::unreachable(udp::endpoint const& ep)
 	m_rpc.unreachable(ep);
 }
 
-//void node_impl::incoming(message const& m)
-//{
-    // parse incoming message to packet
-    // detect packet type - request/response
-    // for response - check order for request
-    // for request - process request
-
-		//case 'r':   // result
-		//{
-		//	node_id id;
-			//if (m_rpc.incoming(m, &id))
-			//	refresh(id, boost::bind(&nop));
-		//	break;
-		//}
-		//case 'q':   // request
-		//{
-		//	LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "q");
-		//	entry e;
-			//incoming_request(m, e);
-		//	//m_send(m_userdata, e, m.addr, 0);
-		//	break;
-//}
-
 namespace
 {
 
@@ -245,10 +222,10 @@ namespace
     for (std::vector<std::pair<node_entry, std::string> >::const_iterator i = v.begin()
       , end(v.end()); i != end; ++i)
     {
-      kad2_search_key_req req;
-      req.start_position = 0;
-      req.target_id = target;
-      node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
+        kad2_search_key_req req;
+        req.start_position = 0;
+        req.target_id = target;
+        node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
     }
   }
 
@@ -257,25 +234,24 @@ namespace
     // do nothing now
   }
 
-  void search_sources_fun(std::vector<std::pair<node_entry, std::string> > const& v
+    void search_sources_fun(std::vector<std::pair<node_entry, std::string> > const& v
     , node_impl& node
     , int listen_port
     , size_type size
     , node_id const& target) {
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+    #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(node) << "sending search sources [ target: " << target << " port: " << listen_port
-      << " total nodes: " << v.size() << " ]";
-#endif
+        << " total nodes: " << v.size() << " ]";
+    #endif
     for (std::vector<std::pair<node_entry, std::string> >::const_iterator i = v.begin()
-      , end(v.end()); i != end; ++i)
-    {
-      kad2_search_sources_req req;
-      req.start_position = 0;
-      req.target_id = target;
-      req.size = size;
-      node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
+        , end(v.end()); i != end; ++i) {
+            kad2_search_sources_req req;
+            req.start_position = 0;
+            req.target_id = target;
+            req.size = size;
+            node.m_rpc.invoke(req, i->first.ep(), observer_ptr());
+        }
     }
-  }
 
   // will be in publish 
 	void announce_fun(std::vector<std::pair<node_entry, std::string> > const& v
@@ -305,24 +281,11 @@ namespace
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 			o->m_in_constructor = false;
 #endif
-
-      kad2_search_key_req req;
-      req.start_position = 0;
-      req.target_id = ih;
-
-			/*entry e;
-			e["y"] = "q";
-			e["q"] = "announce_peer";
-			entry& a = e["a"];
-			a["info_hash"] = ih.to_string();
-			a["port"] = listen_port;
-			a["token"] = i->second;
-			a["seed"] = int(seed);
-
-			//node.m_rpc.invoke(e, i->first.ep(), o);
-            */
-
-      node.m_rpc.invoke(req, i->first.ep(), o);
+            // will be publish req packet
+            kad2_search_key_req req;
+            req.start_position = 0;
+            req.target_id = ih;
+            node.m_rpc.invoke(req, i->first.ep(), o);
 		}
 	}
 }
@@ -373,14 +336,14 @@ void node_impl::search_keywords(node_id const& info_hash, int listen_port
   , boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-  LIBED2K_LOG(node) << "search keywords [ ih: " << info_hash << " p: " << listen_port << " ]";
+    LIBED2K_LOG(node) << "search keywords [ ih: " << info_hash << " p: " << listen_port << " ]";
 #endif
-  // search for nodes with ids close to id or with peers
-  // for info-hash id. then send announce_peer to them.
-  boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
+    // search for nodes with ids close to id or with peers
+    // for info-hash id. then send announce_peer to them.
+    boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
     , boost::bind(&search_keywords_fun, _1, boost::ref(*this)
-      , listen_port, info_hash), KADEMLIA_FIND_VALUE));
-  ta->start();
+        , listen_port, info_hash), KADEMLIA_FIND_VALUE));
+    ta->start();
 }
 
 void node_impl::search_sources(node_id const& info_hash
@@ -389,18 +352,19 @@ void node_impl::search_sources(node_id const& info_hash
   , boost::function<void(std::vector<tcp::endpoint> const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-  LIBED2K_LOG(node) << "search sources [ ih: " << info_hash << " p: " << listen_port << " ]";
+    LIBED2K_LOG(node) << "search sources [ ih: " << info_hash << " p: " << listen_port << " ]";
 #endif
-  // search for nodes with ids close to id or with peers
-  // for info-hash id. then send announce_peer to them.
-  boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
+
+    // search for nodes with ids close to id or with peers
+    // for info-hash id. then send announce_peer to them.
+    boost::intrusive_ptr<find_data> ta(new find_data(*this, info_hash, f
     , boost::bind(&search_sources_fun
-      , _1
-      , boost::ref(*this)
-      , listen_port
-      , size
-      , info_hash), KADEMLIA_FIND_NODE));
-  ta->start();
+        , _1
+        , boost::ref(*this)
+        , listen_port
+        , size
+        , info_hash), KADEMLIA_FIND_NODE));
+    ta->start();
 }
 
 
@@ -1127,7 +1091,6 @@ template void node_impl::incoming<kad2_pong>(const kad2_pong&, udp::endpoint);
 template void node_impl::incoming<kad2_hello_res>(const kad2_hello_res&, udp::endpoint);
 template void node_impl::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res&, udp::endpoint);
 template void node_impl::incoming<kademlia2_res>(const kademlia2_res&, udp::endpoint);
-//template void node_impl::incoming<kad2_search_res>(const kad2_search_res&, udp::endpoint);
 
 template<>
 void node_impl::incoming_request(const kad2_ping& req, udp::endpoint target) {

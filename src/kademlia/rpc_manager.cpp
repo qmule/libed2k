@@ -273,88 +273,6 @@ void rpc_manager::unreachable(udp::endpoint const& ep)
 // defined in node.cpp
 void incoming_error(entry& e, char const* msg);
 
-bool rpc_manager::incoming(msg const& m, node_id* id)
-{
-	LIBED2K_INVARIANT_CHECK;
-
-	if (m_destructing) return false;
-    // TODO - use emule msg format - generate transaction id, search observer and so on
-
-	// we only deal with replies, not queries
-	//LIBED2K_ASSERT(m.message.dict_find_string_value("y") == "r");
-
-	// if we don't have the transaction id in our
-	// request list, ignore the packet
-
-	//std::string transaction_id = m.message.dict_find_string_value("t");
-
-	//std::string::const_iterator i = transaction_id.begin();	
-	//int tid = transaction_id.size() != 2 ? -1 : io::read_uint16(i);
-
-	observer_ptr o;
-    /*
-	for (transactions_t::iterator i = m_transactions.begin()
-		, end(m_transactions.end()); i != end; ++i)
-	{
-		LIBED2K_ASSERT(*i);
-		if ((*i)->transaction_id() != tid) continue;
-		if (m.addr.address() != (*i)->target_addr()) continue;
-		o = *i;
-		m_transactions.erase(i);
-		break;
-	}
-    */
-	if (!o)
-	{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		//LIBED2K_LOG(rpc) << "Reply with unknown transaction id size: " 
-	//		<< transaction_id.size() << " from " << m.addr;
-#endif
-//		entry e;
-//		incoming_error(e, "invalid transaction id");
-//		m_send(m_userdata, e, m.addr, 0);
-		return false;
-	}
-
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	std::ofstream reply_stats("round_trip_ms.log", std::ios::app);
-	reply_stats << m.addr << "\t" << total_milliseconds(time_now_hires() - o->sent())
-		<< std::endl;
-#endif
-
-    /*
-	lazy_entry const* ret_ent = m.message.dict_find_dict("r");
-	if (ret_ent == 0)
-	{
-		o->timeout();
-		entry e;
-		incoming_error(e, "missing 'r' key");
-		//m_send(m_userdata, e, m.addr, 0);
-		return false;
-	}
-
-	lazy_entry const* node_id_ent = ret_ent->dict_find_string("id");
-	if (node_id_ent == 0 || node_id_ent->string_length() != 20)
-	{
-		o->timeout();
-		entry e;
-		incoming_error(e, "missing 'id' key");
-		//m_send(m_userdata, e, m.addr, 0);
-		return false;
-	}
-    */
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	//LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] Reply with transaction id: " 
-	//	<< tid << " from " << m.addr;
-#endif
-	//o->reply(m);
-	//*id = node_id(node_id_ent->string_ptr());
-
-	// we found an observer for this reply, hence the node is not spoofing
-	// add it to the routing table
-	return m_table.node_seen(*id, m.addr);
-}
-
 template<typename T>
 bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     LIBED2K_INVARIANT_CHECK;
@@ -414,7 +332,6 @@ template bool rpc_manager::incoming<kad2_pong>(const kad2_pong& t, udp::endpoint
 template bool rpc_manager::incoming<kad2_hello_res>(const kad2_hello_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kad2_bootstrap_res>(const kad2_bootstrap_res& t, udp::endpoint target, node_id* id);
 template bool rpc_manager::incoming<kademlia2_res>(const kademlia2_res& t, udp::endpoint target, node_id* id);
-//template bool rpc_manager::incoming<kad2_search_res>(const kad2_search_res& t, udp::endpoint target, node_id* id);
 
 template<typename T>
 node_id rpc_manager::extract_packet_node_id(const T&) {
@@ -503,49 +420,6 @@ time_duration rpc_manager::tick()
 	std::for_each(timeouts.begin(), timeouts.end(), boost::bind(&observer::short_timeout, _1));
 	
 	return ret;
-}
-
-void rpc_manager::add_our_id(entry& e)
-{
-	e["id"] = m_our_id.to_string();
-}
-
-bool rpc_manager::invoke(entry& e, udp::endpoint target_addr
-	, observer_ptr o)
-{
-	LIBED2K_INVARIANT_CHECK;
-
-	if (m_destructing) return false;
-
-	e["y"] = "q";
-	entry& a = e["a"];
-	add_our_id(a);
-
-	std::string transaction_id;
-	transaction_id.resize(2);
-	char* out = &transaction_id[0];
-	int tid = rand() ^ (rand() << 5);
-	io::write_uint16(tid, out);
-	e["t"] = transaction_id;
-		
-	o->set_target(target_addr);
-	o->set_transaction_id(tid);
-
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	LIBED2K_LOG(rpc) << "[" << o->m_algorithm.get() << "] invoking "
-		<< e["q"].string() << " ==> " << target_addr;
-#endif
-
-    // TODO - remove this whole function
-	//if (m_send(m_userdata, e, target_addr, 1))
-	//{
-	//	m_transactions.push_back(o);
-#if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
-	//	o->m_was_sent = true;
-#endif
-	//	return true;
-	//}
-	return false;
 }
 
 template<typename T>

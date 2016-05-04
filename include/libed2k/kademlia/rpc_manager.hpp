@@ -81,10 +81,8 @@ public:
 
 	void unreachable(udp::endpoint const& ep);
 
-	// returns true if the node needs a refresh
-	// if so, id is assigned the node id to refresh
-	bool incoming(msg const&, node_id* id);
-
+    // returns true if the node needs a refresh
+    // if so, id is assigned the node id to refresh
     template<typename T>
     bool incoming(const T&, udp::endpoint target, node_id* id);
 
@@ -107,14 +105,6 @@ public:
     template<typename T>
     std::string request_name(const T& t) const;
 #endif
-
-    // TODO - remove it
-	bool invoke(entry& e, udp::endpoint target
-		, observer_ptr o);
-
-
-
-	void add_our_id(entry& e);
 
 #if defined LIBED2K_DEBUG || LIBED2K_RELEASE_ASSERTS
 	size_t allocation_size() const;

@@ -453,8 +453,6 @@ namespace libed2k { namespace dht
                     return;
                 }
 
-                //container[0] = OP_KADEMLIAHEADER;
-                //container[1] = uh.m_type;
                 uh.m_protocol = OP_KADEMLIAHEADER;
                 container.resize(nSize);
         }
@@ -685,39 +683,6 @@ namespace libed2k { namespace dht
         }
         };
 
-        /*
-        try {
-            libed2k_header header;
-            if (bytes_transferred < sizeof(libed2k_header)) {
-                throw libed2k_exception(errors::unexpected_istream_error);
-            }
-
-            header = *((const libed2k_header*)buf);
-            if (header.m_protocol != OP_KADEMLIAHEADER) throw libed2k_exception(errors::unsupported_kad_packed_type);
-
-            typedef boost::iostreams::basic_array_source<char> Device;
-            boost::iostreams::stream_buffer<Device> buffer(&buf[sizeof(libed2k_header)], bytes_transferred - sizeof(libed2k_header));
-            std::istream in_array_stream(&buffer);
-            archive::ed2k_iarchive ia(in_array_stream);
-            switch (header.m_type) {
-            case KADEMLIA_REQ_DEPRECATED:
-            {
-                kademlia_req req;
-                ia >> req;
-                m_dht.incoming_request(req);
-                break;
-            }
-            default:
-                break;
-            }
-
-        }
-        catch (const libed2k_exception& e) {
-            ec = e.error();
-        }
-
-        */
-
 		// account for IP and UDP overhead
 		m_received_bytes += bytes_transferred + (ep.address().is_v6() ? 48 : 28);
 
@@ -772,8 +737,6 @@ namespace libed2k { namespace dht
 		++m_total_message_input;
 		m_total_in_bytes += bytes_transferred;
 #endif
-
-		//m_dht.incoming(msg);
 	}
 
 	void add_node_fun(void* userdata, node_entry const& e)
@@ -870,18 +833,6 @@ namespace libed2k { namespace dht
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 			m_total_out_bytes += m_send_buf.size();
-		/*
-			if (e["y"].string() == "r")
-			{
-				// TODO: fix this stats logging
-//				++m_replies_sent[e["r"]];
-//				m_replies_bytes_sent[e["r"]] += int(m_send_buf.size());
-			}
-			else if (e["y"].string() == "q")
-			{
-				m_queries_out_bytes += m_send_buf.size();
-			}
-            */
 			LIBED2K_LOG(dht_tracker) << "==> " << addr << " " << log_line.str();
 #endif
 			return true;

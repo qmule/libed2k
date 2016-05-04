@@ -116,97 +116,37 @@ using detail::read_v6_endpoint;
     }
 */
 
-void find_data_observer::reply(const kad2_pong& r, udp::endpoint ep) {
-  done();
-}
-
-void find_data_observer::reply(const kad2_hello_res& r, udp::endpoint ep) {
-  done();
-}
+void find_data_observer::reply(const kad2_pong& r, udp::endpoint ep) { done(); }
+void find_data_observer::reply(const kad2_hello_res& r, udp::endpoint ep) { done(); }
 
 void find_data_observer::reply(const kad2_bootstrap_res& r, udp::endpoint ep) {
+
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-  LIBED2K_LOG(traversal) << "kad2_bootstrap reply " << m_algorithm.get() << " count " << r.contacts.m_collection.size();
+    LIBED2K_LOG(traversal) << "kad2_bootstrap reply " << m_algorithm.get() << " count " << r.contacts.m_collection.size();
 #endif
 
-  for (kad_contacts_res::const_iterator itr = r.contacts.m_collection.begin(); itr != r.contacts.m_collection.end(); ++itr) {    
-    error_code ec;
-    ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
-    if (!ec) {
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-      LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
-      m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
-#endif
+    for (kad_contacts_res::const_iterator itr = r.contacts.m_collection.begin(); itr != r.contacts.m_collection.end(); ++itr) {    
+        error_code ec;
+        ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
+        if (!ec) {
+    #ifdef LIBED2K_DHT_VERBOSE_LOGGING
+            LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
+            m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
+    #endif
+        }
     }
-  }
 
-  done();
+    done();
 }
 
 void find_data_observer::reply(const kademlia2_res& r, udp::endpoint ep) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-  LIBED2K_LOG(traversal) << "kademlia2_res reply " << m_algorithm.get() << " count " << r.results.m_collection.size();
+    LIBED2K_LOG(traversal) << "kademlia2_res reply " << m_algorithm.get() << " count " << r.results.m_collection.size();
 #endif
 
-  for (kad_contacts_res::const_iterator itr = r.results.m_collection.begin(); itr != r.results.m_collection.end(); ++itr) {
+    for (kad_contacts_res::const_iterator itr = r.results.m_collection.begin(); itr != r.results.m_collection.end(); ++itr) {
     error_code ec;
     ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
-    if (!ec) {
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-      LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
-      m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
-#endif
-    }
-  }
-
-  done();
-}
-
-/*
-void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
-{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	//std::stringstream log_line;
-	//log_line << "[" << m_algorithm.get() << "] reply";
-    LIBED2K_LOG(traversal) << "reply " << m_algorithm.get() << " count " << r.size();
-#endif
-
-	/* TODO - implements this part
-	 *  seems this code will be in second reply function format
-	// look for peers
-	lazy_entry const* n = r->dict_find_list("values");
-	if (n)
-	{
-		std::vector<tcp::endpoint> peer_list;
-		if (n->list_size() == 1 && n->list_at(0)->type() == lazy_entry::string_t)
-		{
-			// assume it's mainline format
-			char const* peers = n->list_at(0)->string_ptr();
-			char const* end = peers + n->list_at(0)->string_length();
-
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			log_line << " p: " << ((end - peers) / 6);
-#endif
-			while (end - peers >= 6)
-				peer_list.push_back(read_v4_endpoint<tcp::endpoint>(peers));
-		}
-		else
-		{
-			// assume it's uTorrent/libed2k format
-			read_endpoint_list<tcp::endpoint>(n, peer_list);
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			log_line << " p: " << n->list_size();
-#endif
-		}
-		static_cast<find_data*>(m_algorithm.get())->got_peers(peer_list);
-	}
-*/
-    //for (kad_contacts_res::const_iterator itr = r.begin(); itr != r.end(); ++itr) {
-//#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-//        log_line << int2ipstr(ntohl(itr->address.address)) << " udp: " << itr->address.udp_port << " tcp " << itr->address.tcp_port;
-//#endif
-        /*error_code ec;
-        ip::address addr = ip::address::from_string(int2ipstr(itr->address.address), ec);
         if (!ec) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
             LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
@@ -214,60 +154,9 @@ void find_data_observer::reply(const kad_contacts_res& r, udp::endpoint ep)
 #endif
         }
     }
-    */
-	/*
-	// look for nodes
-	n = r->dict_find_string("nodes");
-	if (n)
-	{
-		std::vector<node_entry> node_list;
-		char const* nodes = n->string_ptr();
-		char const* end = nodes + n->string_length();
 
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		log_line << " nodes: " << ((end - nodes) / 26);
-#endif
-		while (end - nodes >= 26)
-		{
-			node_id id;
-			std::copy(nodes, nodes + 20, id.begin());
-			nodes += 20;
-			m_algorithm->traverse(id, read_v4_endpoint<udp::endpoint>(nodes));
-		}
-	}
-
-	n = r->dict_find_list("nodes2");
-	if (n)
-	{
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-		log_line << " nodes2: " << n->list_size();
-#endif
-		for (int i = 0; i < n->list_size(); ++i)
-		{
-			lazy_entry const* p = n->list_at(0);
-			if (p->type() != lazy_entry::string_t) continue;
-			if (p->string_length() < 6 + 20) continue;
-			char const* in = p->string_ptr();
-
-			node_id id;
-			std::copy(in, in + 20, id.begin());
-			in += 20;
-			if (p->string_length() == 6 + 20)
-				m_algorithm->traverse(id, read_v4_endpoint<udp::endpoint>(in));
-#if LIBED2K_USE_IPV6
-			else if (p->string_length() == 18 + 20)
-				m_algorithm->traverse(id, read_v6_endpoint<udp::endpoint>(in));
-#endif
-		}
-	}
-*/
-//#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-	//log_line << " ]";
-	//LIBED2K_LOG(traversal) << log_line.str();
-//#endif
-//	done();
-//}
-
+    done();
+}
 
 void add_entry_fun(void* userdata, node_entry const& e)
 {
@@ -317,16 +206,6 @@ bool find_data::invoke(observer_ptr o)
     req.kid_target = m_target;
     req.search_type = m_search_type;
     return m_node.m_rpc.invoke(req, o->target_ep(), o);
-
-    /*
-	entry e;
-	e["y"] = "q";
-	e["q"] = "get_peers";
-	entry& a = e["a"];
-	a["info_hash"] = m_target.to_string();
-	if (m_noseeds) a["noseed"] = 1;
-	return m_node.m_rpc.invoke(e, o->target_ep(), o);
-    */
 }
 
 void find_data::got_peers(std::vector<tcp::endpoint> const& peers)
