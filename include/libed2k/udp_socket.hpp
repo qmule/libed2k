@@ -173,12 +173,16 @@ namespace libed2k
 #endif
         bool is_single_thread() const
         {
-/*#if defined BOOST_HAS_PTHREADS
+#if defined BOOST_HAS_PTHREADS
             if (m_thread == 0)
+            {
                 m_thread = pthread_self();
+                return true;
+            }
+
             return m_thread == pthread_self();
 #endif
-*/
+
             return true;
         }
 #endif

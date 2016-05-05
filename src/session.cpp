@@ -255,15 +255,12 @@ namespace libed2k
 
     void session::start_dht(entry const& startup_state/* = entry()*/)
     {
-        // the state is loaded in load_state()
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->start_dht(startup_state);
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::start_dht, m_impl, startup_state));
     }
 
     void session::stop_dht()
     {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->stop_dht();
+    	m_impl->m_io_service.post(boost::bind(&aux::session_impl::stop_dht, m_impl));
     }
 
     void session::set_dht_settings(dht_settings const& settings)
@@ -274,19 +271,16 @@ namespace libed2k
 
     void session::add_dht_node(std::pair<std::string, int> const& node)
     {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->add_dht_node_name(node);
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::add_dht_node_name, m_impl, node));
     }
 
     void session::add_dht_node(std::pair<std::string, int> const& node, const std::string& id) {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->add_dht_node(node, id);
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::add_dht_node, m_impl, node, id));
     }
 
     void session::add_dht_router(std::pair<std::string, int> const& node)
     {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        m_impl->add_dht_router(node);
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::add_dht_router, m_impl, node));
     }
 
     bool session::is_dht_running() const
