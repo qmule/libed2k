@@ -241,17 +241,9 @@ public:
     , size_type size
     , boost::function<void(std::vector<tcp::endpoint> const&)> f);
 
-	bool verify_token(std::string const& token, char const* info_hash
-		, udp::endpoint const& addr);
-
-	std::string generate_token(udp::endpoint const& addr, char const* info_hash);
-	
 	// the returned time is the delay until connection_timeout()
 	// should be called again the next time
 	time_duration connection_timeout();
-
-	// generates a new secret number used to generate write tokens
-	void new_write_key();
 
 	// pings the given node, and adds it to
 	// the routing table if it respons and if the
@@ -313,9 +305,6 @@ private:
 	dht_mutable_table_t m_mutable_table;
 	
 	ptime m_last_tracker_tick;
-
-	// secret random numbers used to create write tokens
-	int m_secret[2];
 
 	libed2k::alert_manager& m_alerts;
 	bool (*m_send)(void*, const udp_message&, udp::endpoint const&, int);

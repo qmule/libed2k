@@ -296,10 +296,6 @@ namespace libed2k { namespace dht
 		if (now - m_last_new_key > minutes(key_refresh))
 		{
 			m_last_new_key = now;
-			m_dht.new_write_key();
-#ifdef LIBED2K_DHT_VERBOSE_LOGGING
-			LIBED2K_LOG(dht_tracker) << " *** new write key";
-#endif
 		}
 		
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
@@ -618,7 +614,7 @@ namespace libed2k { namespace dht
             DBG("search res for " << p.target_id << " count " << p.results.m_collection.size());
             for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {
                 DBG("answer " << itr->hash);
-                itr->tags.dump();
+                //itr->tags.dump();
             }
 
             if (!p.results.m_collection.empty()) {
