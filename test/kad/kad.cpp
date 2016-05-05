@@ -281,7 +281,7 @@ int main(int argc, char* argv[]) {
                     libed2k::add_transfer_params params;
                     dht_keyword k = dht_keywords.at(index);
                     params.file_hash = k.id;
-                    params.file_path = std::string("./") + k.name;                    
+                    params.file_path = k.name;                    
                     params.file_size = k.size;
                     ses.add_transfer(params);
                     DBG("download " << k.name << " started");
