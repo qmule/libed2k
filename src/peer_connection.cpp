@@ -99,13 +99,13 @@ pending_block::pending_block(const piece_block& b, size_type fsize):
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
-                                 boost::weak_ptr<transfer> transfer,
+                                 boost::weak_ptr<transfer> t,
                                  boost::shared_ptr<tcp::socket> s,
                                  const ip::tcp::endpoint& remote, peer* peerinfo):
     base_connection(ses, s, remote),
     m_work(ses.m_io_service),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
-    m_transfer(transfer),
+    m_transfer(t),
     m_peer(peerinfo),
     m_connecting(true),
     m_active(true),

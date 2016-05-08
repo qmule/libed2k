@@ -279,4 +279,11 @@ BOOST_AUTO_TEST_CASE(multipiece_request_test) {
     BOOST_CHECK(mk_peer_requests(466928413, 466989853, 490106914) == res1);
 }
 
+BOOST_AUTO_TEST_CASE(test_shared_ptr) {
+    boost::shared_ptr<int> p(new int(1));
+    boost::weak_ptr<int> wp = p;
+    boost::shared_ptr<int> lp = wp.lock();
+    BOOST_CHECK(lp);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

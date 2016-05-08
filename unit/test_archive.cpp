@@ -737,6 +737,7 @@ BOOST_AUTO_TEST_CASE(test_emule_collection)
     BOOST_CHECK(ec == incoming_ec);
     incoming_ec = libed2k::emule_collection::fromFile("./binary_test.emulecollection");
     BOOST_CHECK(ec == incoming_ec);
+   
 }
 
 BOOST_AUTO_TEST_CASE(test_links_parsing)
