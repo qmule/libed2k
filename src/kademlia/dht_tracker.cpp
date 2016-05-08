@@ -747,6 +747,7 @@ namespace libed2k { namespace dht
 	
 	entry dht_tracker::state() const
 	{
+        // ? can be called from external thread
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 		entry ret(entry::dictionary_t);
 		{
@@ -769,6 +770,28 @@ namespace libed2k { namespace dht
 		ret["node-id"] = m_dht.nid().to_string();
 		return ret;
 	}
+
+    void add_kad_node_fun(void* userdata, node_entry const& e)
+    {
+        kad_state* ks = (kad_state*)userdata;
+        ks->entries.m_collection.push_back(kad_state_entry(address2int(e.ep().address()), e.ep().port(), e.id, e.timeout_count));
+    }
+
+    kad_state dht_tracker::estate() const
+    {
+        kad_state res;        
+        m_dht.m_table.for_each_node(&add_kad_node_fun, &add_kad_node_fun, &res);
+        bucket_t cache;
+        m_dht.replacement_cache(cache);
+        for (bucket_t::iterator i(cache.begin())
+            , end(cache.end()); i != end; ++i)
+        {
+            res.entries.m_collection.push_back(kad_state_entry(address2int(i->addr), i->port, i->id, i->timeout_count));            
+        }
+
+        res.self_id = m_dht.nid();
+        return res;
+    }
 
 	void dht_tracker::add_node(udp::endpoint node, node_id id)
 	{

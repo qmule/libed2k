@@ -1829,6 +1829,12 @@ void session_impl::set_external_address(address const& ip
         return m_dht->state();
     }
 
+    kad_state session_impl::dht_estate() const
+    {
+        if (!m_dht) return kad_state();
+        return m_dht->estate();
+    }
+
     void session_impl::add_dht_node_name(std::pair<std::string, int> const& node)
     {
         if (m_dht) m_dht->add_node(node);

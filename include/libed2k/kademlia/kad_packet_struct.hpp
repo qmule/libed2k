@@ -71,6 +71,39 @@ namespace libed2k {
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
+    /**
+      * more detailed analog of dht_tracker.state() from libtorrent
+      * useful for gui and possibly for disk storage
+      * 
+    */
+    struct kad_state_entry {
+        net_identifier  point;
+        kad_id          pid;
+        uint16_t        timeout_count;
+
+        kad_state_entry(client_id_type ip, uint16_t port, const kad_id& id, uint16_t tcount) {
+            point.m_nIP = ip;
+            point.m_nPort = port;
+            pid = id;
+            timeout_count = tcount;
+        }
+        
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & point &  id & timeout_count;
+        }
+    };
+
+    struct kad_state {
+        kad_id  self_id;
+        container_holder<uint16_t, std::deque<kad_state_entry> > entries;
+
+        template<typename Archive>
+        void serialize(Archive& ar) {
+            ar & self_id & entries;
+        }
+    };
+
     struct kad_net_identifier {
         client_id_type  address;
         uint16_t        udp_port;

@@ -299,6 +299,11 @@ namespace libed2k
         return m_impl->dht_state();
     }
 
+    kad_state session::dht_estate() {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->dht_estate();
+    }
+
 #endif
 
     int session::add_port_mapping(protocol_type t, int external_port, int local_port) {

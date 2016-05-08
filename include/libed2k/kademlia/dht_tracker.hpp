@@ -91,6 +91,7 @@ namespace libed2k { namespace dht
 		void add_router_node(udp::endpoint const& node);
 
 		entry state() const;
+        kad_state estate() const;
 
 		void announce(md4_hash const& ih, int listen_port
 			, boost::function<void(std::vector<tcp::endpoint> const&)> f);

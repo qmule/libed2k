@@ -12,6 +12,7 @@
 #include "libed2k/peer.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/filesystem.hpp"
 #include "libed2k/session_settings.hpp"
@@ -119,6 +120,7 @@ namespace libed2k {
         bool is_dht_running() const;
         void find_keyword(const std::string& keyword);
         entry dht_state();
+        kad_state dht_estate();
 #endif
 
         // add_port_mapping adds a port forwarding on UPnP and/or NAT-PMP,

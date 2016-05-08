@@ -369,6 +369,7 @@ namespace libed2k {
 #ifndef LIBED2K_DISABLE_DHT
             bool is_dht_running() const { return m_dht.get(); }
             entry dht_state() const;
+            kad_state dht_estate() const;
             void add_dht_node_name(std::pair<std::string, int> const& node);
             void add_dht_node(std::pair<std::string, int> const& node, const std::string& id);
             void add_dht_router(std::pair<std::string, int> const& node);
