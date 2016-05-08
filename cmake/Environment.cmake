@@ -23,6 +23,7 @@ if(NOT COMMAND find_host_package)
     find_package(${ARGN})
   endmacro()
 endif()
+
 if(NOT COMMAND find_host_program)
   macro(find_host_program)
     find_program(${ARGN})
@@ -32,20 +33,11 @@ endif()
 ## Boost libraries
 #set(Boost_USE_STATIC_RUNTIME OFF)
 set(Boost_USE_STATIC_LIBS ON)
-set(BOOST_LIBRARIES system thread random date_time)
+set(BOOST_LIBRARIES system thread random date_time regex)
 
 if (BUILD_TESTS)
         set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
 endif()
-
-file(MAKE_DIRECTORY ${out_dir})
-
-if(PRODUCTION)
-    set(out_dir "${out_dir}/release")
-else(DEFINED production)
-    set(out_dir "${out_dir}/debug")
-endif(PRODUCTION)
-
 
 include_directories(include)
 

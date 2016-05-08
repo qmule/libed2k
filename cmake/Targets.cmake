@@ -6,6 +6,8 @@ find_host_package(Boost 1.40 REQUIRED ${BOOST_LIBRARIES})
 include_directories(${Boost_INCLUDE_DIR} )
 link_directories(${Boost_LIBRARY_DIRS})
 
+file(MAKE_DIRECTORY ${out_dir})
+
 
 file(GLOB headers include/libed2k/*.hpp)
 file(GLOB headers_kad include/libed2k/kademlia/*.hpp)
@@ -22,6 +24,7 @@ add_library(ed2k STATIC ${headers} ${headers_kad} ${sources})
 endif()
 
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
+set_target_properties(ed2k PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${out_dir})
 set_target_properties(ed2k PROPERTIES LINK_FLAGS ${l_flags})
 set_target_properties(ed2k PROPERTIES COMPILE_FLAGS ${cxx_flags})
 
