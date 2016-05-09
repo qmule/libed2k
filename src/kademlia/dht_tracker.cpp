@@ -101,8 +101,6 @@ namespace
 namespace libed2k { namespace dht
 {
 
-	void incoming_error(entry& e, char const* msg);
-
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	int g_az_message_input = 0;
 	int g_ut_message_input = 0;
@@ -445,7 +443,9 @@ namespace libed2k { namespace dht
 
                 if (nRet != Z_OK)
                 {
-                    ERR("Unzip error: " << mz_error(nRet));
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+                    LIBED2K_LOG(dht_tracker) << "compressed packet unzip error " << mz_error(nRet);
+#endif                     
                     return;
                 }
 
@@ -478,207 +478,212 @@ namespace libed2k { namespace dht
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
         LIBED2K_LOG(dht_tracker) << kad2string(uh.m_type) << " <== " << ep.address();
 #endif
-        /**
-          * incoming requests
-        */
-        switch (uh.m_type) {
-        case KADEMLIA_BOOTSTRAP_REQ_DEPRECATED:
-        case KADEMLIA_HELLO_REQ_DEPRECATED:
-        case KADEMLIA_REQ_DEPRECATED: {
-            kademlia_req req;
-            ia >> req;
-            break;
-        }
-
-        case KADEMLIA_SEARCH_REQ:
-        case KADEMLIA_SEARCH_NOTES_REQ:
-        case KADEMLIA_PUBLISH_REQ:
-        case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED:
-            break;
-        case KADEMLIA_FIREWALLED_REQ: {
-            kad_firewalled_req p;
-            ia >> p;
-            m_dht.incoming_request(p, ep);
-            break;
-        }
-        case KADEMLIA_FINDBUDDY_REQ:
-            break;
-        case KADEMLIA_CALLBACK_REQ:
-            break;
-        case KADEMLIA2_BOOTSTRAP_REQ: {
-            kad2_bootstrap_req p;
-            ia >> p;
-            m_dht.incoming_request(p, ep);
-            break;
-        }
-        case KADEMLIA2_BOOTSTRAP_RES: {
-            kad2_bootstrap_res p;
-            ia >> p;
-            m_dht.incoming(p, ep);
-            break;
-        }
-        case KADEMLIA2_HELLO_REQ: {
-            kad2_hello_req p;
-            ia >> p;
-            m_dht.incoming_request(p, ep);
-            break;
-        }
-        case KADEMLIA2_HELLO_RES: {
-            kad2_hello_res p;
-            ia >> p;
-            m_dht.incoming(p, ep);
-            break;
-        }
-        case KADEMLIA2_REQ: {
-            kademlia2_req p;
-            ia >> p;
-            m_dht.incoming_request(p, ep);
-            break;
-        }
-        case KADEMLIA2_HELLO_RES_ACK: {
-            break;
-        }
-        case KADEMLIA2_RES: {
-            kademlia2_res p;
-            ia >> p;
-            m_dht.incoming(p, ep);
-            break;
-        }
-        case KADEMLIA2_SEARCH_KEY_REQ: {
-            break;
-        }
-        case KADEMLIA2_SEARCH_SOURCE_REQ: {
-            break;
-        }
-        case KADEMLIA2_SEARCH_NOTES_REQ: {
-            break;
-        }
-        case KADEMLIA2_SEARCH_RES: {
-            /*
-            Search types and tags:
-
-            File search:
-            uint8 uType = 0;
-            uint32 uIP = 0;
-            uint16 uTCPPort = 0;
-            uint16 uUDPPort = 0;
-            uint32 uBuddyIP = 0;
-            uint16 uBuddyPort = 0;
-            //uint32 uClientID = 0;
-            CUInt128 uBuddy;
-            uint8 byCryptOptions = 0; // 0 = not supported
-
-            for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
-            {
-            CKadTag* pTag = *itTagList;
-            if (!pTag->m_name.Compare(TAG_SOURCETYPE))
-            uType = (uint8)pTag->GetInt();
-            else if (!pTag->m_name.Compare(TAG_SOURCEIP))
-            uIP = (uint32)pTag->GetInt();
-            else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
-            uTCPPort = (uint16)pTag->GetInt();
-            else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
-            uUDPPort = (uint16)pTag->GetInt();
-            else if (!pTag->m_name.Compare(TAG_SERVERIP))
-            uBuddyIP = (uint32)pTag->GetInt();
-            else if (!pTag->m_name.Compare(TAG_SERVERPORT))
-            uBuddyPort = (uint16)pTag->GetInt();
-            //else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
-            //  uClientID = pTag->GetInt();
-            else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
-            {
-            uchar ucharBuddyHash[16];
-            if (pTag->IsStr() && strmd4(pTag->GetStr(), ucharBuddyHash))
-            md4cpy(uBuddy.GetDataPtr(), ucharBuddyHash);
-            else
-            TRACE("+++ Invalid TAG_BUDDYHASH tag\n");
+        try {
+            switch (uh.m_type) {
+            case KADEMLIA_BOOTSTRAP_REQ_DEPRECATED:
+            case KADEMLIA_HELLO_REQ_DEPRECATED:
+            case KADEMLIA_REQ_DEPRECATED: {
+                kademlia_req req;
+                ia >> req;
+                break;
             }
-          
-            Keywords search:
 
-            1488[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILENAME} {val: "Lady Gaga - Love Game.mp3"}
-            1489[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_FILESIZE} {val: 4560868}
-            1490[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_SOURCES} {val: 1}
-            1491[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILETYPE} {val: "Audio"}
-            1492[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_MEDIA_ALBUM} {val: "The Fame"}
-            1493[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_LENGTH} {val: 214}
-            1494[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_BITRATE} {val: 170}
-            1495[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_PUBLISHINFO} {val: 33686170}
-          
-            */
+            case KADEMLIA_SEARCH_REQ:
+            case KADEMLIA_SEARCH_NOTES_REQ:
+            case KADEMLIA_PUBLISH_REQ:
+            case KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED:
+                break;
+            case KADEMLIA_FIREWALLED_REQ: {
+                kad_firewalled_req p;
+                ia >> p;
+                m_dht.incoming_request(p, ep);
+                break;
+            }
+            case KADEMLIA_FINDBUDDY_REQ:
+                break;
+            case KADEMLIA_CALLBACK_REQ:
+                break;
+            case KADEMLIA2_BOOTSTRAP_REQ: {
+                kad2_bootstrap_req p;
+                ia >> p;
+                m_dht.incoming_request(p, ep);
+                break;
+            }
+            case KADEMLIA2_BOOTSTRAP_RES: {
+                kad2_bootstrap_res p;
+                ia >> p;
+                m_dht.incoming(p, ep);
+                break;
+            }
+            case KADEMLIA2_HELLO_REQ: {
+                kad2_hello_req p;
+                ia >> p;
+                m_dht.incoming_request(p, ep);
+                break;
+            }
+            case KADEMLIA2_HELLO_RES: {
+                kad2_hello_res p;
+                ia >> p;
+                m_dht.incoming(p, ep);
+                break;
+            }
+            case KADEMLIA2_REQ: {
+                kademlia2_req p;
+                ia >> p;
+                m_dht.incoming_request(p, ep);
+                break;
+            }
+            case KADEMLIA2_HELLO_RES_ACK: {
+                break;
+            }
+            case KADEMLIA2_RES: {
+                kademlia2_res p;
+                ia >> p;
+                m_dht.incoming(p, ep);
+                break;
+            }
+            case KADEMLIA2_SEARCH_KEY_REQ: {
+                break;
+            }
+            case KADEMLIA2_SEARCH_SOURCE_REQ: {
+                break;
+            }
+            case KADEMLIA2_SEARCH_NOTES_REQ: {
+                break;
+            }
+            case KADEMLIA2_SEARCH_RES: {
+                /*
+                Search types and tags:
 
+                File search:
+                uint8 uType = 0;
+                uint32 uIP = 0;
+                uint16 uTCPPort = 0;
+                uint16 uUDPPort = 0;
+                uint32 uBuddyIP = 0;
+                uint16 uBuddyPort = 0;
+                //uint32 uClientID = 0;
+                CUInt128 uBuddy;
+                uint8 byCryptOptions = 0; // 0 = not supported
 
-            kad2_search_res p;
-            DBG("start search res parsing");
-            ia >> p;
-            DBG("search res for " << p.target_id << " count " << p.results.m_collection.size());
-            for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {
-                DBG("answer " << itr->hash);
+                for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
+                {
+                CKadTag* pTag = *itTagList;
+                if (!pTag->m_name.Compare(TAG_SOURCETYPE))
+                uType = (uint8)pTag->GetInt();
+                else if (!pTag->m_name.Compare(TAG_SOURCEIP))
+                uIP = (uint32)pTag->GetInt();
+                else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
+                uTCPPort = (uint16)pTag->GetInt();
+                else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
+                uUDPPort = (uint16)pTag->GetInt();
+                else if (!pTag->m_name.Compare(TAG_SERVERIP))
+                uBuddyIP = (uint32)pTag->GetInt();
+                else if (!pTag->m_name.Compare(TAG_SERVERPORT))
+                uBuddyPort = (uint16)pTag->GetInt();
+                //else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
+                //  uClientID = pTag->GetInt();
+                else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
+                {
+                uchar ucharBuddyHash[16];
+                if (pTag->IsStr() && strmd4(pTag->GetStr(), ucharBuddyHash))
+                md4cpy(uBuddy.GetDataPtr(), ucharBuddyHash);
+                else
+                TRACE("+++ Invalid TAG_BUDDYHASH tag\n");
+                }
+
+                Keywords search:
+
+                1488[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILENAME} {val: "Lady Gaga - Love Game.mp3"}
+                1489[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_FILESIZE} {val: 4560868}
+                1490[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_SOURCES} {val: 1}
+                1491[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_FILETYPE} {val: "Audio"}
+                1492[dbg] {tag: TAGTYPE_STRING} {name: } {id: FT_MEDIA_ALBUM} {val: "The Fame"}
+                1493[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_LENGTH} {val: 214}
+                1494[dbg] {tag: TAGTYPE_UINT8} {name: } {id: FT_MEDIA_BITRATE} {val: 170}
+                1495[dbg] {tag: TAGTYPE_UINT32} {name: } {id: FT_PUBLISHINFO} {val: 33686170}
+
+                */
+
+                kad2_search_res p;                
+                ia >> p;                
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+                LIBED2K_LOG(dht_tracker) << "search res incoming for{" << p.target_id << "} results count{" << p.results.m_collection.size() << "}";
+#endif
+                //for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {                    
                 //itr->tags.dump();
-            }
+                //}
 
-            if (!p.results.m_collection.empty()) {
-                // probe result type
-                if (p.results.m_collection.front().tags.getTagByNameId(TAG_SOURCETYPE)) {
-                    // sources answer
-                    for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {
-                        md4_hash h = p.target_id;
-                        m_ses.on_find_dht_source(h
-                            , itr->tags.getIntTagByNameId(TAG_SOURCETYPE)
-                            , ntohl(itr->tags.getIntTagByNameId(TAG_SOURCEIP))
-                            , itr->tags.getIntTagByNameId(TAG_SOURCEPORT)
-                            , itr->tags.getIntTagByNameId(TAG_CLIENTLOWID));
+                if (!p.results.m_collection.empty()) {
+                    // probe result type
+                    if (p.results.m_collection.front().tags.getTagByNameId(TAG_SOURCETYPE)) {
+                        // sources answer
+                        for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {
+                            md4_hash h = p.target_id;
+                            m_ses.on_find_dht_source(h
+                                , itr->tags.getIntTagByNameId(TAG_SOURCETYPE)
+                                , ntohl(itr->tags.getIntTagByNameId(TAG_SOURCEIP))
+                                , itr->tags.getIntTagByNameId(TAG_SOURCEPORT)
+                                , itr->tags.getIntTagByNameId(TAG_CLIENTLOWID));
+                        }
+                    }
+                    else {
+                        // now it is always keywords result
+                        m_ses.on_find_dht_keyword(p.target_id, p.results.m_collection);
                     }
                 }
-                else {
-                    // now it is always keywords result
-                    m_ses.on_find_dht_keyword(p.target_id, p.results.m_collection);
-                }
+                break;
             }
-            break;
-        }
-        case KADEMLIA2_PUBLISH_KEY_REQ: {
-            break;
-        }
-        case KADEMLIA2_PUBLISH_SOURCE_REQ: {
+            case KADEMLIA2_PUBLISH_KEY_REQ: {
+                break;
+            }
+            case KADEMLIA2_PUBLISH_SOURCE_REQ: {
 
-            break;
-        }
-        case KADEMLIA2_PUBLISH_NOTES_REQ: {
-            break;
-        }
-        case KADEMLIA2_PUBLISH_RES: {
-            break;
-        }
-        case KADEMLIA2_PUBLISH_RES_ACK: {
-            break;
-        }
-        case KADEMLIA_FIREWALLED2_REQ: {
-            break;
-        }
-        case KADEMLIA2_PING: {
-            kad2_ping p;
-            ia >> p;
-            m_dht.incoming_request(p, ep);
-            break;
-        }
-        case KADEMLIA2_PONG: {
-            kad2_pong p;
-            ia >> p;
-            m_dht.incoming(p, ep);
-            break;
-        }
+                break;
+            }
+            case KADEMLIA2_PUBLISH_NOTES_REQ: {
+                break;
+            }
+            case KADEMLIA2_PUBLISH_RES: {
+                break;
+            }
+            case KADEMLIA2_PUBLISH_RES_ACK: {
+                break;
+            }
+            case KADEMLIA_FIREWALLED2_REQ: {
+                break;
+            }
+            case KADEMLIA2_PING: {
+                kad2_ping p;
+                ia >> p;
+                m_dht.incoming_request(p, ep);
+                break;
+            }
+            case KADEMLIA2_PONG: {
+                kad2_pong p;
+                ia >> p;
+                m_dht.incoming(p, ep);
+                break;
+            }
 
-        case KADEMLIA2_FIREWALLUDP: {
-            break;
-        }
-        default: {
+            case KADEMLIA2_FIREWALLUDP: {
+                break;
+            }
+            default: {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
-            LIBED2K_LOG(dht_tracker) << "not handled packet type " << uh.m_type << " <<< " << ep.address();
+                LIBED2K_LOG(dht_tracker) << "not handled packet type " << uh.m_type << " <<< " << ep.address();
 #endif
-            break;
+                break;
+            }
+            };
         }
-        };
+        catch (const libed2k_exception& e) {
+#ifdef LIBED2K_DHT_VERBOSE_LOGGING
+            LIBED2K_LOG(dht_tracker) << " udp packet parse error " << e.what();
+#endif
+            return;
+        }
+
 
 		// account for IP and UDP overhead
 		m_received_bytes += bytes_transferred + (ep.address().is_v6() ? 48 : 28);

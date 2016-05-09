@@ -1,3 +1,4 @@
+#ifndef LIBED2K_DISABLE_DHT
 #ifndef WIN32
 #define BOOST_TEST_DYN_LINK
 #endif
@@ -21,7 +22,6 @@
 #include "common.hpp"
 
 BOOST_AUTO_TEST_SUITE(test_kad)
-
 BOOST_AUTO_TEST_CASE(test_kad_support_methods) {
     libed2k::md4_hash hash = libed2k::md4_hash::fromString("1AA8AFE3018B38D9B4D880D0683CCEB5");
     size_t i = 0;
@@ -90,5 +90,16 @@ BOOST_AUTO_TEST_CASE(test_instantiation) {
     kad_nodes_dat knd;
 }
 
+BOOST_AUTO_TEST_CASE(test_kad_tolerance) {
+    using libed2k::md4_hash;
+    using libed2k::kad_id;
+    kad_id tolerance(md4_hash::fromString("00000000000000000000000001000000"));
+    BOOST_CHECK_EQUAL(0, libed2k::dht::distance_exp(md4_hash::invalid, md4_hash::invalid));
+    BOOST_CHECK_EQUAL(0, libed2k::dht::distance_exp(md4_hash::emule, md4_hash::emule));
+    BOOST_CHECK_EQUAL(KADEMLIA_TOLERANCE_ZONE, libed2k::dht::distance_exp(tolerance, md4_hash::invalid));
+}
+
+
 BOOST_AUTO_TEST_SUITE_END()
+#endif
 

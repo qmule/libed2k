@@ -121,13 +121,4 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_kad_tolerance) {
-    using libed2k::md4_hash;
-    using libed2k::kad_id;
-    kad_id tolerance(md4_hash::fromString("00000000000000000000000001000000"));
-    BOOST_CHECK_EQUAL(0, libed2k::dht::distance_exp(md4_hash::invalid, md4_hash::invalid));
-    BOOST_CHECK_EQUAL(0, libed2k::dht::distance_exp(md4_hash::emule, md4_hash::emule));
-    BOOST_CHECK_EQUAL(KADEMLIA_TOLERANCE_ZONE, libed2k::dht::distance_exp(tolerance, md4_hash::invalid));
-}
-
 BOOST_AUTO_TEST_SUITE_END()

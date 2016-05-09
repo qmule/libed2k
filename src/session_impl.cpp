@@ -1144,7 +1144,9 @@ void session_impl::abort()
 
     stop_upnp();
     stop_natpmp();
+#ifndef LIBED2K_DISABLE_DHT
     stop_dht();
+#endif
 
     DBG("aborting all transfers (" << m_transfers.size() << ")");
     // abort all transfers

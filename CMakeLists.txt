@@ -11,8 +11,9 @@ option (PRODUCTION  "Build project in production mode." FALSE)
 option (BUILD_TESTS "Build unit tests." TRUE)
 option (BUILD_TOOLS "Build tools." TRUE)
 option (BUILD_SHARED "Build shared library." FALSE)
-
-add_definitions(-DLIBED2K_UPNP_LOGGING=1)
+option (DISABLE_DHT "Enable KAD support" FALSE)
+option (UPNP_VERBOSE "Verbose output for UPnP" FALSE)
+option (DHT_VERBOSE "Verbose output for DHT" FALSE)
 
 include(cmake/Environment.cmake)
 include(cmake/Linux.cmake)
