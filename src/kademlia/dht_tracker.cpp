@@ -380,14 +380,14 @@ namespace libed2k { namespace dht
 	}
 
 	void dht_tracker::announce(md4_hash const& ih, int listen_port
-		, boost::function<void(std::vector<tcp::endpoint> const&)> f)
+		, boost::function<void(kad_id const&)> f)
 	{
 		LIBED2K_ASSERT(m_ses.is_network_thread());
 		m_dht.announce(ih, listen_port, f);
 	}
 
   void dht_tracker::search_keywords(const md4_hash& ih, int listen_port
-    , boost::function<void(std::vector<tcp::endpoint> const&)> f) {
+    , boost::function<void(kad_id const&)> f) {
     LIBED2K_ASSERT(m_ses.is_network_thread());
     m_dht.search_keywords(ih, listen_port, f);
   }
@@ -395,7 +395,7 @@ namespace libed2k { namespace dht
   void dht_tracker::search_sources(const md4_hash& ih
     , int listen_port
     , size_type size
-    , boost::function<void(std::vector<tcp::endpoint> const&)> f) {
+    , boost::function<void(kad_id const&)> f) {
     LIBED2K_ASSERT(m_ses.is_network_thread());
     m_dht.search_sources(ih, listen_port, size, f);
   }

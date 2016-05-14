@@ -286,6 +286,8 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
         LIBED2K_ASSERT(*i);
         if ((*i)->transaction_id() != transaction_identifier<T>::id || 
           (*i)->target_addr() != target.address()) continue;
+        kad_id packet_id = packet_kad_identifier(t);
+        if (packet_id != (*i)->packet_id()) continue;
         o = *i;
         m_transactions.erase(i);
         break;
@@ -478,6 +480,11 @@ void rpc_manager::append_data<kad2_hello_req>(kad2_hello_req& t) const {
 }
 
 template void rpc_manager::append_data<kad2_ping>(kad2_ping& t) const;
+
+template<>
+kad_id rpc_manager::packet_kad_identifier<kademlia2_res>(const kademlia2_res& t) const {
+    return t.kid_target;
+}
 
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 template<typename T>

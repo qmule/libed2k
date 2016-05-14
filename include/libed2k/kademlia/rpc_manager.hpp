@@ -101,6 +101,17 @@ public:
     template<typename T>
     void append_data(T& t) const;
 
+    /**
+      * returns packet kad identifier for separate different transaction to the same endpoint and transaction id
+      * currently uses only for pair of packets kademlia2_req <-> kademlia2_res
+      * kademlia2_req target identifier writes to observer and id extractes from kademlia2_res for additional verification
+      * for all other packets return default equal kad id
+    */
+    template<typename T>
+    kad_id packet_kad_identifier(const T& t) const {
+        return kad_id();
+    }
+
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     template<typename T>
     std::string request_name(const T& t) const;

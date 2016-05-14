@@ -257,7 +257,7 @@ void node_impl::add_node(udp::endpoint node, node_id id)
 }
 
 void node_impl::announce(node_id const& info_hash, int listen_port
-	, boost::function<void(std::vector<tcp::endpoint> const&)> f)
+	, boost::function<void(kad_id const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
 	LIBED2K_LOG(node) << "announcing [ ih: " << info_hash << " p: " << listen_port << " ]" ;
@@ -271,7 +271,7 @@ void node_impl::announce(node_id const& info_hash, int listen_port
 }
 
 void node_impl::search_keywords(node_id const& info_hash, int listen_port
-  , boost::function<void(std::vector<tcp::endpoint> const&)> f)
+  , boost::function<void(kad_id const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(node) << "search keywords [ ih: " << info_hash << " p: " << listen_port << " ]";
@@ -287,7 +287,7 @@ void node_impl::search_keywords(node_id const& info_hash, int listen_port
 void node_impl::search_sources(node_id const& info_hash
   , int listen_port
   , size_type size
-  , boost::function<void(std::vector<tcp::endpoint> const&)> f)
+  , boost::function<void(kad_id const&)> f)
 {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
     LIBED2K_LOG(node) << "search sources [ ih: " << info_hash << " p: " << listen_port << " ]";

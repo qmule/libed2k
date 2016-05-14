@@ -296,7 +296,9 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    save_dht_state(ses.dht_state());
+    // avoid assert on save empty entry
+    libed2k::entry e = ses.dht_state();
+    if (e.type() == libed2k::entry::dictionary_t) save_dht_state(ses.dht_state());
 
     // cancel background operations and wait
     io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));

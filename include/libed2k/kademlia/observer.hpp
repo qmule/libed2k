@@ -118,6 +118,7 @@ struct observer : boost::noncopyable
 
 	void set_id(node_id const& id) { m_id = id; }
 	node_id const& id() const { return m_id; }
+    node_id const& packet_id() const { return m_packet_id; }
 
 	void set_transaction_id(boost::uint16_t tid)
 	{ m_transaction_id = tid; }
@@ -150,6 +151,7 @@ protected:
 	const boost::intrusive_ptr<traversal_algorithm> m_algorithm;
 
 	node_id m_id;
+    node_id m_packet_id; // to identify pair kademlia2_req <-> kademlia2_res in concurrent requests
 
 	LIBED2K_UNION addr_t
 	{

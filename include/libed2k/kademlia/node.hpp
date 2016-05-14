@@ -231,15 +231,15 @@ public:
 #endif
 
 	void announce(node_id const& info_hash, int listen_port
-		, boost::function<void(std::vector<tcp::endpoint> const&)> f);
+		, boost::function<void(kad_id const&)> f);
 
   void search_keywords(node_id const& info_hash, int listen_port
-    , boost::function<void(std::vector<tcp::endpoint> const&)> f);
+    , boost::function<void(kad_id const&)> f);
 
   void search_sources(node_id const& info_hash
     , int listen_port
     , size_type size
-    , boost::function<void(std::vector<tcp::endpoint> const&)> f);
+    , boost::function<void(kad_id const&)> f);
 
 	// the returned time is the delay until connection_timeout()
 	// should be called again the next time

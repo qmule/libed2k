@@ -46,9 +46,13 @@ message(STATUS "PRODUCTION      = ${PRODUCTION}")
 message(STATUS "BUILD_TESTS     = ${BUILD_TESTS}")
 message(STATUS "BUILD_TOOLS     = ${BUILD_TOOLS}")
 message(STATUS "BUILD_SHARED    = ${BUILD_SHARED}")
+
 if (DISABLE_DHT)
 	message(STATUS "DHT	= disabled")
 else()
 	message(STATUS "DHT	= enabled")
+	message(STATUS "DHT_VERBOSE	= ${DHT_VERBOSE}")
 endif()
+
+message(STATUS "UPNP_VERBOSE	= ${UPNP_VERBOSE}")
 

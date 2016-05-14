@@ -1886,18 +1886,22 @@ void session_impl::set_external_address(address const& ip
     void session_impl::find_keyword(const std::string& keyword) {
         if (m_dht) m_dht->search_keywords(hasher::from_string(keyword)
             , listen_port()
-            , boost::bind(&session_impl::on_find_result, this, _1));
+            , boost::bind(&session_impl::on_traverse_completed, this, _1));
     }
 
     void session_impl::find_sources(const md4_hash& hash, size_type size) {
       if (m_dht) m_dht->search_sources(hash
         , listen_port()
         , size
-        , boost::bind(&session_impl::on_find_result, this, _1));
+        , boost::bind(&session_impl::on_traverse_completed, this, _1));
     }
 
     void session_impl::on_find_result(std::vector<tcp::endpoint> const& peers) {
 
+    }
+
+    void session_impl::on_traverse_completed(const kad_id& id) {
+        DBG("traverse for " << id << " completed");
     }
 
     void session_impl::on_find_dht_source(const md4_hash& hash

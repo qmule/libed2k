@@ -200,18 +200,13 @@ bool find_data::invoke(observer_ptr o)
 		return false;
 	}
 
-    //find peers request
+    // send request to find closer nodes
     kademlia2_req req;
     req.kid_receiver = o->id();
     req.kid_target = m_target;
     req.search_type = m_search_type;
+    o->m_packet_id = m_target; // bind observer to correspond packet
     return m_node.m_rpc.invoke(req, o->target_ep(), o);
-}
-
-void find_data::got_peers(std::vector<tcp::endpoint> const& peers)
-{
-	if (!peers.empty()) m_got_peers = true;
-	m_data_callback(peers);
 }
 
 void find_data::done()
@@ -244,7 +239,7 @@ void find_data::done()
 	}
 
 	m_nodes_callback(results, m_got_peers);
-
+    if (!m_data_callback.empty()) m_data_callback(m_target);
 	traversal_algorithm::done();
 }
 

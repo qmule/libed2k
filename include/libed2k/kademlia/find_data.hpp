@@ -61,12 +61,8 @@ class node_impl;
 class find_data : public traversal_algorithm
 {
 public:
-	typedef boost::function<void(std::vector<tcp::endpoint> const&)> data_callback;
+	typedef boost::function<void(kad_id const&)> data_callback;
 	typedef boost::function<void(std::vector<std::pair<node_entry, std::string> > const&, bool)> nodes_callback;
-
-	void got_peers(std::vector<tcp::endpoint> const& peers);
-	void got_write_token(node_id const& n, std::string const& write_token)
-	{ m_write_tokens[n] = write_token; }
 
 	find_data(node_impl& node, node_id target
 		, data_callback const& dcallback
@@ -87,7 +83,6 @@ private:
 
 	data_callback m_data_callback;
 	nodes_callback m_nodes_callback;
-	std::map<node_id, std::string> m_write_tokens;
 	node_id const m_target;
     node_id const m_id;
 	bool m_done:1;

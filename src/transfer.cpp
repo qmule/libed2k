@@ -1871,19 +1871,19 @@ namespace libed2k
 
         boost::weak_ptr<transfer> self(shared_from_this());
 
-        m_ses.m_dht->announce(hash()
-            , port
-            , boost::bind(&transfer::on_dht_announce_response_disp, self, _1));
+        //m_ses.m_dht->announce(hash()
+        //    , port
+        //    , boost::bind(&transfer::on_dht_announce_response_disp, self, _1));
     }
 
     // static
-    void transfer::on_dht_announce_response_disp(boost::weak_ptr<transfer> t
-        , std::vector<tcp::endpoint> const& peers)
-    {
-        boost::shared_ptr<transfer> tor = t.lock();
-        if (!tor) return;
-        tor->on_dht_announce_response(peers);
-    }
+    //void transfer::on_dht_announce_response_disp(boost::weak_ptr<transfer> t
+    //    , kad_id const& id)
+    //{
+        //boost::shared_ptr<transfer> tor = t.lock();
+        //if (!tor) return;
+        //tor->on_dht_announce_response(peers);
+    //}
 
     void transfer::on_dht_announce_response(std::vector<tcp::endpoint> const& peers)
     {

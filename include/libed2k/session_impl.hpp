@@ -396,6 +396,12 @@ namespace libed2k {
             void find_sources(const md4_hash& hash, size_type size);
 
             void on_find_result(std::vector<tcp::endpoint> const& peers);
+
+            /*
+             * called when traverse for id completed
+             *
+            */
+            void on_traverse_completed(const kad_id& id);
             void on_find_dht_source(const md4_hash& hash, uint8_t type, client_id_type ip, uint16_t port, client_id_type low_id);
             void on_find_dht_keyword(const md4_hash& h, const std::deque<kad_info_entry>&);
 #endif

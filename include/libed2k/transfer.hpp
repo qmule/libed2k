@@ -302,8 +302,8 @@ namespace libed2k
 #ifndef LIBED2K_DISABLE_DHT
         bool should_announce_dht() const;
         void dht_announce();
-        static void on_dht_announce_response_disp(boost::weak_ptr<transfer> t
-                , std::vector<tcp::endpoint> const& peers);
+        //static void on_dht_announce_response_disp(boost::weak_ptr<transfer> t
+        //        , kad_id const& id);
         void on_dht_announce_response(std::vector<tcp::endpoint> const& peers);
 #endif
 
