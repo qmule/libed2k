@@ -1884,16 +1884,29 @@ void session_impl::set_external_address(address const& ip
     }
 
     void session_impl::find_keyword(const std::string& keyword) {
-        if (m_dht) m_dht->search_keywords(hasher::from_string(keyword)
-            , listen_port()
-            , boost::bind(&session_impl::on_traverse_completed, this, _1));
+        md4_hash target = hasher::from_string(keyword);
+        if (m_active_dht_requests.find(target) == m_active_dht_requests.end()) {
+            m_active_dht_requests.insert(target);
+            if (m_dht) m_dht->search_keywords(target
+                , listen_port()
+                , boost::bind(&session_impl::on_traverse_completed, this, _1));
+        }
+        else {
+            DBG("dht search keyword request before previous finished " << keyword << " hash " << target);
+        }
     }
 
     void session_impl::find_sources(const md4_hash& hash, size_type size) {
-      if (m_dht) m_dht->search_sources(hash
-        , listen_port()
-        , size
-        , boost::bind(&session_impl::on_traverse_completed, this, _1));
+        if (m_active_dht_requests.find(hash) == m_active_dht_requests.end()) {
+            m_active_dht_requests.insert(hash);
+            if (m_dht) m_dht->search_sources(hash
+                , listen_port()
+                , size
+                , boost::bind(&session_impl::on_traverse_completed, this, _1));
+        }
+        else {
+            DBG("dht search sources request before previous finished hash " << hash);
+        }
     }
 
     void session_impl::on_find_result(std::vector<tcp::endpoint> const& peers) {
@@ -1902,6 +1915,8 @@ void session_impl::set_external_address(address const& ip
 
     void session_impl::on_traverse_completed(const kad_id& id) {
         DBG("traverse for " << id << " completed");
+        size_t n = m_active_dht_requests.erase(id);
+        LIBED2K_ASSERT(n == 1u);
     }
 
     void session_impl::on_find_dht_source(const md4_hash& hash

@@ -404,6 +404,8 @@ namespace libed2k {
             void on_traverse_completed(const kad_id& id);
             void on_find_dht_source(const md4_hash& hash, uint8_t type, client_id_type ip, uint16_t port, client_id_type low_id);
             void on_find_dht_keyword(const md4_hash& h, const std::deque<kad_info_entry>&);
+
+            std::set<md4_hash>    m_active_dht_requests;
 #endif
 
             // when as a socks proxy is used for peers, also
@@ -544,7 +546,7 @@ namespace libed2k {
 
             // the main working thread
             // !!! should be last in the member list
-            boost::scoped_ptr<boost::thread> m_thread;
+            boost::scoped_ptr<boost::thread> m_thread;            
         };
     }
 }
