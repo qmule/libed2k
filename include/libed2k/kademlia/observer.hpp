@@ -88,11 +88,11 @@ struct observer : boost::noncopyable
 
 	virtual ~observer();
 
-    // this is called when a reply is received 
-    virtual void reply(const kad2_pong&, udp::endpoint ep) = 0;
-    virtual void reply(const kad2_hello_res&, udp::endpoint ep) = 0;
+        // this is called when a reply is received 
+        virtual void reply(const kad2_pong&, udp::endpoint ep) = 0;
+        virtual void reply(const kad2_hello_res&, udp::endpoint ep) = 0;
 	virtual void reply(const kad2_bootstrap_res&, udp::endpoint ep) = 0;
-    virtual void reply(const kademlia2_res&, udp::endpoint ep) = 0;    
+        virtual void reply(const kademlia2_res&, udp::endpoint ep) = 0;    
 
 	// this is called if no response has been received after
 	// a few seconds, before the request has timed out
@@ -118,7 +118,7 @@ struct observer : boost::noncopyable
 
 	void set_id(node_id const& id) { m_id = id; }
 	node_id const& id() const { return m_id; }
-    node_id const& packet_id() const { return m_packet_id; }
+        node_id const& packet_id() const { return m_packet_id; }
 
 	void set_transaction_id(boost::uint16_t tid)
 	{ m_transaction_id = tid; }
@@ -137,6 +137,7 @@ struct observer : boost::noncopyable
 		flag_done = 128
 	};
 
+        node_id m_packet_id; // to identify pair kademlia2_req <-> kademlia2_res in concurrent requests
 #ifndef LIBED2K_DHT_VERBOSE_LOGGING
 protected:
 #endif
@@ -150,8 +151,7 @@ protected:
 
 	const boost::intrusive_ptr<traversal_algorithm> m_algorithm;
 
-	node_id m_id;
-    node_id m_packet_id; // to identify pair kademlia2_req <-> kademlia2_res in concurrent requests
+	node_id m_id;        
 
 	LIBED2K_UNION addr_t
 	{
