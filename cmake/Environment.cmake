@@ -33,7 +33,7 @@ endif()
 ## Boost libraries
 #set(Boost_USE_STATIC_RUNTIME OFF)
 set(Boost_USE_STATIC_LIBS ON)
-set(BOOST_LIBRARIES system thread random date_time regex)
+set(BOOST_LIBRARIES system thread random date_time)
 
 if (BUILD_TESTS)
         set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)

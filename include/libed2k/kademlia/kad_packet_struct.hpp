@@ -90,7 +90,7 @@ namespace libed2k {
         
         template<typename Archive>
         void serialize(Archive& ar) {
-            ar & point &  id & timeout_count;
+            ar & point &  pid & timeout_count;
         }
     };
 
