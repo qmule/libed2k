@@ -1615,23 +1615,32 @@ void session_impl::start_upnp()
 
 void session_impl::stop_natpmp()
 {
-    if (m_natpmp.get())
+    if (m_natpmp)
+    {
         m_natpmp->close();
-    m_natpmp = 0;
+        m_udp_mapping[0] = -1;
+        m_tcp_mapping[0] = -1;
+#ifdef LIBED2K_USE_OPENSSL
+        m_ssl_tcp_mapping[0] = -1;
+        m_ssl_udp_mapping[0] = -1;
+#endif
+    }
+    m_natpmp.reset();
 }
 
 void session_impl::stop_upnp()
 {
-    if (m_upnp.get())
+    if (m_upnp)
     {
         m_upnp->close();
         m_udp_mapping[1] = -1;
         m_tcp_mapping[1] = -1;
 #ifdef LIBED2K_USE_OPENSSL
-        m_ssl_mapping[1] = -1;
+        m_ssl_tcp_mapping[1] = -1;
+        m_ssl_udp_mapping[1] = -1;
 #endif
     }
-    m_upnp = 0;
+    m_upnp.reset();
 }
 
 int session_impl::add_port_mapping(int t, int external_port
@@ -1653,7 +1662,7 @@ void session_impl::delete_port_mapping(int handle)
 
 void session_impl::remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_port)
 {
-    if ((mask & 1) && m_natpmp.get())
+    if ((mask & 1) && m_natpmp)
     {
         if (m_tcp_mapping[0] != -1) m_natpmp->delete_mapping(m_tcp_mapping[0]);
         m_tcp_mapping[0] = m_natpmp->add_mapping(natpmp::tcp, tcp_port, tcp_port);
@@ -1662,7 +1671,7 @@ void session_impl::remap_tcp_ports(boost::uint32_t mask, int tcp_port, int ssl_p
         m_ssl_mapping[0] = m_natpmp->add_mapping(natpmp::tcp, ssl_port, ssl_port);
 #endif
     }
-    if ((mask & 2) && m_upnp.get())
+    if ((mask & 2) && m_upnp)
     {
         if (m_tcp_mapping[1] != -1) m_upnp->delete_mapping(m_tcp_mapping[1]);
         m_tcp_mapping[1] = m_upnp->add_mapping(upnp::tcp, tcp_port, tcp_port);
