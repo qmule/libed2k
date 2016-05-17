@@ -325,7 +325,7 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.flags = 0;
     p.flags |= is_seed() ? peer_info::seed : 0;
 
-    p.source = 0;
+    p.source = m_peer?m_peer->source:peer_info::incoming;
     p.failcount = 0;
     p.num_hashfails = 0;
     p.inet_as = 0xffff;
