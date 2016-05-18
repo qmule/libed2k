@@ -104,6 +104,7 @@ namespace libed2k
             , m_show_shared_catalogs(true)
             , m_show_shared_files(true)
             , user_agent(md4_hash::emule)
+            , user_agent_str(md4_hash::emule.toString())
             , ignore_resume_timestamps(false)
             , no_recheck_incomplete_resume(false)
             , seeding_outgoing_connections(false)
@@ -294,6 +295,7 @@ namespace libed2k
         bool m_show_shared_catalogs;    //!< show shared catalogs to client
         bool m_show_shared_files;       //!< show shared files to client
         md4_hash user_agent;            //!< ed2k client hash - user agent information
+        std::string user_agent_str;
 
         //!< known.met file
         std::string m_known_file;
