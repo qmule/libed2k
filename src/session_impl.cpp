@@ -1592,7 +1592,7 @@ void session_impl::start_upnp()
     // the upnp constructor may fail and call the callbacks
     upnp* u = new (std::nothrow) upnp(
         m_io_service, m_half_open,
-        m_listen_interface.address(), m_settings.user_agent.toString(),
+        m_listen_interface.address(), m_settings.user_agent_str,
         boost::bind(&session_impl::on_port_mapping, this, _1, _2, _3, _4, 1),
         boost::bind(&session_impl::on_port_map_log, this, _1, 1),
         m_settings.upnp_ignore_nonrouters);

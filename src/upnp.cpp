@@ -596,7 +596,7 @@ void upnp::create_port_mapping(http_connection& c, rootdevice& d, int i)
     char const* soap_action = "AddPortMapping";
 
     std::string local_endpoint = print_address(c.socket().local_endpoint(ec).address());
-    /*
+    
     char soap[2048];
     error_code ec;
     snprintf(soap, sizeof(soap) - 1,
@@ -618,24 +618,8 @@ void upnp::create_port_mapping(http_connection& c, rootdevice& d, int i)
              d.mapping[i].local_port,
              local_endpoint.c_str(),
              m_user_agent.c_str(), local_endpoint.c_str(), d.mapping[i].local_port,
-             d.lease_duration, soap_action);*/
-
-    std::stringstream ss;
-    ss << "<?xml version=\"1.0\"?>\n"
-        << "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" "
-        << "s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
-        << "<s:Body><u:" << soap_action << " xmlns:u=\"" << d.service_namespace << "\">"
-        << "<NewRemoteHost></NewRemoteHost>"
-        << "<NewExternalPort>" << d.mapping[i].external_port << "</NewExternalPort>"
-        << "<NewProtocol>" << (d.mapping[i].protocol == udp ? "UDP" : "TCP") << "</NewProtocol>"
-        << "<NewInternalPort>" << d.mapping[i].local_port << "</NewInternalPort>"
-        << "<NewInternalClient>" << local_endpoint << "</NewInternalClient>"
-        << "<NewEnabled>1</NewEnabled>"
-        << "<NewPortMappingDescription>" << m_user_agent << " at " << local_endpoint << ":" << d.mapping[i].local_port << "</NewPortMappingDescription>"
-        << "<NewLeaseDuration>" << d.lease_duration << "</NewLeaseDuration>"
-        << "</u:" << soap_action << "></s:Body></s:Envelope>",
-
-    post(d, ss.str().c_str(), soap_action, l);
+             d.lease_duration, soap_action);
+        post(d, soap, soap_action, l);
 }
 
 void upnp::next(rootdevice& d, int i, mutex::scoped_lock& l)
