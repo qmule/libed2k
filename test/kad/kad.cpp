@@ -47,123 +47,6 @@ struct dht_keyword {
 
 std::deque<dht_keyword> dht_keywords;
 
-void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
-{
-    if (ec == boost::asio::error::operation_aborted)
-    {
-        return;
-    }
-
-    std::auto_ptr<alert> a = ps->pop_alert();
-
-    while(a.get())
-    {
-        if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
-        {
-            server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
-            DBG("ALERT:  " << "server initalized: cid: " << p->client_id);
-        }
-        else if (dynamic_cast<server_name_resolved_alert*>(a.get()))
-        {
-            DBG("ALERT: server name was resolved: " << dynamic_cast<server_name_resolved_alert*>(a.get())->endpoint);
-        }
-        else if (dynamic_cast<server_status_alert*>(a.get()))
-        {
-            server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
-            DBG("ALERT: server status: files count: " << p->files_count << " users count " << p->users_count);
-        }
-        else if (dynamic_cast<server_message_alert*>(a.get()))
-        {
-            server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
-            DBG("ALERT: " << "msg: " << p->server_message);
-        }
-        else if (dynamic_cast<server_identity_alert*>(a.get()))
-        {
-            server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
-            DBG("ALERT: server_identity_alert: " << p->server_hash << " name:  " << p->server_name << " descr: " << p->server_descr);
-        }
-        else if (shared_files_alert* p = dynamic_cast<shared_files_alert*>(a.get()))
-        {           
-            DBG("ALERT: RESULT: " << p->m_files.m_collection.size());
- 
-        }
-        else if(dynamic_cast<peer_message_alert*>(a.get()))
-        {
-            peer_message_alert* p = dynamic_cast<peer_message_alert*>(a.get());
-            DBG("ALERT: MSG: ADDR: " << int2ipstr(p->m_np.m_nIP) << " MSG " << p->m_strMessage);
-        }
-        else if (peer_disconnected_alert* p = dynamic_cast<peer_disconnected_alert*>(a.get()))
-        {
-            DBG("ALERT: peer disconnected: " << libed2k::int2ipstr(p->m_np.m_nIP));
-        }
-        else if (peer_captcha_request_alert* p = dynamic_cast<peer_captcha_request_alert*>(a.get()))
-        {
-            DBG("ALERT: captcha request ");
-            FILE* fp = fopen("./captcha.bmp", "wb");
-
-            if (fp)
-            {
-                fwrite(&p->m_captcha[0], 1, p->m_captcha.size(), fp);
-                fclose(fp);
-            }
-
-        }
-        else if (peer_captcha_result_alert* p = dynamic_cast<peer_captcha_result_alert*>(a.get()))
-        {
-            DBG("ALERT: captcha result " << p->m_nResult);
-        }
-        else if (peer_connected_alert* p = dynamic_cast<peer_connected_alert*>(a.get()))
-        {
-            DBG("ALERT: peer connected: " << int2ipstr(p->m_np.m_nIP) << " status: " << p->m_active);
-        }
-        else if (shared_files_access_denied* p = dynamic_cast<shared_files_access_denied*>(a.get()))
-        {
-            DBG("ALERT: peer denied access to shared files: " << int2ipstr(p->m_np.m_nIP));
-        }
-        else if (shared_directories_alert* p = dynamic_cast<shared_directories_alert*>(a.get()))
-        {
-            DBG("peer shared directories: " << int2ipstr(p->m_np.m_nIP) << " count: " << p->m_dirs.size());
-
-            for (size_t n = 0; n < p->m_dirs.size(); ++n)
-            {
-                DBG("ALERT: DIR: " << p->m_dirs[n]);
-            }
-        }
-        else if (dynamic_cast<save_resume_data_alert*>(a.get()))
-        {
-            DBG("ALERT: save_resume_data_alert");
-        }
-        else if (dynamic_cast<save_resume_data_failed_alert*>(a.get()))
-        {
-            DBG("ALERT: save_resume_data_failed_alert");
-        }
-        else if(transfer_params_alert* p = dynamic_cast<transfer_params_alert*>(a.get()))
-        {
-        	if (!p->m_ec)
-        	{
-        		DBG("ALERT: transfer_params_alert, add transfer for: " << p->m_atp.file_path);
-        		ps->add_transfer(p->m_atp);
-        	}
-        }
-        else if (dht_keyword_search_result_alert* p = dynamic_cast<dht_keyword_search_result_alert*>(a.get()))
-        {
-            for (std::deque<libed2k::kad_info_entry>::const_iterator itr = p->m_entries.begin(); itr != p->m_entries.end(); ++itr) {
-                dht_keywords.push_back(dht_keyword(*itr));
-                DBG("search keyword added << " << dht_keywords.size() << ":" << dht_keywords.back().name << " << sources:" << dht_keywords.back().sources);
-            }
-        }
-        else
-        {
-            DBG("ALERT: Unknown alert: " << a.get()->message());
-        }
-
-        a = ps->pop_alert();
-    }
-
-    pt->expires_at(pt->expires_at() + boost::posix_time::seconds(3));
-    pt->async_wait(boost::bind(&alerts_reader, boost::asio::placeholders::error, pt, ps));
-}
-
 // load nodes from standard emule nodes.dat file
 bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd);
 
@@ -185,11 +68,6 @@ int main(int argc, char* argv[]) {
     ses.set_alert_mask(alert::all_categories);    
 
     libed2k::io_service io;
-    boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
-    boost::asio::deadline_timer fs_timer(io, boost::posix_time::minutes(3));
-    alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
-    boost::thread t(boost::bind(&libed2k::io_service::run, &io));
-
     std::string input;
 
     while ((std::cin >> input)) {
@@ -299,11 +177,6 @@ int main(int argc, char* argv[]) {
     // avoid assert on save empty entry
     libed2k::entry e = ses.dht_state();
     if (e.type() == libed2k::entry::dictionary_t) save_dht_state(ses.dht_state());
-
-    // cancel background operations and wait
-    io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));
-    io.post(boost::bind(&boost::asio::deadline_timer::cancel, &fs_timer));
-    t.join();
     return 0;
 }
 
@@ -319,26 +192,7 @@ bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd) {
 
         try
         {
-            ifa >> knd;       
-            /*
-            DBG("nodes.dat version:" << knd.version);
-
-            for (size_t i = 0; i != knd.bootstrap_container.m_collection.size(); ++i) {
-                DBG("bootstrap " << knd.bootstrap_container.m_collection[i].kid.toString()
-                    << " ip:" << libed2k::int2ipstr(knd.bootstrap_container.m_collection[i].address.address)
-                    << " udp:" << knd.bootstrap_container.m_collection[i].address.udp_port
-                    << " tcp:" << knd.bootstrap_container.m_collection[i].address.tcp_port);
-                    
-            }
-
-            for (std::list<kad_entry>::const_iterator itr = knd.contacts_container.begin(); itr != knd.contacts_container.end(); ++itr) {
-                DBG("nodes " << itr->kid.toString()
-                    << " ip:" << libed2k::int2ipstr(itr->address.address)
-                    << " udp:" << itr->address.udp_port
-                    << " tcp:" << itr->address.tcp_port);
-                    
-            }
-            */
+            ifa >> knd;
         }
         catch (libed2k_exception& e)
         {

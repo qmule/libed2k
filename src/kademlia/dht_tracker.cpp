@@ -610,10 +610,6 @@ namespace libed2k { namespace dht
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
                 LIBED2K_LOG(dht_tracker) << "search res incoming for{" << p.target_id << "} results count{" << p.results.m_collection.size() << "}";
 #endif
-                //for (std::deque<kad_info_entry>::const_iterator itr = p.results.m_collection.begin(); itr != p.results.m_collection.end(); ++itr) {                    
-                //itr->tags.dump();
-                //}
-
                 if (!p.results.m_collection.empty()) {
                     // probe result type
                     if (p.results.m_collection.front().tags.getTagByNameId(TAG_SOURCETYPE)) {

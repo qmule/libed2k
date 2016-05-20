@@ -270,9 +270,6 @@ void rpc_manager::unreachable(udp::endpoint const& ep)
 	}
 }
 
-// defined in node.cpp
-void incoming_error(entry& e, char const* msg);
-
 template<typename T>
 bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
     LIBED2K_INVARIANT_CHECK;
@@ -301,8 +298,6 @@ bool rpc_manager::incoming(const T& t, udp::endpoint target, node_id* id) {
         LIBED2K_LOG(rpc) << "Reply with unknown transaction id: "
         		<< i << " from " << target;
 #endif
-        //incoming_error(e, "invalid transaction id");
-        //m_send(m_userdata, e, m.addr, 0);
         return false;
     }
 

@@ -130,8 +130,6 @@ public:
 	int num_allocated_observers() const { return m_allocated_observers; }
 private:
 
-	boost::uint32_t calc_connection_id(udp::endpoint addr);
-
 	mutable boost::pool<> m_pool_allocator;
 
 	typedef std::list<observer_ptr> transactions_t;

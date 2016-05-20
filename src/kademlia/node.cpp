@@ -368,65 +368,6 @@ void node_impl::status(session_status& s)
 	}
 }
 
-void node_impl::lookup_peers(md4_hash const& info_hash, int prefix, entry& reply
-	, bool noseed, bool scrape) const
-{
-    m_alerts.post_alert_should(dht_get_peers_alert(info_hash));
-
-	table_t::const_iterator i = m_map.lower_bound(info_hash);
-	if (i == m_map.end()) return;
-	if (i->first != info_hash && prefix == md4_hash::size) return;
-	if (prefix != md4_hash::size)
-	{
-		md4_hash mask = md4_hash::max();
-		mask <<= (md4_hash::size - prefix) * 8;
-		if ((i->first & mask) != (info_hash & mask)) return;
-	}
-
-	torrent_entry const& v = i->second;
-
-	if (!v.name.empty()) reply["n"] = v.name;
-
-	if (scrape)
-	{
-		bloom_filter<256> downloaders;
-		bloom_filter<256> seeds;
-
-		for (std::set<peer_entry>::const_iterator i = v.peers.begin()
-			, end(v.peers.end()); i != end; ++i)
-		{
-			md4_hash iphash;
-			hash_address(i->addr.address(), iphash);
-			if (i->seed) seeds.set(iphash);
-			else downloaders.set(iphash);
-		}
-
-		reply["BFpe"] = downloaders.to_string();
-		reply["BFse"] = seeds.to_string();
-	}
-	else
-	{
-		int num = (std::min)((int)v.peers.size(), m_settings.max_peers_reply);
-		std::set<peer_entry>::const_iterator iter = v.peers.begin();
-		entry::list_type& pe = reply["values"].list();
-		std::string endpoint;
-
-		for (int t = 0, m = 0; m < num && iter != v.peers.end(); ++iter, ++t)
-		{
-			if ((random() / float(UINT_MAX + 1.f)) * (num - t) >= num - m) continue;
-			if (noseed && iter->seed) continue;
-			endpoint.resize(18);
-			std::string::iterator out = endpoint.begin();
-			write_endpoint(iter->addr, out);
-			endpoint.resize(out - endpoint.begin());
-			pe.push_back(entry(endpoint));
-
-			++m;
-		}
-	}
-	return;
-}
-
 template<typename T>
 void node_impl::incoming(const T& t, udp::endpoint target) {
     node_id id;

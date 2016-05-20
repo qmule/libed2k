@@ -55,67 +55,6 @@ using detail::read_v4_endpoint;
 using detail::read_v6_endpoint;
 #endif
 
-/**
- * emule code for extract information about source from file
- *  // Process a possible source to a file.
-    // Set of data we could receive from the result.
-    uint8 uType = 0;
-    uint32 uIP = 0;
-    uint16 uTCPPort = 0;
-    uint16 uUDPPort = 0;
-    uint32 uBuddyIP = 0;
-    uint16 uBuddyPort = 0;
-    //uint32 uClientID = 0;
-    CUInt128 uBuddy;
-    uint8 byCryptOptions = 0; // 0 = not supported
-
-    for (TagList::const_iterator itTagList = plistInfo->begin(); itTagList != plistInfo->end(); ++itTagList)
-    {
-        CKadTag* pTag = *itTagList;
-        if (!pTag->m_name.Compare(TAG_SOURCETYPE))
-            uType = (uint8)pTag->GetInt();
-        else if (!pTag->m_name.Compare(TAG_SOURCEIP))
-            uIP = (uint32)pTag->GetInt();
-        else if (!pTag->m_name.Compare(TAG_SOURCEPORT))
-            uTCPPort = (uint16)pTag->GetInt();
-        else if (!pTag->m_name.Compare(TAG_SOURCEUPORT))
-            uUDPPort = (uint16)pTag->GetInt();
-        else if (!pTag->m_name.Compare(TAG_SERVERIP))
-            uBuddyIP = (uint32)pTag->GetInt();
-        else if (!pTag->m_name.Compare(TAG_SERVERPORT))
-            uBuddyPort = (uint16)pTag->GetInt();
-        //else if (!pTag->m_name.Compare(TAG_CLIENTLOWID))
-        //  uClientID = pTag->GetInt();
-        else if (!pTag->m_name.Compare(TAG_BUDDYHASH))
-        {
-            uchar ucharBuddyHash[16];
-            if (pTag->IsStr() && strmd4(pTag->GetStr(), ucharBuddyHash))
-                md4cpy(uBuddy.GetDataPtr(), ucharBuddyHash);
-            else
-                TRACE("+++ Invalid TAG_BUDDYHASH tag\n");
-        }
-        else if (!pTag->m_name.Compare(TAG_ENCRYPTION))
-            byCryptOptions = (uint8)pTag->GetInt();
-
-        delete pTag;
-    }
-    delete plistInfo;
-
-    // Process source based on it's type. Currently only one method is needed to process all types.
-    switch( uType )
-    {
-        case 1:
-        case 3:
-        case 4:
-        case 5:
-        case 6:
-            m_uAnswers++;
-            theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
-            theApp.downloadqueue->KademliaSearchFile(m_uSearchID, &uAnswer, &uBuddy, uType, uIP, uTCPPort, uUDPPort, uBuddyIP, uBuddyPort, byCryptOptions);
-            break;
-    }
-*/
-
 void find_data_observer::reply(const kad2_pong& r, udp::endpoint ep) { done(); }
 void find_data_observer::reply(const kad2_hello_res& r, udp::endpoint ep) { done(); }
 

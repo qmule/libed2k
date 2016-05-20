@@ -272,12 +272,6 @@ public:
 	dht_settings const& settings() const { return m_settings; }
 
 protected:
-
-	void lookup_peers(md4_hash const& info_hash, int prefix, entry& reply
-		, bool noseed, bool scrape) const;
-	bool lookup_torrents(sha1_hash const& target, entry& reply
-		, char* tags) const;
-
 	dht_settings const& m_settings;
 	
 private:
