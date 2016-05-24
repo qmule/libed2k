@@ -2,7 +2,7 @@
 
 namespace libed2k
 {
-    const char* libed2k_error_category::name() const throw()
+    const char* libed2k_error_category::name() const BOOST_SYSTEM_NOEXCEPT
     {
         return "libed2k error";
     }
@@ -49,7 +49,10 @@ namespace libed2k
             // protocol errors
             "decode packet error",
             "invalid protocol type",
-            "unsupported protocol type",
+            "unsupported packed type",
+            "unsupported_udp res1 type",
+            "unsupported_udp res2 type",
+            "unsupported kad packed type",
             "invalid packet size",
             // transport errors
             "session closing",

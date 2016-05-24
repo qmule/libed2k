@@ -11,7 +11,7 @@
 #include "libed2k/socket.hpp"
 #include "libed2k/stat.hpp"
 #include "libed2k/fingerprint.hpp"
-#include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/ip_filter.hpp"
@@ -27,6 +27,8 @@
 #include "libed2k/session_status.hpp"
 #include "libed2k/io_service.hpp"
 #include "libed2k/udp_socket.hpp"
+#include "libed2k/bloom_filter.hpp"
+#include "libed2k/kademlia/dht_tracker.hpp"
 
 #ifdef LIBED2K_UPNP_LOGGING
 #include <fstream>
@@ -318,8 +320,105 @@ namespace libed2k {
 			void stop_natpmp();
 			void stop_upnp();
 
-			int add_port_mapping(int t, int external_port, int local_port);
-			void delete_port_mapping(int handle);
+
+			void set_external_address(address const& ip
+			                                , int source_type, address const& source);
+			address const& external_address() const { return m_external_address; }
+
+			// TODO - should be implemented
+            bool is_network_thread() const
+            {
+#if defined BOOST_HAS_PTHREADS
+                    //if (m_network_thread == 0) return true;
+                    //return m_network_thread == pthread_self();
+#endif
+                    return true;
+            }
+
+
+            struct external_ip_t
+            {
+                    external_ip_t(): sources(0), num_votes(0) {}
+
+                    bool add_vote(md4_hash const& k, int type);
+                    bool operator<(external_ip_t const& rhs) const
+                    {
+                            if (num_votes < rhs.num_votes) return true;
+                            if (num_votes > rhs.num_votes) return false;
+                            return sources < rhs.sources;
+                    }
+
+                    // this is a bloom filter of the IPs that have
+                    // reported this address
+                    bloom_filter<16> voters;
+                    // this is the actual external address
+                    address addr;
+                    // a bitmask of sources the reporters have come from
+                    boost::uint16_t sources;
+                    // the total number of votes for this IP
+                    boost::uint16_t num_votes;
+            };
+
+            // this is a bloom filter of all the IPs that have
+            // been the first to report an external address. Each
+            // IP only gets to add a new item once.
+            bloom_filter<32> m_external_address_voters;
+            std::vector<external_ip_t> m_external_addresses;
+            address m_external_address;
+
+#ifndef LIBED2K_DISABLE_DHT
+            bool is_dht_running() const { return m_dht.get(); }
+            entry dht_state() const;
+            kad_state dht_estate() const;
+            void add_dht_node_name(std::pair<std::string, int> const& node);
+            void add_dht_node(std::pair<std::string, int> const& node, const std::string& id);
+            void add_dht_router(std::pair<std::string, int> const& node);
+            void set_dht_settings(dht_settings const& s);
+            dht_settings const& get_dht_settings() const { return m_dht_settings; }
+            void start_dht();
+            void stop_dht();
+            void start_dht(entry const& startup_state);
+
+            entry m_dht_state;
+            boost::intrusive_ptr<dht::dht_tracker> m_dht;
+            dht_settings m_dht_settings;
+
+            // these are used when starting the DHT
+            // (and bootstrapping it), and then erased
+            std::list<udp::endpoint> m_dht_router_nodes;
+
+            // this announce timer is used
+            // by the DHT.
+            deadline_timer m_dht_announce_timer;
+            void on_dht_router_name_lookup(error_code const& e
+                    , tcp::resolver::iterator host);
+            void find_keyword(const std::string& keyword);
+            void find_sources(const md4_hash& hash, size_type size);
+
+            void on_find_result(std::vector<tcp::endpoint> const& peers);
+
+            /*
+             * called when traverse for id completed
+             *
+            */
+            void on_traverse_completed(const kad_id& id);
+            void on_find_dht_source(const md4_hash& hash, uint8_t type, client_id_type ip, uint16_t port, client_id_type low_id);
+            void on_find_dht_keyword(const md4_hash& h, const std::deque<kad_info_entry>&);
+
+            std::set<md4_hash>    m_active_dht_requests;
+#endif
+
+            // when as a socks proxy is used for peers, also
+            // listen for incoming connections on a socks connection
+            //boost::shared_ptr<socket_type> m_socks_listen_socket;
+            //boost::uint16_t m_socks_listen_port;
+
+
+            tcp::resolver m_host_resolver;
+            boost::object_pool<peer> m_peer_pool;
+
+            int add_port_mapping(int t, int external_port, int local_port);
+            void delete_port_mapping(int handle);
 
             boost::object_pool<peer> m_ipv4_peer_pool;
 
@@ -428,10 +527,6 @@ namespace libed2k {
 
             int m_queue_pos;
 
-            // see m_external_listen_port. This is the same
-            // but for the udp port used by the DHT.
-            int m_external_udp_port;
-
             rate_limited_udp_socket m_udp_socket;
 
             boost::intrusive_ptr<natpmp> m_natpmp;
@@ -445,13 +540,13 @@ namespace libed2k {
             // 0 is natpmp 1 is upnp
             int m_tcp_mapping[2];
             int m_udp_mapping[2];
-#ifdef TORRENT_USE_OPENSSL
+#ifdef LIBED2K_USE_OPENSSL
             int m_ssl_mapping[2];
 #endif
 
             // the main working thread
             // !!! should be last in the member list
-            boost::scoped_ptr<boost::thread> m_thread;
+            boost::scoped_ptr<boost::thread> m_thread;            
         };
     }
 }

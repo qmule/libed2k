@@ -6,11 +6,17 @@
 #include <list>
 #include <boost/cstdint.hpp>
 #include <boost/optional.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/stream.hpp>
 
-#include <libed2k/bitfield.hpp>
-#include <libed2k/ctag.hpp>
-#include <libed2k/util.hpp>
-#include <libed2k/assert.hpp>
+#include "libed2k/bitfield.hpp"
+#include "libed2k/ctag.hpp"
+#include "libed2k/util.hpp"
+#include "libed2k/assert.hpp"
+#include "libed2k/hasher.hpp"
+#include "libed2k/error_code.hpp"
 #include <sstream>
 
 namespace libed2k
@@ -202,12 +208,67 @@ namespace libed2k
         OP_PORTTEST                 = 0xFE  // Connection Test
     };
 
-	const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
-	const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
-	const boost::uint8_t ED2K_SEARCH_OP_LESS            = 2;
-	const boost::uint8_t ED2K_SEARCH_OP_GREATER_EQUAL   = 3;
-	const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
-	const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
+    enum Kademlia2Opcodes {
+        KADEMLIA2_BOOTSTRAP_REQ     = 0x01,
+        KADEMLIA2_BOOTSTRAP_RES     = 0x09,
+        KADEMLIA2_HELLO_REQ         = 0x11,
+        KADEMLIA2_HELLO_RES         = 0x19,
+        KADEMLIA2_REQ               = 0x21,
+        KADEMLIA2_HELLO_RES_ACK     = 0x22, // <NodeID><uint8 tags>
+        KADEMLIA2_RES               = 0x29,
+        KADEMLIA2_SEARCH_KEY_REQ    = 0x33,
+        KADEMLIA2_SEARCH_SOURCE_REQ = 0x34,
+        KADEMLIA2_SEARCH_NOTES_REQ  = 0x35,
+        KADEMLIA2_SEARCH_RES        = 0x3B,
+        KADEMLIA2_PUBLISH_KEY_REQ   = 0x43,
+        KADEMLIA2_PUBLISH_SOURCE_REQ= 0x44,
+        KADEMLIA2_PUBLISH_NOTES_REQ = 0x45,
+        KADEMLIA2_PUBLISH_RES       = 0x4B,
+        KADEMLIA2_PUBLISH_RES_ACK   = 0x4C, // (null)
+        KADEMLIA_FIREWALLED2_REQ    = 0x53, // <TCPPORT (sender) [2]><userhash><connectoptions 1>
+        KADEMLIA2_PING              = 0x60, // (null)
+        KADEMLIA2_PONG              = 0x61, // (null)
+        KADEMLIA2_FIREWALLUDP       = 0x62  // <errorcode [1]><UDPPort_Used [2]>
+    };
+
+    enum KademliaV1OPcodes {
+        KADEMLIA_BOOTSTRAP_REQ_DEPRECATED   = 0x00, // <PEER (sender) [25]>
+        KADEMLIA_BOOTSTRAP_RES_DEPRECATED   = 0x08, // <CNT [2]> <PEER [25]>*(CNT)
+
+        KADEMLIA_HELLO_REQ_DEPRECATED       = 0x10, // <PEER (sender) [25]>
+        KADEMLIA_HELLO_RES_DEPRECATED       = 0x18, // <PEER (receiver) [25]>
+
+        KADEMLIA_REQ_DEPRECATED             = 0x20, // <TYPE [1]> <HASH (target) [16]> <HASH (receiver) 16>
+        KADEMLIA_RES_DEPRECATED             = 0x28, // <HASH (target) [16]> <CNT> <PEER [25]>*(CNT)
+
+        KADEMLIA_SEARCH_REQ                 = 0x30, // <HASH (key) [16]> <ext 0/1 [1]> <SEARCH_TREE>[ext]
+        // UNUSED               = 0x31, // Old Opcode, don't use.
+        KADEMLIA_SEARCH_NOTES_REQ           = 0x32, // <HASH (key) [16]>
+        KADEMLIA_SEARCH_RES                 = 0x38, // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+        // UNUSED               = 0x39, // Old Opcode, don't use.
+        KADEMLIA_SEARCH_NOTES_RES           = 0x3A, // <HASH (key) [16]> <CNT1 [2]> (<HASH (answer) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+
+        KADEMLIA_PUBLISH_REQ                = 0x40, // <HASH (key) [16]> <CNT1 [2]> (<HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+        // UNUSED               = 0x41, // Old Opcode, don't use.
+        KADEMLIA_PUBLISH_NOTES_REQ_DEPRECATED   = 0x42, // <HASH (key) [16]> <HASH (target) [16]> <CNT2 [2]> <META>*(CNT2))*(CNT1)
+        KADEMLIA_PUBLISH_RES                = 0x48, // <HASH (key) [16]>
+        // UNUSED               = 0x49, // Old Opcode, don't use.
+        KADEMLIA_PUBLISH_NOTES_RES_DEPRECATED   = 0x4A, // <HASH (key) [16]>
+
+        KADEMLIA_FIREWALLED_REQ             = 0x50, // <TCPPORT (sender) [2]>
+        KADEMLIA_FINDBUDDY_REQ              = 0x51, // <TCPPORT (sender) [2]>
+        KADEMLIA_CALLBACK_REQ               = 0x52, // <TCPPORT (sender) [2]>
+        KADEMLIA_FIREWALLED_RES             = 0x58, // <IP (sender) [4]>
+        KADEMLIA_FIREWALLED_ACK_RES         = 0x59, // (null)
+        KADEMLIA_FINDBUDDY_RES              = 0x5A  // <TCPPORT (sender) [2]>
+    };
+
+    const boost::uint8_t ED2K_SEARCH_OP_EQUAL           = 0;
+    const boost::uint8_t ED2K_SEARCH_OP_GREATER         = 1;
+    const boost::uint8_t ED2K_SEARCH_OP_LESS            = 2;
+    const boost::uint8_t ED2K_SEARCH_OP_GREATER_EQUAL   = 3;
+    const boost::uint8_t ED2K_SEARCH_OP_LESS_EQUAL      = 4;
+    const boost::uint8_t ED2K_SEARCH_OP_NOTEQUAL        = 5;
 
 	/**
 	  * supported protocols
@@ -217,7 +278,16 @@ namespace libed2k
 	const proto_type    OP_PACKEDPROT           = 0xD4u;
 	const proto_type    OP_EMULEPROT            = 0xC5u;
 
+    // Reserved for later UDP headers (important for EncryptedDatagramSocket)
+    const proto_type    OP_UDPRESERVEDPROT1     = 0xA3u;   // unused
+    const proto_type    OP_UDPRESERVEDPROT2     = 0xB2u;   // unused
+
+                                                        // Kademlia 1/2
+    const proto_type    OP_KADEMLIAHEADER       = 0xE4u;
+    const proto_type    OP_KADEMLIAPACKEDPROT = 0xE5u;
+
     #define SOURCE_EXCHG_LEVEL 0
+
 
     /**
       *  common container holder structure
@@ -231,32 +301,22 @@ namespace libed2k
         typedef typename collection_type::iterator Iterator;
         typedef typename collection_type::value_type elem;
 
-        container_holder() : m_size(0)
-        {
-        }
-
-        container_holder(const collection_type& coll) : m_size(coll.size()), m_collection(coll)
-        {
-        }
-
-        void clear()
-        {
+        container_holder() : m_size(0){}
+        container_holder(const collection_type& coll) : m_size(coll.size()), m_collection(coll) { }
+        void clear(){
             m_collection.clear();
             m_size = 0;
         }
 
         template<typename Archive>
-        void save(Archive& ar)
-        {
+        void save(Archive& ar){
             // save collection size in field with properly size
             m_size = static_cast<size_type>(m_collection.size());
             ar & m_size;
 
-            for(Iterator i = m_collection.begin(); i != m_collection.end(); ++i)
-            {
+            for(Iterator i = m_collection.begin(); i != m_collection.end(); ++i) {
                 ar & *i;
             }
-
         }
 
         template<typename Archive>
@@ -267,7 +327,7 @@ namespace libed2k
             // avoid huge memory allocation
             if (static_cast<size_t>(m_size) > MAX_COLLECTION_SIZE)
             {
-                throw libed2k::libed2k_exception(libed2k::errors::decode_packet_error);
+                throw libed2k_exception(libed2k::errors::decode_packet_error);
             }
 
             m_collection.resize(static_cast<size_t>(m_size));
@@ -298,8 +358,6 @@ namespace libed2k
         LIBED2K_SERIALIZATION_SPLIT_MEMBER()
     };
 
-
-
     /**
       * common libed2k packet header
       *
@@ -315,6 +373,13 @@ namespace libed2k
 #pragma pack(push)
 #pragma pack(1)
 
+    Packed_Struct udp_libed2k_header {
+        proto_type  m_protocol;
+        proto_type  m_type;
+
+        udp_libed2k_header() : m_protocol(OP_KADEMLIAHEADER), m_type(0) {}
+    };
+
     Packed_Struct libed2k_header
     {
         typedef boost::uint32_t size_type;
@@ -328,6 +393,17 @@ namespace libed2k
          */
         libed2k_header() : m_protocol(OP_EDONKEYPROT), m_size(1), m_type(0){}
 
+        void assign(const char* buf){
+        	const libed2k_header* p = ((libed2k_header*)buf);
+        	m_protocol = p->m_protocol;
+        	m_size = p->m_size;
+        	m_type = p->m_type;
+        }
+
+        size_t body_size() const {
+            return m_size - 1;
+        }
+
         /**
           * check packet data is correct
           * on debug assert will generate on size error
@@ -337,11 +413,15 @@ namespace libed2k
             //1. first stage - check opcode
             switch (m_protocol)
             {
-            case OP_EDONKEYPROT:    // correct
-            case OP_EMULEPROT:      // correct
-            case OP_PACKEDPROT:     // correct
+            case OP_EDONKEYPROT:
+            case OP_EMULEPROT:
+            case OP_KADEMLIAHEADER:
+            case OP_PACKEDPROT:
                 break;
-            default:                // invalid
+            case OP_UDPRESERVEDPROT1: return errors::unsupported_udp_res1_type;
+            case OP_UDPRESERVEDPROT2: return errors::unsupported_udp_res2_type;
+            case OP_KADEMLIAPACKEDPROT: return errors::unsupported_kad_packed_type;
+            default:
                 return errors::invalid_protocol_type;
             }
 
@@ -358,13 +438,13 @@ namespace libed2k
         {
             size_t res;
             if (m_type == OP_SENDINGPART)   // add protocol type check
-                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+                res = MD4_DIGEST_LENGTH + 2 * sizeof(boost::uint32_t);
             else if(m_type == OP_SENDINGPART_I64) // add protocol type check
-                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint64_t);
+                res = MD4_DIGEST_LENGTH + 2 * sizeof(boost::uint64_t);
             else if (m_protocol == OP_EMULEPROT && m_type == OP_COMPRESSEDPART)
-                res = MD4_HASH_SIZE + 2 * sizeof(boost::uint32_t);
+                res = MD4_DIGEST_LENGTH + 2 * sizeof(boost::uint32_t);
             else if (m_protocol == OP_EMULEPROT && m_type == OP_COMPRESSEDPART_I64)
-                res = MD4_HASH_SIZE + sizeof(boost::uint64_t) + sizeof(boost::uint32_t);
+                res = MD4_DIGEST_LENGTH + sizeof(boost::uint64_t) + sizeof(boost::uint32_t);
             else
                 res = m_size - 1;
 
@@ -422,10 +502,8 @@ namespace libed2k
         net_identifier(const tcp::endpoint& ep);
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nIP;
-            ar & m_nPort;
+        void serialize(Archive& ar){
+            ar & m_nIP & m_nPort;
         }
 
         bool operator==(const net_identifier& np) const
@@ -471,11 +549,8 @@ namespace libed2k
         bool is_empty() const { return !m_hFile.defined(); }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_network_point;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_network_point & m_list;
         }
 
         void dump() const;
@@ -493,11 +568,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hClient;
-            ar & m_network_point;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_hClient & m_network_point & m_list;
         }
     };
 
@@ -508,10 +580,7 @@ namespace libed2k
     struct server_get_list
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-
-        }
+        void serialize(Archive& ar){}
     };
 
     /**
@@ -522,15 +591,10 @@ namespace libed2k
         boost::uint16_t m_nLength;
         std::string     m_strMessage;
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nLength;
             // allocate buffer if it needs
-            if (m_strMessage.size() != m_nLength)
-            {
-                m_strMessage.resize(m_nLength);
-            }
-
+            if (m_strMessage.size() != m_nLength) m_strMessage.resize(m_nLength);
             ar & m_strMessage;
         }
     };
@@ -550,11 +614,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hServer;
-            ar & m_network_point;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_hServer & m_network_point & m_list;
         }
 
         void dump() const;
@@ -576,8 +637,7 @@ namespace libed2k
 
         // only for load
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             // always read/write client id;
             ar & m_client_id;
             DECREMENT_READ(ar.bytes_left(), m_tcp_flags);
@@ -601,8 +661,7 @@ namespace libed2k
         net_identifier  m_network_point;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_network_point;
         }
     };
@@ -610,9 +669,7 @@ namespace libed2k
     /**
       * call back request failed
      */
-    struct callback_req_fail
-    {
-    };
+    struct callback_req_fail{};
 
     /**
       * call back request from client to server
@@ -621,8 +678,7 @@ namespace libed2k
     {
         client_id_type      m_nClientId;
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nClientId;
         }
     };
@@ -636,10 +692,8 @@ namespace libed2k
         boost::uint32_t m_nFilesCount;
 
         template<typename Archive>
-        void serialize(Archive & ar)
-        {
-            ar & m_nUserCount;
-            ar & m_nFilesCount;
+        void serialize(Archive & ar){
+            ar & m_nUserCount & m_nFilesCount;
         }
     };
 
@@ -721,12 +775,9 @@ namespace libed2k
         search_request_block(search_request& ro) : m_order(ro){}
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             for (size_t n = 0; n < m_order.size(); n++)
-            {
                 ar & m_order[n];
-            }
         }
 
         search_request& m_order;
@@ -738,10 +789,7 @@ namespace libed2k
     struct search_more_result
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            // do nothing
-        }
+        void serialize(Archive& ar){}
     };
 
     typedef container_holder<boost::uint32_t, std::vector<shared_file_entry> > shared_files_list;
@@ -784,10 +832,8 @@ namespace libed2k
         __file_size     m_file_size;    //!< file size
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
-
             // ugly eDonkey protocol need empty 32-bit part before 64-bit file size record
             if (m_file_size.u.nHighPart > 0)
             {
@@ -796,7 +842,6 @@ namespace libed2k
             }
 
             ar & m_file_size;
-
         }
     };
 
@@ -809,10 +854,8 @@ namespace libed2k
         container_holder<boost::uint8_t, std::vector<net_identifier> > m_sources;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_sources;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_sources;
         }
 
         void dump() const;
@@ -831,8 +874,7 @@ namespace libed2k
         }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nChallendge;
         }
     };
@@ -854,14 +896,10 @@ namespace libed2k
         size_t          m_nMaxSize;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             size_t nCounter = m_nMaxSize;
-            ar & m_nChallenge;
-            ar & m_nUsersCount;
-            ar & m_nFilesCount;
+            ar & m_nChallenge & m_nUsersCount & m_nFilesCount;
             nCounter -= sizeof(m_nChallenge) - sizeof(m_nUsersCount) - sizeof(m_nFilesCount);
-
             DECREMENT_READ(nCounter, m_nCurrentMaxUsers)
             DECREMENT_READ(nCounter, m_nSoftFiles);
             DECREMENT_READ(nCounter, m_nHardFiles);
@@ -886,35 +924,85 @@ namespace libed2k
     //OP_FOUNDSOURCES_OBFU = 0x44    // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x08))[count]
     //OP_USERS_LIST               = 0x43, // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 
-    template<> struct packet_type<cs_login_request>         { static const proto_type value = OP_LOGINREQUEST;  };      //!< on login to server
-    template<> struct packet_type<shared_files_list>        //!< offer files to server
-    {
+    template<> struct packet_type<cs_login_request>{
+        static const proto_type value = OP_LOGINREQUEST;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< on login to server
+
+    template<> struct packet_type<shared_files_list>{
         static const proto_type value       = OP_OFFERFILES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< offer files to server
+
+    template<> struct packet_type<search_request_block>{
+        static const proto_type value = OP_SEARCHREQUEST;
+        static const proto_type protocol = OP_EDONKEYPROT;
+    };//!< search request to server
+
+    template<> struct packet_type<search_result>{
+        static const proto_type value = OP_SEARCHRESULT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< search result from server
+
+    template<> struct packet_type<search_more_result>{
+        static const proto_type value = OP_QUERY_MORE_RESULT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< search result from server
+
+    template<> struct packet_type<get_file_sources>{
+        static const proto_type value = OP_GETSOURCES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< file sources request to server
+
+    template<> struct packet_type<found_file_sources>{
+        static const proto_type value = OP_FOUNDSOURCES;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< file sources answer
+
+    template<> struct packet_type<callback_request_out>{
+        static const proto_type value = OP_CALLBACKREQUEST;
         static const proto_type protocol    = OP_EDONKEYPROT;
     };
 
-    template<> struct packet_type<search_request_block>     { static const proto_type value = OP_SEARCHREQUEST; };      //!< search request to server
-    template<> struct packet_type<search_result>            { static const proto_type value = OP_SEARCHRESULT;  };      //!< search result from server
-    template<> struct packet_type<search_more_result>       { static const proto_type value = OP_QUERY_MORE_RESULT;  }; //!< search result from server
+    template<> struct packet_type<callback_request_in>{
+        static const proto_type value = OP_CALLBACKREQUESTED;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
 
-    template<> struct packet_type<get_file_sources>         { static const proto_type value = OP_GETSOURCES;    };      //!< file sources request to server
-    template<> struct packet_type<found_file_sources>       { static const proto_type value = OP_FOUNDSOURCES;  };      //!< file sources answer
+    template<> struct packet_type<callback_req_fail>{
+        static const proto_type value = OP_CALLBACK_FAIL;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< callback request answer from server
 
-    template<> struct packet_type<callback_request_out>     { static const proto_type value = OP_CALLBACKREQUEST;};     //!< callback request to server - do not use
-    template<> struct packet_type<callback_request_in>      { static const proto_type value = OP_CALLBACKREQUESTED; };  //!< callback request from server - we reject it
-    template<> struct packet_type<callback_req_fail>        { static const proto_type value = OP_CALLBACK_FAIL; };      //!< callback request answer from server
+    template<> struct packet_type<server_get_list>{
+        static const proto_type value = OP_GETSERVERLIST;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };
 
-    template<> struct packet_type<server_get_list>          { static const proto_type value = OP_GETSERVERLIST; };
-    template<> struct packet_type<server_list>              { static const proto_type value = OP_SERVERLIST;    };      //!< server list from server
-    template<> struct packet_type<server_status>            { static const proto_type value = OP_SERVERSTATUS;  };      //!< server status
-    template<> struct packet_type<id_change>                { static const proto_type value = OP_IDCHANGE;      };      //!< new our id from server
-    template<> struct packet_type<server_message>           { static const proto_type value = OP_SERVERMESSAGE; };      //!< some server message
-    template<> struct packet_type<server_info_entry>        { static const proto_type value = OP_SERVERIDENT;   };      //!< server info
+    template<> struct packet_type<server_list>{
+        static const proto_type value = OP_SERVERLIST;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< server list from server
 
+    template<> struct packet_type<server_status> {
+        static const proto_type value = OP_SERVERSTATUS;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< server status
 
-    // UDP types
-    template<> struct packet_type<global_server_state_req>  { static const proto_type value = OP_GLOBSERVSTATREQ;   };      //!< server info request
-    template<> struct packet_type<global_server_state_res>  { static const proto_type value = OP_GLOBSERVSTATRES;   };      //!< server info answer
+    template<> struct packet_type<id_change>{
+        static const proto_type value = OP_IDCHANGE;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< new our id from server
+
+    template<> struct packet_type<server_message>{
+        static const proto_type value = OP_SERVERMESSAGE;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< some server message
+
+    template<> struct packet_type<server_info_entry>{
+        static const proto_type value = OP_SERVERIDENT;
+        static const proto_type protocol    = OP_EDONKEYPROT;
+    };//!< server info
 
     // Client to Client structures
 
@@ -938,12 +1026,8 @@ namespace libed2k
                 boost::uint32_t version);
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hClient;
-            ar & m_network_point;
-            ar & m_list;
-            ar & m_server_network_point;
+        void serialize(Archive& ar){
+            ar & m_hClient & m_network_point & m_list & m_server_network_point;
         }
 
         void dump() const;
@@ -966,8 +1050,7 @@ namespace libed2k
                 boost::uint32_t version);
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nHashLength;
             client_hello_answer::serialize(ar);
         }
@@ -979,10 +1062,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nVersion;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_nVersion & m_list;
         }
     };
 
@@ -992,10 +1073,8 @@ namespace libed2k
         tag_list<boost::uint32_t>   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nVersion;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_nVersion & m_list;
         }
     };
 
@@ -1019,8 +1098,7 @@ namespace libed2k
         shared_files_list   m_files;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_files;
         }
     };
@@ -1042,8 +1120,7 @@ namespace libed2k
         }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_directory;
         }
     };
@@ -1053,8 +1130,7 @@ namespace libed2k
         container_holder<boost::uint32_t, std::vector<container_holder<boost::uint16_t, std::string> > > m_dirs;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_dirs;
         }
     };
@@ -1065,10 +1141,8 @@ namespace libed2k
         shared_files_list   m_list;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_directory;
-            ar & m_list;
+        void serialize(Archive& ar){
+            ar & m_directory & m_list;
         }
     };
 
@@ -1086,8 +1160,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1098,10 +1171,8 @@ namespace libed2k
         container_holder<boost::uint16_t, std::string> m_filename;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_filename;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_filename;
         }
     };
 
@@ -1111,10 +1182,8 @@ namespace libed2k
         container_holder<boost::uint32_t, std::string> m_sComment;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_nRating;
-            ar & m_sComment;
+        void serialize(Archive& ar){
+            ar & m_nRating & m_sComment;
         }
     };
 
@@ -1123,8 +1192,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1134,8 +1202,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1145,11 +1212,9 @@ namespace libed2k
         md4_hash m_hFile;
         bitfield m_status;
 
-        void serialize(archive::ed2k_iarchive& ar)
-        {
+        void serialize(archive::ed2k_iarchive& ar){
             boost::uint16_t bits;
-            ar & m_hFile;
-            ar & bits;
+            ar & m_hFile & bits;
             if (bits > 0)
             {
                 std::vector<char> buf(bits2bytes(bits));
@@ -1157,8 +1222,8 @@ namespace libed2k
                 m_status.assign(&buf[0], bits);
             }
         }
-        void serialize(archive::ed2k_oarchive& ar)
-        {
+
+        void serialize(archive::ed2k_oarchive& ar){
             ar & m_hFile;
             boost::uint16_t bits = m_status.size();
             if (bits < m_status.count()) // part file
@@ -1179,8 +1244,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1191,10 +1255,8 @@ namespace libed2k
         container_holder<boost::uint16_t, std::vector<md4_hash> > m_vhParts;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_vhParts;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_vhParts;
         }
     };
 
@@ -1203,8 +1265,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1214,8 +1275,7 @@ namespace libed2k
         boost::uint16_t m_nRank;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_nRank;
         }
     };
@@ -1223,25 +1283,19 @@ namespace libed2k
     struct client_accept_upload
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        void serialize(Archive& ar){}
     };
 
     struct client_out_parts
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        void serialize(Archive& ar){}
     };
 
     struct client_cancel_transfer
     {
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-        }
+        void serialize(Archive& ar){}
     };
 
     template <typename size_type>
@@ -1270,15 +1324,10 @@ namespace libed2k
         bool empty() const { return m_parts == 0; }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_begin_offset[0];
-            ar & m_begin_offset[1];
-            ar & m_begin_offset[2];
-            ar & m_end_offset[0];
-            ar & m_end_offset[1];
-            ar & m_end_offset[2];
+        void serialize(Archive& ar){
+            ar & m_hFile
+            & m_begin_offset[0] & m_begin_offset[1] & m_begin_offset[2]
+            & m_end_offset[0] & m_end_offset[1] & m_end_offset[2];
         }
     };
 
@@ -1294,11 +1343,8 @@ namespace libed2k
         // user_data[end-begin]
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_begin_offset;
-            ar & m_end_offset;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_begin_offset & m_end_offset;
             // user_data[end-begin]
         }
     };
@@ -1315,11 +1361,8 @@ namespace libed2k
         // user_data[compressed_size]
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hFile;
-            ar & m_begin_offset;
-            ar & m_compressed_size;
+        void serialize(Archive& ar){
+            ar & m_hFile & m_begin_offset & m_compressed_size;
             // compressed_user_data[compressed_size]
         }
     };
@@ -1332,8 +1375,7 @@ namespace libed2k
         md4_hash m_hFile;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hFile;
         }
     };
@@ -1415,8 +1457,7 @@ namespace libed2k
         boost::uint8_t  m_captcha_result;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_captcha_result;
         }
     };
@@ -1426,8 +1467,7 @@ namespace libed2k
         md4_hash    m_hash;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hash;
         }
     };
@@ -1437,8 +1477,7 @@ namespace libed2k
         shared_files_list    m_files;
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_files;
         }
     };
@@ -1452,8 +1491,7 @@ namespace libed2k
         client_directory_content_request(const md4_hash& hash) : m_hash(hash) { }
 
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
+        void serialize(Archive& ar){
             ar & m_hash;
         }
     };
@@ -1464,10 +1502,8 @@ namespace libed2k
         md4_hash            m_hdirectory;
         shared_files_list   m_files;
         template<typename Archive>
-        void serialize(Archive& ar)
-        {
-            ar & m_hdirectory;
-            ar & m_files;
+        void serialize(Archive& ar){
+            ar & m_hdirectory & m_files;
         }
     };
 
@@ -1477,15 +1513,14 @@ namespace libed2k
 
     struct client_public_ip_answer{
         client_id_type  client_id;
-        client_public_ip_answer(client_id_type id) : client_id(id)
-        {}
+        client_public_ip_answer(client_id_type id) : client_id(id){}
         template<typename Archive>
-        void serialize(Archive& ar) {
+        void serialize(Archive& ar){
             ar & client_id;
         }
     };
-
-    struct sources_request_base{
+    
+    struct sources_request_base {
         md4_hash    file_hash;
         template<typename Archive>
         void serialize(Archive& ar) {
@@ -1494,6 +1529,7 @@ namespace libed2k
     };
 
     struct sources_request: public sources_request_base{};
+
     struct sources_request2: public sources_request_base{	// incomplete structure
     	boost::uint8_t	option1;
     	boost::uint16_t	option2;
@@ -1554,7 +1590,6 @@ namespace libed2k
     struct sources_answer2 : public sources_answer_base {
         sources_answer2(int version) : sources_answer_base(version) {}
     };
-
 
     template<> struct packet_type<client_hello> {
         static const proto_type value = OP_HELLO;
@@ -1715,23 +1750,30 @@ namespace libed2k
         static const proto_type value       = OP_ASKDIRCONTENTSANS;
         static const proto_type protocol    = OP_EDONKEYPROT;
     };
-    template<> struct packet_type<sources_request>{
-        static const proto_type value       = OP_REQUESTSOURCES;
-        static const proto_type protocol    = OP_EMULEPROT;
-    };
-    template<> struct packet_type<sources_request2>{
-        static const proto_type value       = OP_REQUESTSOURCES2;
-        static const proto_type protocol    = OP_EMULEPROT;
-    };
-    template<> struct packet_type<sources_answer>{
-        static const proto_type value       = OP_ANSWERSOURCES;
-        static const proto_type protocol    = OP_EMULEPROT;
-    };
-    template<> struct packet_type<sources_answer2>{
-        static const proto_type value       = OP_ANSWERSOURCES2;
-        static const proto_type protocol    = OP_EMULEPROT;
-    };
 
+    // kad packet types
+    /*
+    template<> struct packet_type<kad_booststrap_req>{
+        static const proto_type value       = KADEMLIA2_BOOTSTRAP_REQ;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_booststrap_res>{
+        static const proto_type value       = KADEMLIA2_BOOTSTRAP_RES;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_hello_req>{
+        static const proto_type value       = KADEMLIA2_HELLO_REQ;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_hello_res>{
+        static const proto_type value       = KADEMLIA2_HELLO_RES;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    template<> struct packet_type<kad_hello_res_ack>{
+        static const proto_type value       = KADEMLIA2_HELLO_RES_ACK;
+        static const proto_type protocol    = OP_KADEMLIAPACKEDPROT;
+    };
+    */
 
     // helper for get type from item
     template<typename T>
@@ -1846,6 +1888,55 @@ namespace libed2k
     };
 
     EClientSoftware uagent2csoft(const md4_hash& ua_hash);
+
+    typedef std::pair<libed2k_header, std::string> message;
+
+    template <typename Struct>
+    inline size_t body_size(const Struct& s, const std::string& body)
+    { return body.size(); }
+
+    template<typename size_type>
+    inline size_t body_size(const client_sending_part<size_type>&s, const std::string& body)
+    { return body.size() + s.m_end_offset - s.m_begin_offset; }
+
+	template <typename T>
+	inline message make_message(const T& t)
+	{
+		message msg;
+
+		msg.first.m_protocol = packet_type<T>::protocol;
+		boost::iostreams::back_insert_device<std::string> inserter(msg.second);
+		boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
+			s(inserter);
+		// Serialize the data first so we know how large it is.
+		archive::ed2k_oarchive oa(s);
+		oa << const_cast<T&>(t);
+		s.flush();
+		// packet size without protocol type and packet body size field plus one byte for opcode
+		msg.first.m_size = body_size(t, msg.second) + 1;
+		msg.first.m_type = packet_type<T>::value;
+		return msg;
+	}
+
+    typedef std::pair<udp_libed2k_header, std::string>  udp_message;
+
+    template<typename T>
+    inline udp_message make_udp_message(const T& t) {
+        udp_message msg;
+        msg.first.m_protocol = packet_type<T>::protocol;
+        boost::iostreams::back_insert_device<std::string> inserter(msg.second);
+        boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
+            s(inserter);
+        // Serialize the data first so we know how large it is.
+        archive::ed2k_oarchive oa(s);
+        oa << const_cast<T&>(t);
+        s.flush();
+        msg.first.m_type = packet_type<T>::value;
+        return msg;
+    };
+
+	message extract_message(const char* p, int bytes, error_code& ec);
+	std::string kad2string(int op);
 }
 
 

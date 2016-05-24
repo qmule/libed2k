@@ -99,13 +99,13 @@ pending_block::pending_block(const piece_block& b, size_type fsize):
 }
 
 peer_connection::peer_connection(aux::session_impl& ses,
-                                 boost::weak_ptr<transfer> transfer,
+                                 boost::weak_ptr<transfer> t,
                                  boost::shared_ptr<tcp::socket> s,
                                  const ip::tcp::endpoint& remote, peer* peerinfo):
     base_connection(ses, s, remote),
     m_work(ses.m_io_service),
     m_disk_recv_buffer(ses.m_disk_thread, 0),
-    m_transfer(transfer),
+    m_transfer(t),
     m_peer(peerinfo),
     m_connecting(true),
     m_active(true),
@@ -325,7 +325,7 @@ void peer_connection::get_peer_info(peer_info& p) const
     p.flags = 0;
     p.flags |= is_seed() ? peer_info::seed : 0;
 
-    p.source = 0;
+    p.source = m_peer?m_peer->source:peer_info::incoming;
     p.failcount = 0;
     p.num_hashfails = 0;
     p.inet_as = 0xffff;
@@ -1563,7 +1563,7 @@ void peer_connection::parse_misc_info(const tag_list<boost::uint32_t>& list)
     try
     {
         // extract user info from tag list
-        for (size_t n = 0; n < list.count(); ++n)
+        for (size_t n = 0; n < list.size(); ++n)
         {
             const boost::shared_ptr<base_tag> p = list[n];
 
@@ -1655,7 +1655,7 @@ void peer_connection::write_hello()
             m_ses.settings().m_version);
 
     // fill special fields
-    hello.m_nHashLength = MD4_HASH_SIZE;
+    hello.m_nHashLength = MD4_DIGEST_LENGTH;
     hello.m_network_point.m_nIP = m_ses.m_server_connection->client_id();
     hello.m_network_point.m_nPort = settings.listen_port;
     append_misc_info(hello.m_list);
@@ -2195,7 +2195,7 @@ template <typename FileContainer>
 std::vector<std::string> filelist(const FileContainer& files) {
     std::vector<std::string> res;
     for (size_t i = 0; i < files.m_collection.size(); ++i)
-        for (size_t j = 0; j < files.m_collection[i].m_list.count(); ++j)
+        for (size_t j = 0; j < files.m_collection[i].m_list.size(); ++j)
         {
             boost::shared_ptr<libed2k::base_tag> ptag = files.m_collection[i].m_list[j];
             if (ptag->getNameId() == FT_FILENAME)

@@ -278,6 +278,10 @@ void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_ti
                     << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
                     << " size: " << nSize
                     << " src: " << src->asInt());
+                std::cout << "ALERT: indx:" << n << " hash: " << vSF.m_collection[n].m_hFile.toString()
+                    << " name: " << libed2k::convert_to_native(vSF.m_collection[n].m_list.getStringTagByNameId(libed2k::FT_FILENAME))
+                    << " size: " << nSize
+                    << " src: " << src->asInt() << "\n";
             }
         }
         else if(dynamic_cast<peer_message_alert*>(a.get()))
@@ -510,11 +514,12 @@ int main(int argc, char* argv[])
                 boost::mutex::scoped_lock l(m_sf_mutex);
                 int nIndex = atoi(strArg.c_str());
 
-                DBG("execute load for " << nIndex);
+                DBG("execute load for " << nIndex);                
 
                 if (vSF.m_collection.size() > static_cast<size_t>(nIndex))
                 {
                     DBG("load for: " << vSF.m_collection[nIndex].m_hFile.toString());
+                    std::cout << vSF.m_collection[nIndex].m_hFile.toString() << "\n";
                     libed2k::add_transfer_params params;
                     params.file_hash = vSF.m_collection[nIndex].m_hFile;
                     params.file_path = strIncomingDirectory;
@@ -693,7 +698,7 @@ int main(int argc, char* argv[])
                         params.file_path= trd.m_filename.m_collection;
                         params.file_size = trd.m_filesize;
 
-                        if (trd.m_fast_resume_data.count() > 0)
+                        if (trd.m_fast_resume_data.size() > 0)
                         {
                             params.resume_data = const_cast<std::vector<char>* >(&trd.m_fast_resume_data.getTagByNameId(libed2k::FT_FAST_RESUME_DATA)->asBlob());
                         }

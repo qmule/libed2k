@@ -55,3 +55,11 @@ set(l_flags "${l_flags} -lpthread")
 
 set(cxx_definitions ${cxx_definitions} __STDC_LIMIT_MACROS LIBED2K_USE_BOOST_DATE_TIME)
 
+file(MAKE_DIRECTORY ${out_dir})
+
+if(PRODUCTION)
+    set(out_dir "${out_dir}/release")
+else(DEFINED production)
+    set(out_dir "${out_dir}/debug")
+endif(PRODUCTION)
+

@@ -132,7 +132,7 @@ namespace libed2k
 
 #ifdef LIBED2K_USE_OPENSSL
         // for SSL connections, first do an async_shutdown, before closing the socket
-#if defined LIBED2K_DEBUG
+#if defined LIBED2K_ASIO_DEBUGGING
 #define MAYBE_ASIO_DEBUGGING add_outstanding_async("on_close_socket");
 #else
 #define MAYBE_ASIO_DEBUGGING

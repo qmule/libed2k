@@ -365,7 +365,7 @@ void http_connection::start(
 
 void http_connection::on_connect_timeout()
 {
-    LIBED2K_ASSERT(m_connection_ticket > -1);
+    //LIBED2K_ASSERT(m_connection_ticket > -1);
 
     // keep ourselves alive even if the callback function
     // deletes this object

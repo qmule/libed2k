@@ -175,9 +175,14 @@ namespace libed2k
         {
 #if defined BOOST_HAS_PTHREADS
             if (m_thread == 0)
+            {
                 m_thread = pthread_self();
+                return true;
+            }
+
             return m_thread == pthread_self();
 #endif
+
             return true;
         }
 #endif

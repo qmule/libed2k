@@ -231,7 +231,7 @@ int natpmp::add_mapping(protocol_type p, int external_port, int local_port)
 
 #ifdef NATPMP_LOG
     ptime now = time_now();
-    for (std::vector<mapping_t>::iterator m = m_mappings.begin()d , end(m_mappings.end()); m != end; ++m)
+    for (std::vector<mapping_t>::iterator m = m_mappings.begin(), end(m_mappings.end()); m != end; ++m)
     {
         std::cout << " ADD MAPPING: " << mapping_index << " [ "
             "proto: " << (i->protocol == none ? "none" : i->protocol == tcp ? "tcp" : "udp")

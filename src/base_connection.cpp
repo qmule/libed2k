@@ -72,9 +72,8 @@ namespace libed2k
     }
 
     void base_connection::write_message(const message& msg) {
-        copy_send_buffer((char*)(&msg.header), header_size);
-        copy_send_buffer(msg.body.c_str(), msg.body.size());
-
+        copy_send_buffer((char*)(&msg.first), header_size);
+        copy_send_buffer(msg.second.c_str(), msg.second.size());
         do_write();
     }
 

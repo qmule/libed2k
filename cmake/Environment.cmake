@@ -23,6 +23,7 @@ if(NOT COMMAND find_host_package)
     find_package(${ARGN})
   endmacro()
 endif()
+
 if(NOT COMMAND find_host_program)
   macro(find_host_program)
     find_program(${ARGN})
@@ -38,15 +39,6 @@ if (BUILD_TESTS)
         set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
 endif()
 
-file(MAKE_DIRECTORY ${out_dir})
-
-if(PRODUCTION)
-    set(out_dir "${out_dir}/release")
-else(DEFINED production)
-    set(out_dir "${out_dir}/debug")
-endif(PRODUCTION)
-
-
 include_directories(include)
 
 message(STATUS "DATA_MODEL      = ${bitness}")
@@ -54,4 +46,13 @@ message(STATUS "PRODUCTION      = ${PRODUCTION}")
 message(STATUS "BUILD_TESTS     = ${BUILD_TESTS}")
 message(STATUS "BUILD_TOOLS     = ${BUILD_TOOLS}")
 message(STATUS "BUILD_SHARED    = ${BUILD_SHARED}")
+
+if (DISABLE_DHT)
+	message(STATUS "DHT	= disabled")
+else()
+	message(STATUS "DHT	= enabled")
+	message(STATUS "DHT_VERBOSE	= ${DHT_VERBOSE}")
+endif()
+
+message(STATUS "UPNP_VERBOSE	= ${UPNP_VERBOSE}")
 

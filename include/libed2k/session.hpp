@@ -6,14 +6,17 @@
 
 #include "libed2k/storage_defs.hpp"
 #include "libed2k/fingerprint.hpp"
-#include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 #include "libed2k/transfer_handle.hpp"
 #include "libed2k/peer_connection_handle.hpp"
 #include "libed2k/peer.hpp"
 #include "libed2k/alert.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 #include "libed2k/session_status.hpp"
 #include "libed2k/filesystem.hpp"
+#include "libed2k/session_settings.hpp"
+#include "libed2k/entry.hpp"
 
 namespace libed2k {
 
@@ -107,12 +110,26 @@ namespace libed2k {
         void stop_natpmp();
         void stop_upnp();
 
+#ifndef LIBED2K_DISABLE_DHT
+        void start_dht(entry const& startup_state = entry());
+        void stop_dht();
+        void set_dht_settings(dht_settings const& settings);
+        void add_dht_node(std::pair<std::string, int> const& node);
+        void add_dht_node(std::pair<std::string, int> const& node, const std::string& id);
+        void add_dht_router(std::pair<std::string, int> const& node);
+        bool is_dht_running() const;
+        void find_keyword(const std::string& keyword);
+        entry dht_state();
+        kad_state dht_estate();
+#endif
+
         // add_port_mapping adds a port forwarding on UPnP and/or NAT-PMP,
         // whichever is enabled. The return value is a handle referring to the
         // port mapping that was just created. Pass it to delete_port_mapping()
         // to remove it.
         int add_port_mapping(protocol_type t, int external_port, int local_port);
         void delete_port_mapping(int handle);
+
 
     private:
         void init(const fingerprint& id, const char* listen_interface,
