@@ -7,6 +7,20 @@ Main features:
 - high speed
 - async IO
 
+Kademlia
+--------
+Library supports Kademlia2 eMule protocol. Version of client is KADEMLIA_VERSION5_48a to aboid obfuscation requirement.
+Features:
+- search for sources
+- search for keywords
+- handles KADEMLIA2_REQ
+
+Restrictions:
+- buddy system is not supported
+- transfer announcing is not implemented yet
+- keywords announcing is not implemented yet
+
+
 Building
 --------
 Supported platforms
@@ -16,14 +30,16 @@ Supported platforms
 * Android
 
 Common dependencies:
-* boost
+* boost(system, thread, random, date_time and tests for unit testing)
 * cmake
 
 Windows, Linux, Mac OS X:
 * git clone https://github.com/qmule/libed2k.git
 * mkdir libed2k/build
 * cd libed2k/build && cmake ..
-* make (on Windows skip this step)
+* make (on Windows skip this step, use generated solution)
+
+Windows x64 build on VS2015 cmake .. -G"Visual Studio 14 Win64"
 
 
 Android cross platform compilation on Linux
