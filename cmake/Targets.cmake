@@ -1,19 +1,61 @@
-file(GLOB_RECURSE headers include/*.hpp)
-file(GLOB_RECURSE sources src/*.cpp src/*.c)
+if (BUILD_TESTS)
+        set(BOOST_LIBRARIES ${BOOST_LIBRARIES} unit_test_framework)
+endif()
+
+find_host_package(Boost 1.40 REQUIRED ${BOOST_LIBRARIES})
+include_directories(${Boost_INCLUDE_DIR} )
+link_directories(${Boost_LIBRARY_DIRS})
+
+file(MAKE_DIRECTORY ${out_dir})
 
 
-add_library(ed2k STATIC ${headers} ${sources})
+file(GLOB headers include/libed2k/*.hpp)
+file(GLOB headers_kad include/libed2k/kademlia/*.hpp)
+
+if (UPNP_VERBOSE)
+	set(cxx_definitions LIBED2K_UPNP_LOGGING)
+endif()
+
+if (DISABLE_DHT)
+	set(cxx_definitions ${cxx_definitions} LIBED2K_DISABLE_DHT)
+	set(executables conn archive dumper)
+else()
+	set(executables conn archive dumper kad)
+	file(GLOB sources_kad src/kademlia/*.cpp)
+	source_group("Source files\\kademlia" FILES ${sources_kad})
+	if (DHT_VERBOSE)
+		set(cxx_definitions ${cxx_definitions} LIBED2K_DHT_VERBOSE_LOGGING)
+	endif()
+endif()
+
+source_group(include FILES ${headers})
+source_group(include\\kademlia FILES ${headers_kad})
+
+file(GLOB sources src/*.cpp src/*.c)
+
+
+if (BUILD_SHARED)
+	add_library(ed2k SHARED ${headers} ${headers_kad} ${sources} ${sources_kad})
+else()
+	add_library(ed2k STATIC ${headers} ${headers_kad} ${sources} ${sources_kad})
+endif()
+
 set_target_properties(ed2k PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${out_dir} )
+set_target_properties(ed2k PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${out_dir})
 set_target_properties(ed2k PROPERTIES LINK_FLAGS ${l_flags})
+set_target_properties(ed2k PROPERTIES COMPILE_FLAGS ${cxx_flags})
+
+target_compile_definitions(ed2k PRIVATE ${cxx_definitions})
 
 if (BUILD_TOOLS)
-    foreach(ed2k_component conn archive dumper)
+    foreach(ed2k_component ${executables})
         file(GLOB_RECURSE component_headers test/${ed2k_component}/*hpp)
         file(GLOB_RECURSE component_sources test/${ed2k_component}/*cpp)
         add_executable(${ed2k_component} ${headers} ${component_headers} ${component_sources})
         set_target_properties(${ed2k_component} PROPERTIES COMPILE_FLAGS ${cxx_flags})
         set_target_properties(${ed2k_component} PROPERTIES LINK_FLAGS ${l_flags})
         set_target_properties(${ed2k_component} PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${out_dir})
+        target_compile_definitions(${ed2k_component} PRIVATE ${cxx_definitions})
         target_link_libraries(${ed2k_component} ed2k)
         # link boost and system libraries
         TARGET_LINK_LIBRARIES(${ed2k_component} ${Boost_LIBRARIES} )
@@ -28,7 +70,7 @@ if (BUILD_TESTS)
     set_target_properties(run_tests PROPERTIES COMPILE_FLAGS ${cxx_flags})
     set_target_properties(run_tests PROPERTIES LINK_FLAGS ${l_flags})
     set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY  ${test_dir})
+    target_compile_definitions(run_tests PRIVATE ${cxx_definitions})
     target_link_libraries(run_tests ed2k)
-    target_link_libraries(run_tests pthread)
     TARGET_LINK_LIBRARIES(run_tests ${Boost_LIBRARIES} )
 endif(BUILD_TESTS)

@@ -63,7 +63,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef PRId64
 // MinGW uses microsofts runtime
 #if defined _MSC_VER || defined __MINGW32__
-#define PRId64 "I64d"
+#define PRId64 "lld"
 #define PRIu64 "I64u"
 #define PRIu32 "u"
 #else
@@ -200,9 +200,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 
 // ==== LINUX ===
+// avoid android cross compiler treats as linux
 #elif defined __linux__
 #define LIBED2K_LINUX
-#define LIBED2K_USE_IFADDRS 1
+
+#if !defined __ANDROID__
+  #define LIBED2K_USE_IFADDRS 1
+#endif
+
 #define LIBED2K_USE_NETLINK 1
 #define LIBED2K_USE_IFCONF 1
 #define LIBED2K_HAS_SALEN 0
@@ -309,7 +314,7 @@ namespace libed2k
     {
         va_list lp;
         va_start(lp, fmt);
-        int ret = _vsnprintf(buf, len, fmt, lp);
+        int ret = vsnprintf(buf, len, fmt, lp);
         va_end(lp);
         if (ret < 0) { buf[len-1] = 0; ret = len-1; }
         return ret;
@@ -332,7 +337,9 @@ namespace libed2k
 
 // libiconv presence, not implemented yet
 #ifndef LIBED2K_USE_ICONV
+#ifndef __ANDROID__
 #define LIBED2K_USE_ICONV 1
+#endif
 #endif
 
 #ifndef LIBED2K_HAS_SALEN
@@ -380,7 +387,9 @@ namespace libed2k
 #endif // LIBED2K_USE_WSTRING
 
 #ifndef LIBED2K_HAS_FALLOCATE
+#ifndef __ANDROID__
 #define LIBED2K_HAS_FALLOCATE 1
+#endif
 #endif
 
 #ifndef LIBED2K_EXPORT

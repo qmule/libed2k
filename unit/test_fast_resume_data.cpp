@@ -15,7 +15,7 @@
 #include "libed2k/entry.hpp"
 #include "libed2k/lazy_entry.hpp"
 #include "libed2k/log.hpp"
-#include "libed2k/md4_hash.hpp"
+#include "libed2k/hasher.hpp"
 
 
 BOOST_AUTO_TEST_SUITE(test_fast_resume_data)

@@ -15,11 +15,12 @@
  * and avoid compile-time configuration.
  */
 
-#include "libed2k/md4.hpp"
+#include "libed2k/hasher.hpp"
+#include "libed2k/log.hpp"
 #include <string.h>
 
-namespace libed2k{
-
+#ifndef LIBED2K_USE_OPENSSL
+namespace {
 /*
  * The basic MD4 functions.
  */
@@ -63,7 +64,7 @@ namespace libed2k{
  * This processes one or more 64-byte data blocks, but does NOT update
  * the bit counters.  There're no alignment requirements.
  */
-const unsigned char *body(struct md4_context *ctx, const unsigned char *data, size_t size)
+const unsigned char *body(struct MD4_CTX *ctx, const unsigned char *data, size_t size)
 {
 	const unsigned char *ptr;
 	boost::uint32_t a, b, c, d;
@@ -159,7 +160,12 @@ const unsigned char *body(struct md4_context *ctx, const unsigned char *data, si
 	return ptr;
 }
 
-void md4_init(struct md4_context *ctx)
+#undef F
+#undef G
+#undef H
+
+}
+void MD4_Init(struct MD4_CTX *ctx)
 {
 	ctx->a = 0x67452301;
 	ctx->b = 0xefcdab89;
@@ -170,7 +176,7 @@ void md4_init(struct md4_context *ctx)
 	ctx->hi = 0;
 }
 
-void md4_update(struct md4_context *ctx, const unsigned char *data, size_t size)
+void MD4_Update(struct MD4_CTX *ctx, boost::uint8_t const *data, boost::uint32_t size)
 {
 	/* @UNSAFE */
 	boost::uint32_t saved_lo;
@@ -205,7 +211,7 @@ void md4_update(struct md4_context *ctx, const unsigned char *data, size_t size)
 	memcpy(ctx->buffer, data, size);
 }
 
-void md4_final(struct md4_context *ctx, unsigned char result[MD4_HASH_SIZE])
+void MD4_Final(boost::uint8_t result[MD4_DIGEST_LENGTH], struct MD4_CTX *ctx)
 {
 	/* @UNSAFE */
 	unsigned long used, free;
@@ -256,10 +262,236 @@ void md4_final(struct md4_context *ctx, unsigned char result[MD4_HASH_SIZE])
 
 	memset(ctx, 0, sizeof(*ctx));
 }
+#endif
 
-#undef F
-#undef G
-#undef H
+namespace libed2k
+{
+    const md4_hash md4_hash::terminal   = md4_hash::fromString("31D6CFE0D16AE931B73C59D7E0C089C0");
+    const md4_hash md4_hash::libed2k    = md4_hash::fromString("31D6CFE0D14CE931B73C59D7E0C04BC0");
+    const md4_hash md4_hash::emule      = md4_hash::fromString("31D6CFE0D10EE931B73C59D7E0C06FC0");
+    const md4_hash md4_hash::invalid    = md4_hash::fromString("00000000000000000000000000000000");
 
+    /*static*/
+    md4_hash md4_hash::fromHashset(const std::vector<md4_hash>& hashset)
+    {
+        md4_hash result;
+
+        if (hashset.size() > 1)
+        {
+            MD4_CTX ctx;
+            MD4_Init(&ctx);
+            MD4_Update(&ctx, reinterpret_cast<const boost::uint8_t*>(&hashset[0]),
+                    hashset.size() * MD4_DIGEST_LENGTH);
+            MD4_Final(result.getContainer(), &ctx);
+        }
+        else if (hashset.size() == 1)
+        {
+            result = hashset[0];
+        }
+
+        return result;
+    }
+
+    /*static*/
+    md4_hash md4_hash::fromString(const std::string& strHash)
+    {
+        LIBED2K_ASSERT(strHash.size() == MD4_DIGEST_LENGTH*2);
+        LIBED2K_ASSERT(strHash.size() == MD4_DIGEST_LENGTH*2);
+
+        md4_hash hash;
+
+        if (!from_hex(strHash.c_str(), MD4_DIGEST_LENGTH*2, (char*)hash.m_hash))
+        {
+            hash = invalid;
+        }
+
+        return (hash);
+    }
+
+
+    md4_hash md4_hash::max(){
+        md4_hash ret;
+        memset(ret.m_hash, 0xff, size);
+        return ret;
+    }
+
+    md4_hash md4_hash::min(){
+        md4_hash ret;
+        memset(ret.m_hash, 0, size);
+        return ret;
+    }
+
+    md4_hash::md4_hash(const std::vector<boost::uint8_t>& vHash){
+        size_t nSize = (vHash.size()> MD4_DIGEST_LENGTH)?MD4_DIGEST_LENGTH:vHash.size();
+        for (size_t i = 0; i < nSize; i++)
+            m_hash[i] = vHash[i];
+    }
+
+    md4_hash::md4_hash(const md4hash_container& container){
+        memcpy(m_hash, container, MD4_DIGEST_LENGTH);
+    }
+
+    md4_hash::md4_hash(const char* s){
+		if (s == 0) clear();
+		else std::memcpy(m_hash, s, size);
+    }
+
+    bool md4_hash::is_all_zeros() const
+    {
+        for (const unsigned char* i = m_hash; i < m_hash+number_size; ++i)
+            if (*i != 0) return false;
+        return true;
+    }
+
+    md4_hash& md4_hash::operator<<=(int n)
+    {
+        LIBED2K_ASSERT(n >= 0);
+        int num_bytes = n / 8;
+        if (num_bytes >= number_size)
+        {
+            std::memset(m_hash, 0, number_size);
+            return *this;
+        }
+
+        if (num_bytes > 0)
+        {
+            std::memmove(m_hash, m_hash + num_bytes, number_size - num_bytes);
+            std::memset(m_hash + number_size - num_bytes, 0, num_bytes);
+            n -= num_bytes * 8;
+        }
+        if (n > 0)
+        {
+            for (int i = 0; i < number_size - 1; ++i)
+            {
+                m_hash[i] <<= n;
+                m_hash[i] |= m_hash[i+1] >> (8 - n);
+            }
+        }
+        return *this;
+    }
+
+    md4_hash& md4_hash::operator>>=(int n)
+    {
+        LIBED2K_ASSERT(n >= 0);
+        int num_bytes = n / 8;
+        if (num_bytes >= number_size)
+        {
+            std::memset(m_hash, 0, number_size);
+            return *this;
+        }
+        if (num_bytes > 0)
+        {
+            std::memmove(m_hash + num_bytes, m_hash, number_size - num_bytes);
+            std::memset(m_hash, 0, num_bytes);
+            n -= num_bytes * 8;
+        }
+        if (n > 0)
+        {
+            for (int i = number_size - 1; i > 0; --i)
+            {
+                m_hash[i] >>= n;
+                m_hash[i] |= m_hash[i-1] << (8 - n);
+            }
+        }
+        return *this;
+    }
+
+    bool md4_hash::operator==(md4_hash const& n) const
+    {
+        return std::equal(n.m_hash, n.m_hash+number_size, m_hash);
+    }
+
+    bool md4_hash::operator!=(md4_hash const& n) const
+    {
+        return !std::equal(n.m_hash, n.m_hash+number_size, m_hash);
+    }
+
+    bool md4_hash::operator<(md4_hash const& n) const
+    {
+        for (int i = 0; i < number_size; ++i)
+        {
+            if (m_hash[i] < n.m_hash[i]) return true;
+            if (m_hash[i] > n.m_hash[i]) return false;
+        }
+        return false;
+    }
+
+    md4_hash md4_hash::operator~() const
+    {
+        md4_hash ret;
+        for (int i = 0; i< number_size; ++i)
+            ret.m_hash[i] = ~m_hash[i];
+        return ret;
+    }
+
+    md4_hash md4_hash::operator^ (md4_hash const& n) const
+    {
+        md4_hash ret = *this;
+        ret ^= n;
+        return ret;
+    }
+
+    md4_hash md4_hash::operator& (md4_hash const& n) const
+    {
+        md4_hash ret = *this;
+        ret &= n;
+        return ret;
+    }
+
+    md4_hash& md4_hash::operator &= (md4_hash const& n)
+    {
+        for (int i = 0; i< number_size; ++i)
+            m_hash[i] &= n.m_hash[i];
+        return *this;
+    }
+
+    md4_hash& md4_hash::operator |= (md4_hash const& n)
+    {
+        for (int i = 0; i< number_size; ++i)
+            m_hash[i] |= n.m_hash[i];
+        return *this;
+    }
+
+    md4_hash& md4_hash::operator ^= (md4_hash const& n)
+    {
+        for (int i = 0; i< number_size; ++i)
+            m_hash[i] ^= n.m_hash[i];
+        return *this;
+    }
+
+    bool md4_hash::defined() const
+    {
+        int sum = 0;
+        for (size_t i = 0; i < MD4_DIGEST_LENGTH; ++i)
+            sum |= m_hash[i];
+        return sum != 0;
+    }
+
+    std::string md4_hash::toString() const
+    {
+        static const char c[MD4_DIGEST_LENGTH] =
+                {
+                        '\x30', '\x31', '\x32', '\x33',
+                        '\x34', '\x35', '\x36', '\x37',
+                        '\x38', '\x39', '\x41', '\x42',
+                        '\x43', '\x44', '\x45', '\x46'
+                };
+
+        std::string res(MD4_DIGEST_LENGTH*2, '\x00');
+        LIBED2K_ASSERT(res.length() == MD4_DIGEST_LENGTH*2);
+
+        for (size_t i = 0; i < MD4_DIGEST_LENGTH; ++i)
+        {
+            res[i*2]        = c[(m_hash[i] >> 4)];
+            res[(i*2)+1]    = c[(m_hash[i] & 0x0F)];
+        }
+
+        return res;
+    }
+
+    void md4_hash::dump() const
+    {
+        DBG("md4_hash::dump " << toString().c_str());
+    }
 }
 

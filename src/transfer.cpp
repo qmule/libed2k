@@ -199,6 +199,9 @@ namespace libed2k
     {
         APP("request peers by hash: " << hash() << ", size: " << size());
         m_ses.m_server_connection->post_sources_request(hash(), size());
+#ifndef LIBED2K_DISABLE_DHT
+        m_ses.find_sources(hash(), size()); // search for sources via dht
+#endif
     }
 
     void transfer::add_peer(const tcp::endpoint& peer, int source)
@@ -256,6 +259,7 @@ namespace libed2k
 
     bool transfer::attach_peer(peer_connection* p)
     {
+        DBG("transfer::attach_peer");
         LIBED2K_ASSERT(!p->has_transfer());
 
         if (m_ses.m_ip_filter.access(p->remote().address()) & ip_filter::blocked)
@@ -288,6 +292,7 @@ namespace libed2k
 
         LIBED2K_ASSERT(m_connections.find(p) == m_connections.end());
         m_connections.insert(p);
+        DBG("activate transfer");
         activate(true);
 
         return true;
@@ -1846,5 +1851,59 @@ namespace libed2k
     {
         return tran.second->get_announce();
     }
+
+#ifndef LIBED2K_DISABLE_DHT
+
+    bool transfer::should_announce_dht() const
+    {
+        LIBED2K_ASSERT(m_ses.is_network_thread());
+        if (m_ses.m_listen_sockets.empty()) return false;
+        return true;
+    }
+
+    void transfer::dht_announce()
+    {
+        LIBED2K_ASSERT(m_ses.is_network_thread());
+        if (!m_ses.m_dht) return;
+        if (!should_announce_dht()) return;
+
+        int port = m_ses.listen_port();
+
+        boost::weak_ptr<transfer> self(shared_from_this());
+
+        //m_ses.m_dht->announce(hash()
+        //    , port
+        //    , boost::bind(&transfer::on_dht_announce_response_disp, self, _1));
+    }
+
+    // static
+    //void transfer::on_dht_announce_response_disp(boost::weak_ptr<transfer> t
+    //    , kad_id const& id)
+    //{
+        //boost::shared_ptr<transfer> tor = t.lock();
+        //if (!tor) return;
+        //tor->on_dht_announce_response(peers);
+    //}
+
+    void transfer::on_dht_announce_response(std::vector<tcp::endpoint> const& peers)
+    {
+        LIBED2K_ASSERT(m_ses.is_network_thread());
+        if (peers.empty()) return;
+
+        /*
+        if (m_ses.m_alerts.should_post<dht_reply_alert>())
+        {
+            m_ses.m_alerts.post_alert(dht_reply_alert(
+                get_handle(), peers.size()));
+        }
+*/
+
+        std::for_each(peers.begin(), peers.end(), boost::bind(
+            &policy::add_peer, boost::ref(m_policy), _1, peer_info::dht, 0));
+
+        //do_connect_boost();
+    }
+
+#endif
 
 }

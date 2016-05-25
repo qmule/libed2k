@@ -6,10 +6,6 @@
 #include <map>
 #include <deque>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/iostreams/stream.hpp>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -34,6 +30,8 @@ namespace libed2k{
     enum{ header_size = sizeof( libed2k_header) };
 
     namespace aux{ class session_impl; }
+
+
 
     class base_connection: public intrusive_ptr_base<base_connection>,
                            public boost::noncopyable
@@ -67,38 +65,11 @@ namespace libed2k{
         };
 
     protected:
-
-        struct message {
-            libed2k_header header;
-            std::string body;
-        };
-
         // constructor method
         void reset();
 
         virtual void do_read();
         virtual void do_write(int quota = (std::numeric_limits<int>::max)());
-
-        template <typename T>
-        message make_message(const T& t)
-        {
-            message msg;
-
-            msg.header.m_protocol = packet_type<T>::protocol;
-            boost::iostreams::back_insert_device<std::string> inserter(msg.body);
-            boost::iostreams::stream<boost::iostreams::back_insert_device<std::string> >
-                s(inserter);
-
-            // Serialize the data first so we know how large it is.
-            archive::ed2k_oarchive oa(s);
-            oa << const_cast<T&>(t);
-            s.flush();
-            // packet size without protocol type and packet body size field
-            msg.header.m_size = body_size(t, msg.body) + 1;
-            msg.header.m_type = packet_type<T>::value;
-
-            return msg;
-        }
 
         template<typename T>
         void write_struct(const T& t) { write_message(make_message(t)); }
@@ -136,14 +107,6 @@ namespace libed2k{
          * deadline timer handler
          */
         void check_deadline();
-
-        template <typename Struct>
-        size_t body_size(const Struct& s, const std::string& body)
-        { return body.size(); }
-
-        template<typename size_type>
-        size_t body_size(const client_sending_part<size_type>&s, const std::string& body)
-        { return body.size() + s.m_end_offset - s.m_begin_offset; }
 
         /**
          * will call from external handlers for extract buffer into structure

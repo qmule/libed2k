@@ -1,8 +1,11 @@
 #ifndef WIN32
 #define BOOST_TEST_DYN_LINK
 #endif
+
 #define BOOST_TEST_MODULE main
-#include <string>
+#ifndef _AIX
+#include <boost/test/included/unit_test.hpp>
+#endif
 #include <boost/test/unit_test.hpp>
 
 #include "libed2k/error_code.hpp"
@@ -256,12 +259,31 @@ BOOST_AUTO_TEST_CASE(check_dat_filter_parser)
     BOOST_CHECK_EQUAL(ec, libed2k::error_code(libed2k::errors::levels_value_error));
 }
 
-BOOST_AUTO_TEST_CASE(multipiece_request_test)
-{
+
+BOOST_AUTO_TEST_CASE(test_cpp_understanding) {
+	libed2k::client_sending_part<boost::uint32_t> csp32;
+	libed2k::client_sending_part<boost::uint8_t> csp8;
+	csp32.m_begin_offset = 10;
+	csp32.m_end_offset = 20;
+	csp8.m_begin_offset = 11;
+	csp8.m_end_offset = 23;
+	BOOST_CHECK_EQUAL(5, libed2k::body_size(libed2k::misc_options2(), std::string("12345")));
+	BOOST_CHECK_EQUAL(15, libed2k::body_size(csp32, std::string("12345")));
+	BOOST_CHECK_EQUAL(17, libed2k::body_size(csp8, std::string("12345")));
+}
+
+BOOST_AUTO_TEST_CASE(multipiece_request_test) {
     std::vector<libed2k::peer_request> res1;
     res1.push_back(libed2k::peer_request(47, 9712413, 15587));
     res1.push_back(libed2k::peer_request(48, 0, 45853));
     BOOST_CHECK(mk_peer_requests(466928413, 466989853, 490106914) == res1);
+}
+
+BOOST_AUTO_TEST_CASE(test_shared_ptr) {
+    boost::shared_ptr<int> p(new int(1));
+    boost::weak_ptr<int> wp = p;
+    boost::shared_ptr<int> lp = wp.lock();
+    BOOST_CHECK(lp);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -10,9 +10,10 @@
 
 #include <fstream>
 #include <boost/test/unit_test.hpp>
-#include "libed2k/md4_hash.hpp"
 #include "libed2k/hasher.hpp"
 #include "libed2k/packet_struct.hpp"
+#include "libed2k/kademlia/node_id.hpp"
+#include "libed2k/kademlia/kad_packet_struct.hpp"
 #include "common.hpp"
 
 
@@ -30,7 +31,7 @@ struct test_md4_hash
 BOOST_FIXTURE_TEST_CASE(test_conversion, test_md4_hash)
 {
     std::string strHash1 = "000102030405060708090A0B0C0D0F0D";
-    BOOST_REQUIRE(strHash1.size() == libed2k::MD4_HASH_SIZE*2);
+    BOOST_REQUIRE(strHash1.size() == MD4_DIGEST_LENGTH*2);
     m_test = libed2k::md4_hash::fromString(strHash1);
     BOOST_CHECK_EQUAL(strHash1, m_test.toString());
     strHash1  = "000102030405F6c70b090a0B0c0D0f0D";
@@ -52,7 +53,7 @@ BOOST_AUTO_TEST_CASE(test_compare)
     BOOST_CHECK(h3[0] == '\x0A');
     BOOST_CHECK(h2[0] == '\x00');
     BOOST_CHECK(h1 == h2);
-    BOOST_CHECK(h3 > h2);
+    BOOST_CHECK(!(h3 < h2));
 }
 
 BOOST_AUTO_TEST_CASE(test_user_agent)
@@ -95,11 +96,9 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
         part_hashset.resize(pieces);
         libed2k::size_type capacity = itr->first;
 
-        // use hasher
-        libed2k::hasher ih;
-
         for (int i = 0; i < pieces; ++i)
         {
+            libed2k::hasher ih;
             libed2k::size_type in_piece_capacity = (std::min)(libed2k::PIECE_SIZE, capacity);
 
             while(in_piece_capacity > 0)
@@ -110,7 +109,6 @@ BOOST_AUTO_TEST_CASE(test_partial_hashing_and_hashset)
             }
 
             part_hashset[i] = ih.final();
-            ih.reset();
         }
 
         if (pieces*libed2k::PIECE_SIZE == itr->first)

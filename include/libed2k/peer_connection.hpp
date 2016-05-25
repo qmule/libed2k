@@ -27,9 +27,9 @@
 namespace libed2k
 {
     class peer;
-    class transfer;
     class md4_hash;
     class known_file;
+    class transfer;
     namespace aux{
         class session_impl;
     }

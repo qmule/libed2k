@@ -590,7 +590,7 @@ namespace libed2k
         DBG("known_file_entry::dump(TS: " << m_nLastChanged
                 << " " << m_hFile
                 << " hash list size: " <<  m_hash_list.m_collection.size()
-                << " tag list size: " << m_list.count());
+                << " tag list size: " << m_list.size());
     }
 
     known_file_collection::known_file_collection()
@@ -630,7 +630,7 @@ namespace libed2k
                 atp.piece_hashses = m_known_file_list.m_collection[n].m_hash_list.m_collection;
             }
 
-            for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.count(); j++)
+            for (size_t j = 0; j < m_known_file_list.m_collection[n].m_list.size(); j++)
             {
                 const boost::shared_ptr<base_tag> p = m_known_file_list.m_collection[n].m_list[j];
                 // we process only int tags - check only ints
@@ -860,10 +860,10 @@ namespace libed2k
             size_type capacity = atp.file_size;
             size_type offset = 0;
             char chBlock[BLOCK_SIZE];
-            hasher hproc;
 
             for (int i = 0; i < pieces_count; ++i)
             {
+                hasher piece_hash;
                 size_type in_piece_capacity = std::min<size_type>(libed2k::PIECE_SIZE, capacity);
 
                 while(in_piece_capacity > 0)
@@ -878,7 +878,7 @@ namespace libed2k
                     if (ec)
                         break;
 
-                    hproc.update(chBlock, current_block_size);
+                    piece_hash.update(chBlock, current_block_size);
                     capacity -= current_block_size;
                     in_piece_capacity -= current_block_size;
                     offset += current_block_size;
@@ -887,8 +887,7 @@ namespace libed2k
                 if (ec)
                     break;
 
-                atp.piece_hashses[i] = hproc.final();
-                hproc.reset();
+                atp.piece_hashses[i] = piece_hash.final();
             }
 
             if (!ec)
@@ -900,8 +899,7 @@ namespace libed2k
                 // calculate full file hash
                 if (atp.piece_hashses.size() > 1)
                 {
-                    hproc.update(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_HASH_SIZE);
-                    atp.file_hash = hproc.final();
+                    atp.file_hash = hasher(reinterpret_cast<const char*>(&atp.piece_hashses[0]), atp.piece_hashses.size()*MD4_DIGEST_LENGTH).final();
                 }
                 else
                 {
@@ -996,7 +994,7 @@ namespace libed2k
                     boost::uint64_t nFilesize = 0;
                     md4_hash        hFile;
 
-                    for (size_t j = 0; j < ebc.m_files.m_collection[i].count(); ++j)
+                    for (size_t j = 0; j < ebc.m_files.m_collection[i].size(); ++j)
                     {
                         const boost::shared_ptr<base_tag> p = ebc.m_files.m_collection[i][j];
 
@@ -1196,7 +1194,7 @@ namespace libed2k
     {
         md4_hash hash;
 
-        if (strFilename.empty() || nFilesize == 0 || strFilehash.size() != md4_hash::hash_size*2)
+        if (strFilename.empty() || nFilesize == 0 || strFilehash.size() != MD4_DIGEST_LENGTH*2)
         {
             return false;
         }

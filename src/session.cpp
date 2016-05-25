@@ -231,16 +231,12 @@ namespace libed2k
         m_impl->m_tpm.cancel_transfer_params(filepath);
     }
     
-    natpmp* session::start_natpmp()
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return m_impl->start_natpmp();
+    void session::start_natpmp() {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::start_natpmp, m_impl));
     }
     
-    upnp* session::start_upnp()
-    {
-        boost::mutex::scoped_lock l(m_impl->m_mutex);
-        return m_impl->start_upnp();
+    void session::start_upnp() {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::start_upnp, m_impl));
     }
 
     void session::stop_natpmp()
@@ -253,5 +249,70 @@ namespace libed2k
     {
         boost::mutex::scoped_lock l(m_impl->m_mutex);
         m_impl->stop_upnp();
+    }
+
+#ifndef LIBED2K_DISABLE_DHT
+
+    void session::start_dht(entry const& startup_state/* = entry()*/)
+    {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::start_dht, m_impl, startup_state));
+    }
+
+    void session::stop_dht()
+    {
+    	m_impl->m_io_service.post(boost::bind(&aux::session_impl::stop_dht, m_impl));
+    }
+
+    void session::set_dht_settings(dht_settings const& settings)
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->set_dht_settings(settings);
+    }
+
+    void session::add_dht_node(std::pair<std::string, int> const& node)
+    {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::add_dht_node_name, m_impl, node));
+    }
+
+    void session::add_dht_node(std::pair<std::string, int> const& node, const std::string& id) {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::add_dht_node, m_impl, node, id));
+    }
+
+    void session::add_dht_router(std::pair<std::string, int> const& node)
+    {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::add_dht_router, m_impl, node));
+    }
+
+    bool session::is_dht_running() const
+    {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        bool r = m_impl->is_dht_running();
+        return r;
+    }
+
+    void session::find_keyword(const std::string& keyword) {
+        m_impl->m_io_service.post(boost::bind(&aux::session_impl::find_keyword, m_impl, keyword));
+    }
+
+    entry session::dht_state() {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->dht_state();
+    }
+
+    kad_state session::dht_estate() {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->dht_estate();
+    }
+
+#endif
+
+    int session::add_port_mapping(protocol_type t, int external_port, int local_port) {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        return m_impl->add_port_mapping(t, external_port, local_port);
+    }
+
+    void session::delete_port_mapping(int handle) {
+        boost::mutex::scoped_lock l(m_impl->m_mutex);
+        m_impl->delete_port_mapping(handle);
     }
 }

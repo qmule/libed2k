@@ -199,9 +199,10 @@ namespace libed2k
 
                 if (nSize != 0)
                 {
-			        std::vector<char> v(nSize);
+                    char* v = new char[nSize];
                     raw_read(&v[0], nSize);
                     str.assign(&v[0], nSize);
+                    delete [] v;
                 }
 
                 return *this;

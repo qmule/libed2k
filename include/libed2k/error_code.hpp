@@ -59,7 +59,10 @@ namespace libed2k
             // protocol errors
             decode_packet_error,
             invalid_protocol_type,
-            unsupported_protocol_type,
+            unsupported_packed_type,
+            unsupported_udp_res1_type,
+            unsupported_udp_res2_type,
+            unsupported_kad_packed_type,
             invalid_packet_size,
             // transport errors
             session_closing,
@@ -154,9 +157,9 @@ namespace libed2k
 {
     struct libed2k_error_category : boost::system::error_category
     {
-        virtual const char* name() const;
+        virtual const char* name() const BOOST_SYSTEM_NOEXCEPT;
         virtual std::string message(int ev) const;
-        virtual boost::system::error_condition default_error_condition(int ev) const
+        virtual boost::system::error_condition default_error_condition(int ev) const BOOST_SYSTEM_NOEXCEPT
             { return boost::system::error_condition(ev, *this); }
     };
 
