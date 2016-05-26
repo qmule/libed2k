@@ -51,8 +51,6 @@ if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
     set(cxx_flags "${cxx_flags} -Wno-variadic-macros")
 endif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "3.4.2")
 
-set(l_flags "${l_flags} -lpthread")
-
 set(cxx_definitions ${cxx_definitions} __STDC_LIMIT_MACROS LIBED2K_USE_BOOST_DATE_TIME)
 
 file(MAKE_DIRECTORY ${out_dir})
