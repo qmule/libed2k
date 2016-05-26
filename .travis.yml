@@ -1,6 +1,6 @@
 language: cpp
 before_script: mkdir build
-script: cd build && cmake .. && make
+script: cd build && cmake .. && make VERBOSE=1
 
 os:
   - linux
@@ -17,7 +17,7 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
-    - libboost1.55-all-dev
+    - libboost1.59-all-dev
     - cmake
     - cmake-data
 
