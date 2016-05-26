@@ -1,4 +1,4 @@
-sudo: false
+sudo: required
 language: cpp
 before_script: mkdir build
 script: cd build && cmake .. && make
@@ -19,6 +19,9 @@ addons:
     - g++-4.9
     - libboost1.55-all-dev
     - cmake
+
+before_install:
+  - sudo apt-get update -qq
 
 compiler:
   - g++
