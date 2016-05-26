@@ -1,6 +1,8 @@
 libed2k
 =======
 
+[![Build Status](https://travis-ci.org/srouquette/kodama.svg)](https://travis-ci.org/a-pavlov/libed2k.svg?branch=master)
+
 eDonkey protocol library. Fast cross-platform eDonkey protocol library. Inspired by libtorrent_rasterbar.
 
 Main features:
