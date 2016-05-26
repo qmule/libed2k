@@ -1,0 +1,20 @@
+sudo: false
+language: cpp
+before_script: mkdir build
+script: cd build && cmake .. && make
+
+os:
+  - linux
+
+cache:
+  apt: true
+
+addons:
+  apt:
+    sources:
+    - boost-latest
+  packages:
+    - libboost1.59-all-dev
+
+compiler:
+  - g++
