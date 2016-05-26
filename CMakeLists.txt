@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0.2)
 project(libed2k)
 set(libed2k_version 0.0.1)
 set(out_dir "${PROJECT_SOURCE_DIR}/bin")
