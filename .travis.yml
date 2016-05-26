@@ -17,7 +17,7 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
-    - libboost1.59-all-dev
+    - libboost1.55-all-dev
     - cmake
     - cmake-data
 
