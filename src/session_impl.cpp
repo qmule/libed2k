@@ -1811,6 +1811,7 @@ void session_impl::set_external_address(address const& ip
         }
 
         m_dht->start(startup_state);
+        m_alerts.post_alert_should(dht_started());
 
         // announce all torrents we have to the DHT
         // TODO - should be implemented
@@ -1827,6 +1828,7 @@ void session_impl::set_external_address(address const& ip
         if (!m_dht) return;
         m_dht->stop();
         m_dht = 0;
+        m_alerts.post_alert_should(dht_stopped());
     }
 
     void session_impl::set_dht_settings(dht_settings const& settings)

@@ -915,6 +915,32 @@ namespace libed2k
         error_code error;
     };
 
+    struct dht_started : alert {
+        dht_started() {}
+
+        virtual std::auto_ptr<alert> clone() const {
+            return std::auto_ptr<alert>(new dht_started(*this));
+        }
+
+        virtual char const* what() const { return "DHT started"; }
+        virtual int category() const { return static_category; }
+        const static int static_category = alert::dht_notification;
+        virtual std::string message() const { return "DHT started"; }
+    };
+
+    struct dht_stopped : alert {
+        dht_stopped() {}
+
+        virtual std::auto_ptr<alert> clone() const {
+            return std::auto_ptr<alert>(new dht_stopped(*this));
+        }
+
+        virtual char const* what() const { return "DHT stopped"; }
+        virtual int category() const { return static_category; }
+        const static int static_category = alert::dht_notification;
+        virtual std::string message() const { return "DHT stopped"; }
+    };
+
     struct dht_announce_alert: alert
     {
             dht_announce_alert(address const& ip_, int port_
