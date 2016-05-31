@@ -1,0 +1,28 @@
+language: cpp
+before_script: mkdir build
+script: pushd build && cmake .. && make && popd
+
+os:
+  - linux
+
+cache:
+  apt: true
+
+addons:
+  apt:
+    sources:
+    - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
+    - ubuntu-toolchain-r-test
+    - boost-latest
+    packages:
+    - gcc-4.9
+    - g++-4.9
+    - libboost1.55-all-dev
+    - cmake
+    - cmake-data
+
+compiler:
+  - g++
+
+after_success: 
+  - cd unit && ./run_tests

@@ -47,6 +47,48 @@ struct dht_keyword {
 
 std::deque<dht_keyword> dht_keywords;
 
+
+void alerts_reader(const boost::system::error_code& ec, boost::asio::deadline_timer* pt, libed2k::session* ps)
+{
+    if (ec == boost::asio::error::operation_aborted) return;
+    std::auto_ptr<alert> a = ps->pop_alert();
+    while (a.get())
+    {
+        if (dynamic_cast<server_connection_initialized_alert*>(a.get()))
+        {
+            server_connection_initialized_alert* p = dynamic_cast<server_connection_initialized_alert*>(a.get());
+            DBG("ALERT:  " << "server initalized: cid: " << p->client_id);
+        }
+        else if (dynamic_cast<server_status_alert*>(a.get()))
+        {
+            server_status_alert* p = dynamic_cast<server_status_alert*>(a.get());
+            DBG("ALERT: server status: files count: " << p->files_count << " users count " << p->users_count);
+        }
+        else if (dynamic_cast<server_message_alert*>(a.get()))
+        {
+            server_message_alert* p = dynamic_cast<server_message_alert*>(a.get());
+            DBG("ALERT: " << "msg: " << p->server_message);
+        }
+        else if (dynamic_cast<server_identity_alert*>(a.get()))
+        {
+            server_identity_alert* p = dynamic_cast<server_identity_alert*>(a.get());
+            DBG("ALERT: server_identity_alert: " << p->server_hash << " name:  " << p->server_name << " descr: " << p->server_descr);
+        }        
+        else if (dht_keyword_search_result_alert* p = dynamic_cast<dht_keyword_search_result_alert*>(a.get()))
+        {
+            for (std::deque<libed2k::kad_info_entry>::const_iterator itr = p->m_entries.begin(); itr != p->m_entries.end(); ++itr) {
+                dht_keywords.push_back(dht_keyword(*itr));
+                DBG("search keyword added << " << dht_keywords.size() << ":" << dht_keywords.back().name << " << sources:" << dht_keywords.back().sources);                
+            }
+        }        
+        
+        a = ps->pop_alert();
+    }
+    
+    pt->expires_at(pt->expires_at() + boost::posix_time::seconds(3));
+    pt->async_wait(boost::bind(&alerts_reader, boost::asio::placeholders::error, pt, ps));
+}
+
 // load nodes from standard emule nodes.dat file
 bool load_nodes(const std::string& filename, libed2k::kad_nodes_dat& knd);
 
@@ -68,6 +110,9 @@ int main(int argc, char* argv[]) {
     ses.set_alert_mask(alert::all_categories);    
 
     libed2k::io_service io;
+    boost::asio::deadline_timer alerts_timer(io, boost::posix_time::seconds(3));
+    alerts_timer.async_wait(boost::bind(alerts_reader, boost::asio::placeholders::error, &alerts_timer, &ses));
+    boost::thread t(boost::bind(&libed2k::io_service::run, &io));
     std::string input;
 
     while ((std::cin >> input)) {
@@ -177,6 +222,9 @@ int main(int argc, char* argv[]) {
     // avoid assert on save empty entry
     libed2k::entry e = ses.dht_state();
     if (e.type() == libed2k::entry::dictionary_t) save_dht_state(ses.dht_state());
+
+    io.post(boost::bind(&boost::asio::deadline_timer::cancel, &alerts_timer));
+    t.join();
     return 0;
 }
 
