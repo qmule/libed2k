@@ -1928,6 +1928,7 @@ void session_impl::set_external_address(address const& ip
         DBG("traverse for " << id << " completed");
         size_t n = m_active_dht_requests.erase(id);
         LIBED2K_ASSERT(n == 1u);
+        m_alerts.post_alert_should(dht_traverse_finished(id));
     }
 
     void session_impl::on_find_dht_source(const md4_hash& hash

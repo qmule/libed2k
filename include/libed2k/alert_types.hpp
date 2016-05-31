@@ -941,6 +941,20 @@ namespace libed2k
         virtual std::string message() const { return "DHT stopped"; }
     };
 
+    struct dht_traverse_finished : alert {
+        dht_traverse_finished(const md4_hash& h) : hash(h) {}
+
+        virtual std::auto_ptr<alert> clone() const {
+            return std::auto_ptr<alert>(new dht_traverse_finished(*this));
+        }
+
+        virtual char const* what() const { return "DHT traverse finished"; }
+        virtual int category() const { return static_category; }
+        const static int static_category = alert::dht_notification;
+        virtual std::string message() const { return "DHT traverse finished"; }
+        md4_hash hash;
+    };
+
     struct dht_announce_alert: alert
     {
             dht_announce_alert(address const& ip_, int port_
