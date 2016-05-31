@@ -1253,7 +1253,7 @@ namespace libed2k
 
     void transfer::second_tick(stat& accumulator, int tick_interval_ms, const ptime& now)
     {
-        if (m_minute_timer.expired(now) && m_connections.size() == 0)
+        if (m_minute_timer.expired(now) && m_connections.size() == 0 && !is_paused() && !is_aborted())
             request_peers();
 
         // if we're in upload only mode and we're auto-managed
