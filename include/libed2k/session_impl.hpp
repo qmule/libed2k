@@ -395,8 +395,6 @@ namespace libed2k {
             void find_keyword(const std::string& keyword);
             void find_sources(const md4_hash& hash, size_type size);
 
-            void on_find_result(std::vector<tcp::endpoint> const& peers);
-
             /*
              * called when traverse for id completed
              *
