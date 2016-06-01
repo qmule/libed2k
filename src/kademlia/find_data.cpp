@@ -70,8 +70,8 @@ void find_data_observer::reply(const kad2_bootstrap_res& r, udp::endpoint ep) {
         if (!ec) {
     #ifdef LIBED2K_DHT_VERBOSE_LOGGING
             LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
-            m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
     #endif
+            m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
         }
     }
 
@@ -89,8 +89,8 @@ void find_data_observer::reply(const kademlia2_res& r, udp::endpoint ep) {
         if (!ec) {
 #ifdef LIBED2K_DHT_VERBOSE_LOGGING
             LIBED2K_LOG(traversal) << "traverse " << itr->kid << " " << int2ipstr(itr->address.address);
-            m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
 #endif
+            m_algorithm->traverse(itr->kid, udp::endpoint(addr, itr->address.udp_port));
         }
     }
 
