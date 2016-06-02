@@ -1920,10 +1920,6 @@ void session_impl::set_external_address(address const& ip
         }
     }
 
-    void session_impl::on_find_result(std::vector<tcp::endpoint> const& peers) {
-
-    }
-
     void session_impl::on_traverse_completed(const kad_id& id) {
         DBG("traverse for " << id << " completed");
         size_t n = m_active_dht_requests.erase(id);
